@@ -47,6 +47,7 @@ src/
 5. Testing phase: Test engineer writes tests, playtester validates mechanics, pacing, and story beats
 6. Optimization phase: Optimizer improves performance across complex systems
 7. Documentation phase: Documenter updates mechanics, lore, and player-facing docs
+8. Automation: `/project:autonomous` coordinates end-to-end cycles (minus asset creation) when fully autonomous operation is desired
 
 ## Code Standards
 - **Naming**: camelCase for functions/variables, PascalCase for classes
