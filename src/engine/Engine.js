@@ -7,6 +7,7 @@ import { EntityManager } from './ecs/EntityManager.js';
 import { ComponentRegistry } from './ecs/ComponentRegistry.js';
 import { SystemManager } from './ecs/SystemManager.js';
 import { EventBus } from './events/EventBus.js';
+import { GameLoop } from './GameLoop.js';
 import { Renderer } from './renderer/Renderer.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { AssetManager } from './assets/AssetManager.js';
@@ -16,12 +17,6 @@ export class Engine {
   constructor(canvas) {
     this.canvas = canvas;
     this.logger = new Logger('Engine', Logger.LogLevel.INFO);
-    this.running = false;
-    this.lastTime = 0;
-    this.deltaTime = 0;
-    this.fps = 60;
-    this.frameCount = 0;
-    this.fpsUpdateTime = 0;
 
     // Initialize core systems
     this.eventBus = new EventBus();
@@ -32,6 +27,12 @@ export class Engine {
       this.componentRegistry,
       this.eventBus
     );
+
+    // Initialize game loop with frame callback
+    this.gameLoop = new GameLoop(this.systemManager, {
+      targetFPS: 60,
+      onFrame: (metrics) => this._onFrame(metrics),
+    });
 
     // Initialize subsystems
     this.renderer = new Renderer(canvas);
@@ -59,52 +60,42 @@ export class Engine {
   }
 
   start() {
-    if (this.running) {
+    if (this.gameLoop.isRunning()) {
       this.logger.warn('Engine already running');
       return;
     }
 
-    this.running = true;
-    this.lastTime = performance.now();
     this.logger.info('Engine started');
-
-    // Start game loop
-    requestAnimationFrame((time) => this.gameLoop(time));
+    this.gameLoop.start();
   }
 
   stop() {
-    this.running = false;
     this.logger.info('Engine stopped');
+    this.gameLoop.stop();
   }
 
-  gameLoop(currentTime) {
-    if (!this.running) {
-      return;
-    }
+  pause() {
+    this.logger.info('Engine paused');
+    this.gameLoop.pause();
+  }
 
-    // Calculate delta time
-    this.deltaTime = (currentTime - this.lastTime) / 1000;
-    this.lastTime = currentTime;
+  resume() {
+    this.logger.info('Engine resumed');
+    this.gameLoop.resume();
+  }
 
-    // Update FPS counter
-    this.frameCount++;
-    if (currentTime - this.fpsUpdateTime >= 1000) {
-      this.fps = this.frameCount;
-      this.frameCount = 0;
-      this.fpsUpdateTime = currentTime;
-    }
-
-    // Update systems
-    this.systemManager.update(this.deltaTime);
-
-    // Render
+  /**
+   * Called each frame by GameLoop.
+   * Handles rendering and event processing.
+   * @private
+   * @param {Object} metrics - Frame timing metrics
+   */
+  _onFrame(metrics) {
+    // Render (happens even when paused)
     this.renderer.render(this.componentRegistry);
 
     // Process event queue
     this.eventBus.processQueue();
-
-    // Continue loop
-    requestAnimationFrame((time) => this.gameLoop(time));
   }
 
   getEntityManager() {
@@ -136,16 +127,28 @@ export class Engine {
   }
 
   getFPS() {
-    return this.fps;
+    return this.gameLoop.getFPS();
   }
 
   getDeltaTime() {
-    return this.deltaTime;
+    return this.gameLoop.getDeltaTime();
+  }
+
+  getGameLoop() {
+    return this.gameLoop;
+  }
+
+  isRunning() {
+    return this.gameLoop.isRunning();
+  }
+
+  isPaused() {
+    return this.gameLoop.isPaused();
   }
 
   cleanup() {
     this.logger.info('Cleaning up engine...');
-    this.stop();
+    this.gameLoop.stop();
     this.systemManager.cleanup();
     this.eventBus.clear();
     this.logger.info('Engine cleaned up');

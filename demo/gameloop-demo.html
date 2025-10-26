@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameLoop Demo - The Memory Syndicate Engine</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            background: #1a1a1a;
+            color: #00ff00;
+        }
+
+        h1 {
+            margin: 0 0 20px 0;
+            font-size: 24px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        canvas {
+            border: 2px solid #00ff00;
+            display: block;
+            background: #000;
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            background: #00ff00;
+            color: #000;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #00cc00;
+        }
+
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+
+        .metrics {
+            background: #0a0a0a;
+            border: 1px solid #00ff00;
+            padding: 15px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            color: #00cc00;
+        }
+
+        .metric-value {
+            color: #00ff00;
+            font-weight: bold;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        .status.running {
+            background: #00ff00;
+            color: #000;
+        }
+
+        .status.paused {
+            background: #ff9900;
+            color: #000;
+        }
+
+        .status.stopped {
+            background: #666;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>GameLoop Performance Demo</h1>
+
+        <canvas id="canvas" width="800" height="400"></canvas>
+
+        <div class="controls">
+            <button id="startBtn">START</button>
+            <button id="pauseBtn" disabled>PAUSE</button>
+            <button id="resumeBtn" disabled>RESUME</button>
+            <button id="stopBtn" disabled>STOP</button>
+            <button id="resetStatsBtn">RESET STATS</button>
+        </div>
+
+        <div class="metrics">
+            <div class="metric-row">
+                <span class="metric-label">Status:</span>
+                <span class="metric-value" id="status">
+                    <span class="status stopped">STOPPED</span>
+                </span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">FPS:</span>
+                <span class="metric-value" id="fps">0</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Frame Count:</span>
+                <span class="metric-value" id="frameCount">0</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Delta Time:</span>
+                <span class="metric-value" id="deltaTime">0.000s</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Current Frame Time:</span>
+                <span class="metric-value" id="currentFrameTime">0.00ms</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Average Frame Time:</span>
+                <span class="metric-value" id="avgFrameTime">0.00ms</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Min Frame Time:</span>
+                <span class="metric-value" id="minFrameTime">0.00ms</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Max Frame Time:</span>
+                <span class="metric-value" id="maxFrameTime">0.00ms</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">System Updates:</span>
+                <span class="metric-value" id="systemUpdates">0</span>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { GameLoop } from '../src/engine/GameLoop.js';
+        import { SystemManager } from '../src/engine/ecs/SystemManager.js';
+        import { EntityManager } from '../src/engine/ecs/EntityManager.js';
+        import { ComponentRegistry } from '../src/engine/ecs/ComponentRegistry.js';
+        import { EventBus } from '../src/engine/events/EventBus.js';
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Simple test system that draws bouncing boxes
+        class RenderSystem {
+            constructor() {
+                this.priority = 50;
+                this.enabled = true;
+                this.requiredComponents = [];
+                this.updateCount = 0;
+
+                // Create some bouncing boxes
+                this.boxes = [];
+                for (let i = 0; i < 20; i++) {
+                    this.boxes.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        vx: (Math.random() - 0.5) * 200,
+                        vy: (Math.random() - 0.5) * 200,
+                        size: 10 + Math.random() * 20,
+                        hue: Math.random() * 360
+                    });
+                }
+            }
+
+            init() {}
+
+            update(deltaTime, entities) {
+                this.updateCount++;
+
+                // Clear canvas
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Update and draw boxes
+                for (const box of this.boxes) {
+                    box.x += box.vx * deltaTime;
+                    box.y += box.vy * deltaTime;
+
+                    // Bounce off walls
+                    if (box.x < 0 || box.x > canvas.width) {
+                        box.vx *= -1;
+                        box.x = Math.max(0, Math.min(canvas.width, box.x));
+                    }
+                    if (box.y < 0 || box.y > canvas.height) {
+                        box.vy *= -1;
+                        box.y = Math.max(0, Math.min(canvas.height, box.y));
+                    }
+
+                    // Draw box
+                    ctx.fillStyle = `hsl(${box.hue}, 100%, 50%)`;
+                    ctx.fillRect(box.x - box.size/2, box.y - box.size/2, box.size, box.size);
+                }
+
+                // Draw FPS on canvas
+                ctx.fillStyle = '#00ff00';
+                ctx.font = '20px Courier New';
+                ctx.fillText(`FPS: ${gameLoop.getFPS()}`, 10, 30);
+            }
+
+            cleanup() {}
+            enable() { this.enabled = true; }
+            disable() { this.enabled = false; }
+        }
+
+        // Setup ECS
+        const entityManager = new EntityManager();
+        const componentRegistry = new ComponentRegistry(entityManager);
+        const eventBus = new EventBus();
+        const systemManager = new SystemManager(entityManager, componentRegistry, eventBus);
+
+        const renderSystem = new RenderSystem();
+        systemManager.registerSystem(renderSystem, 'RenderSystem');
+
+        // Create game loop
+        const gameLoop = new GameLoop(systemManager, {
+            targetFPS: 60,
+            onFrame: updateUI
+        });
+
+        // UI Update
+        function updateUI(metrics) {
+            document.getElementById('fps').textContent = gameLoop.getFPS();
+            document.getElementById('frameCount').textContent = gameLoop.getFrameCount();
+            document.getElementById('deltaTime').textContent = gameLoop.getDeltaTime().toFixed(3) + 's';
+            document.getElementById('currentFrameTime').textContent = gameLoop.getFrameTime().toFixed(2) + 'ms';
+            document.getElementById('avgFrameTime').textContent = gameLoop.getAverageFrameTime().toFixed(2) + 'ms';
+            document.getElementById('minFrameTime').textContent = gameLoop.getMinFrameTime().toFixed(2) + 'ms';
+            document.getElementById('maxFrameTime').textContent = gameLoop.getMaxFrameTime().toFixed(2) + 'ms';
+            document.getElementById('systemUpdates').textContent = renderSystem.updateCount;
+
+            // Update status
+            const statusEl = document.getElementById('status');
+            if (gameLoop.isRunning()) {
+                if (gameLoop.isPaused()) {
+                    statusEl.innerHTML = '<span class="status paused">PAUSED</span>';
+                } else {
+                    statusEl.innerHTML = '<span class="status running">RUNNING</span>';
+                }
+            } else {
+                statusEl.innerHTML = '<span class="status stopped">STOPPED</span>';
+            }
+        }
+
+        // Button controls
+        document.getElementById('startBtn').addEventListener('click', () => {
+            gameLoop.start();
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('pauseBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = false;
+        });
+
+        document.getElementById('pauseBtn').addEventListener('click', () => {
+            gameLoop.pause();
+            document.getElementById('pauseBtn').disabled = true;
+            document.getElementById('resumeBtn').disabled = false;
+        });
+
+        document.getElementById('resumeBtn').addEventListener('click', () => {
+            gameLoop.resume();
+            document.getElementById('pauseBtn').disabled = false;
+            document.getElementById('resumeBtn').disabled = true;
+        });
+
+        document.getElementById('stopBtn').addEventListener('click', () => {
+            gameLoop.stop();
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+            document.getElementById('resumeBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = true;
+        });
+
+        document.getElementById('resetStatsBtn').addEventListener('click', () => {
+            gameLoop.resetStats();
+            renderSystem.updateCount = 0;
+        });
+
+        // Initial UI update
+        updateUI({});
+    </script>
+</body>
+</html>
