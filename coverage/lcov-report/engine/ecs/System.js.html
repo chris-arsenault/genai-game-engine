@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">53.84% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/13</span>
+                <span class='fraction'>7/13</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">25% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/12</span>
+                <span class='fraction'>3/12</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">53.84% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/13</span>
+                <span class='fraction'>7/13</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line medium'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -223,11 +223,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">59x</span>
+<span class="cline-any cline-yes">59x</span>
+<span class="cline-any cline-yes">59x</span>
+<span class="cline-any cline-yes">59x</span>
+<span class="cline-any cline-yes">59x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -264,17 +264,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">75298x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -289,7 +282,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -321,6 +313,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
@@ -352,12 +352,12 @@ export class System {
    * @param {EventBus} eventBus - Event pub/sub system
    * @param {string[]} requiredComponents - Component types this system operates on
    */
-<span class="fstat-no" title="function not covered" >  co</span>nstructor(componentRegistry, eventBus, requiredComponents = <span class="branch-0 cbranch-no" title="branch not covered" >[])</span> {
-<span class="cstat-no" title="statement not covered" >    this.componentRegistry = componentRegistry;</span>
-<span class="cstat-no" title="statement not covered" >    this.eventBus = eventBus;</span>
-<span class="cstat-no" title="statement not covered" >    this.requiredComponents = requiredComponents;</span>
-<span class="cstat-no" title="statement not covered" >    this.priority = 50; </span>// Default priority (0 = highest, 100 = lowest)
-<span class="cstat-no" title="statement not covered" >    this.enabled = true;</span>
+  constructor(componentRegistry, eventBus, requiredComponents = <span class="branch-0 cbranch-no" title="branch not covered" >[])</span> {
+    this.componentRegistry = componentRegistry;
+    this.eventBus = eventBus;
+    this.requiredComponents = requiredComponents;
+    this.priority = 50; // Default priority (0 = highest, 100 = lowest)
+    this.enabled = true;
   }
 &nbsp;
   /**
@@ -393,8 +393,8 @@ export class System {
    * @param {string} componentType - Component type
    * @returns {Component|undefined} Component data or undefined
    */
-<span class="fstat-no" title="function not covered" >  ge</span>tComponent(entityId, componentType) {
-<span class="cstat-no" title="statement not covered" >    return this.componentRegistry.getComponent(entityId, componentType);</span>
+  getComponent(entityId, componentType) {
+    return this.componentRegistry.getComponent(entityId, componentType);
   }
 &nbsp;
   /**
@@ -449,8 +449,8 @@ export class System {
    * Get required component types for this system.
    * @returns {string[]} Required component types
    */
-<span class="fstat-no" title="function not covered" >  ge</span>tRequiredComponents() {
-<span class="cstat-no" title="statement not covered" >    return this.requiredComponents;</span>
+  getRequiredComponents() {
+    return this.requiredComponents;
   }
 }
 &nbsp;</pre></td></tr></table></pre>
@@ -460,7 +460,7 @@ export class System {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-26T10:12:17.079Z
+                at 2025-10-26T11:59:16.093Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

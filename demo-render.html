@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rendering System Demo - The Memory Syndicate</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #1a1a1a;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        #game-canvas {
+            border: 2px solid #00ff00;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+        }
+        #stats {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #00ff00;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        #stats div {
+            margin: 5px 0;
+        }
+        .stat-label {
+            color: #00ff00;
+            font-weight: bold;
+        }
+        h1 {
+            color: #00ff00;
+            margin: 20px 0;
+            text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+        .controls {
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #666;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎮 Rendering System Demo</h1>
+
+    <div class="controls">
+        <strong>Controls:</strong> Arrow Keys = Move Camera | Mouse Wheel = Zoom | Click = Camera Shake
+    </div>
+
+    <canvas id="game-canvas" width="800" height="600"></canvas>
+
+    <div id="stats">
+        <div><span class="stat-label">FPS:</span> <span id="fps">0</span></div>
+        <div><span class="stat-label">Render Time:</span> <span id="render-time">0</span> ms</div>
+        <div><span class="stat-label">Entities:</span> <span id="entity-count">0</span></div>
+        <div><span class="stat-label">Rendered:</span> <span id="rendered-count">0</span></div>
+        <div><span class="stat-label">Culled:</span> <span id="culled-count">0</span></div>
+        <div><span class="stat-label">Camera:</span> <span id="camera-pos">0, 0</span></div>
+        <div><span class="stat-label">Zoom:</span> <span id="zoom">1.0</span>x</div>
+    </div>
+
+    <script type="module">
+        import { EntityManager } from './src/engine/ecs/EntityManager.js';
+        import { ComponentRegistry } from './src/engine/ecs/ComponentRegistry.js';
+        import { SystemManager } from './src/engine/ecs/SystemManager.js';
+        import { EventBus } from './src/engine/events/EventBus.js';
+        import { Renderer } from './src/engine/renderer/Renderer.js';
+        import { LayeredRenderer } from './src/engine/renderer/LayeredRenderer.js';
+        import { RenderSystem } from './src/engine/renderer/RenderSystem.js';
+        import { Transform } from './src/game/components/Transform.js';
+        import { Sprite } from './src/game/components/Sprite.js';
+
+        // Initialize canvas
+        const canvas = document.getElementById('game-canvas');
+        const renderer = new Renderer(canvas);
+        const camera = renderer.getCamera();
+        const layeredRenderer = new LayeredRenderer(canvas.width, canvas.height);
+
+        // Initialize ECS
+        const entityManager = new EntityManager();
+        const componentRegistry = new ComponentRegistry(entityManager);
+        const eventBus = new EventBus();
+        const systemManager = new SystemManager(entityManager, componentRegistry, eventBus);
+
+        // Register Transform and Sprite component types
+        componentRegistry.components.set('Transform', new Map());
+        componentRegistry.components.set('Sprite', new Map());
+
+        // Create render system
+        const renderSystem = new RenderSystem(componentRegistry, eventBus, layeredRenderer, camera);
+        systemManager.registerSystem(renderSystem, 'RenderSystem');
+
+        // Create 100 test entities with random positions and colors
+        console.log('Creating test entities...');
+        const entities = [];
+        const colors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#FF1493'];
+
+        for (let i = 0; i < 100; i++) {
+            const entityId = entityManager.createEntity();
+            entities.push(entityId);
+
+            // Random position
+            const x = Math.random() * 1600 - 400; // -400 to 1200
+            const y = Math.random() * 1200 - 300; // -300 to 900
+
+            // Transform
+            const transform = new Transform(x, y, 0, 1, 1);
+            componentRegistry.addComponent(entityId, 'Transform', transform);
+
+            // Sprite
+            const sprite = new Sprite({
+                width: 32,
+                height: 32,
+                color: colors[i % colors.length],
+                layer: 'entities',
+                zIndex: Math.floor(i / 10),
+                visible: true,
+                alpha: 0.8 + Math.random() * 0.2
+            });
+            componentRegistry.addComponent(entityId, 'Sprite', sprite);
+        }
+
+        console.log(`Created ${entities.length} entities`);
+
+        // Mark all layers dirty initially
+        layeredRenderer.markAllLayersDirty();
+
+        // Camera controls
+        const keys = {};
+        window.addEventListener('keydown', (e) => keys[e.key] = true);
+        window.addEventListener('keyup', (e) => keys[e.key] = false);
+
+        // Mouse wheel zoom
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomDelta = e.deltaY > 0 ? 0.9 : 1.1;
+            camera.setZoom(camera.zoom * zoomDelta);
+            layeredRenderer.markLayerDirty('entities');
+        });
+
+        // Click to shake
+        canvas.addEventListener('click', () => {
+            camera.shake(20, 0.85);
+        });
+
+        // Performance tracking
+        let fps = 0;
+        let frameCount = 0;
+        let lastFpsUpdate = performance.now();
+
+        // Game loop
+        let lastTime = performance.now();
+
+        function gameLoop(currentTime) {
+            const deltaTime = (currentTime - lastTime) / 1000;
+            lastTime = currentTime;
+
+            // Update FPS counter
+            frameCount++;
+            if (currentTime - lastFpsUpdate >= 1000) {
+                fps = frameCount;
+                frameCount = 0;
+                lastFpsUpdate = currentTime;
+            }
+
+            // Camera movement
+            const cameraSpeed = 200 * deltaTime;
+            if (keys['ArrowLeft']) camera.move(-cameraSpeed, 0);
+            if (keys['ArrowRight']) camera.move(cameraSpeed, 0);
+            if (keys['ArrowUp']) camera.move(0, -cameraSpeed);
+            if (keys['ArrowDown']) camera.move(0, cameraSpeed);
+
+            // Update camera (for shake)
+            camera.update(deltaTime, null);
+
+            // Mark entities layer dirty (they need to be re-rendered)
+            layeredRenderer.markLayerDirty('entities');
+
+            // Update render system
+            renderer.beginFrame();
+            systemManager.update(deltaTime);
+
+            // Composite layers to main canvas
+            renderer.clear();
+            layeredRenderer.composite(renderer.ctx);
+            renderer.endFrame();
+
+            // Update stats
+            const metrics = renderSystem.getMetrics();
+            document.getElementById('fps').textContent = fps;
+            document.getElementById('render-time').textContent = renderer.getRenderTime().toFixed(2);
+            document.getElementById('entity-count').textContent = entities.length;
+            document.getElementById('rendered-count').textContent = metrics.renderedCount;
+            document.getElementById('culled-count').textContent = metrics.culledCount;
+            document.getElementById('camera-pos').textContent =
+                `${Math.round(camera.x)}, ${Math.round(camera.y)}`;
+            document.getElementById('zoom').textContent = camera.zoom.toFixed(2);
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start game loop
+        console.log('Starting render demo...');
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>
