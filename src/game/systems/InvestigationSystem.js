@@ -8,13 +8,13 @@
  * Queries: [Transform, Evidence], [Transform, InteractionZone]
  */
 
+import { System } from '../../engine/ecs/System.js';
 import { GameConfig } from '../config/GameConfig.js';
 
-export class InvestigationSystem {
+export class InvestigationSystem extends System {
   constructor(componentRegistry, eventBus) {
-    this.components = componentRegistry;
-    this.events = eventBus;
-    this.requiredComponents = ['Transform'];
+    super(componentRegistry, eventBus, ['Transform']);
+    this.priority = 30;
 
     // Investigation state
     this.playerKnowledge = new Set(); // Known knowledge IDs
@@ -28,6 +28,10 @@ export class InvestigationSystem {
     this.detectiveVisionActive = false;
     this.detectiveVisionTimer = 0;
     this.detectiveVisionCooldown = 0;
+
+    // Performance tracking
+    this.evidenceCache = new Map(); // entityId -> Evidence component
+    this.lastCacheUpdate = 0;
   }
 
   /**
@@ -43,17 +47,21 @@ export class InvestigationSystem {
   /**
    * Update investigation mechanics
    * @param {number} deltaTime - Time since last frame (seconds)
-   * @param {Array} entities - All entities
+   * @param {Array} entities - All entity IDs
    */
   update(deltaTime, entities) {
     // Update detective vision timer
     this.updateDetectiveVision(deltaTime);
 
-    // Find player
-    const player = entities.find(e => e.hasTag && e.hasTag('player'));
+    // Find player entity
+    const player = entities.find(id => {
+      const entity = this.componentRegistry.entityManager.getEntity(id);
+      return entity && entity.hasTag && entity.hasTag('player');
+    });
+
     if (!player) return;
 
-    const playerTransform = this.components.getComponent(player.id, 'Transform');
+    const playerTransform = this.getComponent(player, 'Transform');
     if (!playerTransform) return;
 
     // Scan for evidence in observation radius
@@ -89,14 +97,14 @@ export class InvestigationSystem {
     const radius = GameConfig.player.observationRadius;
     const radiusSq = radius * radius;
 
-    for (const entity of entities) {
-      const evidence = this.components.getComponent(entity.id, 'Evidence');
+    for (const entityId of entities) {
+      const evidence = this.getComponent(entityId, 'Evidence');
       if (!evidence || evidence.collected) continue;
 
-      const transform = this.components.getComponent(entity.id, 'Transform');
+      const transform = this.getComponent(entityId, 'Transform');
       if (!transform) continue;
 
-      // Check if evidence is in range
+      // Check if evidence is in range (optimized with squared distance)
       const dx = transform.x - playerTransform.x;
       const dy = transform.y - playerTransform.y;
       const distSq = dx * dx + dy * dy;
@@ -106,8 +114,8 @@ export class InvestigationSystem {
         const isVisible = !evidence.hidden || this.detectiveVisionActive;
 
         if (isVisible) {
-          this.events.emit('evidence:detected', {
-            entityId: entity.id,
+          this.eventBus.emit('evidence:detected', {
+            entityId: entityId,
             evidenceId: evidence.id,
             distance: Math.sqrt(distSq),
             position: { x: transform.x, y: transform.y }
@@ -119,21 +127,21 @@ export class InvestigationSystem {
 
   /**
    * Check interaction zones for evidence collection
-   * @param {Object} player - Player entity
+   * @param {number} playerId - Player entity ID
    * @param {Transform} playerTransform
-   * @param {Array} entities
+   * @param {Array} entities - Array of entity IDs
    */
-  checkInteractionZones(player, playerTransform, entities) {
-    const playerController = this.components.getComponent(player.id, 'PlayerController');
+  checkInteractionZones(playerId, playerTransform, entities) {
+    const playerController = this.getComponent(playerId, 'PlayerController');
     if (!playerController) return;
 
     const interactPressed = playerController.input.interact;
 
-    for (const entity of entities) {
-      const zone = this.components.getComponent(entity.id, 'InteractionZone');
+    for (const entityId of entities) {
+      const zone = this.getComponent(entityId, 'InteractionZone');
       if (!zone || !zone.active) continue;
 
-      const transform = this.components.getComponent(entity.id, 'Transform');
+      const transform = this.getComponent(entityId, 'Transform');
       if (!transform) continue;
 
       // Check if in range
@@ -142,10 +150,10 @@ export class InvestigationSystem {
       // Handle interaction based on type
       if (zone.type === 'evidence') {
         if (interactPressed || !zone.requiresInput) {
-          this.collectEvidence(entity.id, zone.data.evidenceId);
+          this.collectEvidence(entityId, zone.data.evidenceId);
         } else {
           // Show prompt
-          this.events.emit('ui:show_prompt', {
+          this.eventBus.emit('ui:show_prompt', {
             text: zone.prompt,
             position: { x: transform.x, y: transform.y }
           });
@@ -156,16 +164,16 @@ export class InvestigationSystem {
 
   /**
    * Collect evidence
-   * @param {string} entityId - Evidence entity ID
+   * @param {number} entityId - Evidence entity ID
    * @param {string} evidenceId - Evidence data ID
    */
   collectEvidence(entityId, evidenceId) {
-    const evidence = this.components.getComponent(entityId, 'Evidence');
+    const evidence = this.getComponent(entityId, 'Evidence');
     if (!evidence || evidence.collected) return;
 
     // Check if player has required ability
     if (!evidence.canCollect(this.playerAbilities)) {
-      this.events.emit('evidence:collection_failed', {
+      this.eventBus.emit('evidence:collection_failed', {
         evidenceId,
         reason: 'missing_ability',
         required: evidence.requires
@@ -183,7 +191,7 @@ export class InvestigationSystem {
     this.collectedEvidence.get(evidence.caseId).add(evidenceId);
 
     // Emit collection event
-    this.events.emit('evidence:collected', {
+    this.eventBus.emit('evidence:collected', {
       evidenceId,
       caseId: evidence.caseId,
       type: evidence.type,
@@ -204,7 +212,10 @@ export class InvestigationSystem {
   checkClueDerivation(evidence) {
     for (const clueId of evidence.derivedClues) {
       if (!this.discoveredClues.has(clueId)) {
-        this.events.emit('clue:derived', {
+        // Mark clue as discovered
+        this.discoveredClues.set(clueId, true);
+
+        this.eventBus.emit('clue:derived', {
           clueId,
           evidenceId: evidence.id,
           caseId: evidence.caseId
@@ -220,7 +231,7 @@ export class InvestigationSystem {
    */
   activateDetectiveVision() {
     if (this.detectiveVisionCooldown > 0) {
-      this.events.emit('ability:cooldown', {
+      this.eventBus.emit('ability:cooldown', {
         ability: 'detective_vision',
         remaining: this.detectiveVisionCooldown
       });
@@ -228,7 +239,7 @@ export class InvestigationSystem {
     }
 
     if (!this.playerAbilities.has('detective_vision')) {
-      this.events.emit('ability:locked', {
+      this.eventBus.emit('ability:locked', {
         ability: 'detective_vision'
       });
       return;
@@ -237,7 +248,7 @@ export class InvestigationSystem {
     this.detectiveVisionActive = true;
     this.detectiveVisionTimer = GameConfig.player.detectiveVisionDuration / 1000;
 
-    this.events.emit('detective_vision:activated', {
+    this.eventBus.emit('detective_vision:activated', {
       duration: this.detectiveVisionTimer
     });
 
@@ -251,7 +262,7 @@ export class InvestigationSystem {
     this.detectiveVisionActive = false;
     this.detectiveVisionCooldown = GameConfig.player.detectiveVisionCooldown / 1000;
 
-    this.events.emit('detective_vision:deactivated', {
+    this.eventBus.emit('detective_vision:deactivated', {
       cooldown: this.detectiveVisionCooldown
     });
 
@@ -267,7 +278,7 @@ export class InvestigationSystem {
 
     this.playerAbilities.add(abilityId);
 
-    this.events.emit('ability:unlocked', {
+    this.eventBus.emit('ability:unlocked', {
       abilityId
     });
 
@@ -283,7 +294,7 @@ export class InvestigationSystem {
 
     this.playerKnowledge.add(knowledgeId);
 
-    this.events.emit('knowledge:learned', {
+    this.eventBus.emit('knowledge:learned', {
       knowledgeId
     });
 
@@ -300,7 +311,7 @@ export class InvestigationSystem {
 
     this.playerCasesSolved.add(caseId);
 
-    this.events.emit('case:solved', {
+    this.eventBus.emit('case:solved', {
       caseId,
       accuracy,
       evidenceCollected: this.collectedEvidence.get(caseId)?.size || 0

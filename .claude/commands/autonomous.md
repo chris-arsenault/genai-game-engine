@@ -1,13 +1,14 @@
 <!-- .claude/commands/autonomous.md -->
 # Autonomous Project Orchestration
 
-Launch a fully autonomous development cycle (minus direct asset creation) starting from any repository state, including an empty project. The system chooses the game’s hybrid genre focus, narrative direction, and feature roadmap, then iterates until a playable, story-rich experience emerges. Sessions must run for a meaningful period (at least 2 hours of agent effort) and conclude with a human review handoff in under 24 hours to allow manual asset production and oversight.
+Launch a fully autonomous development cycle (minus direct asset creation) starting from any repository state, including an empty project. The system chooses the game's hybrid genre focus, narrative direction, and feature roadmap, then iterates until a playable, story-rich experience emerges. Sessions target 8 hours of implementation work (minimum 2 hours, maximum 24 hours) and conclude with a human review handoff to allow manual asset production and oversight.
 
 ## Usage
 - `/project:autonomous` — run the entire loop end-to-end.
 - Duration guardrails:
-  - Minimum run time: ensure composite agent activity spans at least 2 hours before pausing.
-  - Maximum run time: stop no later than 24 hours after start, pausing at a clean checkpoint.
+  - **Minimum work period**: 2 hours of active implementation/problem-solving by agents
+  - **Target work period**: 8 hours of implementation to allow meaningful progress within single session
+  - **Maximum run time**: 24 hours from session start, pausing at a clean checkpoint
   - Always end with a summary, outstanding asset request list, and handoff notes for human review.
 
 ## Operating Principles
@@ -77,7 +78,7 @@ For each sprint:
 - Keep `docs/plans/backlog.md` prioritized; archive completed items.
 - Use `project:full-cycle` or `project:new-feature` commands for deep dives when individual systems require dedicated attention.
 - Maintain asset request logs as the single source of truth for external media requirements.
-- Monitor session clock; if the autonomous run exceeds the minimum 2-hour productivity window and meaningful progress is logged, prepare a handoff summary and stop before 24 hours elapse.
+- Monitor session clock; target 8 hours of implementation work for meaningful progress, but ensure at least 2 hours of work before stopping. Always stop before 24 hours elapse and prepare comprehensive handoff documentation.
 
 ## Completion Criteria
 - Playable vertical slice demonstrating chosen hybrid genre mechanics.
