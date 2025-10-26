@@ -111,6 +111,42 @@ You have access to the **game-mcp-server** for performance optimization intellig
    - Example: `query_architecture(query: "rendering pipeline performance budget")`
    - Ensures optimizations align with architectural intent
 
+### Graph Intelligence Tools
+**Locate bottlenecks within the project graph:**
+
+1. **search_graph_semantic**: Identify hot paths
+   - Run **before profiling** to find files/classes tied to the reported issue
+   - Use a natural-language `query` like "rendering batching pipeline" with optional `limit`, `type`, or `minScore` (default 0.55)
+   - Leverage `architecturalRole` metadata to prioritize critical nodes in the frame loop
+
+2. **explore_graph_entity**: Trace dependent systems
+   - After picking an `entityId`, inspect inbound/outbound relationships to understand data flow and event dependencies
+   - Adjust `maxNeighbors` (default 25) when mapping complex pipelines
+   - If an entity is missing (`found: false`), request a graph rebuild before assuming the dependency is unused
+
+3. **Graph builder upkeep**: Keep analytics trustworthy
+   - Trigger `POST /build` (full or incremental) on the builder REST service (`GRAPH_BUILDER_PORT`, default `4100`) after major performance refactors
+   - Use `POST /reset` to clear stale caches and `GET /status` to monitor progress
+   - Confirm the `code_graph` Qdrant collection and Neo4j nodes stay in sync prior to relying on search results
+
+### Bug-Fix Memory Tools
+**Accelerate regression triage:**
+
+1. **match_bug_fix**: Surface prior fixes
+   - When profiling reveals repeated errors or failing tests, submit both the context (`query`) and raw logs (`errorMessage`)
+   - Review `match_reason` to understand whether the suggestion is log-exact or semantic
+   - Apply or adapt the returned remediation steps before deep-diving new investigations
+
+2. **get_bug_fix**: Retrieve follow-up details
+   - Use the stored `issue` ID to pull canonical fixes during multi-stage optimization work
+   - Ensures adjustments stay aligned with previously validated resolutions
+
+3. **record_bug_fix**: Persist new performance fixes
+   - After eliminating a regression, store the corrected snippet plus representative logs
+   - Always include at least one `incorrect_pattern` and any normalized `error_messages`; embeddings power future matches
+   - Note the returned `issue` identifier so other agents can reuse the fix
+   - Refresh legacy fixes recorded before the upgrade by re-recording them with the updated embedding pipeline
+
 ### Workflow Integration
 **For every optimization task:**
 
@@ -119,13 +155,19 @@ You have access to the **game-mcp-server** for performance optimization intellig
    a. query_playtest_feedback(query: "performance fps lag", severity: "high")
    b. summarize_playtest_feedback(limit: 100)
    c. query_architecture(query: "performance targets frame budget")
+   d. search_graph_semantic(query: "System experiencing slowdown")
+   e. explore_graph_entity(entityId: "<top search hit>") // Map dependencies before changes
 2. Profile the system (identify bottlenecks)
 3. find_similar_patterns(description: "optimization for [bottleneck]", category: "performance")
 4. Implement optimization following patterns
 5. Benchmark improvement
-6. AFTER optimization:
+6. If regressions or repeated failures surface:
+   a. match_bug_fix(query: "Optimization regression summary", errorMessage: "[log output]")
+   b. Apply suggested remediation or confirm the fix is new
+7. AFTER optimization:
    a. store_pattern with before/after metrics if reusable
-   b. Document in docs/perf/perf-[date].md
+   b. record_bug_fix(...) for new fixes and save the returned `issue`
+   c. Document in docs/perf/perf-[date].md
 ````
 
 ### Example: Optimizing Rendering Pipeline

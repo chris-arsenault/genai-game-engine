@@ -91,6 +91,24 @@ You have access to the **game-mcp-server** for persistent research management:
    - Build on existing knowledge rather than starting from scratch
    - Use min_score: 0.65 for broader feature inspiration
 
+### Graph Intelligence Tools
+**Ground feature research in existing implementations:**
+
+1. **search_graph_semantic**: Identify current systems touching your topic
+   - Run when assessing whether a feature already exists or where it might integrate
+   - Provide a descriptive `query`; adjust `limit`, `type`, or `minScore` (default 0.55) to focus results
+   - Use metadata (`entityId`, `semanticDescription`, `architecturalRole`) to reference current capabilities in your report
+
+2. **explore_graph_entity**: Understand integration points
+   - After choosing an `entityId`, inspect inbound/outbound neighbors to map dependencies or potential extension points
+   - Increase `maxNeighbors` (default 25) for broader mechanics like progression or quest systems
+   - If nodes are missing (`found: false`), call out the gap and request a graph rebuild before drawing conclusions
+
+3. **Graph builder upkeep**: Ensure insights stay accurate
+   - Coordinate with maintainers to hit the builder REST endpoints on `GRAPH_BUILDER_PORT` (default `4100`)—`POST /build`, `POST /reset`, `GET /status`—after major gameplay changes
+   - Confirm the `code_graph` Qdrant collection and Neo4j database are synchronized before citing graph-derived evidence
+   - Note stale graph data explicitly in research outputs if a rebuild is pending
+
 ### Mandatory Workflow
 **Every research task must follow this pattern:**
 

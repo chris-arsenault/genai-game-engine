@@ -201,19 +201,61 @@ You have access to the **game-mcp-server** for code pattern consistency:
    - Describe your approach and get validation
    - Catches inconsistencies early in development
 
+### Graph Intelligence Tools
+**Ground implementations in the current project topology:**
+
+1. **search_graph_semantic**: Locate relevant systems
+   - Run **before editing** to surface files/classes connected to your task
+   - Provide a natural-language `query`, optionally `limit` (1-20), `type`, and `minScore` (default 0.55)
+   - Use results (`entityId`, `semanticDescription`, `architecturalRole`) to anchor work in the correct modules
+
+2. **explore_graph_entity**: Map dependencies for a target entity
+   - Call after selecting an `entityId` to inspect inbound/outbound relationships
+   - Adjust `maxNeighbors` (default 25) when exploring large subsystems
+   - If `found: false`, perform a manual repo scan and flag the gap for a graph rebuild
+
+3. **Graph builder upkeep**: Keep Neo4j/Qdrant data fresh
+   - The builder now runs as a REST service on `GRAPH_BUILDER_PORT` (default `4100`)
+   - Use `POST /build` (`mode`: `full`/`incremental`, `stage`: `all|parse|enrich|populate`) after significant refactors
+   - `POST /reset` clears caches; poll `GET /status` to confirm completion before trusting graph output
+
+### Bug-Fix Memory Tools
+**Reuse canonical fixes and prevent regressions:**
+
+1. **match_bug_fix**: Diagnose recurring failures
+   - When tests fail or runtime errors appear, send both the code context (`query`) and raw log text (`errorMessage`)
+   - Review `match_reason` to see whether the hit came from an exact log match or semantic similarity
+   - Leverage returned snippets/notes before reaching for external debugging
+
+2. **get_bug_fix**: Retrieve stored remediations
+   - Use the `issue` identifier from a prior `record_bug_fix` call to reapply fixes during multi-step work
+   - Ensures follow-up tasks stay aligned with the original correction
+
+3. **record_bug_fix**: Persist new fixes
+   - After resolving an issue, store the corrected code plus representative logs
+   - Populate `incorrect_patterns` (required) and any normalized `error_messages`; the tool lowercases errors for matching
+   - Save the returned `issue` ID in your notes for future retrieval
+   - Re-record legacy fixes created before this upgrade so embeddings stay up to date
+
 ### Workflow Integration
 **Mandatory for every implementation task:**
 
 ````
 1. Read implementation plan
 2. BEFORE coding:
-   a. find_similar_patterns(description: "What you're building")
-   b. Review returned patterns for guidance
+   a. search_graph_semantic(query: "What you're building")
+   b. explore_graph_entity(entityId: "<top search hit>") // Understand dependencies
+   c. find_similar_patterns(description: "What you're building")
+   d. Review returned graph insights and patterns for guidance
 3. Implement following discovered patterns
-4. AFTER implementation:
+4. If tests or runtime checks fail:
+   a. match_bug_fix(query: "Summary of failure", errorMessage: "[log output]")
+   b. Apply retrieved fixes or notes
+5. AFTER implementation:
    a. validate_against_patterns(content: "[your code]", type: "code")
    b. If reusable, store_pattern with clear examples
-5. Write tests and commit
+   c. record_bug_fix(...) for any new fixes you created, and capture the returned `issue`
+6. Write tests and commit
 ````
 
 ### Example: Implementing Component System

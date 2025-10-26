@@ -107,6 +107,24 @@ You have access to the **game-mcp-server** for persistent research management:
    - Helps identify patterns across different mechanic types
    - Use min_score: 0.65 for cross-genre inspiration
 
+### Graph Intelligence Tools
+**Relate gameplay research to current code implementations:**
+
+1. **search_graph_semantic**: Discover implemented mechanics
+   - Run when researching a mechanic to see how it currently appears in the codebase
+   - Provide a natural-language `query`; adjust `limit`, `type`, or `minScore` (default 0.55) for focus
+   - Use `semanticDescription` and `architecturalRole` fields to cite real systems in your findings
+
+2. **explore_graph_entity**: Understand mechanic touchpoints
+   - After selecting an `entityId`, inspect inbound/outbound relationships to map dependencies (e.g., systems, narrative hooks)
+   - Increase `maxNeighbors` (default 25) when mechanics span multiple subsystems such as progression or AI
+   - Flag any `found: false` results and request a graph rebuild before assuming the feature is absent
+
+3. **Graph builder upkeep**: Maintain accurate references
+   - Coordinate `POST /build` or `POST /reset` calls to the builder REST service (`GRAPH_BUILDER_PORT` default `4100`) after significant gameplay updates
+   - Poll `GET /status` to confirm completion before publishing recommendations
+   - Verify the `code_graph` Qdrant collection mirrors Neo4j updates; document stale sections in your report if alignment is pending
+
 ### Workflow Integration
 **Every research task MUST follow this sequence:**
 
