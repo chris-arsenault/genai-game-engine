@@ -8,6 +8,30 @@
 
 ---
 
+## 🚨 CRITICAL: Game Loading Blocked - Requires Immediate Attention
+
+**BLOCKER REPORTED BY PRODUCT OWNER**: The game does not load locally in the browser.
+
+**Error**:
+```
+this.events.subscribe is not a function
+  at PlayerMovementSystem.init (PlayerMovementSystem.js:26:17)
+```
+
+**Root Cause**: Unimplemented engine functions near the top of `game.ts` (or `src/game/Game.js`). EventBus is not properly wired to systems.
+
+**Impact**:
+- ❌ **Product owner cannot validate any work**
+- ❌ Manual testing completely blocked
+- ❌ Cannot verify new investigation system implementation
+- ❌ Demo preparation impossible
+
+**Action Required**: See **PO-001** in `/docs/plans/backlog.md` for detailed fix instructions. This MUST be addressed as the first task in next session before any other work.
+
+**Estimated Fix Time**: 2-4 hours
+
+---
+
 ## Executive Summary
 
 This autonomous session successfully completed **Milestone 1** validation and delivered **70% of Sprint 2** (Investigation Mechanics). Three specialized agents coordinated to deliver:
