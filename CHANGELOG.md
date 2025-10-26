@@ -157,17 +157,145 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.0] - 2025-10-26
+
+### Added - Sprint 1: Core Engine Implementation (M1)
+
+**Complete Engine Systems**:
+- **ECS Core**: EntityManager, ComponentRegistry, SystemManager with query optimization
+  - Entity pooling for zero-allocation
+  - Smallest-set query optimization
+  - Priority-based system execution
+  - Dynamic system enable/disable
+- **Rendering Pipeline**: Full Canvas 2D rendering with optimizations
+  - Layered renderer (static, dynamic, UI layers)
+  - Camera with follow, zoom, and shake effects
+  - Dirty rectangle optimization (60-80% redraw reduction)
+  - RenderSystem with viewport culling
+  - ObjectPool for GC optimization
+- **Physics System**: Spatial hash collision detection
+  - SpatialHash achieving 98% collision check reduction (850 vs 499,500 for 1,000 entities)
+  - AABB and Circle collision algorithms
+  - MovementSystem with velocity integration
+  - TriggerSystem for narrative events (stub)
+- **Event System**: EventBus with pub/sub pattern
+  - Priority-based handler execution
+  - Wildcard subscriptions (`entity:*`)
+  - One-time subscriptions
+  - Event queuing support
+- **Asset Management**: Lazy loading and reference counting
+  - AssetLoader with retry logic
+  - AssetManager with priority-based loading (Critical/District/Optional)
+  - Support for images, JSON, audio
+- **Game Loop**: requestAnimationFrame with fixed timestep
+  - Pause/resume without delta spikes
+  - Comprehensive metrics (FPS, frame time, min/max/avg)
+  - 55-65 FPS sustained performance
+  - Delta time accuracy within ±5%
+
+**Test Suite**:
+- **595 tests** across 19 test suites
+  - EntityManager: 54 tests (98.77% coverage)
+  - ComponentRegistry: 54 tests (100% coverage)
+  - SystemManager: 54 tests (97.56% coverage)
+  - Renderer systems: 126 tests (81.61% coverage)
+  - Physics systems: 139 tests (78.13% coverage, 13 failures)
+  - EventBus: 42 tests (100% coverage)
+  - Assets: 75 tests (71.65% coverage)
+  - GameLoop: 68 tests (98.82% coverage)
+  - Vector2: 60 tests (100% coverage)
+- **Pass rate**: 97.6% (581 passing, 14 failing)
+- **Coverage**: 50.84% overall, 72.85% engine modules
+
+**Performance Benchmarks**:
+- GameLoop: 55-65 FPS sustained, 50-60 FPS under load
+- Spatial hash: 98% collision check reduction
+- Delta time accuracy: ±5% variance
+- Frame consistency: <50ms variance
+- Pause/resume: No frame skips or delta spikes
+
+**Documentation**:
+- GameLoop implementation report (`docs/reports/M1-023-gameloop-implementation.md`)
+- M1 validation report (`docs/reports/M1-VALIDATION-REPORT.md`)
+- Sprint 1 summary report (`docs/reports/sprint-1-summary.md`)
+- Updated autonomous session handoff
+
+**Code Metrics**:
+- ~8,000 lines of code (engine + game)
+- ~5,000 lines of test code
+- 34 engine files
+- 19 test files
+- Average file size: ~150 lines
+
+### Known Issues - Sprint 1
+
+**CRITICAL** (must fix before Sprint 2):
+- ❌ **CollisionSystem broken**: 13 tests failing due to component type property collision
+  - Root cause: `type` property used by both ECS system and game components
+  - Impact: Physics collision detection non-functional
+  - **BLOCKS M2**: Investigation mechanics require collision/interaction zones
+- ❌ **Logger.js parse error**: Syntax error at line 8 prevents build
+- ❌ **Test coverage below targets**: 50.84% overall (need 60%), 72.85% engine (need 80%)
+  - Entity.js: 0% coverage (no tests)
+  - Component.js: 0% coverage (no tests)
+  - System.js: 53.84% coverage (below target)
+- ❌ **M1-024 Full Integration Test**: Not implemented (required for validation)
+- ❌ **M1-025 Performance Profiling**: Not implemented (required for validation)
+
+**HIGH PRIORITY** (should fix soon):
+- ⚠️ 70 linting errors, 58 warnings
+  - 23 unused variables
+  - 24 missing curly braces
+  - 22 console.log statements (should use Logger)
+- ⚠️ CollisionSystem complexity: 28 (target: 10), 114 lines (target: 50)
+- ⚠️ AssetManager: 303 lines (3 lines over 300 limit)
+
+**MEDIUM PRIORITY** (defer if needed):
+- EventQueue not implemented (M1-018)
+- Event naming conventions documentation missing (M1-019)
+- ECS usage guide missing (M1-006)
+- Architecture documentation incomplete (M1-026)
+
+### Performance
+
+**Validated Benchmarks**:
+- ✅ GameLoop: 55-65 FPS sustained
+- ✅ Spatial hash: 98% collision check reduction
+- ✅ Delta time: ±5% accuracy
+
+**Not Yet Measured** (M1-025 required):
+- Entity creation: Target <100ms for 10,000 entities
+- Component queries: Target <1ms for 1,000 entities
+- Rendering: Target 60 FPS with 500 sprites
+- Memory: Target <150MB usage, zero leaks
+- GC pauses: Target <10ms, <3 per minute
+
+### Technical Specifications - Sprint 1
+
+**Architecture**:
+- Custom lightweight ECS (no dependencies)
+- Canvas 2D rendering with layering
+- Spatial hash O(n) collision detection
+- requestAnimationFrame game loop
+- Event-driven system communication
+
+**Sprint Metrics**:
+- Development time: ~4 hours autonomous session
+- Tasks completed: 20/27 (74%)
+- P0 tasks: 9/10 (90%)
+- P1 tasks: 5/9 (56%)
+- P2 tasks: 1/8 (13%)
+
 ## [Unreleased]
 
-### Planned - Phase 1: Core Mechanics (Weeks 3-5)
-- Player movement implementation (walk, run, jump)
-- Physics system with spatial hash collision (active)
-- Input system (keyboard, mouse, gamepad)
-- Camera follow and viewport culling (active)
-- Tile-based world rendering
-- Basic UI framework (HUD, menus)
-- Unit test suite (80% engine coverage target)
-- Integration tests for core systems
+### Planned - Sprint 2: Investigation Mechanics (M2, Weeks 4-6)
+- Evidence collection system
+- Deduction board UI (graph-based clue connections)
+- Forensic analysis minigames
+- Case management system
+- Detective vision ability
+- Tutorial case ("The Hollow Case")
+- Requires: CollisionSystem fix for interaction zones
 
 ---
 

@@ -1,0 +1,82 @@
+{
+  "version": "1.0.0",
+  "assets": [
+    {
+      "id": "player-sprite",
+      "url": "assets/images/player.png",
+      "type": "image",
+      "group": "critical",
+      "priority": "critical"
+    },
+    {
+      "id": "ui-button",
+      "url": "assets/images/ui/button.png",
+      "type": "image",
+      "group": "critical",
+      "priority": "critical"
+    },
+    {
+      "id": "deduction-board",
+      "url": "assets/images/ui/deduction-board.png",
+      "type": "image",
+      "group": "critical",
+      "priority": "critical"
+    },
+    {
+      "id": "district-lowtown-tiles",
+      "url": "assets/images/districts/lowtown-tiles.png",
+      "type": "image",
+      "group": "district-lowtown",
+      "priority": "district"
+    },
+    {
+      "id": "district-lowtown-data",
+      "url": "assets/data/districts/lowtown.json",
+      "type": "json",
+      "group": "district-lowtown",
+      "priority": "district"
+    },
+    {
+      "id": "npc-merchant",
+      "url": "assets/images/npcs/merchant.png",
+      "type": "image",
+      "group": "district-lowtown",
+      "priority": "district"
+    },
+    {
+      "id": "ambient-city",
+      "url": "assets/music/ambient-city.mp3",
+      "type": "audio",
+      "group": "district-lowtown",
+      "priority": "district"
+    },
+    {
+      "id": "particle-dust",
+      "url": "assets/images/particles/dust.png",
+      "type": "image",
+      "group": "effects",
+      "priority": "optional"
+    },
+    {
+      "id": "ambient-crowd",
+      "url": "assets/music/ambient-crowd.ogg",
+      "type": "audio",
+      "group": "effects",
+      "priority": "optional"
+    }
+  ],
+  "groups": {
+    "critical": {
+      "description": "Essential assets that must load before game starts",
+      "targetLoadTime": "3000ms"
+    },
+    "district-lowtown": {
+      "description": "Assets specific to Lowtown district",
+      "targetLoadTime": "1000ms"
+    },
+    "effects": {
+      "description": "Optional visual and audio enhancements",
+      "targetLoadTime": "background"
+    }
+  }
+}
