@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Memory Syndicate</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    #game-container {
+      position: relative;
+      width: 1280px;
+      height: 720px;
+      max-width: 100vw;
+      max-height: 100vh;
+    }
+
+    #game-canvas {
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      background: #1a1a2e;
+    }
+
+    #loading-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+      z-index: 1000;
+    }
+
+    #loading-screen.hidden {
+      display: none;
+    }
+
+    .loading-text {
+      font-size: 24px;
+      margin-bottom: 20px;
+      color: #00ffff;
+    }
+
+    .loading-bar {
+      width: 300px;
+      height: 20px;
+      background: #333;
+      border: 2px solid #00ffff;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .loading-progress {
+      height: 100%;
+      background: linear-gradient(90deg, #00ffff, #0066ff);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    #debug-overlay {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: #0f0;
+      font-family: monospace;
+      font-size: 12px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px;
+      border-radius: 4px;
+      pointer-events: none;
+      display: none;
+    }
+
+    #debug-overlay.visible {
+      display: block;
+    }
+  </style>
+  <script type="module" crossorigin src="/assets/index-D68lWoXR.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/engine-Dl-Z51O5.js">
+  <link rel="modulepreload" crossorigin href="/assets/renderer-CR3FKh3K.js">
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="game-canvas" width="1280" height="720"></canvas>
+
+    <div id="loading-screen">
+      <div class="loading-text">Loading The Memory Syndicate...</div>
+      <div class="loading-bar">
+        <div class="loading-progress" id="loading-progress"></div>
+      </div>
+    </div>
+
+    <div id="debug-overlay">
+      <div id="debug-fps">FPS: 0</div>
+      <div id="debug-entities">Entities: 0</div>
+      <div id="debug-memory">Memory: 0 MB</div>
+      <div id="debug-frame-time">Frame: 0 ms</div>
+    </div>
+  </div>
+
+</body>
+</html>
