@@ -80,6 +80,69 @@ src/
 - Atomic commits: one logical change per commit
 - Include short note in commit body describing narrative or genre impact for feature-level commits
 
+## MCP Server: Long-Term State Management
+
+This project uses **game-mcp-server** for persistent knowledge management across sessions. All agents have access to specialized tools for their domain:
+
+### Tool Categories by Agent Type
+
+**Research Agents** (research-engine, research-features, research-gameplay):
+- `check_research_exists` - Check before starting new research
+- `cache_research` - Store all research findings permanently
+- `query_research` - Search existing research
+
+**Architecture & Planning** (architect):
+- `store_architecture_decision` - Document all design decisions
+- `query_architecture` - Search past architectural decisions
+- `check_consistency` - Validate new designs against existing patterns
+
+**Development Agents** (engine-dev, gameplay-dev):
+- `store_pattern` - Document reusable code patterns
+- `find_similar_patterns` - Search patterns before implementing
+- `validate_against_patterns` - Check code consistency
+- `get_pattern_by_name` - Retrieve specific patterns
+
+**Narrative Team** (narrative-writer, narrative-world-building, narrative-dialog):
+- `store_narrative_element` - Store acts, quests, characters, beats
+- `search_narrative_elements` - Find related narrative content
+- `get_narrative_outline` - Retrieve ordered narrative structure
+- `store_lore_entry` - Document factions, locations, artifacts, history
+- `search_lore` - Find world-building content
+- `list_lore` - Browse lore by category/region
+- `store_dialogue_scene` - Store dialogue with branching
+- `find_dialogue` - Search dialogue by character/tone
+- `get_dialogue_scene` - Retrieve complete scenes
+
+**Testing & Quality** (test-engineer, playtester, optimizer):
+- `store_test_strategy` - Document test plans and coverage
+- `query_test_strategies` - Search existing tests
+- `list_test_strategies_by_focus` - Browse tests by system
+- `record_playtest_feedback` - Store playtest session findings
+- `query_playtest_feedback` - Search past feedback
+- `summarize_playtest_feedback` - Get feedback overview
+
+**Documentation** (documenter):
+- Access to ALL query tools across domains
+- Use to gather comprehensive context before documenting
+
+### Core Principles
+
+1. **Query Before Creating**: Always check if similar content exists
+2. **Store Immediately**: Cache all work immediately after completion
+3. **Use Tags**: Tag content extensively for discoverability
+4. **Link Content**: Use `related_ids` to connect related elements
+5. **Maintain Consistency**: Validate against existing patterns and decisions
+
+### Benefits
+
+- **Eliminates redundant work** across sessions and agents
+- **Maintains consistency** in code, narrative, and world-building
+- **Builds cumulative knowledge** over project lifetime
+- **Enables complex dependencies** through content linking
+- **Accelerates development** by reusing proven patterns
+
+**All agents must use MCP tools as specified in their individual agent files.**
+
 ## Important Notes
 - ALWAYS run tests before committing
 - NEVER commit commented-out code
@@ -87,3 +150,4 @@ src/
 - ALWAYS coordinate with narrative and world-building docs when introducing new mechanics or locations
 - NEVER generate bespoke art/audio/3D assets directly; log needs in `assets/<type>/requests.json` with clear descriptions and target paths
 - USE sub-agents proactively based on task type, focusing on medium-complexity scope and genre mashups
+- USE MCP server tools extensively - query before creating, store after completing
