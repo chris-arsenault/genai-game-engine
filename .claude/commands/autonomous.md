@@ -17,6 +17,24 @@ Launch a fully autonomous development cycle (minus direct asset creation) starti
 3. Never generate bespoke audio/visual/3D assets directly. Append detailed entries to `assets/music/requests.json`, `assets/images/requests.json`, or `assets/models/requests.json` with placement guidance whenever new media is required.
 4. Always prioritize maintainability: tests before merge, documentation kept current, performance budgets respected.
 
+## Session Initialization: Load Previous Handoff
+**CRITICAL: This must be the FIRST task performed in every autonomous session.**
+
+Before any planning or implementation work begins:
+````
+1. Use the MCP tool `fetch_handoff` to retrieve the most recent session handoff notes.
+2. Review the handoff content to understand:
+   - Current project state and sprint progress
+   - Completed milestones and deliverables
+   - Remaining tasks and recommendations
+   - Known issues or blockers
+   - Test status and performance metrics
+3. Use this information to determine the correct starting point for this session.
+4. If no handoff exists (first session), proceed with Phase 0: Project Bootstrap.
+````
+
+**Why this matters**: The handoff ensures continuity across sessions and prevents starting from an outdated checkpoint. Always fetch the handoff before any other work.
+
 ## Phase 0: Project Bootstrap (First Run or Empty Repo)
 ````
 1. Research-team huddle:
@@ -80,8 +98,36 @@ For each sprint:
 - Maintain asset request logs as the single source of truth for external media requirements.
 - Monitor session clock; target 8 hours of implementation work for meaningful progress, but ensure at least 2 hours of work before stopping. Always stop before 24 hours elapse and prepare comprehensive handoff documentation.
 
+## Session Completion: Store Handoff
+**CRITICAL: This must be the LAST task performed before ending an autonomous session.**
+
+At the end of every session, create a comprehensive handoff document:
+````
+1. Create a detailed handoff report in `docs/reports/autonomous-session-[N]-handoff.md` containing:
+   - Executive summary of session achievements
+   - Sprint progress and completion status
+   - Test metrics and coverage
+   - Files modified/created
+   - MCP knowledge base updates
+   - Design decisions made
+   - Recommendations for next session
+   - Known issues or blockers
+   - Performance metrics
+   - Complete handoff checklist for team review
+
+2. Use the MCP tool `store_handoff` to save this handoff content for the next session.
+   - Parameter: `content` - Full markdown content of the handoff document
+   - Parameter: `updated_by` - "autonomous-session-[N]"
+   - Parameter: `tags` - Relevant tags like sprint numbers, systems worked on
+
+3. Verify both the file and MCP storage succeeded before ending the session.
+````
+
+**Why this matters**: Storing the handoff in both locations ensures the next session has reliable access to the current project state, preventing rework and maintaining continuity.
+
 ## Completion Criteria
 - Playable vertical slice demonstrating chosen hybrid genre mechanics.
 - Cohesive narrative arc with at least one consequential player decision.
 - Performance targets met (60 FPS baseline) and coverage thresholds satisfied.
 - Documentation and asset requests up to date, enabling smooth handoff for further development.
+- **Handoff document created and stored in BOTH file system and MCP tool.**
