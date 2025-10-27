@@ -200,21 +200,63 @@ You have access to the **game-mcp-server** for gameplay code consistency:
    - Example: `query_architecture(query: "player movement design decisions")`
    - Ensures implementations match architectural intent
 
+### Graph Intelligence Tools
+**Anchor gameplay code in the current project graph:**
+
+1. **search_graph_semantic**: Locate relevant gameplay modules
+   - Run **before writing code** to find existing controllers, systems, or data assets
+   - Provide a natural-language `query`; adjust `limit`, `type`, or `minScore` (default 0.55) as needed
+   - Use returned `entityId`, `semanticDescription`, and `architecturalRole` to pick the correct integration points
+
+2. **explore_graph_entity**: Understand systemic relationships
+   - After selecting an `entityId`, inspect inbound/outbound connections to see event, narrative, or physics hooks
+   - Tune `maxNeighbors` (default 25) if you need a wider neighborhood view
+   - Flag `found: false` responses and request a graph rebuild before trusting the data
+
+3. **Graph builder maintenance**: Keep graph data usable
+   - The builder exposes REST endpoints on `GRAPH_BUILDER_PORT` (default `4100`): `POST /build`, `POST /reset`, `GET /status`
+   - Schedule `mode: "incremental"` builds after gameplay tweaks; use `stage` overrides for targeted rebuilds
+   - Ensure `code_graph` (Qdrant) and Neo4j stay in sync to avoid stale recommendations
+
+### Bug-Fix Memory Tools
+**Close the loop on gameplay regressions:**
+
+1. **match_bug_fix**: Diagnose familiar failures
+   - For failing tests or runtime logs, send both the gameplay context (`query`) and raw log text (`errorMessage`)
+   - Inspect `match_reason` to understand whether the match came from exact log fingerprinting or semantic similarity
+   - Apply suggested fixes or anti-pattern warnings before drafting new solutions
+
+2. **get_bug_fix**: Reuse stored fixes
+   - Retrieve prior solutions by `issue` ID during multi-step gameplay polishing
+   - Keeps mechanical tuning aligned with previously validated fixes
+
+3. **record_bug_fix**: Share new gameplay fixes
+   - Store corrected snippets plus representative logs after resolving issues
+   - Always populate `incorrect_patterns` (at least one) and any `error_messages`; strings are normalized to lower-case for matching
+   - Capture the returned `issue` identifier for future reference
+   - Re-record legacy fixes that predate this upgrade so embeddings and fingerprints remain accurate
+
 ### Workflow Integration
 **For every gameplay implementation:**
 
 ````
 1. Read gameplay plan and narrative context
 2. BEFORE coding:
-   a. find_similar_patterns(description: "System being built", category: "gameplay")
-   b. query_architecture(query: "Related design decisions")
-   c. Review returned patterns and decisions
+   a. search_graph_semantic(query: "System being built")
+   b. explore_graph_entity(entityId: "<top search hit>") // Understand connected systems
+   c. find_similar_patterns(description: "System being built", category: "gameplay")
+   d. query_architecture(query: "Related design decisions")
+   e. Review returned graph insights, patterns, and decisions
 3. Implement following patterns, maintaining feel consistency
 4. Tune gameplay parameters
-5. AFTER implementation:
+5. If failures occur:
+   a. match_bug_fix(query: "Gameplay failure summary", errorMessage: "[log output]")
+   b. Apply or adapt recommended fixes
+6. AFTER implementation:
    a. validate_against_patterns(content: "[gameplay code]", type: "code")
    b. store_pattern if reusable (include tuning notes)
-6. Manual playtest, write automated tests, commit
+   c. record_bug_fix(...) for new fixes; keep the returned `issue` handy
+7. Manual playtest, write automated tests, commit
 ````
 
 ### Example: Player Combat System

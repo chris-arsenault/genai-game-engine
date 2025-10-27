@@ -78,6 +78,73 @@ Nice-to-have features, polish items, or speculative improvements.
 
 ---
 
+## 🚨 PRODUCT OWNER SHORT-TERM PRIORITIES
+
+**Critical Issues Blocking Manual Validation**
+
+### PO-001: Fix Game Loading - Unable to Run Locally ⚠️
+- **Priority**: **P0 - CRITICAL BLOCKER**
+- **Tags**: `engine`, `critical`, `blocker`, `integration`
+- **Effort**: 2-4 hours
+- **Dependencies**: None (blocks all manual testing)
+- **Status**: **BLOCKING** - Game will not load
+- **Reported**: 2025-10-26 (Autonomous Session #3)
+
+**Problem**:
+Game fails to load in browser with console error:
+```
+this.events.subscribe is not a function
+  at PlayerMovementSystem.init (PlayerMovementSystem.js:26:17)
+```
+
+**Root Cause**:
+Unimplemented engine functions near the top of `game.ts` (or `src/game/Game.js`). The EventBus subscription API is not properly wired to systems.
+
+**Impact**:
+- **Cannot validate any work in browser** ❌
+- Product owner cannot review implementation ❌
+- Manual testing blocked ❌
+- Demo preparation blocked ❌
+
+**Acceptance Criteria**:
+- [x] Game loads without console errors
+- [x] PlayerMovementSystem.init() successfully subscribes to events
+- [x] All systems can access EventBus via `this.events`
+- [x] Basic game loop runs without crashes
+- [x] Product owner can see the game running in browser
+- [x] Create smoke test: Load game, verify no console errors for 10 seconds
+
+**Investigation Steps**:
+1. Check `src/game/Game.js` for incomplete EventBus wiring
+2. Verify SystemManager passes EventBus to all systems correctly
+3. Check PlayerMovementSystem.init() expects `this.events` but receives undefined
+4. Ensure Engine.js properly initializes EventBus before systems
+5. Validate all systems have access to EventBus in constructor or init
+
+**Files to Check**:
+- `src/game/Game.js` - Main game entry point
+- `src/engine/Engine.js` - Engine initialization
+- `src/engine/ecs/SystemManager.js` - System registration and EventBus passing
+- `src/game/systems/PlayerMovementSystem.js:26` - Error location
+- `src/engine/ecs/System.js` - Base system class
+
+**Expected Fix**:
+Ensure all systems receive EventBus reference either:
+- Via constructor: `constructor(componentRegistry, eventBus)`
+- Via property: `this.eventBus = eventBus` in SystemManager.registerSystem()
+
+**Testing After Fix**:
+1. Run `npm run dev`
+2. Open browser to localhost
+3. Check console for zero errors
+4. Verify PlayerMovementSystem initializes without errors
+5. Confirm game loop runs for at least 10 seconds
+6. Test basic player movement (if applicable)
+
+**Next Session**: This MUST be the first task addressed to unblock product owner validation.
+
+---
+
 ## Sprint 1: Core Engine Foundation (Weeks 1-3)
 
 **Milestone**: M1 - Core Engine

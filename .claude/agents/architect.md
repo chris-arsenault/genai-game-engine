@@ -197,6 +197,24 @@ You have access to the **game-mcp-server** for persistent state management acros
    - Find established patterns before designing new systems
    - Ensure new designs align with existing codebase conventions
 
+### Graph Intelligence Tools
+**Map system touchpoints before committing to new architecture:**
+
+1. **search_graph_semantic**: Discover relevant modules
+   - Use **before drafting** new plans or refactors to surface existing files, classes, or systems
+   - Provide a natural-language `query`, optionally `limit` (1-20), `type` (`file`, `function`, etc.), and `minScore` (default 0.55)
+   - Results include `entityId`, `semanticDescription`, and `architecturalRole` for quick alignment with design intent
+
+2. **explore_graph_entity**: Inspect structural relationships
+   - After selecting an `entityId`, fetch inbound/outbound neighbors to understand dependencies
+   - Tune `maxNeighbors` (default 25) when mapping larger subsystems
+   - If `found: false`, fall back to repo inspection and flag the missing node for graph rebuild
+
+3. **Graph builder upkeep**: Ensure graph data stays current
+   - The builder now exposes REST endpoints on `GRAPH_BUILDER_PORT` (default `4100`): `POST /build` to enqueue jobs, `POST /reset` to clear caches, `GET /status` to monitor progress
+   - Use `mode` (`full` or `incremental`) and `stage` controls when scheduling rebuilds after major architectural shifts
+   - Verify `code_graph` (Qdrant) and Neo4j stay synchronized before relying on graph insights
+
 ### Validation Tools
 **Validate architectural decisions:**
 

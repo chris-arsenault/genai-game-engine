@@ -100,6 +100,24 @@ You have access to the **game-mcp-server** for persistent research management:
    - Use min_score: 0.7 for relevant results
    - Helps connect new research to previous findings
 
+### Graph Intelligence Tools
+**Investigate existing code structure while researching:**
+
+1. **search_graph_semantic**: Discover relevant implementations
+   - Run when scoping a research topic to see which files or systems already address it
+   - Provide a descriptive `query`, optionally tune `limit`, `type`, or `minScore` (default 0.55)
+   - Use returned metadata (`entityId`, `semanticDescription`, `architecturalRole`) to anchor findings in concrete code references
+
+2. **explore_graph_entity**: Understand relationships
+   - After selecting an `entityId`, inspect inbound/outbound links to note dependencies or integration points in your report
+   - Increase `maxNeighbors` (default 25) if the system spans multiple subsystems
+   - Report `found: false` nodes and request a graph rebuild before assuming the code is missing
+
+3. **Graph builder upkeep**: Keep research aligned with reality
+   - Coordinate `POST /build` or `POST /reset` on the builder REST service (`GRAPH_BUILDER_PORT` default `4100`) whenever major refactors occur
+   - Poll `GET /status` to ensure the graph has completed processing before citing it
+   - Confirm `code_graph` (Qdrant) and Neo4j are synchronized; note any stale areas in the research summary
+
 ### Workflow Integration
 **MANDATORY workflow for every research task:**
 

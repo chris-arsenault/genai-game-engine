@@ -75,6 +75,24 @@ You have access to the **game-mcp-server** to gather comprehensive documentation
    - Links documentation to research backing
    - Provides context for why systems work this way
 
+### Graph Intelligence Tools
+**Extract structural context for technical documentation:**
+
+1. **search_graph_semantic**: Locate code entities tied to a feature
+   - Run **before writing** technical sections to find relevant files, systems, or APIs
+   - Provide a natural-language `query`; adjust `limit`, `type`, or `minScore` (default 0.55) to narrow results
+   - Use returned `entityId`, `semanticDescription`, and `architecturalRole` to reference the correct modules
+
+2. **explore_graph_entity**: Describe relationships for diagrams
+   - After choosing an `entityId`, inspect inbound/outbound neighbors to capture data flow and dependencies
+   - Increase `maxNeighbors` (default 25) when drafting broader architecture diagrams
+   - If the graph returns `found: false`, request a rebuild before publishing; otherwise flag missing coverage
+
+3. **Graph builder upkeep**: Keep structural docs accurate
+   - Coordinate with maintainers to call the builder REST endpoints on `GRAPH_BUILDER_PORT` (default `4100`)—`POST /build`, `POST /reset`, `GET /status`—after major refactors
+   - Ensure the `code_graph` Qdrant collection and Neo4j database stay synchronized before relying on graph output
+   - Note stale or missing nodes directly in release notes or doc tasks if a rebuild is pending
+
 ### Narrative & World Documentation Tools
 **Document story and world content:**
 

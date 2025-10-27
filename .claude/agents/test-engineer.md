@@ -246,17 +246,58 @@ You have access to the **game-mcp-server** for test strategy tracking:
    - Ensures you understand the system being tested
    - Helps identify edge cases
 
+### Graph Intelligence Tools
+**Discover code relationships before designing tests:**
+
+1. **search_graph_semantic**: Locate target modules
+   - Run **before building a test plan** to find files, classes, or systems tied to the feature under test
+   - Provide a descriptive `query`; adjust `limit`, `type`, or `minScore` (default 0.55) as needed
+   - Use `semanticDescription` and `architecturalRole` to scope integration and regression coverage
+
+2. **explore_graph_entity**: Map upstream/downstream dependencies
+   - After selecting an `entityId`, inspect inbound/outbound neighbors to uncover integration points
+   - Increase `maxNeighbors` (default 25) when evaluating complex pipelines
+   - If the entity is missing (`found: false`), schedule a graph rebuild or fall back to manual inspection
+
+3. **Graph builder upkeep**: Maintain trustworthy graph data
+   - Coordinate `POST /build` (full or incremental) on the builder REST service (`GRAPH_BUILDER_PORT` default `4100`) after major structural changes
+   - Issue `POST /reset` before full rebuilds and poll `GET /status` to confirm readiness
+   - Verify `code_graph` (Qdrant) and Neo4j remain synchronized prior to planning coverage
+
+### Bug-Fix Memory Tools
+**Close the loop on regressions uncovered by testing:**
+
+1. **match_bug_fix**: Triaging failures
+   - When a test fails, send both the scenario context (`query`) and raw failure output (`errorMessage`)
+   - Review the `match_reason` to know whether the hit matched via log fingerprint or semantic similarity
+   - Provide suggested remediation guidance to implementation agents or apply fixes if within scope
+
+2. **get_bug_fix**: Track fix status
+   - Use the returned `issue` ID to confirm whether a regression has an existing resolution
+   - Helpful during verification passes or when coordinating retests
+
+3. **record_bug_fix**: Document new fixes you validate
+   - After verifying a new remediation, store the corrected snippet, representative logs, and `incorrect_patterns`
+   - Always include normalized `error_messages` when available; the tool handles casing automatically
+   - Archive the `issue` identifier in your report so future test runs can reference it
+   - Re-record historical fixes (pre-upgrade) to refresh embeddings and fingerprints when you confirm they are still valid
+
 ### Workflow Integration
 **For every testing task:**
 
 ````
 1. Receive task: "Write tests for ECS Component system"
 2. BEFORE writing tests:
-   a. query_test_strategies(query: "ECS component tests", focus_area: "engine")
-   b. find_similar_patterns(description: "Component lifecycle", category: "ECS")
-   c. list_test_strategies_by_focus(focusArea: "engine")
+   a. search_graph_semantic(query: "Component lifecycle system under test")
+   b. explore_graph_entity(entityId: "<top search hit>") // Identify integration points
+   c. query_test_strategies(query: "ECS component tests", focus_area: "engine")
+   d. find_similar_patterns(description: "Component lifecycle", category: "ECS")
+   e. list_test_strategies_by_focus(focusArea: "engine")
 3. Write test files in tests/
-4. IMMEDIATELY store strategy:
+4. If failures occur during test creation or execution:
+   a. match_bug_fix(query: "Testing failure summary", errorMessage: "[log output]")
+   b. Coordinate remediation based on retrieved guidance
+5. IMMEDIATELY store strategy:
    store_test_strategy(
      title: "ECS Component Lifecycle Testing",
      focus_area: "engine",
@@ -273,6 +314,7 @@ You have access to the **game-mcp-server** for test strategy tracking:
      status: "implemented",
      tags: ["ECS", "lifecycle", "unit-test"]
    )
+6. After validating fixes, record_bug_fix(...) and note the `issue` ID in your test report if you confirmed a new remediation
 ````
 
 ### Example: Creating Integration Test Strategy
