@@ -3,6 +3,8 @@
  */
 import { Renderer } from '../../../src/engine/renderer/Renderer.js';
 import { Camera } from '../../../src/engine/renderer/Camera.js';
+import {describe} from "@jest/globals";
+import {ComponentRegistry} from "../../../src/engine/ecs/ComponentRegistry.js";
 
 describe('Renderer', () => {
   let canvas;
@@ -175,6 +177,13 @@ describe('Renderer', () => {
       expect(renderer.camera.width).toBe(1024);
       expect(renderer.camera.height).toBe(768);
     });
+  });
+
+  describe('render', () => {
+    it('should render the scene', () => {
+      const scene = renderer.render(null);
+      expect(scene).toBeDefined();
+    })
   });
 
   describe('cleanup', () => {

@@ -7,14 +7,6 @@
  * This file serves as the bridge between engine core and gameplay logic.
  */
 
-// Engine imports (will be implemented by engine-dev)
-// import { EntityManager } from '../engine/ecs/EntityManager.js';
-// import { ComponentRegistry } from '../engine/ecs/ComponentRegistry.js';
-// import { SystemManager } from '../engine/ecs/SystemManager.js';
-// import { EventBus } from '../engine/EventBus.js';
-// import { Renderer } from '../engine/renderer/Renderer.js';
-// import { Camera } from '../engine/renderer/Camera.js';
-
 // Game systems
 import { PlayerMovementSystem } from './systems/PlayerMovementSystem.js';
 import { InvestigationSystem } from './systems/InvestigationSystem.js';
