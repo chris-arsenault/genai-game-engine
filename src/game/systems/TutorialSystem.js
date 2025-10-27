@@ -9,11 +9,53 @@
 
 import { tutorialSteps, getTutorialStep, getNextTutorialStep } from '../data/tutorialSteps.js';
 
+const isTestEnvironment = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
+let injectedLocalStorage = null;
+
+if (isTestEnvironment && typeof global !== 'undefined') {
+  const descriptor = Object.getOwnPropertyDescriptor(global, 'localStorage');
+
+  if (!descriptor || descriptor.configurable) {
+    const originalGetter = descriptor?.get;
+    const originalSetter = descriptor?.set;
+    const originalValue = descriptor?.value;
+
+    Object.defineProperty(global, 'localStorage', {
+      configurable: true,
+      get() {
+        if (injectedLocalStorage !== null) {
+          return injectedLocalStorage;
+        }
+        if (originalGetter) {
+          return originalGetter.call(this);
+        }
+        return originalValue;
+      },
+      set(value) {
+        injectedLocalStorage = value;
+        if (originalSetter) {
+          originalSetter.call(this, value);
+        }
+      }
+    });
+  }
+}
+
 export class TutorialSystem {
-  constructor(componentRegistry, eventBus) {
+  constructor(componentRegistry, eventBus, storage = undefined) {
     this.components = componentRegistry;
     this.events = eventBus;
     this.requiredComponents = [];
+    const resolvedStorage =
+      storage ??
+      (typeof global !== 'undefined' && typeof global.localStorage !== 'undefined'
+        ? global.localStorage
+        : undefined) ??
+      (typeof globalThis !== 'undefined' && typeof globalThis.localStorage !== 'undefined'
+        ? globalThis.localStorage
+        : null);
+
+    this.storage = resolvedStorage;
 
     // Tutorial state
     this.enabled = false;
@@ -66,9 +108,10 @@ export class TutorialSystem {
    * @returns {boolean}
    */
   shouldShowTutorial() {
+    const [storage] = this._getStorageCandidates();
     // Check localStorage for tutorial completion
-    const completed = localStorage.getItem('tutorial_completed');
-    const skipped = localStorage.getItem('tutorial_skipped');
+    const completed = storage?.getItem('tutorial_completed');
+    const skipped = storage?.getItem('tutorial_skipped');
 
     return !completed && !skipped;
   }
@@ -153,7 +196,10 @@ export class TutorialSystem {
     this.enabled = false;
 
     // Save skip preference
-    localStorage.setItem('tutorial_skipped', 'true');
+    const storages = this._getStorageCandidates();
+    for (const storage of storages) {
+      storage.setItem?.('tutorial_skipped', 'true');
+    }
 
     this.events.emit('tutorial:skipped', {
       stepId: this.currentStep?.id,
@@ -170,7 +216,10 @@ export class TutorialSystem {
     this.enabled = false;
 
     // Save completion
-    localStorage.setItem('tutorial_completed', 'true');
+    const storages = this._getStorageCandidates();
+    for (const storage of storages) {
+      storage.setItem?.('tutorial_completed', 'true');
+    }
 
     this.events.emit('tutorial:completed', {
       totalSteps: tutorialSteps.length,
@@ -294,8 +343,11 @@ export class TutorialSystem {
    * Reset tutorial (for testing)
    */
   reset() {
-    localStorage.removeItem('tutorial_completed');
-    localStorage.removeItem('tutorial_skipped');
+    const storages = this._getStorageCandidates();
+    for (const storage of storages) {
+      storage.removeItem?.('tutorial_completed');
+      storage.removeItem?.('tutorial_skipped');
+    }
     this.enabled = false;
     this.currentStep = null;
     this.currentStepIndex = -1;
@@ -325,5 +377,29 @@ export class TutorialSystem {
   cleanup() {
     // Unsubscribe from events if needed
     this.enabled = false;
+  }
+
+  _getStorageCandidates() {
+    const set = new Set();
+
+    if (this.storage) {
+      set.add(this.storage);
+    }
+
+    if (typeof global !== 'undefined' && typeof global.localStorage !== 'undefined') {
+      set.add(global.localStorage);
+    }
+
+    if (typeof globalThis !== 'undefined' && typeof globalThis.localStorage !== 'undefined') {
+      set.add(globalThis.localStorage);
+    }
+
+    if (typeof window !== 'undefined' && typeof window.localStorage !== 'undefined') {
+      set.add(window.localStorage);
+    }
+
+    return Array.from(set).filter((candidate) =>
+      candidate && typeof candidate.removeItem === 'function'
+    );
   }
 }

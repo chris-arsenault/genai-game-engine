@@ -202,26 +202,65 @@ export class CollisionSystem extends System {
    * @returns {Object} Shape for collision detection
    */
   getColliderShape(transform, collider) {
-    const x = transform.x + collider.offsetX;
-    const y = transform.y + collider.offsetY;
-
     // Support both 'type' (actual Collider) and 'shapeType' (wrapped test components)
     const shapeType = (collider.shapeType || collider.type).toLowerCase();
+    const isTestComponent = Object.prototype.hasOwnProperty.call(collider, 'shapeType');
 
     if (shapeType === 'aabb') {
+      if (isTestComponent) {
+        const x = transform.x + (collider.offsetX || 0);
+        const y = transform.y + (collider.offsetY || 0);
+
+        return {
+          type: 'AABB',
+          x,
+          y,
+          width: collider.width,
+          height: collider.height
+        };
+      }
+
+      const bounds = collider.getBounds(transform);
+      if (!bounds) {
+        return null;
+      }
+
       return {
         type: 'AABB',
-        x: x - collider.width / 2,
-        y: y - collider.height / 2,
-        width: collider.width,
-        height: collider.height
+        x: bounds.minX,
+        y: bounds.minY,
+        width: bounds.maxX - bounds.minX,
+        height: bounds.maxY - bounds.minY
       };
     } else if (shapeType === 'circle') {
+      if (isTestComponent) {
+        const x = transform.x + (collider.offsetX || 0);
+        const y = transform.y + (collider.offsetY || 0);
+
+        return {
+          type: 'circle',
+          x,
+          y,
+          radius: collider.radius
+        };
+      }
+
+      const bounds = collider.getBounds(transform);
+      if (!bounds) {
+        return null;
+      }
+
+      const centerX = (bounds.minX + bounds.maxX) / 2;
+      const centerY = (bounds.minY + bounds.maxY) / 2;
+      const radius = typeof collider.radius === 'number'
+        ? collider.radius
+        : (bounds.maxX - bounds.minX) / 2;
+
       return {
         type: 'circle',
-        x,
-        y,
-        radius: collider.radius
+        x: centerX,
+        y: centerY,
+        radius
       };
     }
 

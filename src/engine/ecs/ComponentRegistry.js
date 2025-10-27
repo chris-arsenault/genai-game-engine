@@ -21,16 +21,24 @@ export class ComponentRegistry {
 
   /**
    * Adds a component to an entity.
+   * Accepts either (entityId, component) or (entityId, componentType, component).
    * @param {number} entityId - Entity ID
-   * @param {Component} component - Component instance
-   * @throws {Error} If entity doesn't exist
+   * @param {Component|string} componentOrType - Component instance or explicit type name
+   * @param {Component} [maybeComponent] - Component instance when type provided separately
+   * @throws {Error} If entity doesn't exist or component info is incomplete
    */
-  addComponent(entityId, component) {
+  addComponent(entityId, componentOrType, maybeComponent) {
     if (!this.entityManager.hasEntity(entityId)) {
       throw new Error(`Cannot add component to non-existent entity ${entityId}`);
     }
 
-    const componentType = component.type;
+    const explicitType = typeof componentOrType === 'string';
+    const component = explicitType ? maybeComponent : componentOrType;
+    const componentType = explicitType ? componentOrType : component?.type;
+
+    if (!componentType || !component) {
+      throw new Error('Component type and instance are required when adding a component');
+    }
 
     // Create component type storage if needed
     if (!this.components.has(componentType)) {

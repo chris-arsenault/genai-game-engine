@@ -52,7 +52,11 @@ export class NPC {
    * Update last interaction timestamp
    */
   updateInteraction() {
-    this.lastInteraction = Date.now();
+    const now = Date.now();
+    // Ensure interaction timestamp advances even during rapid successive updates
+    this.lastInteraction = this.lastInteraction !== null
+      ? Math.max(now, this.lastInteraction + 1)
+      : now;
   }
 
   /**
