@@ -8,62 +8,18 @@
  * Queries: [FactionMember]
  */
 
-import { GameConfig, getFactionAttitudeThresholds } from '../config/GameConfig.js';
-
 export class FactionReputationSystem {
-  constructor(componentRegistry, eventBus) {
+  constructor(componentRegistry, eventBus, factionManager) {
     this.components = componentRegistry;
     this.events = eventBus;
+    this.factionManager = factionManager;
     this.requiredComponents = ['FactionMember'];
 
-    // Faction relationships (which factions are allies/enemies)
-    this.factionRelationships = this.initializeFactionRelationships();
-
-    // District control
+    // District control (maps district IDs to controlling faction IDs)
     this.districtControl = new Map();
 
     // Player faction member (cached for performance)
     this.playerFactionMember = null;
-  }
-
-  /**
-   * Initialize faction relationship web
-   * @returns {Map}
-   */
-  initializeFactionRelationships() {
-    const relationships = new Map();
-
-    // Police faction
-    relationships.set('police', {
-      allies: ['neurosynch'],
-      enemies: ['criminals', 'resistance']
-    });
-
-    // Criminals faction
-    relationships.set('criminals', {
-      allies: [],
-      enemies: ['police', 'neurosynch']
-    });
-
-    // NeuroSync Corporation
-    relationships.set('neurosynch', {
-      allies: ['police'],
-      enemies: ['resistance', 'criminals']
-    });
-
-    // Resistance faction
-    relationships.set('resistance', {
-      allies: [],
-      enemies: ['police', 'neurosynch']
-    });
-
-    // Civilian (neutral)
-    relationships.set('civilian', {
-      allies: [],
-      enemies: []
-    });
-
-    return relationships;
   }
 
   /**
@@ -79,11 +35,12 @@ export class FactionReputationSystem {
       this.onCaseSolved(data);
     });
 
-    // Initialize district control
-    this.districtControl.set('downtown', 'police');
-    this.districtControl.set('industrial', 'criminals');
-    this.districtControl.set('corporate_spires', 'neurosynch');
-    this.districtControl.set('archive_undercity', 'resistance');
+    // Initialize district control with new faction IDs
+    this.districtControl.set('downtown', 'vanguard_prime');
+    this.districtControl.set('industrial', 'wraith_network');
+    this.districtControl.set('corporate_spires', 'luminari_syndicate');
+    this.districtControl.set('archive_undercity', 'cipher_collective');
+    this.districtControl.set('memory_archives', 'memory_keepers');
 
     console.log('[FactionReputationSystem] Initialized');
   }
@@ -125,99 +82,22 @@ export class FactionReputationSystem {
    */
   onCaseSolved(data) {
     // Cases have faction impacts defined in their data
-    // For tutorial implementation, give small police reputation boost
-    if (this.playerFactionMember) {
-      this.modifyReputation('police', 10, 0, 'Case solved');
-    }
+    // For tutorial implementation, give small Vanguard Prime reputation boost
+    this.modifyReputation('vanguard_prime', 10, 0, 'Case solved');
   }
 
   /**
    * Modify player reputation with faction
+   * Delegates to FactionManager which handles cascading automatically
    * @param {string} factionId
    * @param {number} fameDelta
    * @param {number} infamyDelta
    * @param {string} reason
    */
   modifyReputation(factionId, fameDelta, infamyDelta, reason = '') {
-    if (!this.playerFactionMember) return;
-
-    const oldRep = this.playerFactionMember.getReputation(factionId);
-    const oldAttitude = this.playerFactionMember.getAttitude(
-      factionId,
-      getFactionAttitudeThresholds(factionId)
-    );
-
-    // Modify reputation
-    this.playerFactionMember.modifyReputation(factionId, fameDelta, infamyDelta);
-
-    const newRep = this.playerFactionMember.getReputation(factionId);
-    const newAttitude = this.playerFactionMember.getAttitude(
-      factionId,
-      getFactionAttitudeThresholds(factionId)
-    );
-
-    // Emit reputation change event
-    this.events.emit('reputation:changed', {
-      factionId,
-      oldFame: oldRep.fame,
-      newFame: newRep.fame,
-      oldInfamy: oldRep.infamy,
-      newInfamy: newRep.infamy,
-      reason
-    });
-
-    // Check for attitude change
-    if (oldAttitude !== newAttitude) {
-      this.events.emit('faction:attitude_changed', {
-        factionId,
-        oldAttitude,
-        newAttitude
-      });
-
-      console.log(`[FactionReputationSystem] ${factionId} attitude: ${oldAttitude} → ${newAttitude}`);
-    }
-
-    // Cascade reputation to allies and enemies
-    this.cascadeReputation(factionId, fameDelta, infamyDelta);
-
-    console.log(`[FactionReputationSystem] ${factionId} reputation: ${newRep.fame} fame, ${newRep.infamy} infamy (${reason})`);
-  }
-
-  /**
-   * Cascade reputation change to allied and enemy factions
-   * @param {string} sourceFactionId
-   * @param {number} fameDelta
-   * @param {number} infamyDelta
-   */
-  cascadeReputation(sourceFactionId, fameDelta, infamyDelta) {
-    const relationships = this.factionRelationships.get(sourceFactionId);
-    if (!relationships) return;
-
-    const multiplier = GameConfig.faction.cascadeMultiplier;
-
-    // Allies gain proportional fame/infamy
-    for (const allyId of relationships.allies) {
-      const cascadeFame = Math.floor(fameDelta * multiplier);
-      const cascadeInfamy = Math.floor(infamyDelta * multiplier);
-
-      if (cascadeFame !== 0 || cascadeInfamy !== 0) {
-        this.playerFactionMember.modifyReputation(allyId, cascadeFame, cascadeInfamy);
-
-        console.log(`[FactionReputationSystem] Cascade to ${allyId} (ally): ${cascadeFame > 0 ? '+' : ''}${cascadeFame} fame`);
-      }
-    }
-
-    // Enemies lose fame / gain infamy
-    for (const enemyId of relationships.enemies) {
-      const cascadeFame = -Math.floor(fameDelta * multiplier);
-      const cascadeInfamy = Math.floor(infamyDelta * multiplier);
-
-      if (cascadeFame !== 0 || cascadeInfamy !== 0) {
-        this.playerFactionMember.modifyReputation(enemyId, cascadeFame, cascadeInfamy);
-
-        console.log(`[FactionReputationSystem] Cascade to ${enemyId} (enemy): ${cascadeFame} fame`);
-      }
-    }
+    // Delegate to FactionManager which handles all reputation logic
+    // including cascading to allies/enemies and attitude changes
+    this.factionManager.modifyReputation(factionId, fameDelta, infamyDelta, reason);
   }
 
   /**

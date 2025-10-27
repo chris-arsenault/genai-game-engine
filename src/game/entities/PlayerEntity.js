@@ -63,18 +63,21 @@ export function createPlayerEntity(entityManager, componentRegistry, x = 0, y = 
   componentRegistry.addComponent(entityId, 'Collider', collider);
 
   // Add FactionMember component (player starts as civilian detective)
+  // Note: Reputation is now managed centrally by FactionManager
+  // This component tracks disguise state and relationship modifiers
   const factionMember = new FactionMember({
     primaryFaction: 'civilian',
     reputation: {
-      police: { fame: 10, infamy: 0 }, // Former officer
-      criminals: { fame: 0, infamy: 0 },
-      neurosynch: { fame: 5, infamy: 0 },
-      resistance: { fame: 0, infamy: 0 }
+      vanguard_prime: { fame: 10, infamy: 0 }, // Former officer
+      wraith_network: { fame: 0, infamy: 0 },
+      luminari_syndicate: { fame: 5, infamy: 0 },
+      cipher_collective: { fame: 0, infamy: 0 },
+      memory_keepers: { fame: 0, infamy: 0 }
     },
     currentDisguise: null,
     knownBy: new Set(),
     relationshipModifiers: [
-      { factionId: 'police', modifier: 1.1, reason: 'former_officer' }
+      { factionId: 'vanguard_prime', modifier: 1.1, reason: 'former_officer' }
     ]
   });
   componentRegistry.addComponent(entityId, 'FactionMember', factionMember);

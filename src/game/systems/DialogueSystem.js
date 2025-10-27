@@ -9,11 +9,11 @@
  */
 
 export class DialogueSystem {
-  constructor(componentRegistry, eventBus, caseManager = null, factionSystem = null) {
+  constructor(componentRegistry, eventBus, caseManager = null, factionManager = null) {
     this.components = componentRegistry;
     this.events = eventBus;
     this.caseManager = caseManager;
-    this.factionSystem = factionSystem;
+    this.factionManager = factionManager;
 
     // Dialogue tree registry
     this.dialogueTrees = new Map(); // treeId -> DialogueTree
@@ -312,11 +312,11 @@ export class DialogueSystem {
     }
 
     // Modify faction reputation
-    if (consequences.reputation && this.factionSystem) {
+    if (consequences.reputation && this.factionManager) {
       for (const [factionId, change] of Object.entries(consequences.reputation)) {
         const fame = change.fame || 0;
         const infamy = change.infamy || 0;
-        this.factionSystem.modifyReputation(factionId, fame, infamy, 'Dialogue choice');
+        this.factionManager.modifyReputation(factionId, fame, infamy, 'Dialogue choice');
       }
     }
 
@@ -358,11 +358,13 @@ export class DialogueSystem {
     }
 
     // Get player reputation
-    if (this.factionSystem && this.factionSystem.playerFactionMember) {
-      const factionMember = this.factionSystem.playerFactionMember;
-      for (const faction of ['police', 'criminals', 'neurosynch', 'resistance']) {
-        const rep = factionMember.getReputation(faction);
-        context.reputation[faction] = rep.fame - rep.infamy;
+    if (this.factionManager) {
+      // Use new faction IDs
+      for (const faction of ['vanguard_prime', 'luminari_syndicate', 'wraith_network', 'cipher_collective', 'memory_keepers']) {
+        const rep = this.factionManager.getReputation(faction);
+        if (rep) {
+          context.reputation[faction] = rep.fame - rep.infamy;
+        }
       }
     }
 

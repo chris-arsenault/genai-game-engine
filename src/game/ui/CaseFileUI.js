@@ -32,6 +32,9 @@ export class CaseFileUI {
     this.visible = false;
     this.caseData = null;
 
+    // EventBus for emitting events (optional)
+    this.eventBus = options.eventBus || null;
+
     // Position (anchored to right side)
     this.x = options.x || 0;
     this.y = options.y || 0;
@@ -133,6 +136,13 @@ export class CaseFileUI {
    */
   show() {
     this.visible = true;
+
+    // Emit case_file:opened event for tutorial tracking
+    if (this.eventBus) {
+      this.eventBus.emit('case_file:opened', {
+        caseId: this.caseData?.id
+      });
+    }
   }
 
   /**

@@ -176,7 +176,7 @@ describe('CollisionSystem', () => {
         radius: 10
       }));
 
-      componentRegistry.addComponent(entity2, 'Transform', new TransformComponent(15, 0));
+      componentRegistry.addComponent(entity2, 'Transform', new TransformComponent(5, 0));
       componentRegistry.addComponent(entity2, 'Collider', new ColliderComponent({
         type: 'circle',
         radius: 10

@@ -39,13 +39,18 @@ export const Controls = {
  * Tracks which keys are currently pressed
  */
 export class InputState {
-  constructor() {
+  constructor(eventBus = null) {
     this.keys = new Map();
     this.actions = new Map();
+    this.eventBus = eventBus;
+
+    // Track previous action states for edge detection
+    this.previousActions = new Map();
 
     // Initialize action states
     Object.keys(Controls).forEach(action => {
       this.actions.set(action, false);
+      this.previousActions.set(action, false);
     });
 
     // Bind keyboard events
@@ -88,8 +93,19 @@ export class InputState {
    */
   updateActions() {
     for (const [action, keyCodes] of Object.entries(Controls)) {
+      const wasPressed = this.actions.get(action);
       const isPressed = keyCodes.some(code => this.keys.get(code));
+
+      this.previousActions.set(action, wasPressed);
       this.actions.set(action, isPressed);
+
+      // Emit events for action press (edge detection)
+      if (isPressed && !wasPressed && this.eventBus) {
+        // Escape key special handling for tutorial system
+        if (action === 'pause' || action === 'cancel') {
+          this.eventBus.emit('input:escape', { action });
+        }
+      }
     }
   }
 

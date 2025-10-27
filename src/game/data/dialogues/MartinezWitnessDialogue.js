@@ -67,7 +67,7 @@ export function createMartinezDialogue() {
       nextNode: 'approach_assessment_diplomatic',
       consequences: {
         reputation: {
-          police: { fame: 5 }
+          vanguard_prime: { fame: 5 }
         }
       }
     },
@@ -78,7 +78,7 @@ export function createMartinezDialogue() {
       nextNode: 'approach_assessment_diplomatic',
       consequences: {
         reputation: {
-          police: { fame: 5 }
+          vanguard_prime: { fame: 5 }
         }
       }
     },
@@ -106,7 +106,7 @@ export function createMartinezDialogue() {
           nextNode: 'aggressive_3',
           consequences: {
             reputation: {
-              police: { fame: -10, infamy: 5 }
+              vanguard_prime: { fame: -10, infamy: 5 }
             }
           }
         }
@@ -165,7 +165,7 @@ export function createMartinezDialogue() {
       nextNode: 'approach_assessment_analytical',
       consequences: {
         reputation: {
-          police: { fame: 8 }
+          vanguard_prime: { fame: 8 }
         }
       }
     },
@@ -176,7 +176,7 @@ export function createMartinezDialogue() {
       nextNode: 'approach_assessment_analytical',
       consequences: {
         reputation: {
-          police: { fame: 8 }
+          vanguard_prime: { fame: 8 }
         }
       }
     },
@@ -206,7 +206,7 @@ export function createMartinezDialogue() {
         {
           text: 'Have you noticed any NeuroSynch Corp activity in the area?',
           nextNode: 'neurosynch_question',
-          conditions: ['reputation_min:police:10']
+          conditions: ['reputation_min:vanguard_prime:10']
         },
         {
           text: 'That is all for now. Keep the scene locked down.',
@@ -239,7 +239,7 @@ export function createMartinezDialogue() {
           nextNode: 'end_conversation',
           consequences: {
             reputation: {
-              police: { fame: 3 }
+              vanguard_prime: { fame: 3 }
             }
           }
         },
