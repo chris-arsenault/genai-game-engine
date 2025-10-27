@@ -286,6 +286,27 @@ export class TutorialSystem {
       this.context.caseSolved = true;
     });
 
+    // Quest integration events - sync tutorial with Case 001 quest
+    this.events.subscribe('quest:started', (data) => {
+      if (data.questId === 'case_001_hollow_case') {
+        console.log('[TutorialSystem] Case 001 quest started - tutorial active');
+      }
+    });
+
+    this.events.subscribe('quest:objective_completed', (data) => {
+      if (data.questId === 'case_001_hollow_case') {
+        console.log(`[TutorialSystem] Quest objective completed: ${data.objectiveId}`);
+        // Tutorial steps will progress naturally via game events
+      }
+    });
+
+    this.events.subscribe('quest:completed', (data) => {
+      if (data.questId === 'case_001_hollow_case' && this.enabled) {
+        console.log('[TutorialSystem] Case 001 completed - completing tutorial');
+        this.completeTutorial();
+      }
+    });
+
     // Skip input (Esc key)
     this.events.subscribe('input:escape', () => {
       if (this.enabled && this.currentStep?.canSkip) {

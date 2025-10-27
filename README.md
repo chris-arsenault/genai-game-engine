@@ -14,6 +14,8 @@ Built with vanilla JavaScript and Canvas API. No frameworks, full control.
 - **Procedural Cases**: Dynamic crime scenes with authored narrative anchors
 - **Branching Narrative**: Multiple endings based on player choices
 - **Faction Dynamics**: Dual-axis reputation (Fame/Infamy) with cascading consequences
+- **Quest System**: Complete Act 1 story with branching quests and dialogue trees
+- **Save System**: Multiple save slots with autosave functionality
 
 ## Technology
 
@@ -148,12 +150,14 @@ Enable debug overlay by pressing `F3` in-game:
 
 ## Documentation
 
+- **[CHANGELOG](./docs/CHANGELOG.md)** - Version history and release notes (Sprint 0-7)
+- **[Sprint 7 Report](./docs/sprints/Sprint7-Polish.md)** - Polish & playtest comprehensive summary
 - **[Phase 0 Bootstrap Report](./docs/reports/phase-0-bootstrap.md)** - Comprehensive project overview
 - **[Sprint 4 Report](./docs/reports/sprint-4-procedural-generation.md)** - Procedural generation system report
 - **[Project Overview](./docs/plans/project-overview.md)** - Full technical specifications (2,100+ lines)
 - **[Narrative Vision](./docs/narrative/vision.md)** - Story framework and world-building
-- **[Architecture Decisions](./docs/architecture/decisions/)** - ADRs for major design choices
-- **[CHANGELOG](./CHANGELOG.md)** - Version history and release notes
+- **[Save System Architecture](./docs/architecture/SaveSystem.md)** - SaveManager design and API reference
+- **[Test Status Report](./docs/testing/TestStatus.md)** - Test metrics and coverage details
 
 ### Procedural Generation System
 - **[Integration Guide](./docs/guides/procedural-generation-integration.md)** - Complete usage guide with examples
@@ -167,20 +171,34 @@ Enable debug overlay by pressing `F3` in-game:
 
 ## Project Status
 
-**Current Phase**: Sprint 4 (Procedural Generation) - ✅ Complete
-**Next Phase**: Sprint 5 (Quest & Progression) - Starting soon
+**Current Phase**: Sprint 7 (Polish & Playtest) - ✅ Complete
+**Next Phase**: Sprint 8 (Final Polish) - Starting soon
+**Project Completion**: ~85% (7/8 major sprints complete)
 
-**Sprint 4 Achievements**:
-- ✅ Procedural generation system complete (~4,900 LOC)
-- ✅ 11 core classes (SeededRandom, LayoutGraph, BSPGenerator, DistrictGenerator, CaseGenerator, etc.)
-- ✅ Guaranteed case solvability via epistemic logic
-- ✅ Hybrid fixed-procedural architecture (narrative anchors + procedural variety)
-- ✅ 73+ tests with 92% coverage
-- ✅ Performance targets met (<120ms total generation)
-- ✅ Full ECS integration (LevelSpawnSystem)
-- ✅ Comprehensive documentation (Integration Guide + API Reference)
+### Sprint 7 Achievements (Polish & Playtest)
+- ✅ Test pass rate: 99.9% (1,743/1,744 tests passing)
+- ✅ Fixed 42 failing tests across engine, game systems, and managers
+- ✅ Fixed critical dialogue registration bug blocking Act 1 story
+- ✅ SaveManager implemented (420 LOC) with autosave and multi-slot support
+- ✅ Tutorial-quest integration (tutorial completes with Case 001)
+- ✅ Comprehensive Act 1 validation playtest report
+- ✅ Documentation: CHANGELOG, SaveSystem architecture, TestStatus, Sprint7 summary
 
-**Phase 0 Achievements**:
+### Sprint 6 Achievements (Story Integration)
+- ✅ Quest system complete with 5 Act 1 main quests
+- ✅ Dialogue system with 5 branching conversation trees (42 nodes total)
+- ✅ Quest UI components (notifications, tracker, quest log)
+- ✅ StoryFlagManager for global story state
+- ✅ Full quest-dialogue integration with faction reputation
+
+### Sprint 4-5 Achievements
+- ✅ Procedural generation system (~4,900 LOC, 92% coverage)
+- ✅ Faction reputation system (dual-axis Fame/Infamy)
+- ✅ Disguise system with NPC detection
+- ✅ NPC memory system for relationship tracking
+- ✅ Tutorial system with progressive introduction
+
+### Phase 0 Achievements (Bootstrap)
 - ✅ Research complete (gameplay, features, engine)
 - ✅ Architecture designed (ECS + Canvas + Spatial Hash)
 - ✅ Narrative framework established (3-act structure, 4 endings)

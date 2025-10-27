@@ -31,6 +31,7 @@ import { QuestNotification } from './ui/QuestNotification.js';
 import { FactionManager } from './managers/FactionManager.js';
 import { QuestManager } from './managers/QuestManager.js';
 import { StoryFlagManager } from './managers/StoryFlagManager.js';
+import { SaveManager } from './managers/SaveManager.js';
 
 // Quest data
 import { registerAct1Quests } from './data/quests/act1Quests.js';
@@ -75,6 +76,7 @@ export class Game {
     this.factionManager = null;
     this.questManager = null;
     this.storyFlagManager = null;
+    this.saveManager = null;
 
     // Game systems (game-specific, not engine)
     this.gameSystems = {
@@ -159,6 +161,16 @@ export class Game {
     registerAct1Quests(this.questManager);
     console.log('[Game] Act 1 quests registered');
 
+    // Initialize SaveManager (after all other managers)
+    this.saveManager = new SaveManager(this.eventBus, {
+      storyFlagManager: this.storyFlagManager,
+      questManager: this.questManager,
+      factionManager: this.factionManager,
+      tutorialSystem: null, // Will be set after tutorial system is created
+    });
+    this.saveManager.init();
+    console.log('[Game] SaveManager initialized');
+
     // Create investigation system (needed by other systems)
     this.gameSystems.investigation = new InvestigationSystem(
       this.componentRegistry,
@@ -217,6 +229,11 @@ export class Game {
       this.eventBus
     );
     this.gameSystems.tutorial.init();
+
+    // Link tutorial system to SaveManager
+    if (this.saveManager) {
+      this.saveManager.tutorialSystem = this.gameSystems.tutorial;
+    }
 
     // Create NPC memory system (requires FactionManager)
     this.gameSystems.npcMemory = new NPCMemorySystem(
@@ -468,6 +485,11 @@ export class Game {
     // Game systems are updated by SystemManager automatically
     // This method is for game-level logic only
 
+    // Update interval-based autosave
+    if (this.saveManager) {
+      this.saveManager.updateAutosave();
+    }
+
     // Update faction standings in Reputation UI
     if (this.reputationUI && this.factionManager) {
       this.reputationUI.updateStandings(this.factionManager.getAllStandings());
@@ -669,6 +691,11 @@ export class Game {
     }
     if (this.questNotification && this.questNotification.cleanup) {
       this.questNotification.cleanup();
+    }
+
+    // Cleanup SaveManager (performs final autosave)
+    if (this.saveManager && this.saveManager.cleanup) {
+      this.saveManager.cleanup();
     }
 
     // Cleanup all game systems

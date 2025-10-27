@@ -441,7 +441,7 @@ export const ACT1_DIALOGUES = [
  */
 export function registerAct1Dialogues(dialogueSystem) {
   for (const dialogue of ACT1_DIALOGUES) {
-    dialogueSystem.registerDialogue(dialogue);
+    dialogueSystem.registerDialogueTree(dialogue);
   }
   console.log('[Act1Dialogues] Registered 5 Act 1 dialogue trees');
 }
