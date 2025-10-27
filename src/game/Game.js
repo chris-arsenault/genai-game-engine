@@ -22,6 +22,13 @@ import { FactionReputationSystem } from './systems/FactionReputationSystem.js';
 import { KnowledgeProgressionSystem } from './systems/KnowledgeProgressionSystem.js';
 import { DialogueSystem } from './systems/DialogueSystem.js';
 import { CameraFollowSystem } from './systems/CameraFollowSystem.js';
+import { TutorialSystem } from './systems/TutorialSystem.js';
+
+// UI Components
+import { TutorialOverlay } from './ui/TutorialOverlay.js';
+
+// Managers
+import { FactionManager } from './managers/FactionManager.js';
 
 // Entity factories
 import { createPlayerEntity } from './entities/PlayerEntity.js';
@@ -52,9 +59,12 @@ export class Game {
     this.camera = engine.camera;
 
     // Game state
-    this.inputState = new InputState();
+    this.inputState = new InputState(engine.eventBus);
     this.paused = false;
     this.loaded = false;
+
+    // Game managers
+    this.factionManager = null;
 
     // Game systems (game-specific, not engine)
     this.gameSystems = {
@@ -63,8 +73,12 @@ export class Game {
       factionReputation: null,
       knowledgeProgression: null,
       dialogue: null,
-      cameraFollow: null
+      cameraFollow: null,
+      tutorial: null
     };
+
+    // UI overlays
+    this.tutorialOverlay = null;
   }
 
   /**
@@ -78,6 +92,9 @@ export class Game {
 
     // Initialize game systems
     this.initializeGameSystems();
+
+    // Initialize UI overlays
+    this.initializeUIOverlays();
 
     // Load initial scene
     await this.loadTestScene();
@@ -102,6 +119,10 @@ export class Game {
   initializeGameSystems() {
     console.log('[Game] Initializing game systems...');
 
+    // Initialize FactionManager (must be created before systems that depend on it)
+    this.factionManager = new FactionManager(this.eventBus);
+    console.log('[Game] FactionManager initialized');
+
     // Create investigation system (needed by other systems)
     this.gameSystems.investigation = new InvestigationSystem(
       this.componentRegistry,
@@ -117,10 +138,11 @@ export class Game {
     );
     this.gameSystems.playerMovement.init();
 
-    // Create faction reputation system
+    // Create faction reputation system (now receives FactionManager)
     this.gameSystems.factionReputation = new FactionReputationSystem(
       this.componentRegistry,
-      this.eventBus
+      this.eventBus,
+      this.factionManager
     );
     this.gameSystems.factionReputation.init();
 
@@ -132,10 +154,12 @@ export class Game {
     );
     this.gameSystems.knowledgeProgression.init();
 
-    // Create dialogue system
+    // Create dialogue system (now receives FactionManager)
     this.gameSystems.dialogue = new DialogueSystem(
       this.componentRegistry,
-      this.eventBus
+      this.eventBus,
+      this.gameSystems.investigation,
+      this.factionManager
     );
     this.gameSystems.dialogue.init();
 
@@ -147,8 +171,16 @@ export class Game {
     );
     this.gameSystems.cameraFollow.init();
 
+    // Create tutorial system
+    this.gameSystems.tutorial = new TutorialSystem(
+      this.componentRegistry,
+      this.eventBus
+    );
+    this.gameSystems.tutorial.init();
+
     // Register systems with engine SystemManager
-    // Priority order: PlayerMovement (10), Investigation (30), Faction (25), Knowledge (35), Dialogue (40), Camera (90)
+    // Priority order: Tutorial (5), PlayerMovement (10), Investigation (30), Faction (25), Knowledge (35), Dialogue (40), Camera (90)
+    this.systemManager.registerSystem(this.gameSystems.tutorial, 5);
     this.systemManager.registerSystem(this.gameSystems.playerMovement, 10);
     this.systemManager.registerSystem(this.gameSystems.investigation, 30);
     this.systemManager.registerSystem(this.gameSystems.factionReputation, 25);
@@ -157,6 +189,22 @@ export class Game {
     this.systemManager.registerSystem(this.gameSystems.cameraFollow, 90);
 
     console.log('[Game] Game systems initialized');
+  }
+
+  /**
+   * Initialize UI overlays
+   */
+  initializeUIOverlays() {
+    console.log('[Game] Initializing UI overlays...');
+
+    // Create tutorial overlay
+    this.tutorialOverlay = new TutorialOverlay(
+      this.engine.canvas,
+      this.eventBus
+    );
+    this.tutorialOverlay.init();
+
+    console.log('[Game] UI overlays initialized');
   }
 
   /**
@@ -296,9 +344,27 @@ export class Game {
     // Game systems are updated by SystemManager automatically
     // This method is for game-level logic only
 
+    // Update UI overlays
+    if (this.tutorialOverlay) {
+      this.tutorialOverlay.update(deltaTime);
+    }
+
     // Check for pause input
     if (this.inputState.isPressed('pause')) {
       this.togglePause();
+    }
+  }
+
+  /**
+   * Render game overlays (called after main render)
+   * @param {CanvasRenderingContext2D} ctx - Canvas context
+   */
+  renderOverlays(ctx) {
+    if (!this.loaded) return;
+
+    // Render tutorial overlay
+    if (this.tutorialOverlay) {
+      this.tutorialOverlay.render(ctx);
     }
   }
 
@@ -322,6 +388,11 @@ export class Game {
    */
   cleanup() {
     console.log('[Game] Cleaning up...');
+
+    // Cleanup UI overlays
+    if (this.tutorialOverlay && this.tutorialOverlay.cleanup) {
+      this.tutorialOverlay.cleanup();
+    }
 
     // Cleanup all game systems
     Object.values(this.gameSystems).forEach(system => {

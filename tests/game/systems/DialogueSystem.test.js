@@ -44,11 +44,9 @@ describe('DialogueSystem', () => {
       }))
     };
 
-    // Mock FactionSystem
+    // Mock FactionManager (updated to match new FactionManager API)
     mockFactionSystem = {
-      playerFactionMember: {
-        getReputation: jest.fn((faction) => ({ fame: 50, infamy: 10 }))
-      },
+      getReputation: jest.fn((faction) => ({ fame: 50, infamy: 10 })),
       modifyReputation: jest.fn()
     };
 
@@ -281,11 +279,9 @@ describe('DialogueSystem', () => {
     });
 
     it('should modify faction reputation', () => {
-      // Create fresh faction system mock
+      // Create fresh faction manager mock (updated to match FactionManager API)
       const freshFactionMock = {
-        playerFactionMember: {
-          getReputation: jest.fn(() => ({ fame: 50, infamy: 10 }))
-        },
+        getReputation: jest.fn(() => ({ fame: 50, infamy: 10 })),
         modifyReputation: jest.fn()
       };
 
@@ -309,7 +305,7 @@ describe('DialogueSystem', () => {
             nextNode: 'mid',
             consequences: {
               reputation: {
-                police: { fame: 10, infamy: 5 }
+                vanguard_prime: { fame: 10, infamy: 5 }
               }
             }
           },
@@ -326,7 +322,7 @@ describe('DialogueSystem', () => {
       freshSystem.advanceDialogue(); // This triggers navigation and consequences
 
       expect(freshFactionMock.modifyReputation).toHaveBeenCalledWith(
-        'police',
+        'vanguard_prime',
         10,
         5,
         'Dialogue choice'
@@ -450,8 +446,8 @@ describe('DialogueSystem', () => {
       system.startDialogue('npc_1', 'test_dialogue');
 
       const context = system.activeDialogue.context;
-      expect(context.reputation.police).toBeDefined();
-      expect(context.reputation.police).toBe(40); // fame - infamy = 50 - 10
+      expect(context.reputation.vanguard_prime).toBeDefined();
+      expect(context.reputation.vanguard_prime).toBe(40); // fame - infamy = 50 - 10
     });
 
     it('should include visited nodes in context', () => {

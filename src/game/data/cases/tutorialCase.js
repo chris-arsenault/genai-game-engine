@@ -254,7 +254,7 @@ export const tutorialCase = {
       abilityUnlock: 'memory_trace', // Unlock Memory Trace ability
       credits: 500,
       reputation: {
-        faction: 'police',
+        faction: 'vanguard_prime',
         change: 20
       },
       experience: 100

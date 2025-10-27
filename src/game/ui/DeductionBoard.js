@@ -26,6 +26,9 @@ export class DeductionBoard {
     this.width = width;
     this.height = height;
 
+    // EventBus for emitting events (optional)
+    this.eventBus = options.eventBus || null;
+
     // Nodes
     this.nodes = new Map(); // nodeId -> ClueNode
     this.connections = []; // Array of {from: nodeId, to: nodeId, type: string}
@@ -120,6 +123,16 @@ export class DeductionBoard {
       }
       if (toNode) {
         toNode.addConnection(fromId);
+      }
+
+      // Emit connection created event for tutorial tracking
+      if (this.eventBus) {
+        this.eventBus.emit('deduction_board:connection_created', {
+          from: fromId,
+          to: toId,
+          type,
+          totalConnections: this.connections.length
+        });
       }
     }
   }
@@ -329,6 +342,14 @@ export class DeductionBoard {
    */
   show() {
     this.visible = true;
+
+    // Emit deduction_board:opened event for tutorial tracking
+    if (this.eventBus) {
+      this.eventBus.emit('deduction_board:opened', {
+        nodeCount: this.nodes.size,
+        connectionCount: this.connections.length
+      });
+    }
   }
 
   /**
