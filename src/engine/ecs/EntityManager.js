@@ -126,7 +126,23 @@ export class EntityManager {
     }
     return result;
   }
+  /**
+   * Gets entity tag.
+   * @param {number} entityId - Entity ID
+   * @returns {string|null} Tag name or null
+   */
+  getEntity(entityId) {
+    return this.entities.get(entityId);
+  }
 
+  /**
+   * Sets entity tag.
+   * @param {number} entityId - Entity ID
+   * @param {string} tag - Tag name
+   */
+  tagEntity(entityId, tag) {
+      this.setTag(entityId, tag);
+  }
   /**
    * Sets entity tag.
    * @param {number} entityId - Entity ID

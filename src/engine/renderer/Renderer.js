@@ -9,6 +9,7 @@
  * @class Renderer
  */
 import { Camera } from './Camera.js';
+import { LayeredRenderer } from './LayeredRenderer.js';
 
 export class Renderer {
   /**
@@ -23,6 +24,9 @@ export class Renderer {
 
     // Camera for world-to-screen transformation
     this.camera = new Camera(0, 0, this.width, this.height);
+
+    // Delegate per-layer drawing to the layered renderer
+    this.layeredRenderer = new LayeredRenderer(this.width, this.height);
 
     // Performance tracking
     this.frameTime = 0;
@@ -66,6 +70,10 @@ export class Renderer {
     this.height = this.canvas.height;
     this.camera.width = this.width;
     this.camera.height = this.height;
+
+    if (this.layeredRenderer) {
+      this.layeredRenderer.resize(this.width, this.height);
+    }
   }
 
   /**
@@ -185,6 +193,40 @@ export class Renderer {
    */
   updateCamera(deltaTime, getPosition) {
     this.camera.update(deltaTime, getPosition);
+  }
+
+  /**
+   * Renders a frame by clearing the back buffer, invoking an optional draw callback,
+   * compositing all layers, and updating timing metrics.
+   * @param {*} sceneContext - Optional scene/component context handed to draw callback
+   * @param {Object} [options]
+   * @param {Function} [options.draw] - Callback invoked with { layeredRenderer, ctx, camera, scene }
+   * @returns {{frameTime: number, renderTime: number}} Frame timing metrics
+   */
+  render(sceneContext, options = {}) {
+    const { draw } = options;
+
+    this.beginFrame();
+
+    this.clear();
+
+    if (typeof draw === 'function') {
+      draw({
+        layeredRenderer: this.layeredRenderer,
+        ctx: this.ctx,
+        camera: this.camera,
+        scene: sceneContext,
+      });
+    }
+
+    this.layeredRenderer.composite(this.ctx);
+
+    this.endFrame();
+
+    return {
+      frameTime: this.frameTime,
+      renderTime: this.renderTime,
+    };
   }
 
   /**

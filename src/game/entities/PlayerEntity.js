@@ -10,6 +10,7 @@ import { Sprite } from '../components/Sprite.js';
 import { PlayerController } from '../components/PlayerController.js';
 import { Collider } from '../components/Collider.js';
 import { FactionMember } from '../components/FactionMember.js';
+import { Disguise } from '../components/Disguise.js';
 import { GameConfig } from '../config/GameConfig.js';
 
 /**
@@ -81,6 +82,16 @@ export function createPlayerEntity(entityManager, componentRegistry, x = 0, y = 
     ]
   });
   componentRegistry.addComponent(entityId, 'FactionMember', factionMember);
+
+  // Add Disguise component (player can wear disguises)
+  // Player starts with no disguise equipped
+  const disguise = new Disguise({
+    disguiseId: 'player_disguise',
+    factionId: 'civilian', // Default, will change when equipped
+    baseEffectiveness: 0.7,
+    equipped: false
+  });
+  componentRegistry.addComponent(entityId, 'Disguise', disguise);
 
   console.log(`[PlayerEntity] Created player entity at (${x}, ${y})`);
 

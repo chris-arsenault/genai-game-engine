@@ -70,6 +70,20 @@ export class EventBus {
     };
   }
 
+  subscribe(eventType, callback, context = null, priority = 50) {
+    console.log("[DEPRECATED] Use .on() instead")
+    this.on(eventType, callback, context, priority);
+  }
+  /**
+    * Unsubscribes from an event.
+    * @param {string} eventType - Event type
+    * @param {Function} callback - Callback to remove
+    */
+  unsubscribe(eventType, callback) {
+    console.log("[DEPRECATED] Use .off() instead")
+    this.off(eventType, callback);
+  }
+
   /**
    * Unsubscribes from an event.
    * @param {string} eventType - Event type

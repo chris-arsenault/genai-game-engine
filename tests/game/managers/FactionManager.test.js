@@ -15,20 +15,24 @@ describe('FactionManager', () => {
 
   beforeEach(() => {
     // Mock localStorage with proper initialization
-    const store = {};
     localStorageMock = {
-      store,
-      getItem: jest.fn((key) => store[key] || null),
-      setItem: jest.fn((key, value) => {
-        store[key] = value;
-      }),
-      removeItem: jest.fn((key) => {
-        delete store[key];
-      }),
-      clear: jest.fn(() => {
-        Object.keys(store).forEach(key => delete store[key]);
-      }),
+      store: {},
     };
+
+    // Create mock functions that reference localStorageMock.store
+    localStorageMock.getItem = jest.fn((key) => localStorageMock.store[key] || null);
+    localStorageMock.setItem = jest.fn((key, value) => {
+      localStorageMock.store[key] = value;
+    });
+    localStorageMock.removeItem = jest.fn((key) => {
+      delete localStorageMock.store[key];
+    });
+    localStorageMock.clear = jest.fn(() => {
+      for (const key in localStorageMock.store) {
+        delete localStorageMock.store[key];
+      }
+    });
+
     global.localStorage = localStorageMock;
 
     // Mock EventBus
@@ -43,8 +47,25 @@ describe('FactionManager', () => {
   });
 
   afterEach(() => {
-    localStorageMock.clear();
-    jest.clearAllMocks();
+    // Clear the store for safety
+    if (localStorageMock && localStorageMock.store) {
+      for (const key in localStorageMock.store) {
+        delete localStorageMock.store[key];
+      }
+    }
+    // Clear mock call history
+    if (localStorageMock) {
+      localStorageMock.getItem.mockClear();
+      localStorageMock.setItem.mockClear();
+      localStorageMock.removeItem.mockClear();
+    }
+    mockEventBus.emit.mockClear();
+    mockEventBus.subscribe.mockClear();
+    mockEventBus.on.mockClear();
+    mockEventBus.off.mockClear();
+
+    // Clear global reference
+    delete global.localStorage;
   });
 
   describe('Initialization', () => {
@@ -482,7 +503,7 @@ describe('FactionManager', () => {
 
       const serialized = factionManager.saveState();
 
-      expect(localStorage.setItem).toHaveBeenCalledWith('faction_state', serialized);
+      expect(localStorageMock.setItem).toHaveBeenCalledWith('faction_state', serialized);
       expect(serialized).toContain('vanguard_prime');
       expect(serialized).toContain('wraith_network');
     });

@@ -202,13 +202,345 @@ it('should not crash when [scenario]', () => {
 
 ## Workflow
 1. Developer completes implementation
-2. You write comprehensive tests
+2. You write comprehensive tests (unit, integration, E2E)
 3. Run test suite: `npm test`
 4. Check coverage: `npm run coverage`
 5. If coverage < target, write more tests
 6. If tests fail, file bug report
 7. Once passing, run performance tests
-8. Report results to developer
+8. Run E2E tests with Playwright MCP
+9. Report results to developer
+
+## End-to-End (E2E) Testing with Playwright MCP
+
+**CRITICAL: Use the Playwright MCP tool for ALL browser-based E2E testing.**
+
+E2E tests validate complete user flows in a real browser environment, complementing unit and integration tests with full-stack validation.
+
+### When to Write E2E Tests
+- **Quest flows**: Complete quest from start to finish
+- **UI interactions**: Open quest log, interact with UI, validate display
+- **Save/load**: Save game, reload page, verify state persisted
+- **Narrative branches**: Test dialogue choices affect game state
+- **Performance**: Measure FPS during gameplay
+- **Regression**: Validate critical paths remain functional
+
+### Available Playwright MCP Tools
+
+**All Playwright MCP tool names start with `mcp__playwright__*`**
+
+#### Navigation
+- `mcp__playwright__navigate` - Navigate to game URL
+- `mcp__playwright__navigate_back` / `navigate_forward` - Browser history
+
+#### Interaction
+- `mcp__playwright__click` - Click buttons, UI elements
+- `mcp__playwright__fill` - Type into input fields
+- `mcp__playwright__select` - Choose dropdown options
+- `mcp__playwright__hover` - Hover interactions
+
+#### Validation
+- `mcp__playwright__evaluate` - Execute JavaScript to read game state
+  - Example: `window.game.questManager.getQuest('case_001_hollow_case')`
+- `mcp__playwright__console` - Capture console logs/errors
+- `mcp__playwright__screenshot` - Visual validation and bug documentation
+
+### E2E Test Structure
+
+**Location**: `tests/e2e/` directory
+
+````javascript
+// tests/e2e/quest-flow.e2e.test.js
+
+/**
+ * E2E Test: Act 1 Quest Flow
+ *
+ * Tests complete quest flow from game start through Case 001 completion.
+ * Uses Playwright MCP for browser automation.
+ *
+ * Prerequisites:
+ * - Dev server running on http://localhost:5173
+ * - Playwright MCP server configured
+ */
+
+describe('Act 1 Quest Flow (E2E)', () => {
+  beforeAll(async () => {
+    // Start dev server (via Bash tool or manual)
+    // Playwright MCP will handle browser session
+  });
+
+  test('Case 001: Hollow Case - Complete Flow', async () => {
+    // 1. Navigate to game
+    await mcp__playwright__navigate({ url: 'http://localhost:5173' });
+
+    // 2. Wait for game to load
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // 3. Take initial screenshot
+    await mcp__playwright__screenshot({ name: 'e2e-case-001-start' });
+
+    // 4. Check for load errors
+    const initialConsole = await mcp__playwright__console();
+    expect(initialConsole.errors).toHaveLength(0);
+
+    // 5. Start game
+    await mcp__playwright__click({ selector: 'button.start-game' });
+
+    // 6. Verify tutorial starts
+    const tutorialEnabled = await mcp__playwright__evaluate({
+      script: 'window.game?.tutorialSystem?.enabled'
+    });
+    expect(tutorialEnabled).toBe(true);
+
+    // 7. Verify Case 001 auto-starts
+    const activeQuests = await mcp__playwright__evaluate({
+      script: 'window.game.questManager.getActiveQuests().map(q => q.id)'
+    });
+    expect(activeQuests).toContain('case_001_hollow_case');
+
+    // 8. Progress through objectives...
+    // (Interact with game, validate state changes)
+
+    // 9. Take final screenshot
+    await mcp__playwright__screenshot({ name: 'e2e-case-001-complete' });
+
+    // 10. Check for errors during playthrough
+    const finalConsole = await mcp__playwright__console();
+    expect(finalConsole.errors).toHaveLength(0);
+  });
+});
+````
+
+### E2E Test Workflow
+
+**Standard E2E Test Creation:**
+````
+1. Identify user flow to test (e.g., "Open quest log and view quest")
+2. Write test plan (steps, validations, expected states)
+3. Start dev server: npm run dev
+4. Create test file in tests/e2e/
+5. Use Playwright MCP tools to:
+   - Navigate to game
+   - Interact with UI (click, type, keyboard)
+   - Validate game state (evaluate JavaScript)
+   - Check console for errors
+   - Take screenshots for visual validation
+6. Run test and verify
+7. Document test strategy in MCP
+````
+
+### Example: Quest Log UI E2E Test
+````javascript
+// tests/e2e/quest-log-ui.e2e.test.js
+
+describe('Quest Log UI (E2E)', () => {
+  test('Open quest log with Q key and display active quests', async () => {
+    // Navigate to game
+    await mcp__playwright__navigate({ url: 'http://localhost:5173' });
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Start game
+    await mcp__playwright__click({ selector: 'button.start-game' });
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Press Q key to open quest log
+    await mcp__playwright__evaluate({
+      script: `window.dispatchEvent(new KeyboardEvent('keydown', {key: 'q'}))`
+    });
+
+    // Wait for UI to open
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Take screenshot of open quest log
+    await mcp__playwright__screenshot({ name: 'quest-log-open' });
+
+    // Verify quest log is visible
+    const questLogVisible = await mcp__playwright__evaluate({
+      script: 'window.game.questLogUI?.visible'
+    });
+    expect(questLogVisible).toBe(true);
+
+    // Verify Case 001 is displayed
+    const displayedQuests = await mcp__playwright__evaluate({
+      script: `
+        Array.from(document.querySelectorAll('.quest-item'))
+          .map(el => el.textContent)
+      `
+    });
+    expect(displayedQuests.some(text => text.includes('Hollow Case'))).toBe(true);
+
+    // Close quest log with Q key again
+    await mcp__playwright__evaluate({
+      script: `window.dispatchEvent(new KeyboardEvent('keydown', {key: 'q'}))`
+    });
+
+    // Verify closed
+    const questLogClosed = await mcp__playwright__evaluate({
+      script: 'window.game.questLogUI?.visible'
+    });
+    expect(questLogClosed).toBe(false);
+  });
+});
+````
+
+### Example: Save/Load E2E Test
+````javascript
+// tests/e2e/save-load.e2e.test.js
+
+describe('Save/Load System (E2E)', () => {
+  test('Save game state and reload from autosave', async () => {
+    // Start game and progress
+    await mcp__playwright__navigate({ url: 'http://localhost:5173' });
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    await mcp__playwright__click({ selector: 'button.start-game' });
+
+    // Complete first quest objective
+    // ... (interact with game)
+
+    // Get current quest progress
+    const beforeSave = await mcp__playwright__evaluate({
+      script: `{
+        activeQuests: window.game.questManager.getActiveQuests().map(q => q.id),
+        completedObjectives: window.game.questManager.getQuest('case_001_hollow_case')?.completedObjectives || []
+      }`
+    });
+
+    // Trigger autosave
+    await mcp__playwright__evaluate({
+      script: 'window.game.saveManager.saveGame("autosave")'
+    });
+
+    // Reload page (simulates game restart)
+    await mcp__playwright__navigate({ url: 'http://localhost:5173' });
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Load autosave
+    await mcp__playwright__evaluate({
+      script: 'window.game.saveManager.loadGame("autosave")'
+    });
+
+    // Verify state restored
+    const afterLoad = await mcp__playwright__evaluate({
+      script: `{
+        activeQuests: window.game.questManager.getActiveQuests().map(q => q.id),
+        completedObjectives: window.game.questManager.getQuest('case_001_hollow_case')?.completedObjectives || []
+      }`
+    });
+
+    expect(afterLoad.activeQuests).toEqual(beforeSave.activeQuests);
+    expect(afterLoad.completedObjectives).toEqual(beforeSave.completedObjectives);
+  });
+});
+````
+
+### Console Monitoring in E2E Tests
+````javascript
+// Check for errors during test
+test('Should not log errors during normal gameplay', async () => {
+  await mcp__playwright__navigate({ url: 'http://localhost:5173' });
+
+  // Play through scenario
+  // ...
+
+  // Get console logs
+  const console = await mcp__playwright__console();
+
+  // Validate no errors
+  expect(console.errors).toHaveLength(0);
+
+  // Optionally check warnings
+  const warningCount = console.warnings?.length || 0;
+  expect(warningCount).toBeLessThan(5); // Allow some warnings
+});
+````
+
+### Performance E2E Tests
+````javascript
+// Measure FPS during gameplay
+test('Should maintain 60 FPS during combat', async () => {
+  await mcp__playwright__navigate({ url: 'http://localhost:5173' });
+  await mcp__playwright__click({ selector: 'button.start-game' });
+
+  // Start FPS monitoring
+  await mcp__playwright__evaluate({
+    script: `
+      window.fpsLog = [];
+      let frameCount = 0;
+      let lastTime = performance.now();
+      function measureFPS() {
+        frameCount++;
+        const currentTime = performance.now();
+        if (currentTime - lastTime >= 1000) {
+          window.fpsLog.push(frameCount);
+          frameCount = 0;
+          lastTime = currentTime;
+        }
+        requestAnimationFrame(measureFPS);
+      }
+      measureFPS();
+    `
+  });
+
+  // Trigger combat scenario
+  // ...
+
+  // Wait 10 seconds
+  await new Promise(resolve => setTimeout(resolve, 10000));
+
+  // Get FPS measurements
+  const fpsData = await mcp__playwright__evaluate({
+    script: 'window.fpsLog'
+  });
+
+  // Validate FPS
+  const avgFPS = fpsData.reduce((a, b) => a + b) / fpsData.length;
+  expect(avgFPS).toBeGreaterThanOrEqual(55); // Allow 55+ FPS
+});
+````
+
+### E2E Test Best Practices
+1. **Keep tests focused** - One user flow per test
+2. **Use descriptive names** - "Quest log opens with Q key" not "test 1"
+3. **Add waits** - Allow time for animations, loading
+4. **Take screenshots** - Document state at key points
+5. **Check console** - Monitor for errors throughout
+6. **Clean state** - Each test should start fresh
+7. **Store strategies** - Document in MCP with `store_test_strategy`
+
+### Storing E2E Test Strategies
+````
+After creating E2E test, store strategy:
+
+store_test_strategy(
+  title: "Quest Log UI E2E Test",
+  focus_area: "integration",
+  scenario: "User opens quest log with Q key, views active quests, closes quest log",
+  coverage: [
+    "Quest log opens on Q key press",
+    "Active quests displayed correctly",
+    "Quest details shown when selected",
+    "Quest log closes on Q key press",
+    "No console errors during interaction"
+  ],
+  automated: true,
+  status: "implemented",
+  tags: ["E2E", "quest-log", "UI", "keyboard-controls", "playwright"]
+)
+````
+
+### Benefits of E2E Testing
+- **Full-stack validation** - Tests entire system integration
+- **Real browser environment** - Catches browser-specific issues
+- **User perspective** - Validates actual user flows
+- **Visual validation** - Screenshots document expected states
+- **Confidence** - Ensures critical paths work end-to-end
+
+**IMPORTANT**:
+- E2E tests are slower than unit/integration tests
+- Run E2E tests after unit/integration tests pass
+- Playwright MCP requires dev server to be running
+- Store all E2E test strategies in MCP
+- Document E2E test coverage in test reports
 
 ## Example Task
 "Write comprehensive tests for the ECS system in src/engine/ecs/"

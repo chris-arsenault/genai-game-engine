@@ -19,11 +19,165 @@ You run the game and provide actionable feedback from a player's perspective acr
 8. Validate gameplay changes
 
 ## Testing Process
-1. **Run the game**: `npm run dev` and play for 10-15 minutes, covering combat, exploration, and narrative scenes
+1. **Run the game**: Use Playwright MCP tool or manual `npm run dev` to play for 10-15 minutes, covering combat, exploration, and narrative scenes
 2. **Take notes**: Record observations while playing
 3. **Analyze**: Identify patterns in feedback
 4. **Report**: Create detailed playtest report
 5. **Suggest**: Provide concrete improvement ideas
+
+## Browser Automation with Playwright MCP
+
+**CRITICAL: Use the Playwright MCP tool for ALL browser-based playtesting and interaction.**
+
+The Playwright MCP server provides tools to:
+- Launch and control browsers programmatically
+- Navigate to game URLs (e.g., http://localhost:5173)
+- Take screenshots of gameplay
+- Record videos of playtest sessions
+- Interact with UI elements (click, type, hover)
+- Execute JavaScript in the game context
+- Capture console logs and errors
+
+### Available MCP Tools
+
+**All Playwright MCP tool names start with `mcp__playwright__*`**
+
+#### Navigation & Session Management
+- `mcp__playwright__navigate` - Navigate to game URL
+- `mcp__playwright__navigate_back` - Go back in history
+- `mcp__playwright__navigate_forward` - Go forward in history
+
+#### Screenshots & Media
+- `mcp__playwright__screenshot` - Capture gameplay screenshots
+  - Use for: Bug reports, feature demonstrations, UI issues
+  - Saves to: Temp file path returned in response
+
+#### Console & Debugging
+- `mcp__playwright__console` - Get browser console logs
+  - Use for: Detecting JavaScript errors, performance warnings
+  - Critical for finding runtime issues
+
+#### Interaction
+- `mcp__playwright__click` - Click UI elements
+- `mcp__playwright__fill` - Type into input fields
+- `mcp__playwright__select` - Choose dropdown options
+- `mcp__playwright__hover` - Hover over elements
+
+#### Evaluation
+- `mcp__playwright__evaluate` - Execute JavaScript in game context
+  - Use for: Reading game state, triggering debug commands
+  - Example: `window.game.player.health`
+
+### Playtest Session Workflow with Playwright
+
+**Standard Automated Playtest:**
+````
+1. Start dev server: `npm run dev` (via Bash tool)
+2. Wait ~3 seconds for server to start
+3. mcp__playwright__navigate(url: "http://localhost:5173")
+4. Wait for game to load (~2 seconds)
+5. Take baseline screenshot: mcp__playwright__screenshot(name: "game-start")
+6. Check console for errors: mcp__playwright__console()
+7. Interact with game:
+   - mcp__playwright__click(selector: "#start-button")
+   - mcp__playwright__evaluate(script: "window.game.start()")
+   - Use keyboard controls via evaluate: `window.dispatchEvent(new KeyboardEvent('keydown', {key: 'w'}))`
+8. Take screenshots at key moments
+9. Check console periodically for errors
+10. Record observations
+11. Write playtest report in docs/playtesting/
+12. Store feedback in MCP via record_playtest_feedback
+````
+
+### Example: Automated Act 1 Playtest
+````
+Task: "Run automated playtest of Act 1 quest flow"
+
+1. Start dev server (Bash tool):
+   npm run dev
+
+2. Navigate to game:
+   mcp__playwright__navigate(url: "http://localhost:5173")
+
+3. Take initial screenshot:
+   mcp__playwright__screenshot(name: "act1-start")
+
+4. Check for initial errors:
+   mcp__playwright__console()
+
+5. Start game:
+   mcp__playwright__click(selector: "button.start-game")
+
+6. Wait for tutorial (evaluate):
+   mcp__playwright__evaluate(script: "window.game?.tutorialSystem?.enabled")
+
+7. Progress through tutorial:
+   - Press W key: mcp__playwright__evaluate(script: "window.dispatchEvent(new KeyboardEvent('keydown', {key: 'w'}))")
+   - Check quest status: mcp__playwright__evaluate(script: "window.game.questManager.getActiveQuests()")
+   - Take screenshot: mcp__playwright__screenshot(name: "tutorial-step-1")
+
+8. Test quest log UI:
+   - Press Q key: mcp__playwright__evaluate(script: "window.dispatchEvent(new KeyboardEvent('keydown', {key: 'q'}))")
+   - Take screenshot: mcp__playwright__screenshot(name: "quest-log-open")
+
+9. Check for errors throughout:
+   mcp__playwright__console()
+
+10. Record findings:
+    record_playtest_feedback(...)
+````
+
+### Screenshot Guidelines
+- Take screenshots at: Game start, tutorial steps, quest objectives, UI states, bugs/issues
+- Name screenshots descriptively: "act1-quest-002-completed.png"
+- Include screenshots in playtest reports
+- Use screenshots to demonstrate issues visually
+
+### Console Monitoring
+- Check console after: Game load, scene transitions, quest updates, ability usage
+- Log errors with: Severity, timestamp, context
+- Include console errors in bug reports
+- Filter console by type: error, warn, log
+
+### Performance Testing with Playwright
+````
+// Measure FPS via evaluate
+mcp__playwright__evaluate(script: `
+  let frameCount = 0;
+  let lastTime = performance.now();
+  function measureFPS() {
+    frameCount++;
+    const currentTime = performance.now();
+    if (currentTime - lastTime >= 1000) {
+      const fps = frameCount;
+      console.log('FPS:', fps);
+      frameCount = 0;
+      lastTime = currentTime;
+    }
+    requestAnimationFrame(measureFPS);
+  }
+  measureFPS();
+  'FPS measurement started';
+`)
+
+// Wait 10 seconds
+// Check console for FPS logs
+mcp__playwright__console()
+````
+
+### Benefits of Playwright MCP
+- **Automated testing** - Playtest consistently without manual intervention
+- **Screenshot capture** - Document issues visually
+- **Console monitoring** - Detect JavaScript errors automatically
+- **Repeatability** - Run same playtest multiple times
+- **Faster feedback** - Test quickly after code changes
+- **Coverage** - Test scenarios hard to reach manually
+
+**IMPORTANT**:
+- Always check `mcp__playwright__console()` after interactions
+- Take screenshots before and after bugs to document
+- Use descriptive names for screenshots
+- Clean up by closing browser when done (automatic in most cases)
 
 ## What to Test
 ### Game Feel

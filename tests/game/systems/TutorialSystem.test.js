@@ -13,15 +13,22 @@ describe('TutorialSystem', () => {
   let mockEventBus;
   let mockComponentRegistry;
   let localStorageMock;
+  let store; // Shared store that persists but gets cleared between tests
 
   beforeEach(() => {
+    // Clear the store before each test
+    if (store) {
+      Object.keys(store).forEach(key => delete store[key]);
+    } else {
+      store = {};
+    }
+
     // Mock localStorage with proper initialization
-    const store = {};
+    // Use shared store object so cleanup can clear it
     localStorageMock = {
-      store,
       getItem: jest.fn((key) => store[key] || null),
       setItem: jest.fn((key, value) => {
-        store[key] = value;
+        store[key] = String(value);
       }),
       removeItem: jest.fn((key) => {
         delete store[key];
@@ -44,6 +51,9 @@ describe('TutorialSystem', () => {
     mockComponentRegistry = {};
 
     tutorialSystem = new TutorialSystem(mockComponentRegistry, mockEventBus);
+
+    // Reset tutorial state to ensure clean slate for each test
+    tutorialSystem.reset();
   });
 
   afterEach(() => {
@@ -214,17 +224,20 @@ describe('TutorialSystem', () => {
     });
 
     it('should complete welcome step when player moves', () => {
-      tutorialSystem.context.playerMoved = true;
+      expect(tutorialSystem.currentStepIndex).toBe(0); // Start at welcome step
 
+      tutorialSystem.context.playerMoved = true;
       tutorialSystem.update(0.016);
 
-      // Welcome step should auto-complete when condition is met
-      expect(tutorialSystem.currentStep.completionCondition(tutorialSystem.context)).toBe(true);
+      // Welcome step should auto-complete and advance to next step
+      expect(tutorialSystem.currentStepIndex).toBe(1); // Advanced to movement step
+      expect(tutorialSystem.currentStep.id).toBe('movement');
     });
 
     it('should complete movement step after 3 seconds of movement', () => {
       // Progress to movement step
       tutorialSystem.completeStep();
+      expect(tutorialSystem.currentStep.id).toBe('movement');
       mockEventBus.emit.mockClear();
 
       tutorialSystem.context.playerMoved = true;
@@ -232,7 +245,8 @@ describe('TutorialSystem', () => {
 
       tutorialSystem.update(0.016);
 
-      expect(tutorialSystem.currentStep.completionCondition(tutorialSystem.context)).toBe(true);
+      // Movement step should auto-complete and advance to next step
+      expect(tutorialSystem.currentStepIndex).toBe(2); // Advanced past movement
     });
 
     it('should complete evidence detection step when evidence detected', () => {
@@ -499,10 +513,13 @@ describe('TutorialSystem', () => {
     });
 
     it('should save skip status to localStorage', () => {
+      // init() already called in beforeEach
       tutorialSystem.skipTutorial();
 
-      expect(localStorage.setItem).toHaveBeenCalledWith('tutorial_skipped', 'true');
+      // Verify the value was saved (regardless of mock tracking)
       expect(localStorage.getItem('tutorial_skipped')).toBe('true');
+      expect(tutorialSystem.skipped).toBe(true);
+      expect(tutorialSystem.enabled).toBe(false);
     });
 
     it('should not skip if tutorial not enabled', () => {
@@ -532,12 +549,16 @@ describe('TutorialSystem', () => {
   describe('Persistence', () => {
     it('should save completion to localStorage', () => {
       tutorialSystem.init();
+      expect(tutorialSystem.enabled).toBe(true); // Verify tutorial started
+
       tutorialSystem.currentStepIndex = tutorialSteps.length - 1;
       tutorialSystem.currentStep = tutorialSteps[tutorialSteps.length - 1];
 
       tutorialSystem.completeTutorial();
 
-      expect(localStorage.setItem).toHaveBeenCalledWith('tutorial_completed', 'true');
+      // Verify the value was saved (regardless of mock tracking)
+      expect(localStorage.getItem('tutorial_completed')).toBe('true');
+      expect(tutorialSystem.enabled).toBe(false);
     });
 
     it('should load completion status on init', () => {
@@ -776,9 +797,11 @@ describe('TutorialSystem', () => {
     });
 
     it('should clear localStorage on reset', () => {
-      // Set values directly in the store
-      localStorageMock.store['tutorial_completed'] = 'true';
-      localStorageMock.store['tutorial_skipped'] = 'true';
+      // Set values in localStorage
+      localStorage.setItem('tutorial_completed', 'true');
+      localStorage.setItem('tutorial_skipped', 'true');
+
+      localStorageMock.removeItem.mockClear(); // Clear previous calls
 
       tutorialSystem.reset();
 

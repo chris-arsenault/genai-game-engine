@@ -10,6 +10,7 @@ import { Sprite } from '../components/Sprite.js';
 import { FactionMember } from '../components/FactionMember.js';
 import { Collider } from '../components/Collider.js';
 import { InteractionZone } from '../components/InteractionZone.js';
+import { NPC } from '../components/NPC.js';
 
 /**
  * Create NPC entity
@@ -29,13 +30,13 @@ export function createNPCEntity(entityManager, componentRegistry, npcData) {
     dialogueId = null
   } = npcData;
 
-  // Create entity
-  const entityId = entityManager.createEntity();
-  entityManager.tagEntity(entityId, 'npc');
+  // Create entity with 'npc' tag
+  const entityId = entityManager.createEntity('npc');
 
   // Add Transform component
   const transform = new Transform(x, y, 0, 1, 1);
-  componentRegistry.addComponent(entityId, 'Transform', transform);
+  transform.type = 'Transform';
+  componentRegistry.addComponent(entityId, transform);
 
   // Add Sprite component (placeholder)
   const sprite = new Sprite({
@@ -47,7 +48,8 @@ export function createNPCEntity(entityManager, componentRegistry, npcData) {
     color: getFactionColor(faction),
     visible: true
   });
-  componentRegistry.addComponent(entityId, 'Sprite', sprite);
+  sprite.type = 'Sprite';
+  componentRegistry.addComponent(entityId, sprite);
 
   // Add FactionMember component
   const factionMember = new FactionMember({
@@ -56,7 +58,25 @@ export function createNPCEntity(entityManager, componentRegistry, npcData) {
     currentDisguise: null,
     knownBy: new Set()
   });
-  componentRegistry.addComponent(entityId, 'FactionMember', factionMember);
+  factionMember.type = 'FactionMember';
+  componentRegistry.addComponent(entityId, factionMember);
+
+  // Add NPC component (memory and recognition)
+  const npcComponent = new NPC({
+    npcId: id,
+    name,
+    faction,
+    knownPlayer: false,
+    attitude: 'neutral',
+    dialogue: {
+      default: dialogueId || 'default_npc_dialogue',
+      friendly: dialogueId ? `${dialogueId}_friendly` : 'default_friendly',
+      neutral: dialogueId ? `${dialogueId}_neutral` : 'default_neutral',
+      hostile: dialogueId ? `${dialogueId}_hostile` : 'default_hostile'
+    }
+  });
+  npcComponent.type = 'NPC';
+  componentRegistry.addComponent(entityId, npcComponent);
 
   // Add Collider component
   const collider = new Collider({
@@ -67,7 +87,8 @@ export function createNPCEntity(entityManager, componentRegistry, npcData) {
     isStatic: true,
     tags: ['npc', 'solid']
   });
-  componentRegistry.addComponent(entityId, 'Collider', collider);
+  collider.type = 'Collider';
+  componentRegistry.addComponent(entityId, collider);
 
   // Add InteractionZone for dialogue (if applicable)
   if (hasDialogue && dialogueId) {
@@ -84,7 +105,8 @@ export function createNPCEntity(entityManager, componentRegistry, npcData) {
         dialogueId
       }
     });
-    componentRegistry.addComponent(entityId, 'InteractionZone', interactionZone);
+    interactionZone.type = 'InteractionZone';
+    componentRegistry.addComponent(entityId, interactionZone);
   }
 
   console.log(`[NPCEntity] Created NPC: ${name} (${faction}) at (${x}, ${y})`);

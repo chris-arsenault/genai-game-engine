@@ -33,13 +33,13 @@ export function createEvidenceEntity(entityManager, componentRegistry, evidenceD
     derivedClues = []
   } = evidenceData;
 
-  // Create entity
-  const entityId = entityManager.createEntity();
-  entityManager.tagEntity(entityId, 'evidence');
+  // Create entity with 'evidence' tag
+  const entityId = entityManager.createEntity('evidence');
 
   // Add Transform component
   const transform = new Transform(x, y, 0, 1, 1);
-  componentRegistry.addComponent(entityId, 'Transform', transform);
+  transform.type = 'Transform';
+  componentRegistry.addComponent(entityId, transform);
 
   // Add Sprite component
   const sprite = new Sprite({
@@ -52,7 +52,8 @@ export function createEvidenceEntity(entityManager, componentRegistry, evidenceD
     visible: !hidden, // Hidden evidence not visible until detective vision
     alpha: hidden ? 0.3 : 1.0
   });
-  componentRegistry.addComponent(entityId, 'Sprite', sprite);
+  sprite.type = 'Sprite';
+  componentRegistry.addComponent(entityId, sprite);
 
   // Add Evidence component
   const evidence = new Evidence({
@@ -68,7 +69,8 @@ export function createEvidenceEntity(entityManager, componentRegistry, evidenceD
     requires,
     derivedClues
   });
-  componentRegistry.addComponent(entityId, 'Evidence', evidence);
+  evidence.type = 'Evidence';
+  componentRegistry.addComponent(entityId, evidence);
 
   // Add InteractionZone component
   const interactionZone = new InteractionZone({
@@ -84,7 +86,8 @@ export function createEvidenceEntity(entityManager, componentRegistry, evidenceD
       caseId
     }
   });
-  componentRegistry.addComponent(entityId, 'InteractionZone', interactionZone);
+  interactionZone.type = 'InteractionZone';
+  componentRegistry.addComponent(entityId, interactionZone);
 
   // Add trigger collider for detection
   const collider = new Collider({
@@ -94,7 +97,8 @@ export function createEvidenceEntity(entityManager, componentRegistry, evidenceD
     isStatic: true,
     tags: ['evidence']
   });
-  componentRegistry.addComponent(entityId, 'Collider', collider);
+  collider.type = 'Collider';
+  componentRegistry.addComponent(entityId, collider);
 
   console.log(`[EvidenceEntity] Created evidence: ${title} at (${x}, ${y})`);
 
