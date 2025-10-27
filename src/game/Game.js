@@ -23,9 +23,13 @@ import { KnowledgeProgressionSystem } from './systems/KnowledgeProgressionSystem
 import { DialogueSystem } from './systems/DialogueSystem.js';
 import { CameraFollowSystem } from './systems/CameraFollowSystem.js';
 import { TutorialSystem } from './systems/TutorialSystem.js';
+import { NPCMemorySystem } from './systems/NPCMemorySystem.js';
+import { DisguiseSystem } from './systems/DisguiseSystem.js';
 
 // UI Components
 import { TutorialOverlay } from './ui/TutorialOverlay.js';
+import { ReputationUI } from './ui/ReputationUI.js';
+import { DisguiseUI } from './ui/DisguiseUI.js';
 
 // Managers
 import { FactionManager } from './managers/FactionManager.js';
@@ -74,11 +78,15 @@ export class Game {
       knowledgeProgression: null,
       dialogue: null,
       cameraFollow: null,
-      tutorial: null
+      tutorial: null,
+      npcMemory: null,
+      disguise: null
     };
 
     // UI overlays
     this.tutorialOverlay = null;
+    this.reputationUI = null;
+    this.disguiseUI = null;
   }
 
   /**
@@ -178,12 +186,30 @@ export class Game {
     );
     this.gameSystems.tutorial.init();
 
+    // Create NPC memory system (requires FactionManager)
+    this.gameSystems.npcMemory = new NPCMemorySystem(
+      this.componentRegistry,
+      this.eventBus,
+      this.factionManager
+    );
+    this.gameSystems.npcMemory.init();
+
+    // Create disguise system (requires FactionManager)
+    this.gameSystems.disguise = new DisguiseSystem(
+      this.componentRegistry,
+      this.eventBus,
+      this.factionManager
+    );
+    this.gameSystems.disguise.init();
+
     // Register systems with engine SystemManager
-    // Priority order: Tutorial (5), PlayerMovement (10), Investigation (30), Faction (25), Knowledge (35), Dialogue (40), Camera (90)
+    // Priority order: Tutorial (5), PlayerMovement (10), NPCMemory (20), Disguise (22), Faction (25), Investigation (30), Knowledge (35), Dialogue (40), Camera (90)
     this.systemManager.registerSystem(this.gameSystems.tutorial, 5);
     this.systemManager.registerSystem(this.gameSystems.playerMovement, 10);
-    this.systemManager.registerSystem(this.gameSystems.investigation, 30);
+    this.systemManager.registerSystem(this.gameSystems.npcMemory, 20);
+    this.systemManager.registerSystem(this.gameSystems.disguise, 22);
     this.systemManager.registerSystem(this.gameSystems.factionReputation, 25);
+    this.systemManager.registerSystem(this.gameSystems.investigation, 30);
     this.systemManager.registerSystem(this.gameSystems.knowledgeProgression, 35);
     this.systemManager.registerSystem(this.gameSystems.dialogue, 40);
     this.systemManager.registerSystem(this.gameSystems.cameraFollow, 90);
@@ -203,6 +229,21 @@ export class Game {
       this.eventBus
     );
     this.tutorialOverlay.init();
+
+    // Create reputation UI
+    this.reputationUI = new ReputationUI(300, 500, {
+      eventBus: this.eventBus,
+      x: 20,
+      y: 80
+    });
+
+    // Create disguise UI
+    this.disguiseUI = new DisguiseUI(350, 450, {
+      eventBus: this.eventBus,
+      factionManager: this.factionManager,
+      x: 450,
+      y: 80
+    });
 
     console.log('[Game] UI overlays initialized');
   }
@@ -344,15 +385,114 @@ export class Game {
     // Game systems are updated by SystemManager automatically
     // This method is for game-level logic only
 
+    // Update faction standings in Reputation UI
+    if (this.reputationUI && this.factionManager) {
+      this.reputationUI.updateStandings(this.factionManager.getAllStandings());
+    }
+
+    // Update disguise UI with available disguises
+    if (this.disguiseUI && this.factionManager) {
+      this.updateDisguiseUI();
+    }
+
     // Update UI overlays
     if (this.tutorialOverlay) {
       this.tutorialOverlay.update(deltaTime);
+    }
+    if (this.reputationUI) {
+      this.reputationUI.update(deltaTime);
+    }
+    if (this.disguiseUI) {
+      this.disguiseUI.update(deltaTime);
     }
 
     // Check for pause input
     if (this.inputState.isPressed('pause')) {
       this.togglePause();
     }
+
+    // Toggle reputation UI with 'R' key
+    if (this.inputState.isPressed('faction')) {
+      this.reputationUI.toggle();
+    }
+
+    // Toggle disguise UI with 'G' key
+    if (this.inputState.isPressed('disguise')) {
+      this.disguiseUI.toggle();
+    }
+  }
+
+  /**
+   * Update disguise UI with available disguises
+   */
+  updateDisguiseUI() {
+    // Get player entity
+    const playerEntities = this.componentRegistry.queryEntities(['FactionMember', 'Disguise']);
+    if (playerEntities.length === 0) return;
+
+    const playerFaction = this.componentRegistry.getComponent(playerEntities[0], 'FactionMember');
+    const playerDisguise = this.componentRegistry.getComponent(playerEntities[0], 'Disguise');
+
+    // Build available disguises list
+    const disguises = [];
+    const factionIds = ['vanguard_prime', 'luminari_syndicate', 'cipher_collective', 'wraith_network', 'memory_keepers'];
+
+    for (const factionId of factionIds) {
+      const reputation = this.factionManager.getReputation(factionId);
+      const infamyPenalty = reputation ? (reputation.infamy / 100) : 0;
+
+      // Check if there are known NPCs nearby (simplified - just check if any NPCs know player)
+      const knownNearby = playerFaction.knownBy.size > 0;
+
+      // Calculate effectiveness for this disguise
+      const effectiveness = playerDisguise.calculateEffectiveness(infamyPenalty, knownNearby);
+
+      const disguiseData = {
+        factionId,
+        name: this.getFactionName(factionId),
+        disguise: playerDisguise,
+        effectiveness,
+        warnings: []
+      };
+
+      // Add warnings
+      if (infamyPenalty > 0.5) {
+        disguiseData.warnings.push('High infamy reduces effectiveness');
+      }
+      if (knownNearby) {
+        disguiseData.warnings.push('Known NPCs nearby (70% penalty)');
+      }
+
+      disguises.push(disguiseData);
+    }
+
+    this.disguiseUI.updateDisguises(disguises);
+
+    // Set current disguise if equipped
+    if (playerFaction.currentDisguise) {
+      const currentDisguiseData = disguises.find(d => d.factionId === playerFaction.currentDisguise);
+      if (currentDisguiseData) {
+        this.disguiseUI.setCurrentDisguise(currentDisguiseData);
+      }
+    } else {
+      this.disguiseUI.setCurrentDisguise(null);
+    }
+  }
+
+  /**
+   * Get faction display name
+   * @param {string} factionId
+   * @returns {string}
+   */
+  getFactionName(factionId) {
+    const names = {
+      vanguard_prime: 'Vanguard Prime',
+      luminari_syndicate: 'Luminari Syndicate',
+      cipher_collective: 'Cipher Collective',
+      wraith_network: 'Wraith Network',
+      memory_keepers: 'Memory Keepers'
+    };
+    return names[factionId] || factionId;
   }
 
   /**
@@ -362,7 +502,17 @@ export class Game {
   renderOverlays(ctx) {
     if (!this.loaded) return;
 
-    // Render tutorial overlay
+    // Render reputation UI
+    if (this.reputationUI) {
+      this.reputationUI.render(ctx);
+    }
+
+    // Render disguise UI
+    if (this.disguiseUI) {
+      this.disguiseUI.render(ctx);
+    }
+
+    // Render tutorial overlay (on top of other UIs)
     if (this.tutorialOverlay) {
       this.tutorialOverlay.render(ctx);
     }
@@ -392,6 +542,12 @@ export class Game {
     // Cleanup UI overlays
     if (this.tutorialOverlay && this.tutorialOverlay.cleanup) {
       this.tutorialOverlay.cleanup();
+    }
+    if (this.reputationUI && this.reputationUI.cleanup) {
+      this.reputationUI.cleanup();
+    }
+    if (this.disguiseUI && this.disguiseUI.cleanup) {
+      this.disguiseUI.cleanup();
     }
 
     // Cleanup all game systems

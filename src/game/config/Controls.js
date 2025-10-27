@@ -17,6 +17,8 @@ export const Controls = {
   deductionBoard: ['Tab'], // Open deduction board
   inventory: ['KeyI'], // Open inventory
   pause: ['Escape'], // Pause menu
+  faction: ['KeyR'], // Open reputation/faction UI
+  disguise: ['KeyG'], // Open disguise UI (G for Gear/Garb)
 
   // Detective abilities
   detectiveVision: ['KeyV'], // Activate detective vision

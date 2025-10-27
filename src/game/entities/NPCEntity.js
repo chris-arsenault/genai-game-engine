@@ -10,6 +10,7 @@ import { Sprite } from '../components/Sprite.js';
 import { FactionMember } from '../components/FactionMember.js';
 import { Collider } from '../components/Collider.js';
 import { InteractionZone } from '../components/InteractionZone.js';
+import { NPC } from '../components/NPC.js';
 
 /**
  * Create NPC entity
@@ -57,6 +58,22 @@ export function createNPCEntity(entityManager, componentRegistry, npcData) {
     knownBy: new Set()
   });
   componentRegistry.addComponent(entityId, 'FactionMember', factionMember);
+
+  // Add NPC component (memory and recognition)
+  const npcComponent = new NPC({
+    npcId: id,
+    name,
+    faction,
+    knownPlayer: false,
+    attitude: 'neutral',
+    dialogue: {
+      default: dialogueId || 'default_npc_dialogue',
+      friendly: dialogueId ? `${dialogueId}_friendly` : 'default_friendly',
+      neutral: dialogueId ? `${dialogueId}_neutral` : 'default_neutral',
+      hostile: dialogueId ? `${dialogueId}_hostile` : 'default_hostile'
+    }
+  });
+  componentRegistry.addComponent(entityId, 'NPC', npcComponent);
 
   // Add Collider component
   const collider = new Collider({
