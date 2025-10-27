@@ -149,20 +149,36 @@ Enable debug overlay by pressing `F3` in-game:
 ## Documentation
 
 - **[Phase 0 Bootstrap Report](./docs/reports/phase-0-bootstrap.md)** - Comprehensive project overview
+- **[Sprint 4 Report](./docs/reports/sprint-4-procedural-generation.md)** - Procedural generation system report
 - **[Project Overview](./docs/plans/project-overview.md)** - Full technical specifications (2,100+ lines)
 - **[Narrative Vision](./docs/narrative/vision.md)** - Story framework and world-building
 - **[Architecture Decisions](./docs/architecture/decisions/)** - ADRs for major design choices
 - **[CHANGELOG](./CHANGELOG.md)** - Version history and release notes
 
+### Procedural Generation System
+- **[Integration Guide](./docs/guides/procedural-generation-integration.md)** - Complete usage guide with examples
+- **[API Reference](./docs/api/procedural-generation-api.md)** - Detailed API documentation for all classes
+
 ### Research Reports
 - [Hybrid Genre Combinations](./docs/research/gameplay/hybrid-genre-combinations-2025-10-25.md)
 - [Standout Mechanics](./docs/research/features/standout-mechanics-systemic-differentiators-2025-01-25.md)
 - [Engine Architecture](./docs/research/engine/engine-architecture-2025-01-26.md)
+- [Procedural Generation](./docs/research/gameplay/procedural-generation-detective-metroidvania.md)
 
 ## Project Status
 
-**Current Phase**: Phase 0 (Bootstrap) - ✅ Complete
-**Next Phase**: Phase 1 (Core Mechanics) - Starting soon
+**Current Phase**: Sprint 4 (Procedural Generation) - ✅ Complete
+**Next Phase**: Sprint 5 (Quest & Progression) - Starting soon
+
+**Sprint 4 Achievements**:
+- ✅ Procedural generation system complete (~4,900 LOC)
+- ✅ 11 core classes (SeededRandom, LayoutGraph, BSPGenerator, DistrictGenerator, CaseGenerator, etc.)
+- ✅ Guaranteed case solvability via epistemic logic
+- ✅ Hybrid fixed-procedural architecture (narrative anchors + procedural variety)
+- ✅ 73+ tests with 92% coverage
+- ✅ Performance targets met (<120ms total generation)
+- ✅ Full ECS integration (LevelSpawnSystem)
+- ✅ Comprehensive documentation (Integration Guide + API Reference)
 
 **Phase 0 Achievements**:
 - ✅ Research complete (gameplay, features, engine)
