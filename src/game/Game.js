@@ -17,14 +17,26 @@ import { CameraFollowSystem } from './systems/CameraFollowSystem.js';
 import { TutorialSystem } from './systems/TutorialSystem.js';
 import { NPCMemorySystem } from './systems/NPCMemorySystem.js';
 import { DisguiseSystem } from './systems/DisguiseSystem.js';
+import { QuestSystem } from './systems/QuestSystem.js';
 
 // UI Components
 import { TutorialOverlay } from './ui/TutorialOverlay.js';
 import { ReputationUI } from './ui/ReputationUI.js';
 import { DisguiseUI } from './ui/DisguiseUI.js';
+import { QuestLogUI } from './ui/QuestLogUI.js';
+import { QuestTrackerHUD } from './ui/QuestTrackerHUD.js';
+import { QuestNotification } from './ui/QuestNotification.js';
 
 // Managers
 import { FactionManager } from './managers/FactionManager.js';
+import { QuestManager } from './managers/QuestManager.js';
+import { StoryFlagManager } from './managers/StoryFlagManager.js';
+
+// Quest data
+import { registerAct1Quests } from './data/quests/act1Quests.js';
+
+// Dialogue data
+import { registerAct1Dialogues } from './data/dialogues/Act1Dialogues.js';
 
 // Entity factories
 import { createPlayerEntity } from './entities/PlayerEntity.js';
@@ -61,6 +73,8 @@ export class Game {
 
     // Game managers
     this.factionManager = null;
+    this.questManager = null;
+    this.storyFlagManager = null;
 
     // Game systems (game-specific, not engine)
     this.gameSystems = {
@@ -72,13 +86,17 @@ export class Game {
       cameraFollow: null,
       tutorial: null,
       npcMemory: null,
-      disguise: null
+      disguise: null,
+      quest: null
     };
 
     // UI overlays
     this.tutorialOverlay = null;
     this.reputationUI = null;
     this.disguiseUI = null;
+    this.questLogUI = null;
+    this.questTrackerHUD = null;
+    this.questNotification = null;
   }
 
   /**
@@ -123,6 +141,24 @@ export class Game {
     this.factionManager = new FactionManager(this.eventBus);
     console.log('[Game] FactionManager initialized');
 
+    // Initialize StoryFlagManager (required by QuestManager)
+    this.storyFlagManager = new StoryFlagManager(this.eventBus);
+    this.storyFlagManager.init();
+    console.log('[Game] StoryFlagManager initialized');
+
+    // Initialize QuestManager (required by QuestSystem)
+    this.questManager = new QuestManager(
+      this.eventBus,
+      this.factionManager,
+      this.storyFlagManager
+    );
+    this.questManager.init();
+    console.log('[Game] QuestManager initialized');
+
+    // Register Act 1 quests
+    registerAct1Quests(this.questManager);
+    console.log('[Game] Act 1 quests registered');
+
     // Create investigation system (needed by other systems)
     this.gameSystems.investigation = new InvestigationSystem(
       this.componentRegistry,
@@ -163,6 +199,10 @@ export class Game {
     );
     this.gameSystems.dialogue.init();
 
+    // Register Act 1 dialogues
+    registerAct1Dialogues(this.gameSystems.dialogue);
+    console.log('[Game] Act 1 dialogues registered');
+
     // Create camera follow system
     this.gameSystems.cameraFollow = new CameraFollowSystem(
       this.componentRegistry,
@@ -194,13 +234,22 @@ export class Game {
     );
     this.gameSystems.disguise.init();
 
+    // Create quest system (requires QuestManager)
+    this.gameSystems.quest = new QuestSystem(
+      this.componentRegistry,
+      this.eventBus,
+      this.questManager
+    );
+    this.gameSystems.quest.init();
+
     // Register systems with engine SystemManager
-    // Priority order: Tutorial (5), PlayerMovement (10), NPCMemory (20), Disguise (22), Faction (25), Investigation (30), Knowledge (35), Dialogue (40), Camera (90)
+    // Priority order: Tutorial (5), PlayerMovement (10), NPCMemory (20), Disguise (22), Faction (25), Quest (27), Investigation (30), Knowledge (35), Dialogue (40), Camera (90)
     this.systemManager.registerSystem(this.gameSystems.tutorial, 5);
     this.systemManager.registerSystem(this.gameSystems.playerMovement, 10);
     this.systemManager.registerSystem(this.gameSystems.npcMemory, 20);
     this.systemManager.registerSystem(this.gameSystems.disguise, 22);
     this.systemManager.registerSystem(this.gameSystems.factionReputation, 25);
+    this.systemManager.registerSystem(this.gameSystems.quest, 27);
     this.systemManager.registerSystem(this.gameSystems.investigation, 30);
     this.systemManager.registerSystem(this.gameSystems.knowledgeProgression, 35);
     this.systemManager.registerSystem(this.gameSystems.dialogue, 40);
@@ -236,6 +285,32 @@ export class Game {
       x: 450,
       y: 80
     });
+
+    // Create quest notification
+    this.questNotification = new QuestNotification(400, {
+      eventBus: this.eventBus,
+      x: this.engine.canvas.width - 420,
+      y: 20
+    });
+    this.questNotification.init();
+
+    // Create quest tracker HUD
+    this.questTrackerHUD = new QuestTrackerHUD({
+      eventBus: this.eventBus,
+      questManager: this.questManager,
+      x: this.engine.canvas.width - 320,
+      y: 120
+    });
+    this.questTrackerHUD.init();
+
+    // Create quest log UI
+    this.questLogUI = new QuestLogUI(700, 500, {
+      eventBus: this.eventBus,
+      questManager: this.questManager,
+      x: (this.engine.canvas.width - 700) / 2,
+      y: (this.engine.canvas.height - 500) / 2
+    });
+    this.questLogUI.init();
 
     console.log('[Game] UI overlays initialized');
   }
@@ -288,6 +363,9 @@ export class Game {
     // Subscribe to game events for logging
     this.subscribeToGameEvents();
 
+    // Start Act 1 first quest (The Hollow Case)
+    this.startGame();
+
     console.log('[Game] Test scene loaded');
   }
 
@@ -326,6 +404,19 @@ export class Game {
       visible: true
     });
     this.componentRegistry.addComponent(entityId, 'Sprite', sprite);
+  }
+
+  /**
+   * Start the game narrative
+   */
+  startGame() {
+    // Set initial story flag
+    this.storyFlagManager.setFlag('game_started', true);
+
+    // Auto-start first quest if it has autoStart: true
+    // The QuestSystem will automatically start quests that have autoStart: true
+    // when their prerequisites are met
+    console.log('[Game] Game started - quest system will auto-start first quest');
   }
 
   /**
@@ -397,6 +488,15 @@ export class Game {
     if (this.disguiseUI) {
       this.disguiseUI.update(deltaTime);
     }
+    if (this.questNotification) {
+      this.questNotification.update(deltaTime);
+    }
+    if (this.questTrackerHUD) {
+      this.questTrackerHUD.update(deltaTime);
+    }
+    if (this.questLogUI) {
+      this.questLogUI.update(deltaTime);
+    }
 
     // Check for pause input
     if (this.inputState.isPressed('pause')) {
@@ -411,6 +511,11 @@ export class Game {
     // Toggle disguise UI with 'G' key
     if (this.inputState.isPressed('disguise')) {
       this.disguiseUI.toggle();
+    }
+
+    // Toggle quest log UI with 'Q' key
+    if (this.inputState.isPressed('quest')) {
+      this.questLogUI.toggle();
     }
   }
 
@@ -504,6 +609,21 @@ export class Game {
       this.disguiseUI.render(ctx);
     }
 
+    // Render quest tracker HUD
+    if (this.questTrackerHUD) {
+      this.questTrackerHUD.render(ctx);
+    }
+
+    // Render quest notification
+    if (this.questNotification) {
+      this.questNotification.render(ctx);
+    }
+
+    // Render quest log UI (on top if visible)
+    if (this.questLogUI) {
+      this.questLogUI.render(ctx);
+    }
+
     // Render tutorial overlay (on top of other UIs)
     if (this.tutorialOverlay) {
       this.tutorialOverlay.render(ctx);
@@ -540,6 +660,15 @@ export class Game {
     }
     if (this.disguiseUI && this.disguiseUI.cleanup) {
       this.disguiseUI.cleanup();
+    }
+    if (this.questLogUI && this.questLogUI.cleanup) {
+      this.questLogUI.cleanup();
+    }
+    if (this.questTrackerHUD && this.questTrackerHUD.cleanup) {
+      this.questTrackerHUD.cleanup();
+    }
+    if (this.questNotification && this.questNotification.cleanup) {
+      this.questNotification.cleanup();
     }
 
     // Cleanup all game systems

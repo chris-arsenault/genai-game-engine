@@ -19,6 +19,7 @@ export const Controls = {
   pause: ['Escape'], // Pause menu
   faction: ['KeyR'], // Open reputation/faction UI
   disguise: ['KeyG'], // Open disguise UI (G for Gear/Garb)
+  quest: ['KeyQ'], // Open quest log
 
   // Detective abilities
   detectiveVision: ['KeyV'], // Activate detective vision
