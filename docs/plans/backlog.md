@@ -189,7 +189,8 @@ High-touch narrative systems (QuestSystem, DialogueSystem, TutorialSystem) curre
 3. Quest/Tutorial UI overlays consume selectors, replacing manual event subscriptions.
 4. Add invariant tests ensuring component-level state matches store-derived views.
 
-_Progress 2025-10-28 (Session #18): Quest log UI + tracker HUD migrated to store selectors; quest/state parity tests added. Dialogue debug and tutorial overlays remain outstanding._
+_Progress 2025-10-28 (Session #18): Quest log UI + tracker HUD migrated to store selectors; quest/state parity tests added._
+_Progress 2025-10-28 (Session #19 planning): Dialogue & Tutorial Store Integration plan drafted (`docs/plans/dialogue-tutorial-store-plan.md`) to unblock overlay migration; implementation remains outstanding._
 
 **Acceptance Criteria**:
 - Quest log + tracker HUD read from selectors and stay in sync during quest progression playtest.
