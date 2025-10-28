@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Audio feedback controller bridges `player:moving`, `ui:show_prompt`, and evidence events to shared SFX stubs to satisfy CORE-302 acceptance criteria (`src/game/audio/AudioFeedbackController.js`, wired in `src/game/Game.js`).
+- Playwright feedback overlay smoke validates movement pulses, interaction prompts, and audio hook timestamps (`tests/e2e/feedback-overlays.spec.js`).
+
+### Testing
+- Added unit coverage for AudioFeedbackController throttling and SFX dispatch (`tests/game/audio/AudioFeedbackController.test.js`).
+
 ## [0.7.0] - 2025-10-27 - Sprint 7: Polish & Playtest
 
 ### Summary

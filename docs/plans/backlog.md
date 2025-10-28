@@ -299,7 +299,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Tags**: `gameplay`, `input`, `ui`
 - **Effort**: 3 hours
 - **Dependencies**: CORE-301
-- **Status**: In Progress — Movement pulse overlay and interaction prompts live; audio hooks + manual smoke still pending.
+- **Status**: In Progress — Visual + audio feedback wired with automated smoke; manual palette polish review remains.
 - **Description**: Provide immediate feedback for player input (camera centering, movement easing, interaction prompts) so WASD/E produce visible results.
 - **Acceptance Criteria**:
   - Camera centers on the player at start and follows smoothly during movement.

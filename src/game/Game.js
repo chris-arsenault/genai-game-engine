@@ -30,11 +30,12 @@ import { TutorialOverlay } from './ui/TutorialOverlay.js';
 import { DialogueBox } from './ui/DialogueBox.js';
 import { ReputationUI } from './ui/ReputationUI.js';
 import { DisguiseUI } from './ui/DisguiseUI.js';
-import { QuestLogUI } from './ui/QuestLogUI.js';
 import { QuestTrackerHUD } from './ui/QuestTrackerHUD.js';
 import { QuestNotification } from './ui/QuestNotification.js';
 import { InteractionPromptOverlay } from './ui/InteractionPromptOverlay.js';
 import { MovementIndicatorOverlay } from './ui/MovementIndicatorOverlay.js';
+import { QuestLogUI } from './ui/QuestLogUI.js';
+import { AudioFeedbackController } from './audio/AudioFeedbackController.js';
 
 // Managers
 import { FactionManager } from './managers/FactionManager.js';
@@ -78,6 +79,9 @@ export class Game {
     this.eventBus = engine.eventBus;
     this.renderer = engine.renderer;
     this.camera = engine.renderer.getCamera();
+    this.audioManager = typeof engine.getAudioManager === 'function'
+      ? engine.getAudioManager()
+      : engine.audioManager || null;
 
     // Game state
     this.inputState = new InputState(engine.eventBus);
@@ -116,6 +120,7 @@ export class Game {
     this.questNotification = null;
     this.interactionPromptOverlay = null;
     this.movementIndicatorOverlay = null;
+    this.audioFeedback = null;
 
     // Input handlers
     this._handleDialogueInput = null;
@@ -135,6 +140,8 @@ export class Game {
 
     // Initialize UI overlays
     this.initializeUIOverlays();
+    // Initialize audio integrations that respond to UI/gameplay feedback
+    this.initializeAudioIntegrations();
 
     // Load initial scene (Act 1: The Hollow Case)
     await this.loadAct1Scene();
@@ -401,6 +408,27 @@ export class Game {
     this.movementIndicatorOverlay.init();
 
     console.log('[Game] UI overlays initialized');
+  }
+
+  /**
+   * Initialize audio feedback hooks for player prompts and interactions.
+   */
+  initializeAudioIntegrations() {
+    if (this.audioFeedback || !this.eventBus) {
+      return;
+    }
+
+    if (!this.audioManager || typeof this.audioManager.playSFX !== 'function') {
+      console.log('[Game] Audio manager unavailable; feedback SFX stubs skipped');
+      return;
+    }
+
+    this.audioFeedback = new AudioFeedbackController(this.eventBus, this.audioManager, {
+      movementCooldown: 0.28,
+      promptCooldown: 0.45
+    });
+    this.audioFeedback.init();
+    console.log('[Game] Audio feedback controller initialized');
   }
 
   /**
@@ -764,6 +792,10 @@ export class Game {
     }
     if (this.dialogueBox && this.dialogueBox.cleanup) {
       this.dialogueBox.cleanup();
+    }
+    if (this.audioFeedback && this.audioFeedback.cleanup) {
+      this.audioFeedback.cleanup();
+      this.audioFeedback = null;
     }
 
     if (this._handleDialogueInput) {
