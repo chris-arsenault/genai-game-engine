@@ -9,16 +9,16 @@
  * - QuestTrigger: Area triggers that start/progress quests
  * - ObjectiveMarker: Visual markers for quest objectives
  *
- * Priority: 25 (After movement, before rendering)
+ * Priority: 27 (After movement, before rendering)
  */
 
-export class QuestSystem {
-  constructor(componentRegistry, eventBus, questManager) {
-    this.components = componentRegistry;
-    this.events = eventBus;
-    this.quests = questManager;
+import { System } from '../../engine/ecs/System.js';
 
-    this.requiredComponents = ['Quest'];
+export class QuestSystem extends System {
+  constructor(componentRegistry, eventBus, questManager) {
+    super(componentRegistry, eventBus, ['Quest']);
+    this.priority = 27;
+    this.quests = questManager;
 
     // Track which quests have been auto-started
     this.autoStartedQuests = new Set();
@@ -29,11 +29,11 @@ export class QuestSystem {
    */
   init() {
     // Subscribe to quest events for UI updates
-    this.events.subscribe('quest:started', (data) => this.onQuestStarted(data));
-    this.events.subscribe('quest:completed', (data) => this.onQuestCompleted(data));
-    this.events.subscribe('quest:failed', (data) => this.onQuestFailed(data));
-    this.events.subscribe('objective:progress', (data) => this.onObjectiveProgress(data));
-    this.events.subscribe('objective:completed', (data) => this.onObjectiveCompleted(data));
+    this.eventBus.subscribe('quest:started', (data) => this.onQuestStarted(data));
+    this.eventBus.subscribe('quest:completed', (data) => this.onQuestCompleted(data));
+    this.eventBus.subscribe('quest:failed', (data) => this.onQuestFailed(data));
+    this.eventBus.subscribe('objective:progress', (data) => this.onObjectiveProgress(data));
+    this.eventBus.subscribe('objective:completed', (data) => this.onObjectiveCompleted(data));
 
     console.log('[QuestSystem] Initialized');
   }
@@ -102,7 +102,7 @@ export class QuestSystem {
           console.log(`[QuestSystem] Trigger activated: ${quest.startQuestId}`);
 
           // Emit trigger event for objective tracking
-          this.events.emit('area:entered', {
+          this.eventBus.emit('area:entered', {
             triggerId: entity,
             areaId: quest.areaId || `trigger_${entity}`
           });
@@ -116,7 +116,7 @@ export class QuestSystem {
 
       // Progress objective if specified
       if (quest.objectiveId) {
-        this.events.emit('area:entered', {
+        this.eventBus.emit('area:entered', {
           areaId: quest.areaId || `trigger_${entity}`
         });
       }
@@ -143,7 +143,7 @@ export class QuestSystem {
         quest.interactable = true;
 
         // Show interaction prompt
-        this.events.emit('ui:interaction:show', {
+        this.eventBus.emit('ui:interaction:show', {
           entity,
           text: 'Talk',
           action: () => this.interactWithQuestGiver(entity, quest)
@@ -154,7 +154,7 @@ export class QuestSystem {
         quest.interactable = false;
 
         // Hide interaction prompt
-        this.events.emit('ui:interaction:hide', { entity });
+        this.eventBus.emit('ui:interaction:hide', { entity });
       }
     }
   }
@@ -184,7 +184,7 @@ export class QuestSystem {
       else if (!this.quests.completedQuests.has(questId) &&
                this.quests.checkPrerequisites(questData)) {
         // Start dialogue to offer quest
-        this.events.emit('dialogue:start', {
+        this.eventBus.emit('dialogue:start', {
           npcId: npc?.id || entity,
           dialogueId: `quest_offer_${questId}`,
           onAccept: () => this.quests.startQuest(questId)
@@ -200,7 +200,7 @@ export class QuestSystem {
     // If active quests, show turn-in dialogue
     if (activeQuests.length > 0) {
       const quest = activeQuests[0]; // Show first active quest
-      this.events.emit('dialogue:start', {
+      this.eventBus.emit('dialogue:start', {
         npcId: npc?.id || entity,
         dialogueId: `quest_active_${quest.id}`
       });
@@ -209,7 +209,7 @@ export class QuestSystem {
 
     // If completed quests, show acknowledgment
     if (completedQuests.length > 0) {
-      this.events.emit('dialogue:start', {
+      this.eventBus.emit('dialogue:start', {
         npcId: npc?.id || entity,
         dialogueId: `quest_complete_thanks`
       });
@@ -217,7 +217,7 @@ export class QuestSystem {
     }
 
     // Default dialogue
-    this.events.emit('dialogue:start', {
+    this.eventBus.emit('dialogue:start', {
       npcId: npc?.id || entity,
       dialogueId: 'default'
     });
@@ -298,7 +298,7 @@ export class QuestSystem {
     console.log(`[QuestSystem] Quest started: ${data.title}`);
 
     // Show notification
-    this.events.emit('ui:notification:show', {
+    this.eventBus.emit('ui:notification:show', {
       type: 'quest_started',
       title: 'New Quest',
       message: data.title,
@@ -306,14 +306,14 @@ export class QuestSystem {
     });
 
     // Update quest log UI
-    this.events.emit('ui:questlog:update');
+    this.eventBus.emit('ui:questlog:update');
   }
 
   onQuestCompleted(data) {
     console.log(`[QuestSystem] Quest completed: ${data.title}`);
 
     // Show notification
-    this.events.emit('ui:notification:show', {
+    this.eventBus.emit('ui:notification:show', {
       type: 'quest_completed',
       title: 'Quest Complete',
       message: data.title,
@@ -321,17 +321,17 @@ export class QuestSystem {
     });
 
     // Play sound
-    this.events.emit('audio:sfx:play', { id: 'quest_complete' });
+    this.eventBus.emit('audio:sfx:play', { id: 'quest_complete' });
 
     // Update quest log UI
-    this.events.emit('ui:questlog:update');
+    this.eventBus.emit('ui:questlog:update');
   }
 
   onQuestFailed(data) {
     console.log(`[QuestSystem] Quest failed: ${data.title} (${data.reason})`);
 
     // Show notification
-    this.events.emit('ui:notification:show', {
+    this.eventBus.emit('ui:notification:show', {
       type: 'quest_failed',
       title: 'Quest Failed',
       message: `${data.title}: ${data.reason}`,
@@ -339,29 +339,29 @@ export class QuestSystem {
     });
 
     // Update quest log UI
-    this.events.emit('ui:questlog:update');
+    this.eventBus.emit('ui:questlog:update');
   }
 
   onObjectiveProgress(data) {
     // Update objective UI
-    this.events.emit('ui:objective:update', data);
+    this.eventBus.emit('ui:objective:update', data);
   }
 
   onObjectiveCompleted(data) {
     console.log(`[QuestSystem] Objective completed: ${data.objectiveId}`);
 
     // Show brief notification
-    this.events.emit('ui:notification:show', {
+    this.eventBus.emit('ui:notification:show', {
       type: 'objective_completed',
       title: 'Objective Complete',
       duration: 2000
     });
 
     // Play sound
-    this.events.emit('audio:sfx:play', { id: 'objective_complete' });
+    this.eventBus.emit('audio:sfx:play', { id: 'objective_complete' });
 
     // Update UI
-    this.events.emit('ui:objective:update', data);
+    this.eventBus.emit('ui:objective:update', data);
   }
 
   /**

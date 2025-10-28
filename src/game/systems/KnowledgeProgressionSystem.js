@@ -8,14 +8,14 @@
  * Queries: [KnowledgeGate, Transform]
  */
 
+import { System } from '../../engine/ecs/System.js';
 import { GameConfig } from '../config/GameConfig.js';
 
-export class KnowledgeProgressionSystem {
+export class KnowledgeProgressionSystem extends System {
   constructor(componentRegistry, eventBus, investigationSystem) {
-    this.components = componentRegistry;
-    this.events = eventBus;
+    super(componentRegistry, eventBus, ['KnowledgeGate']);
+    this.priority = 35;
     this.investigation = investigationSystem; // Access to player knowledge state
-    this.requiredComponents = ['KnowledgeGate'];
 
     // Gate check timing (avoid checking every frame)
     this.gateCheckTimer = 0;
@@ -27,15 +27,15 @@ export class KnowledgeProgressionSystem {
    */
   init() {
     // Subscribe to progression events
-    this.events.subscribe('knowledge:learned', () => {
+    this.eventBus.subscribe('knowledge:learned', () => {
       this.checkAllGates();
     });
 
-    this.events.subscribe('ability:unlocked', () => {
+    this.eventBus.subscribe('ability:unlocked', () => {
       this.checkAllGates();
     });
 
-    this.events.subscribe('case:solved', () => {
+    this.eventBus.subscribe('case:solved', () => {
       this.checkAllGates();
     });
 
@@ -86,7 +86,7 @@ export class KnowledgeProgressionSystem {
 
     const transform = this.components.getComponent(entityId, 'Transform');
 
-    this.events.emit('gate:unlocked', {
+    this.eventBus.emit('gate:unlocked', {
       gateId: gate.id,
       type: gate.type,
       entityId,
@@ -126,8 +126,8 @@ export class KnowledgeProgressionSystem {
    * Cleanup system
    */
   cleanup() {
-    this.events.unsubscribe('knowledge:learned');
-    this.events.unsubscribe('ability:unlocked');
-    this.events.unsubscribe('case:solved');
+    this.eventBus.unsubscribe('knowledge:learned');
+    this.eventBus.unsubscribe('ability:unlocked');
+    this.eventBus.unsubscribe('case:solved');
   }
 }

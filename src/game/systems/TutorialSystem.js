@@ -7,6 +7,7 @@
  * Priority: 5 (early in update loop, before most game systems)
  */
 
+import { System } from '../../engine/ecs/System.js';
 import { tutorialSteps, getTutorialStep, getNextTutorialStep } from '../data/tutorialSteps.js';
 
 const isTestEnvironment = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
@@ -41,11 +42,11 @@ if (isTestEnvironment && typeof global !== 'undefined') {
   }
 }
 
-export class TutorialSystem {
+export class TutorialSystem extends System {
   constructor(componentRegistry, eventBus, storage = undefined) {
-    this.components = componentRegistry;
-    this.events = eventBus;
-    this.requiredComponents = [];
+    super(componentRegistry, eventBus, []);
+    this.priority = 5;
+
     const resolvedStorage =
       storage ??
       (typeof global !== 'undefined' && typeof global.localStorage !== 'undefined'
@@ -58,7 +59,8 @@ export class TutorialSystem {
     this.storage = resolvedStorage;
 
     // Tutorial state
-    this.enabled = false;
+    // Note: this.enabled is inherited from System base class
+    // We override it here to control tutorial activation
     this.currentStep = null;
     this.currentStepIndex = -1;
     this.completedSteps = new Set();
@@ -125,7 +127,7 @@ export class TutorialSystem {
     this.currentStep = tutorialSteps[0];
     this.stepStartTime = Date.now();
 
-    this.events.emit('tutorial:started', {
+    this.eventBus.emit('tutorial:started', {
       totalSteps: tutorialSteps.length,
     });
 
@@ -143,7 +145,7 @@ export class TutorialSystem {
     this.stepStartTime = Date.now();
     this.stepDuration = step.duration || 0;
 
-    this.events.emit('tutorial:step_started', {
+    this.eventBus.emit('tutorial:step_started', {
       stepId: step.id,
       stepIndex: this.currentStepIndex,
       totalSteps: tutorialSteps.length,
@@ -166,7 +168,7 @@ export class TutorialSystem {
     const stepId = this.currentStep.id;
     this.completedSteps.add(stepId);
 
-    this.events.emit('tutorial:step_completed', {
+    this.eventBus.emit('tutorial:step_completed', {
       stepId,
       stepIndex: this.currentStepIndex,
       totalSteps: tutorialSteps.length,
@@ -201,7 +203,7 @@ export class TutorialSystem {
       storage.setItem?.('tutorial_skipped', 'true');
     }
 
-    this.events.emit('tutorial:skipped', {
+    this.eventBus.emit('tutorial:skipped', {
       stepId: this.currentStep?.id,
       stepIndex: this.currentStepIndex,
     });
@@ -221,7 +223,7 @@ export class TutorialSystem {
       storage.setItem?.('tutorial_completed', 'true');
     }
 
-    this.events.emit('tutorial:completed', {
+    this.eventBus.emit('tutorial:completed', {
       totalSteps: tutorialSteps.length,
       completedSteps: this.completedSteps.size,
     });
@@ -234,73 +236,73 @@ export class TutorialSystem {
    */
   subscribeToEvents() {
     // Movement tracking
-    this.events.subscribe('player:moved', () => {
+    this.eventBus.subscribe('player:moved', () => {
       this.context.playerMoved = true;
     });
 
     // Evidence events
-    this.events.subscribe('evidence:detected', () => {
+    this.eventBus.subscribe('evidence:detected', () => {
       this.context.evidenceDetected++;
     });
 
-    this.events.subscribe('evidence:collected', () => {
+    this.eventBus.subscribe('evidence:collected', () => {
       this.context.evidenceCollected++;
     });
 
     // Clue events
-    this.events.subscribe('clue:derived', () => {
+    this.eventBus.subscribe('clue:derived', () => {
       this.context.cluesDerived++;
     });
 
     // Ability events
-    this.events.subscribe('ability:activated', (data) => {
+    this.eventBus.subscribe('ability:activated', (data) => {
       if (data.abilityId === 'detective_vision') {
         this.context.detectiveVisionUsed = true;
       }
     });
 
     // UI events
-    this.events.subscribe('case_file:opened', () => {
+    this.eventBus.subscribe('case_file:opened', () => {
       this.context.caseFileOpened = true;
     });
 
-    this.events.subscribe('deduction_board:opened', () => {
+    this.eventBus.subscribe('deduction_board:opened', () => {
       this.context.deductionBoardOpened = true;
     });
 
-    this.events.subscribe('deduction_board:connection_created', () => {
+    this.eventBus.subscribe('deduction_board:connection_created', () => {
       this.context.deductionConnectionsCreated++;
     });
 
     // Forensic events
-    this.events.subscribe('forensic:complete', () => {
+    this.eventBus.subscribe('forensic:complete', () => {
       this.context.forensicAnalysisComplete++;
     });
 
     // Case events
-    this.events.subscribe('case:theory_validated', () => {
+    this.eventBus.subscribe('case:theory_validated', () => {
       this.context.theoryValidated = true;
     });
 
-    this.events.subscribe('case:completed', () => {
+    this.eventBus.subscribe('case:completed', () => {
       this.context.caseSolved = true;
     });
 
     // Quest integration events - sync tutorial with Case 001 quest
-    this.events.subscribe('quest:started', (data) => {
+    this.eventBus.subscribe('quest:started', (data) => {
       if (data.questId === 'case_001_hollow_case') {
         console.log('[TutorialSystem] Case 001 quest started - tutorial active');
       }
     });
 
-    this.events.subscribe('quest:objective_completed', (data) => {
+    this.eventBus.subscribe('quest:objective_completed', (data) => {
       if (data.questId === 'case_001_hollow_case') {
         console.log(`[TutorialSystem] Quest objective completed: ${data.objectiveId}`);
         // Tutorial steps will progress naturally via game events
       }
     });
 
-    this.events.subscribe('quest:completed', (data) => {
+    this.eventBus.subscribe('quest:completed', (data) => {
       if (data.questId === 'case_001_hollow_case' && this.enabled) {
         console.log('[TutorialSystem] Case 001 completed - completing tutorial');
         this.completeTutorial();
@@ -308,7 +310,7 @@ export class TutorialSystem {
     });
 
     // Skip input (Esc key)
-    this.events.subscribe('input:escape', () => {
+    this.eventBus.subscribe('input:escape', () => {
       if (this.enabled && this.currentStep?.canSkip) {
         this.skipTutorial();
       }

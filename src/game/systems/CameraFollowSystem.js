@@ -8,14 +8,14 @@
  * Queries: [Transform, PlayerController]
  */
 
+import { System } from '../../engine/ecs/System.js';
 import { GameConfig } from '../config/GameConfig.js';
 
-export class CameraFollowSystem {
+export class CameraFollowSystem extends System {
   constructor(componentRegistry, eventBus, camera) {
-    this.components = componentRegistry;
-    this.events = eventBus;
+    super(componentRegistry, eventBus, ['Transform', 'PlayerController']);
     this.camera = camera; // Engine camera instance
-    this.requiredComponents = ['Transform', 'PlayerController'];
+    this.priority = 90;
 
     // Camera state
     this.targetX = 0;
@@ -34,15 +34,15 @@ export class CameraFollowSystem {
   /**
    * Update camera to follow player
    * @param {number} deltaTime
-   * @param {Array} entities
+   * @param {Array} entities - Array of entity IDs
    */
   update(deltaTime, entities) {
-    // Find player
-    const player = entities.find(e => e.hasTag && e.hasTag('player'));
-    if (!player) return;
+    // Get first player entity (should only be one with PlayerController)
+    if (entities.length === 0) return;
 
-    const transform = this.components.getComponent(player.id, 'Transform');
-    const controller = this.components.getComponent(player.id, 'PlayerController');
+    const entityId = entities[0];
+    const transform = this.getComponent(entityId, 'Transform');
+    const controller = this.getComponent(entityId, 'PlayerController');
 
     if (!transform || !controller) return;
 
@@ -94,7 +94,7 @@ export class CameraFollowSystem {
       this.camera.shake(intensity, duration);
     }
 
-    this.events.emit('camera:shake', {
+    this.eventBus.emit('camera:shake', {
       intensity,
       duration
     });
