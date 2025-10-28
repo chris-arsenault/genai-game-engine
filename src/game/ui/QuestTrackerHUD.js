@@ -6,6 +6,8 @@
  *
  * @class QuestTrackerHUD
  */
+import { buildQuestListByStatus, buildQuestViewModel, getActiveObjectives } from './helpers/questViewModel.js';
+
 export class QuestTrackerHUD {
   /**
    * Create a QuestTrackerHUD
@@ -18,12 +20,15 @@ export class QuestTrackerHUD {
     this.y = options.y || 100;
 
     // Quest data
+    this.trackedQuestId = null;
+    this.manualTrackedQuestId = null;
     this.trackedQuest = null;
     this.activeObjectives = [];
 
-    // Event bus
+    // Dependencies
     this.eventBus = options.eventBus;
     this.questManager = options.questManager;
+    this.worldStateStore = options.worldStateStore ?? null;
 
     // Visibility
     this.visible = true;
@@ -44,8 +49,11 @@ export class QuestTrackerHUD {
       ...options.style
     };
 
-    // Subscribe to quest events
-    this._subscribeToEvents();
+    // Store subscription handle
+    this.unsubscribe = null;
+
+    // Subscribe to world state updates
+    this._subscribeToUpdates();
   }
 
   /**
@@ -56,33 +64,32 @@ export class QuestTrackerHUD {
   }
 
   /**
-   * Subscribe to quest events
+   * Subscribe to world state updates.
    * @private
    */
-  _subscribeToEvents() {
-    if (!this.eventBus) return;
+  _subscribeToUpdates() {
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = null;
+    }
 
-    this.eventBus.subscribe('quest:started', (data) => {
-      // Auto-track main quests
-      if (data.quest.type === 'main') {
-        this.trackQuest(data.quest.id);
-      }
-    });
+    if (this.worldStateStore && typeof this.worldStateStore.onUpdate === 'function') {
+      this.unsubscribe = this.worldStateStore.onUpdate(() => {
+        this._refreshTrackedQuest(true);
+      });
+    }
 
-    this.eventBus.subscribe('quest:completed', (data) => {
-      // Clear tracker if completed quest is tracked
-      if (this.trackedQuest && this.trackedQuest.id === data.quest.id) {
-        this.clearTrackedQuest();
-      }
-    });
+    this._refreshTrackedQuest(true);
+  }
 
-    this.eventBus.subscribe('quest:objective_completed', (data) => {
-      this._updateTrackedQuest();
-    });
-
-    this.eventBus.subscribe('quest:updated', (data) => {
-      this._updateTrackedQuest();
-    });
+  /**
+   * Cleanup store subscription.
+   */
+  destroy() {
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = null;
+    }
   }
 
   /**
@@ -90,42 +97,80 @@ export class QuestTrackerHUD {
    * @param {string} questId - Quest ID to track
    */
   trackQuest(questId) {
-    if (!this.questManager) return;
+    if (!questId) {
+      return;
+    }
 
-    const quest = this.questManager.getQuest(questId);
-    if (!quest) return;
-
-    this.trackedQuest = quest;
-    this._updateTrackedQuest();
+    this.manualTrackedQuestId = questId;
+    this.trackedQuestId = questId;
+    this._refreshTrackedQuest(false);
   }
 
   /**
    * Clear tracked quest
    */
   clearTrackedQuest() {
+    this.trackedQuestId = null;
+    this.manualTrackedQuestId = null;
     this.trackedQuest = null;
     this.activeObjectives = [];
   }
 
   /**
-   * Update tracked quest objectives
+   * Refresh tracked quest from world state, optionally forcing auto-selection.
+   * @param {boolean} [forceAutoSelect=false]
    * @private
    */
-  _updateTrackedQuest() {
-    if (!this.trackedQuest || !this.questManager) return;
+  _refreshTrackedQuest(forceAutoSelect = false) {
+    const activeQuests = buildQuestListByStatus(this.worldStateStore, this.questManager, 'active');
 
-    const quest = this.questManager.getQuest(this.trackedQuest.id);
-    if (!quest) {
+    if (!activeQuests || activeQuests.length === 0) {
       this.clearTrackedQuest();
       return;
     }
 
-    this.trackedQuest = quest;
+    if (this.manualTrackedQuestId && !activeQuests.some((quest) => quest.id === this.manualTrackedQuestId)) {
+      const manualQuestRecord = buildQuestViewModel(
+        this.worldStateStore,
+        this.questManager,
+        this.manualTrackedQuestId
+      );
 
-    // Get active (incomplete, non-hidden) objectives
-    this.activeObjectives = quest.objectives.filter(obj =>
-      !obj.completed && !obj.hidden
-    );
+      if (manualQuestRecord && manualQuestRecord.status !== 'completed') {
+        // Manual quest tracked but not yet active; wait until it activates.
+        this.trackedQuest = null;
+        this.activeObjectives = [];
+        return;
+      }
+
+      // Manual quest completed or unavailable; fall back to auto selection.
+      this.manualTrackedQuestId = null;
+    }
+
+    let quest = null;
+
+    if (this.manualTrackedQuestId) {
+      quest = activeQuests.find((candidate) => candidate.id === this.manualTrackedQuestId) || null;
+    }
+
+    if (!quest && this.trackedQuestId) {
+      quest = activeQuests.find((candidate) => candidate.id === this.trackedQuestId) || null;
+    }
+
+    if (!quest && (forceAutoSelect || !this.manualTrackedQuestId)) {
+      const mainQuest = activeQuests.find((candidate) => candidate.type === 'main');
+      quest = mainQuest || activeQuests[0];
+    }
+
+    if (!quest) {
+      this.trackedQuest = null;
+      this.activeObjectives = [];
+      return;
+    }
+
+    this.trackedQuestId = quest.id;
+    this.trackedQuest = quest;
+    this.activeObjectives = getActiveObjectives(quest);
   }
 
   /**
@@ -208,16 +253,23 @@ export class QuestTrackerHUD {
     const bulletX = this.x + this.style.padding;
     const textX = bulletX + 15;
     const maxTextWidth = this.width - this.style.padding * 2 - 15;
+    const isCompleted = objective.status === 'completed';
 
     // Draw bullet point
-    ctx.fillStyle = this.style.textColor;
+    ctx.fillStyle = isCompleted ? this.style.completedColor : this.style.textColor;
     ctx.beginPath();
     ctx.arc(bulletX + 4, y + this.style.lineHeight / 2, 3, 0, Math.PI * 2);
     ctx.fill();
 
     // Draw objective text (truncated)
-    ctx.fillStyle = this.style.textColor;
-    const text = this._truncateText(ctx, objective.description, maxTextWidth);
+    ctx.fillStyle = isCompleted ? this.style.dimmedColor : this.style.textColor;
+    const description = objective.description || objective.title || objective.id;
+    let text = description;
+    if (!isCompleted && typeof objective.target === 'number' && objective.target > 1) {
+      const progressValue = typeof objective.progress === 'number' ? objective.progress : 0;
+      text += ` (${Math.min(progressValue, objective.target)}/${objective.target})`;
+    }
+    text = this._truncateText(ctx, text, maxTextWidth);
     ctx.fillText(text, textX, y);
   }
 
@@ -266,6 +318,7 @@ export class QuestTrackerHUD {
    */
   cleanup() {
     this.clearTrackedQuest();
+    this.destroy();
     console.log('[QuestTrackerHUD] Cleaned up');
   }
 }

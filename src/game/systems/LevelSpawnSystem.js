@@ -12,6 +12,18 @@ import { Sprite } from '../components/Sprite.js';
 import { Collider } from '../components/Collider.js';
 import { InteractionZone } from '../components/InteractionZone.js';
 
+function shouldLog() {
+  if (typeof __DEV__ !== 'undefined') {
+    return Boolean(__DEV__);
+  }
+
+  if (typeof process !== 'undefined' && process.env && typeof process.env.NODE_ENV === 'string') {
+    return process.env.NODE_ENV !== 'test';
+  }
+
+  return true;
+}
+
 /**
  * ECS System that spawns entities from generation result data.
  * Listens for 'level:load' event and creates all NPCs, evidence, and objects.
@@ -50,7 +62,9 @@ export class LevelSpawnSystem extends System {
    * Initialize system - register event listeners
    */
   init() {
-    console.log('[LevelSpawnSystem] Initialized');
+    if (shouldLog()) {
+      console.log('[LevelSpawnSystem] Initialized');
+    }
   }
 
   /**
@@ -74,7 +88,9 @@ export class LevelSpawnSystem extends System {
    * @returns {number} Total entities spawned
    */
   spawnFromGeneration(spawnData) {
-    console.log('[LevelSpawnSystem] Spawning entities from generation data...');
+    if (shouldLog()) {
+      console.log('[LevelSpawnSystem] Spawning entities from generation data...');
+    }
 
     const startTime = performance.now();
 
@@ -118,7 +134,9 @@ export class LevelSpawnSystem extends System {
 
     const elapsed = performance.now() - startTime;
 
-    console.log(`[LevelSpawnSystem] Spawned ${spawnedCount} entities in ${elapsed.toFixed(2)}ms`);
+    if (shouldLog()) {
+      console.log(`[LevelSpawnSystem] Spawned ${spawnedCount} entities in ${elapsed.toFixed(2)}ms`);
+    }
 
     // Emit level loaded event
     this.eventBus.emit('level:loaded', {
@@ -157,7 +175,9 @@ export class LevelSpawnSystem extends System {
 
       return entityId;
     } catch (error) {
-      console.error(`[LevelSpawnSystem] Failed to spawn NPC:`, npcData, error);
+      if (shouldLog()) {
+        console.error(`[LevelSpawnSystem] Failed to spawn NPC:`, npcData, error);
+      }
       return null;
     }
   }
@@ -194,7 +214,9 @@ export class LevelSpawnSystem extends System {
 
       return entityId;
     } catch (error) {
-      console.error(`[LevelSpawnSystem] Failed to spawn evidence:`, evidenceData, error);
+      if (shouldLog()) {
+        console.error(`[LevelSpawnSystem] Failed to spawn evidence:`, evidenceData, error);
+      }
       return null;
     }
   }
@@ -271,7 +293,9 @@ export class LevelSpawnSystem extends System {
 
       return entityId;
     } catch (error) {
-      console.error(`[LevelSpawnSystem] Failed to spawn object:`, objectData, error);
+      if (shouldLog()) {
+        console.error(`[LevelSpawnSystem] Failed to spawn object:`, objectData, error);
+      }
       return null;
     }
   }
@@ -280,7 +304,9 @@ export class LevelSpawnSystem extends System {
    * Clears all level entities (keeps player and persistent entities)
    */
   clearLevel() {
-    console.log(`[LevelSpawnSystem] Clearing ${this.levelEntities.size} level entities...`);
+    if (shouldLog()) {
+      console.log(`[LevelSpawnSystem] Clearing ${this.levelEntities.size} level entities...`);
+    }
 
     for (const entityId of this.levelEntities) {
       // Remove from spatial hash if available

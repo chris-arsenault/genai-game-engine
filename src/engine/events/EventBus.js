@@ -71,8 +71,8 @@ export class EventBus {
   }
 
   subscribe(eventType, callback, context = null, priority = 50) {
-    console.log("[DEPRECATED] Use .on() instead")
-    this.on(eventType, callback, context, priority);
+    console.warn('[EventBus] .subscribe() is deprecated; use .on() instead.');
+    return this.on(eventType, callback, context, priority);
   }
   /**
     * Unsubscribes from an event.
@@ -80,7 +80,7 @@ export class EventBus {
     * @param {Function} callback - Callback to remove
     */
   unsubscribe(eventType, callback) {
-    console.log("[DEPRECATED] Use .off() instead")
+    console.warn('[EventBus] .unsubscribe() is deprecated; use .off() or the function returned from .on() instead.');
     this.off(eventType, callback);
   }
 

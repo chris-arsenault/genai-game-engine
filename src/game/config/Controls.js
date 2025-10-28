@@ -49,11 +49,13 @@ export class InputState {
 
     // Track previous action states for edge detection
     this.previousActions = new Map();
+    this.justPressedActions = new Map();
 
     // Initialize action states
     Object.keys(Controls).forEach(action => {
       this.actions.set(action, false);
       this.previousActions.set(action, false);
+      this.justPressedActions.set(action, false);
     });
 
     // Bind keyboard events
@@ -102,12 +104,28 @@ export class InputState {
       this.previousActions.set(action, wasPressed);
       this.actions.set(action, isPressed);
 
+      const becamePressed = isPressed && !wasPressed;
+
       // Emit events for action press (edge detection)
-      if (isPressed && !wasPressed && this.eventBus) {
+      if (becamePressed && this.eventBus) {
+        const payload = {
+          action,
+          timestamp: Date.now()
+        };
+
         // Escape key special handling for tutorial system
         if (action === 'pause' || action === 'cancel') {
           this.eventBus.emit('input:escape', { action });
         }
+
+        this.eventBus.emit('input:action_pressed', payload);
+        this.eventBus.emit(`input:${action}:pressed`, payload);
+      }
+
+      if (becamePressed) {
+        this.justPressedActions.set(action, true);
+      } else if (!isPressed) {
+        this.justPressedActions.set(action, false);
       }
     }
   }
@@ -119,6 +137,20 @@ export class InputState {
    */
   isPressed(action) {
     return this.actions.get(action) || false;
+  }
+
+  /**
+   * Check if action transitioned from not pressed to pressed this frame.
+   * @param {string} action - Action name
+   * @returns {boolean}
+   */
+  wasJustPressed(action) {
+    const justPressed = this.justPressedActions.get(action) || false;
+    if (justPressed) {
+      this.justPressedActions.set(action, false);
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -137,6 +169,8 @@ export class InputState {
     this.keys.clear();
     this.actions.forEach((_, action) => {
       this.actions.set(action, false);
+      this.previousActions.set(action, false);
+      this.justPressedActions.set(action, false);
     });
   }
 

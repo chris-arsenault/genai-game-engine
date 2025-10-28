@@ -39,6 +39,10 @@ export class Engine {
     this.audioManager = new AudioManager();
     this.assetManager = new AssetManager();
 
+    // External frame hooks (e.g., Game coordinator)
+    this._externalUpdateHook = null;
+    this._externalOverlayHook = null;
+
     this.logger.info('Engine initialized');
   }
 
@@ -91,6 +95,14 @@ export class Engine {
    * @param {Object} metrics - Frame timing metrics
    */
   _onFrame(metrics) {
+    if (typeof this._externalUpdateHook === 'function') {
+      try {
+        this._externalUpdateHook(metrics.deltaTime, metrics);
+      } catch (error) {
+        this.logger.error('External update hook failed', error);
+      }
+    }
+
     // Rendering is now handled by RenderSystem via SystemManager
     // This ensures proper ECS integration and layer management
 
@@ -98,6 +110,15 @@ export class Engine {
     this.renderer.beginFrame();
     this.renderer.clear();
     this.renderer.layeredRenderer.composite(this.renderer.ctx);
+
+    if (typeof this._externalOverlayHook === 'function') {
+      try {
+        this._externalOverlayHook(this.renderer.ctx, metrics);
+      } catch (error) {
+        this.logger.error('External overlay hook failed', error);
+      }
+    }
+
     this.renderer.endFrame();
 
     // Process event queue
@@ -158,5 +179,29 @@ export class Engine {
     this.systemManager.cleanup();
     this.eventBus.clear();
     this.logger.info('Engine cleaned up');
+  }
+
+  /**
+   * Registers external callbacks for per-frame update and overlay rendering.
+   * @param {Object} hooks - Hook definitions
+   * @param {Function} [hooks.onUpdate] - Called before rendering with (deltaTime, metrics)
+   * @param {Function} [hooks.onRenderOverlay] - Called after world compositing with (ctx, metrics)
+   * @returns {Function} Function that removes the registered hooks
+   */
+  setFrameHooks({ onUpdate, onRenderOverlay } = {}) {
+    const updateHook = typeof onUpdate === 'function' ? onUpdate : null;
+    const overlayHook = typeof onRenderOverlay === 'function' ? onRenderOverlay : null;
+
+    this._externalUpdateHook = updateHook;
+    this._externalOverlayHook = overlayHook;
+
+    return () => {
+      if (this._externalUpdateHook === updateHook) {
+        this._externalUpdateHook = null;
+      }
+      if (this._externalOverlayHook === overlayHook) {
+        this._externalOverlayHook = null;
+      }
+    };
   }
 }

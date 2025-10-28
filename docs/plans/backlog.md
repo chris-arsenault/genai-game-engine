@@ -82,6 +82,28 @@ Nice-to-have features, polish items, or speculative improvements.
 
 **Critical Issues Blocking Manual Validation**
 
+### BUG-312: UI Overlay Toggle Edge Detection (Resolved)
+- **Priority**: **P0 - CRITICAL BLOCKER**
+- **Tags**: `ux`, `engine`, `input`, `test`
+- **Effort**: 1 hour (completed Session #31)
+- **Status**: ✅ **Resolved** – Manual QA confirmed overlays stay open per key press
+- **Reported**: 2025-10-29 (Manual QA smoke)
+
+**Problem**:
+Faction/disguise/quest overlays and dialogue prompts were invisible during browser QA because `InputState.isPressed` toggled UI state every frame a key remained down, instantly hiding panels and preventing dialogue from staying open.
+
+**Fix**:
+- Added `InputState.wasJustPressed()` backed by per-action edge tracking to report key transitions exactly once.
+- Game loop now guards overlay toggles with the new edge detection to avoid per-frame flapping.
+- Added regression tests covering input edge detection and overlay toggles (`tests/game/config/Controls.test.js`, updated `tests/game/Game.uiOverlays.test.js`).
+
+**Verification**:
+- Jest targeted suite: `tests/game/config/Controls.test.js`, `tests/game/Game.uiOverlays.test.js`.
+- Manual repro no longer occurs; overlays remain visible and dialogue advances normally.
+
+**Follow-up**:
+- Audit other toggle-style interactions (inventory, deduction board) once their UI hooks land to ensure they use `wasJustPressed`.
+
 ### PO-001: Fix Game Loading - Unable to Run Locally ⚠️
 - **Priority**: **P0 - CRITICAL BLOCKER**
 - **Tags**: `engine`, `critical`, `blocker`, `integration`
@@ -142,6 +164,324 @@ Ensure all systems receive EventBus reference either:
 6. Test basic player movement (if applicable)
 
 **Next Session**: This MUST be the first task addressed to unblock product owner validation.
+
+---
+
+### PO-002: Stand Up WorldStateStore Observability Layer
+- **Priority**: **P1 - HIGH**
+- **Tags**: `engine`, `ecs`, `narrative`, `refactor`
+- **Effort**: 4-6 hours
+- **Dependencies**: Session #16 research report (`docs/research/engine/game-state-management-comparison.md`)
+- **Status**: In Progress — Phase 0 WorldStateStore scaffolding delivered (Session #17); UI migration covered by PO-003
+- **Reported**: 2025-10-28 (Autonomous Session #16)
+
+**Problem**:
+Lack of centralized, queryable world state prevents verification of quest, dialogue, faction, and tutorial progression. Silent event failures cannot be detected without an authoritative store.
+
+**Solution Outline**:
+Implement Phase 0 of the hybrid Event-Sourced WorldStateStore (see `docs/plans/world-state-store-plan.md`):
+1. Scaffold `WorldStateStore` with normalized slices (quests, story flags, factions, tutorial).
+2. Subscribe store to EventBus (`quest:*`, `story:*`, `faction:*`, `tutorial:*`).
+3. Publish memoized selectors for UI overlays and SaveManager.
+4. Expose `worldStateStore.debug()` console dump gated behind `__DEV__`.
+
+**Acceptance Criteria**:
+- Store instance created in `src/game/Game.js` and shared via dependency container.
+- Events produce deterministic state snapshots accessible via selectors in <1 ms.
+- SaveManager can serialize state via store without manager scraping (parity verified in tests).
+- Jest reducer + selector tests cover quest/story/faction happy paths and error payloads.
+- Benchmark `node benchmarks/state-store-prototype.js` updated to consume real reducers.
+
+---
+
+### PO-003: Migrate Quest/Tutorial/Dialogue Systems to WorldStateStore
+- **Priority**: **P1 - HIGH**
+- **Tags**: `gameplay`, `narrative`, `ecs`, `ux`
+- **Effort**: 6-8 hours
+- **Dependencies**: PO-002
+- **Status**: In Progress — Dialogue/tutorial slices and UI consume WorldStateStore; first Playwright smoke (dialogue overlay) operational, debug tooling still pending
+- **Reported**: 2025-10-28 (Autonomous Session #16)
+
+**Problem**:
+High-touch narrative systems (QuestSystem, DialogueSystem, TutorialSystem) currently emit events without verified state ingestion, leading to UI desync (Quest log overlay) and opaque branching logic.
+
+**Solution Outline**:
+1. Dispatch structured events (`quest:state_changed`, `dialogue:node_changed`, `tutorial:step_completed`) with full payload schema.
+2. Reducers normalize data (quest objectives, dialogue options, tutorial milestones).
+3. Quest/Tutorial UI overlays consume selectors, replacing manual event subscriptions.
+4. Add invariant tests ensuring component-level state matches store-derived views.
+
+_Progress 2025-10-28 (Session #18): Quest log UI + tracker HUD migrated to store selectors; quest/state parity tests added._
+_Progress 2025-10-28 (Session #19 planning): Dialogue & Tutorial Store Integration plan drafted (`docs/plans/dialogue-tutorial-store-plan.md`) to unblock overlay migration; implementation remains outstanding._
+_Progress 2025-10-28 (Session #20 implementation): Dialogue/tutorial slices landed with store-driven overlays, SaveManager parity, and benchmarking updates; pending Playwright selectors & debug tooling._
+_Progress 2025-10-28 (Session #21 implementation): DialogueBox now instantiated via `Game.initializeUIOverlays`, forwarding keyboard input through EventBus and rendering on the HUD; Playwright selector wiring remains outstanding._
+_Progress 2025-10-28 (Session #22 implementation): Procedural performance tests rebaselined (TileMap <20 ms for 10k ops, SeededRandom >5 M ops/sec) to stabilize CI while retaining performance guardrails._
+_Progress 2025-10-28 (Session #23 implementation): Added Playwright smoke validating dialogue overlay + transcript selectors via WorldStateStore and prototyped debug overlay readout; next up quest path coverage._
+_Progress 2025-10-28 (Session #24 implementation): Quest 001 Playwright scenario landed (branches into Case 002) and dialogue debug overlay now offers timestamped transcripts with pause/resume controls; tutorial automation + transcript retention tuning remain open._
+
+**Acceptance Criteria**:
+- Quest log + tracker HUD read from selectors and stay in sync during quest progression playtest.
+- Dialogue debug overlay can display active node/path using store data.
+- Tutorial completion stored once; SaveManager load restores state via store snapshot.
+- Playwright scenario covering Quest 001 validates UI state after each milestone.
+- Added regression tests guard against missing reducer payload fields (throws descriptive error).
+
+### Session #24 Backlog Updates
+
+#### QA-201: Tutorial Playwright Regression
+- **Priority**: P1
+- **Tags**: `test`, `tutorial`, `narrative`
+- **Effort**: 4 hours
+- **Dependencies**: PO-003 selector APIs, Playwright harness
+- **Description**: Extend the Playwright pack to cover tutorial prompts, ensuring `TutorialOverlay` and store selectors remain synchronized during onboarding beats.
+- **Acceptance Criteria**:
+  - Playwright scenario drives tutorial onboarding to completion using store-driven selectors.
+  - Assertions cover prompt visibility, dismissal, and history tracking.
+  - Test artifacts (screenshots/video) stored on failure.
+  - Documentation updated with scenario scope and troubleshooting notes.
+_Progress 2025-10-28 (Session #25 implementation): Added `tests/e2e/tutorial-overlay.spec.js` validating tutorial progression, overlay visibility, and store completion state._
+
+#### QA-202: SaveManager LocalStorage Regression
+- **Priority**: P1
+- **Tags**: `test`, `engine`
+- **Effort**: 3 hours
+- **Dependencies**: PO-002 serialization hooks
+- **Description**: Restore failing SaveManager LocalStorage tests and validate parity against the new WorldStateStore snapshot pipeline.
+- **Acceptance Criteria**:
+  - LocalStorage-backed SaveManager Jest tests green and running in CI.
+  - Negative cases assert descriptive errors for corrupted payloads.
+  - TestStatus.md reflects coverage status and ownership.
+_Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable regression tests, confirmed SaveManager suite passes, and updated TestStatus.md to document coverage._
+
+#### TOOL-045: Dialogue Transcript Retention Audit
+- **Priority**: P3
+- **Tags**: `narrative`, `ux`, `perf`
+- **Effort**: 3 hours
+- **Dependencies**: Debug overlay enhancements (Session #24)
+- **Description**: Profile transcript growth, define retention limits, and implement truncation/pagination safeguards to keep overlay responsive during long play sessions.
+- **Status**: Deprioritized until the core gameplay vertical slice is interactive.
+- **Acceptance Criteria**:
+  - Benchmarks capture overlay update cost at 10, 25, and 50 transcript entries.
+  - Configurable retention limit agreed with narrative team and enforced in `dialogueSlice`.
+  - Overlay UI communicates when transcripts are truncated.
+  - Findings documented in `docs/tech/state-store.md` (or successor).
+
+#### PERF-118: LevelSpawnSystem Spawn Loop Baseline
+- **Priority**: P3
+- **Tags**: `perf`, `engine`
+- **Effort**: 3 hours
+- **Dependencies**: Level spawn instrumentation
+- **Description**: Reproduce the >50 ms spawn spike noted in Session #17, capture telemetry, and adjust thresholds or optimize spawn batching once core systems are playable.
+- **Acceptance Criteria**:
+  - Benchmark script records spawn time across 5 runs with averages and variance.
+  - CI perf threshold updated (or code optimized) so baseline stays <50 ms on target hardware.
+  - Root cause and mitigations summarized in performance notes.
+
+#### PERF-119: Procedural Guardrail Monitoring
+- **Priority**: P3
+- **Tags**: `perf`, `test`
+- **Effort**: 2 hours
+- **Dependencies**: Session #22 perf rebaseline
+- **Description**: Capture telemetry for TileMap and SeededRandom suites post-rebaseline to confirm thresholds remain stable and alerting works after interactive build lands.
+- **Acceptance Criteria**:
+  - CI telemetry logged for five consecutive runs.
+  - Threshold adjustments (if any) documented and linked to raw data.
+  - Failing runs emit actionable messaging for engineers.
+
+#### CI-014: Playwright Smoke Integration
+- **Priority**: P3
+- **Tags**: `test`, `ci`
+- **Effort**: 4 hours
+- **Dependencies**: CI agent access to browsers, QA-201/202
+- **Description**: Wire quest and dialogue Playwright smokes into the CI pipeline with junit + artifact publication to enable flake tracking once gameplay loop stabilizes.
+- **Acceptance Criteria**:
+  - CI pipeline installs browsers (`npx playwright install --with-deps`) and runs smoke pack headless.
+  - JUnit + line reporters uploaded for telemetry dashboards.
+  - Failure artifacts (video, trace) retained for 7 days.
+  - Pipeline gate enforces zero retries before surfacing failures to engineers.
+
+---
+
+### Session #27 Core Gameplay Focus
+
+#### CORE-301: Act 1 Scene Visual Bring-Up
+- **Priority**: P0
+- **Tags**: `gameplay`, `rendering`
+- **Effort**: 4 hours
+- **Dependencies**: Layered renderer dynamic layer support (Session #26)
+- **Status**: In Progress — Scene decal, caution tape, and ambient props implemented; needs browser smoke for palette tuning.
+- **Description**: Ensure the Act 1 investigative scene presents readable context on load (ground decal, boundaries, NPC silhouettes, crime scene marker) so players immediately understand where they are.
+- **Acceptance Criteria**:
+  - Crime scene trigger area renders using the ground layer and remains aligned as the camera moves.
+  - Boundary walls/environment props are visible with a distinct palette from the background grid.
+  - Background layer provides a stylized gradient/grid without obscuring entities.
+
+#### CORE-302: Player Feedback & Movement Loop
+- **Priority**: P0
+- **Tags**: `gameplay`, `input`, `ui`
+- **Effort**: 3 hours
+- **Dependencies**: CORE-301
+- **Status**: In Progress — Canvas overlay palette unified across HUD layers and inventory overlay integrated; audio feedback polish review remains.
+- **Description**: Provide immediate feedback for player input (camera centering, movement easing, interaction prompts) so WASD/E produce visible results.
+- **Acceptance Criteria**:
+  - Camera centers on the player at start and follows smoothly during movement.
+  - Interaction prompts (e.g., evidence collection, area entry) appear when the player enters the relevant zone.
+  - Movement emits audio/log cues or UI feedback confirming action registration.
+
+#### CORE-303: Investigative Loop Skeleton
+- **Priority**: P1
+- **Tags**: `gameplay`, `narrative`
+- **Effort**: 6 hours
+- **Dependencies**: CORE-301, CORE-302
+- **Description**: Implement the minimal investigative loop—collect evidence, unlock Detective Vision, interview witness—to prove the hybrid narrative/mechanics hook.
+- **Acceptance Criteria**:
+  - Collecting three evidence items unlocks Detective Vision and advances tutorial/quest state.
+  - Witness NPC interaction triggers dialogue from Act 1 and logs progression in the quest tracker.
+- Quest log reflects these milestones, and world state updates are visible via overlays or UI.
+
+---
+
+### Session #33 Debug Overlay Instrumentation
+
+#### DEBUG-210: UI overlay visibility diagnostics
+- **Priority**: P1
+- **Tags**: `ux`, `debug`, `engine`
+- **Effort**: 2 hours
+- **Dependencies**: Session #32 EventBus cleanup
+- **Status**: ✅ Completed — Session #33 added overlay visibility summaries to the debug HUD and event logging.
+- **Description**: Extend the developer-facing debug overlay so QA can see which HUD panels are active, along with contextual details drawn from the Game instance.
+- **Acceptance Criteria**:
+  - Debug overlay lists each major UI overlay (dialogue, tutorial, quest log, etc.) with open/closed state and contextual summary.
+  - Snapshot data sourced via a dedicated `Game.getOverlayStateSnapshot()` utility.
+  - Automated tests cover overlay visibility instrumentation to prevent regressions.
+
+#### SYS-228: Knowledge gate component lookup stabilisation
+- **Priority**: P1
+- **Tags**: `engine`, `quest`, `narrative`
+- **Effort**: 1.5 hours
+- **Dependencies**: Investigation System player state
+- **Status**: ✅ Completed — Session #33 migrated gate evaluation to `componentRegistry` and added regression coverage.
+- **Description**: Ensure `KnowledgeProgressionSystem` queries gate entities correctly during event-triggered checks to avoid missed unlocks in the investigative loop.
+- **Acceptance Criteria**:
+  - `checkAllGates` handles both scheduled updates and event-driven refreshes without referencing stale `this.components`.
+  - Event Bus emits `gate:unlocked` with position metadata when requirements are met.
+  - Jest regression verifies gates unlock when triggered via `knowledge:learned` events.
+
+---
+
+### Session #34 Edge-Triggered Input Integration
+
+#### INPUT-221: Deduction board toggle via InputState edges
+- **Priority**: P1
+- **Tags**: `engine`, `ux`, `input`
+- **Effort**: 1.5 hours
+- **Dependencies**: Session #33 overlay instrumentation
+- **Status**: ✅ Completed — Session #34 routed `input:deductionBoard:pressed` through EventBus with single-fire semantics.
+- **Description**: Replace raw keydown handling in DeductionSystem with `InputState.wasJustPressed`-backed events to prevent rapid open/close loops.
+- **Acceptance Criteria**:
+  - `InputState` emits action-specific events on edge transitions.
+  - DeductionSystem subscribes to `input:deductionBoard:pressed` and no longer binds DOM-level listeners.
+  - Jest regression ensures duplicative events are not emitted while holding Tab.
+
+#### ENGINE-233: Input action event bus instrumentation
+- **Priority**: P1
+- **Tags**: `engine`, `input`, `test`
+- **Effort**: 1 hour
+- **Dependencies**: Controls.js edge-detection refactor
+- **Status**: ✅ Completed — Session #34 extended `InputState` to broadcast `input:action_pressed` plus action-scoped topics with coverage.
+- **Description**: Provide a universal event bus hook for edge-triggered actions so UI/state systems can listen for single-fire toggles without polling.
+- **Acceptance Criteria**:
+  - `InputState` emits both `input:action_pressed` and `input:{action}:pressed`.
+  - Existing escape handling remains intact.
+  - Jest suite verifies emissions occur once per key press.
+
+#### DEBUG-212: Case & deduction overlay telemetry harmonisation
+- **Priority**: P1
+- **Tags**: `ux`, `debug`, `narrative`
+- **Effort**: 1 hour
+- **Dependencies**: Session #33 overlay helper
+- **Status**: ✅ Completed — Session #34 wired CaseFileUI and DeductionBoard into the overlay helper and snapshot diagnostics.
+- **Description**: Ensure narrative overlays emit standardized visibility events and appear in the debug HUD snapshot metadata.
+- **Acceptance Criteria**:
+  - CaseFileUI and DeductionBoard call `emitOverlayVisibility` with contextual metadata.
+  - `Game.getOverlayStateSnapshot()` reports case/deduction state when instances are present.
+  - UI-level Jest coverage verifies event payloads.
+
+---
+
+### Session #36 Inventory Overlay Integration
+
+#### UI-412: Neon noir overlay theme harmonisation
+- **Priority**: P1
+- **Tags**: `ux`, `ui`, `core`
+- **Effort**: 2 hours
+- **Dependencies**: CORE-302 palette review
+- **Status**: ✅ Completed — Session #36 introduced `overlayTheme` to consolidate tutorial, prompt, movement indicator, and inventory styling.
+- **Description**: Refactor canvas-based overlays to share the neon noir palette, typography, and spacing so HUD layers read coherently during manual QA sweeps.
+- **Acceptance Criteria**:
+  - TutorialOverlay, InteractionPromptOverlay, MovementIndicatorOverlay, and InventoryOverlay consume shared color/typography tokens.
+  - Overlay padding and clamping respect global margins on all resolutions.
+  - Palette aligns with debug HUD and manual CORE-302 review notes.
+
+#### INV-301: Inventory overlay world-state integration
+- **Priority**: P1
+- **Tags**: `ui`, `inventory`, `world-state`
+- **Effort**: 3 hours
+- **Dependencies**: WorldStateStore event bus instrumentation
+- **Status**: ✅ Completed — Session #36 seeded an inventory slice, toggled overlays via edge-triggered input, and exposed summaries through the debug HUD.
+- **Description**: Surface operative inventory within the HUD, backed by WorldStateStore data and frame hooks so QA can verify evidence items during the Hollow Case tutorial.
+- **Acceptance Criteria**:
+  - `inventory:*` EventBus actions populate WorldStateStore and SaveManager snapshots.
+  - `input:inventory:pressed` toggles the InventoryOverlay once per key edge and updates debug overlay listings.
+  - Inventory overlay lists seeded items with navigation via move inputs and highlights equipped slots.
+
+#### INV-302: Replace seeded inventory with live acquisition events
+- **Priority**: P2
+- **Tags**: `inventory`, `quest`, `save`
+- **Effort**: 4 hours
+- **Dependencies**: INV-301
+- **Status**: ✅ Completed — Session #37 routed evidence pickups, quest rewards, and vendor transactions through inventory events.
+- **Description**: Removed bootstrap seeding and now drive inventory from evidence pickups, quest rewards, and NPC trades so the overlay reflects real player progress.
+- **Acceptance Criteria**:
+  - Evidence collection, quest rewards, and faction vendors emit `inventory:item_added` with metadata tags.
+  - Save/load round-trips preserve inventory and equipment slots.
+  - Debug HUD summary reflects live counts without relying on `seedInventoryState`.
+
+#### INV-303: Implement vendor trade EventBus emitters
+- **Priority**: P2
+- **Tags**: `inventory`, `vendor`, `economy`
+- **Effort**: 3 hours
+- **Dependencies**: INV-302
+- **Status**: ✅ Completed — Session #38 wired vendor transactions into `economy:purchase:completed` payloads feeding inventory autosaves.
+- **Description**: Emit normalized `economy:purchase:completed` events when faction vendors transact so inventory updates and SaveManager metadata reflect vendor interactions.
+- **Acceptance Criteria**:
+  - Vendor/NPC trade logic dispatches a single `economy:purchase:completed` event with item descriptors, cost payload, vendor metadata, and optional faction alignment.
+  - Inventory overlay and debug HUD update immediately when purchases complete; SaveManager captures vendor metadata in snapshots.
+  - Jest coverage asserts event emission and inventory updates for at least one vendor scenario.
+
+#### DIA-208: Support inventory-aware dialogue conditions
+- **Priority**: P1
+- **Tags**: `dialogue`, `inventory`
+- **Effort**: 3 hours
+- **Dependencies**: INV-302
+- **Status**: ✅ Completed — Session #38 added inventory-aware condition evaluation and vendor consequence wiring in DialogueSystem.
+- **Description**: Evaluate dialogue choice conditions such as `hasItem` and `removeItem` objects against WorldStateStore inventory data so bribe paths and item gates respond to live inventory.
+- **Acceptance Criteria**:
+  - DialogueTree condition evaluation supports object-form conditions (`{ type: 'hasItem', item: 'credits', amount: 50 }`) and integrates with WorldStateStore selectors.
+  - Dialogue consequence handlers adjust inventory quantities or removals using the updated condition schema and emit resulting events.
+  - Jest coverage verifies `hasItem` gating and credit removal for Street Vendor bribe dialogue.
+
+#### QA-245: Debug overlay inventory smoke
+- **Priority**: P1
+- **Tags**: `test`, `playwright`, `ui`
+- **Effort**: 1 hour
+- **Dependencies**: INV-301, UI-412
+- **Status**: ✅ Completed — Session #36 added Playwright coverage ensuring debug overlay rows mirror inventory visibility and summaries.
+- **Description**: Extend existing Playwright suite to assert inventory listings appear in debug HUD and update when the overlay opens, preventing regressions to QA tooling.
+- **Acceptance Criteria**:
+  - Playwright test loads the game, opens the debug overlay, and confirms inventory rows list item counts.
+  - Toggling inventory overlay flips the debug overlay `data-visible` flag.
+  - Test asserts no console errors while exercising the scene.
 
 ---
 

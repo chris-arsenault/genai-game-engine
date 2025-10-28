@@ -39,10 +39,12 @@ export class LayeredRenderer {
   _initLayers() {
     const layerConfigs = [
       { name: 'background', zIndex: 0 },
-      { name: 'tiles', zIndex: 1 },
-      { name: 'entities', zIndex: 2 },
-      { name: 'effects', zIndex: 3 },
-      { name: 'ui', zIndex: 4 },
+      { name: 'ground', zIndex: 1 },       // large ground decals / overlays
+      { name: 'tiles', zIndex: 2 },        // tilemaps and static scenery
+      { name: 'environment', zIndex: 3 },  // props and world obstacles
+      { name: 'entities', zIndex: 4 },     // characters and interactive entities
+      { name: 'effects', zIndex: 5 },      // particles and transient FX
+      { name: 'ui', zIndex: 6 },           // world-space UI
     ];
 
     for (const config of layerConfigs) {

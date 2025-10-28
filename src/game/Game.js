@@ -19,16 +19,28 @@ import { NPCMemorySystem } from './systems/NPCMemorySystem.js';
 import { DisguiseSystem } from './systems/DisguiseSystem.js';
 import { QuestSystem } from './systems/QuestSystem.js';
 
+// State
+import { WorldStateStore } from './state/WorldStateStore.js';
+import {
+  questRewardToInventoryItem,
+  currencyDeltaToInventoryUpdate,
+} from './state/inventory/inventoryEvents.js';
+
 // Engine systems
 import { RenderSystem } from '../engine/renderer/RenderSystem.js';
 
 // UI Components
 import { TutorialOverlay } from './ui/TutorialOverlay.js';
+import { DialogueBox } from './ui/DialogueBox.js';
 import { ReputationUI } from './ui/ReputationUI.js';
 import { DisguiseUI } from './ui/DisguiseUI.js';
-import { QuestLogUI } from './ui/QuestLogUI.js';
 import { QuestTrackerHUD } from './ui/QuestTrackerHUD.js';
 import { QuestNotification } from './ui/QuestNotification.js';
+import { InteractionPromptOverlay } from './ui/InteractionPromptOverlay.js';
+import { MovementIndicatorOverlay } from './ui/MovementIndicatorOverlay.js';
+import { QuestLogUI } from './ui/QuestLogUI.js';
+import { InventoryOverlay } from './ui/InventoryOverlay.js';
+import { AudioFeedbackController } from './audio/AudioFeedbackController.js';
 
 // Managers
 import { FactionManager } from './managers/FactionManager.js';
@@ -72,6 +84,9 @@ export class Game {
     this.eventBus = engine.eventBus;
     this.renderer = engine.renderer;
     this.camera = engine.renderer.getCamera();
+    this.audioManager = typeof engine.getAudioManager === 'function'
+      ? engine.getAudioManager()
+      : engine.audioManager || null;
 
     // Game state
     this.inputState = new InputState(engine.eventBus);
@@ -83,6 +98,7 @@ export class Game {
     this.questManager = null;
     this.storyFlagManager = null;
     this.saveManager = null;
+    this.worldStateStore = null;
 
     // Game systems (game-specific, not engine)
     this.gameSystems = {
@@ -101,11 +117,27 @@ export class Game {
 
     // UI overlays
     this.tutorialOverlay = null;
+    this.dialogueBox = null;
     this.reputationUI = null;
     this.disguiseUI = null;
     this.questLogUI = null;
     this.questTrackerHUD = null;
     this.questNotification = null;
+    this.inventoryOverlay = null;
+    this.interactionPromptOverlay = null;
+    this.movementIndicatorOverlay = null;
+    this.caseFileUI = null;
+    this.deductionBoard = null;
+    this.audioFeedback = null;
+
+    // Input handlers
+    this._handleDialogueInput = null;
+
+    // Event unsubscriber storage
+    this._offGameEventHandlers = [];
+
+    // Engine frame hook cleanup
+    this._detachFrameHooks = null;
   }
 
   /**
@@ -122,6 +154,18 @@ export class Game {
 
     // Initialize UI overlays
     this.initializeUIOverlays();
+    // Initialize audio integrations that respond to UI/gameplay feedback
+    this.initializeAudioIntegrations();
+
+    if (typeof this.engine.setFrameHooks === 'function') {
+      this._detachFrameHooks = this.engine.setFrameHooks({
+        onUpdate: (deltaTime) => this.update(deltaTime),
+        onRenderOverlay: (ctx) => this.renderOverlays(ctx),
+      });
+      console.log('[Game] Frame hooks registered with engine');
+    } else {
+      console.warn('[Game] Engine does not support frame hooks; overlays will not auto-render');
+    }
 
     // Load initial scene (Act 1: The Hollow Case)
     await this.loadAct1Scene();
@@ -145,6 +189,10 @@ export class Game {
    */
   initializeGameSystems() {
     console.log('[Game] Initializing game systems...');
+
+    // Initialize world state store before systems start emitting events
+    this.worldStateStore = new WorldStateStore(this.eventBus);
+    this.worldStateStore.init();
 
     // Initialize FactionManager (must be created before systems that depend on it)
     this.factionManager = new FactionManager(this.eventBus);
@@ -174,6 +222,7 @@ export class Game {
       questManager: this.questManager,
       factionManager: this.factionManager,
       tutorialSystem: null, // Will be set after tutorial system is created
+      worldStateStore: this.worldStateStore,
     });
     this.saveManager.init();
     console.log('[Game] SaveManager initialized');
@@ -214,7 +263,8 @@ export class Game {
       this.componentRegistry,
       this.eventBus,
       this.gameSystems.investigation,
-      this.factionManager
+      this.factionManager,
+      this.worldStateStore
     );
     this.gameSystems.dialogue.init();
 
@@ -292,18 +342,33 @@ export class Game {
     console.log('[Game] Game systems initialized');
   }
 
-  /**
-   * Initialize UI overlays
-   */
   initializeUIOverlays() {
     console.log('[Game] Initializing UI overlays...');
 
     // Create tutorial overlay
     this.tutorialOverlay = new TutorialOverlay(
       this.engine.canvas,
-      this.eventBus
+      this.eventBus,
+      {
+        store: this.worldStateStore,
+      }
     );
     this.tutorialOverlay.init();
+
+    // Create dialogue box (store-driven)
+    const dialogueCtx = this.engine.canvas.getContext('2d');
+    this.dialogueBox = new DialogueBox(dialogueCtx, this.eventBus, {
+      store: this.worldStateStore,
+    });
+
+    // Forward keyboard input to dialogue box for choice/advance handling
+    this._handleDialogueInput = (event) => {
+      if (!this.dialogueBox) {
+        return;
+      }
+      this.dialogueBox.handleInput(event.code);
+    };
+    window.addEventListener('keydown', this._handleDialogueInput);
 
     // Create reputation UI
     this.reputationUI = new ReputationUI(300, 500, {
@@ -332,6 +397,7 @@ export class Game {
     this.questTrackerHUD = new QuestTrackerHUD({
       eventBus: this.eventBus,
       questManager: this.questManager,
+      worldStateStore: this.worldStateStore,
       x: this.engine.canvas.width - 320,
       y: 120
     });
@@ -341,12 +407,61 @@ export class Game {
     this.questLogUI = new QuestLogUI(700, 500, {
       eventBus: this.eventBus,
       questManager: this.questManager,
+      worldStateStore: this.worldStateStore,
       x: (this.engine.canvas.width - 700) / 2,
       y: (this.engine.canvas.height - 500) / 2
     });
     this.questLogUI.init();
 
+    // Create inventory overlay (operates on world state inventory slice)
+    this.inventoryOverlay = new InventoryOverlay(
+      this.engine.canvas,
+      this.eventBus,
+      {
+        store: this.worldStateStore,
+        title: 'Operative Inventory',
+      }
+    );
+    this.inventoryOverlay.init();
+
+    // Create interaction prompt overlay (HUD)
+    this.interactionPromptOverlay = new InteractionPromptOverlay(
+      this.engine.canvas,
+      this.eventBus,
+      this.camera
+    );
+    this.interactionPromptOverlay.init();
+
+    // Create player movement indicator overlay
+    this.movementIndicatorOverlay = new MovementIndicatorOverlay(
+      this.engine.canvas,
+      this.eventBus,
+      this.camera
+    );
+    this.movementIndicatorOverlay.init();
+
     console.log('[Game] UI overlays initialized');
+  }
+
+  /**
+   * Initialize audio feedback hooks for player prompts and interactions.
+   */
+  initializeAudioIntegrations() {
+    if (this.audioFeedback || !this.eventBus) {
+      return;
+    }
+
+    if (!this.audioManager || typeof this.audioManager.playSFX !== 'function') {
+      console.log('[Game] Audio manager unavailable; feedback SFX stubs skipped');
+      return;
+    }
+
+    this.audioFeedback = new AudioFeedbackController(this.eventBus, this.audioManager, {
+      movementCooldown: 0.28,
+      promptCooldown: 0.45
+    });
+    this.audioFeedback.init();
+    console.log('[Game] Audio feedback controller initialized');
   }
 
   /**
@@ -428,39 +543,154 @@ export class Game {
    * Subscribe to game events for logging and debugging
    */
   subscribeToGameEvents() {
-    // Evidence events
-    this.eventBus.subscribe('evidence:collected', (data) => {
-      console.log(`[Game] Evidence collected: ${data.evidenceId}`);
-    });
+    if (this._offGameEventHandlers.length) {
+      this._offGameEventHandlers.forEach((off) => {
+        if (typeof off === 'function') {
+          off();
+        }
+      });
+      this._offGameEventHandlers.length = 0;
+    }
 
-    this.eventBus.subscribe('evidence:detected', (data) => {
+    const overlayLabels = {
+      dialogue: 'Dialogue Box',
+      disguise: 'Disguise UI',
+      interactionPrompt: 'Interaction Prompt',
+      questLog: 'Quest Log',
+      reputation: 'Reputation UI',
+      tutorial: 'Tutorial Overlay',
+    };
+
+    this._offGameEventHandlers.push(this.eventBus.on('ui:overlay_visibility_changed', (data) => {
+      const overlayId = data?.overlayId ?? 'unknown';
+      const stateLabel = data?.visible ? 'opened' : 'closed';
+      const label = overlayLabels[overlayId] || overlayId;
+      const detailParts = [];
+
+      if (data?.source) {
+        detailParts.push(`source=${data.source}`);
+      }
+      if (data?.dialogueId) {
+        detailParts.push(`dialogue=${data.dialogueId}`);
+      }
+      if (data?.nodeId) {
+        detailParts.push(`node=${data.nodeId}`);
+      }
+      if (typeof data?.text === 'string' && data.text.trim().length) {
+        const snippet = data.text.length > 48 ? `${data.text.slice(0, 45)}…` : data.text;
+        detailParts.push(`text="${snippet}"`);
+      }
+
+      const suffix = detailParts.length ? ` (${detailParts.join(', ')})` : '';
+      console.log(`[UI] Overlay ${stateLabel}: ${label}${suffix}`);
+    }));
+
+    // Evidence events
+    this._offGameEventHandlers.push(this.eventBus.on('evidence:collected', (data) => {
+      console.log(`[Game] Evidence collected: ${data.evidenceId}`);
+    }));
+
+    this._offGameEventHandlers.push(this.eventBus.on('evidence:detected', () => {
       // Visual feedback for detected evidence (could highlight sprite)
-    });
+    }));
 
     // Clue events
-    this.eventBus.subscribe('clue:derived', (data) => {
+    this._offGameEventHandlers.push(this.eventBus.on('clue:derived', (data) => {
       console.log(`[Game] New clue: ${data.clueId} from ${data.evidenceId}`);
-    });
+    }));
 
     // Reputation events
-    this.eventBus.subscribe('reputation:changed', (data) => {
+    this._offGameEventHandlers.push(this.eventBus.on('reputation:changed', (data) => {
       console.log(`[Game] Reputation changed: ${data.factionId} - ${data.newFame} fame, ${data.newInfamy} infamy`);
-    });
+    }));
 
     // Gate events
-    this.eventBus.subscribe('gate:unlocked', (data) => {
+    this._offGameEventHandlers.push(this.eventBus.on('gate:unlocked', (data) => {
       console.log(`[Game] Gate unlocked: ${data.gateId}`);
-    });
+    }));
 
     // Ability events
-    this.eventBus.subscribe('ability:unlocked', (data) => {
+    this._offGameEventHandlers.push(this.eventBus.on('ability:unlocked', (data) => {
       console.log(`[Game] Ability unlocked: ${data.abilityId}`);
-    });
+    }));
+
+    // Vendor economy events
+    this._offGameEventHandlers.push(this.eventBus.on('economy:purchase:completed', (data = {}) => {
+      const vendorId = data.vendorId ?? null;
+      const vendorName = data.vendorName ?? vendorId ?? 'vendor';
+      const vendorFaction = data.vendorFaction ?? null;
+      const items = [];
+
+      if (Array.isArray(data.items)) {
+        items.push(...data.items);
+      }
+      if (data.item) {
+        items.push(data.item);
+      }
+
+      for (const rawItem of items) {
+        const inventoryPayload = questRewardToInventoryItem(rawItem, {
+          questId: vendorId,
+          questTitle: vendorName,
+          questType: vendorFaction,
+          source: 'vendor_purchase',
+        });
+
+        if (inventoryPayload) {
+          const vendorTags = [
+            vendorId ? `vendor:${vendorId}` : null,
+            vendorFaction ? `vendorFaction:${vendorFaction}` : null,
+          ].filter(Boolean);
+
+          const mergedTags = Array.isArray(inventoryPayload.tags)
+            ? [...inventoryPayload.tags]
+            : [];
+
+          for (const tag of vendorTags) {
+            if (!mergedTags.includes(tag)) {
+              mergedTags.push(tag);
+            }
+          }
+
+          inventoryPayload.tags = mergedTags;
+          inventoryPayload.metadata = {
+            ...(inventoryPayload.metadata || {}),
+            vendorId,
+            vendorName,
+            vendorFaction,
+            transactionId: data.transactionId ?? null,
+            source: 'vendor_purchase',
+          };
+
+          this.eventBus.emit('inventory:item_added', inventoryPayload);
+          console.log(`[Vendor] Purchase completed: ${vendorName} sold ${inventoryPayload.id}`);
+        }
+      }
+
+      if (data.cost && Number.isFinite(data.cost.credits) && data.cost.credits !== 0) {
+        const creditsSpent = Math.trunc(Math.abs(data.cost.credits));
+        const currencyPayload = currencyDeltaToInventoryUpdate({
+          amount: -creditsSpent,
+          source: 'vendor_purchase',
+          metadata: {
+            vendorId,
+            vendorName,
+            vendorFaction,
+            transactionId: data.transactionId ?? null,
+          },
+        });
+
+        if (currencyPayload) {
+          this.eventBus.emit('inventory:item_updated', currencyPayload);
+          console.log(`[Vendor] Credits spent: ${creditsSpent} at ${vendorName}`);
+        }
+      }
+    }));
 
     // Player movement
-    this.eventBus.subscribe('player:moved', (data) => {
+    this._offGameEventHandlers.push(this.eventBus.on('player:moved', () => {
       // Could add footstep sounds here
-    });
+    }));
   }
 
   /**
@@ -507,25 +737,41 @@ export class Game {
     if (this.questLogUI) {
       this.questLogUI.update(deltaTime);
     }
+    if (this.inventoryOverlay) {
+      this.inventoryOverlay.update(deltaTime);
+    }
+    if (this.dialogueBox) {
+      this.dialogueBox.update(deltaTime * 1000);
+    }
+    if (this.movementIndicatorOverlay) {
+      this.movementIndicatorOverlay.update(deltaTime);
+    }
+    if (this.interactionPromptOverlay) {
+      this.interactionPromptOverlay.update(deltaTime);
+    }
 
     // Check for pause input
-    if (this.inputState.isPressed('pause')) {
+    if (this.inputState.wasJustPressed('pause')) {
       this.togglePause();
     }
 
     // Toggle reputation UI with 'R' key
-    if (this.inputState.isPressed('faction')) {
-      this.reputationUI.toggle();
+    if (this.reputationUI && this.inputState.wasJustPressed('faction')) {
+      this.reputationUI.toggle('input:faction');
     }
 
     // Toggle disguise UI with 'G' key
-    if (this.inputState.isPressed('disguise')) {
-      this.disguiseUI.toggle();
+    if (this.disguiseUI && this.inputState.wasJustPressed('disguise')) {
+      this.disguiseUI.toggle('input:disguise');
     }
 
     // Toggle quest log UI with 'Q' key
-    if (this.inputState.isPressed('quest')) {
-      this.questLogUI.toggle();
+    if (this.questLogUI && this.inputState.wasJustPressed('quest')) {
+      this.questLogUI.toggle('input:quest');
+    }
+
+    if (this.inventoryOverlay && this.inputState.wasJustPressed('inventory')) {
+      this.inventoryOverlay.toggle('input:inventory');
     }
   }
 
@@ -603,6 +849,174 @@ export class Game {
   }
 
   /**
+   * Provide a snapshot of overlay visibility and key state for debug overlay.
+   * @returns {Array<Object>} Overlay state descriptors
+   */
+  getOverlayStateSnapshot() {
+    const overlays = [];
+    const truncate = (value, max = 48) => {
+      if (typeof value !== 'string') {
+        return null;
+      }
+      return value.length > max ? `${value.slice(0, max - 1)}…` : value;
+    };
+
+    if (this.tutorialOverlay) {
+      const progress = this.tutorialOverlay.progressInfo || {};
+      overlays.push({
+        id: 'tutorial',
+        label: 'Tutorial',
+        visible: Boolean(this.tutorialOverlay.visible),
+        summary: truncate(this.tutorialOverlay.currentPrompt?.title, 60) || 'idle',
+        metadata: {
+          step: this.tutorialOverlay.currentPrompt?.id ?? null,
+          percent: typeof progress.percent === 'number' ? Math.round(progress.percent) : null,
+        },
+      });
+    }
+
+    if (this.dialogueBox) {
+      const visible = typeof this.dialogueBox.isVisible === 'function'
+        ? this.dialogueBox.isVisible()
+        : Boolean(this.dialogueBox.visible);
+      overlays.push({
+        id: 'dialogue',
+        label: 'Dialogue',
+        visible,
+        summary: visible
+          ? `${this.dialogueBox.speaker ? `${this.dialogueBox.speaker}: ` : ''}${truncate(this.dialogueBox.text, 64) || '…'}`
+          : 'hidden',
+        metadata: {
+          dialogueId: this.dialogueBox.dialogueId ?? null,
+          nodeId: this.dialogueBox.nodeId ?? null,
+          choices: Array.isArray(this.dialogueBox.choices) ? this.dialogueBox.choices.length : 0,
+          typing: Boolean(this.dialogueBox.isTyping),
+        },
+      });
+    }
+
+    if (this.reputationUI) {
+      overlays.push({
+        id: 'reputation',
+        label: 'Reputation',
+        visible: Boolean(this.reputationUI.visible),
+        summary: `factions: ${Object.keys(this.reputationUI.standings || {}).length}`,
+        metadata: {},
+      });
+    }
+
+    if (this.disguiseUI) {
+      overlays.push({
+        id: 'disguise',
+        label: 'Disguise',
+        visible: Boolean(this.disguiseUI.visible),
+        summary: this.disguiseUI.visible
+          ? `selected: ${this.disguiseUI.currentDisguise?.name ?? 'none'}`
+          : `available: ${Array.isArray(this.disguiseUI.disguises) ? this.disguiseUI.disguises.length : 0}`,
+        metadata: {
+          suspicion: this.disguiseUI.suspicionLevel ?? null,
+        },
+      });
+    }
+
+    if (this.questLogUI) {
+      overlays.push({
+        id: 'questLog',
+        label: 'Quest Log',
+        visible: Boolean(this.questLogUI.visible),
+        summary: this.questLogUI.visible
+          ? `tab=${this.questLogUI.selectedTab ?? 'active'}${this.questLogUI.selectedQuestId ? ` › ${this.questLogUI.selectedQuestId}` : ''}`
+          : 'closed',
+        metadata: {},
+      });
+    }
+
+    if (this.inventoryOverlay) {
+      const selected = typeof this.inventoryOverlay.getSelectedItem === 'function'
+        ? this.inventoryOverlay.getSelectedItem()
+        : null;
+      overlays.push({
+        id: 'inventory',
+        label: 'Inventory',
+        visible: typeof this.inventoryOverlay.isVisible === 'function'
+          ? this.inventoryOverlay.isVisible()
+          : Boolean(this.inventoryOverlay.visible),
+        summary: typeof this.inventoryOverlay.getSummary === 'function'
+          ? this.inventoryOverlay.getSummary()
+          : `items=${Array.isArray(this.inventoryOverlay.items) ? this.inventoryOverlay.items.length : 0}`,
+        metadata: {
+          selectedItemId: selected?.id ?? null,
+          equippedSlots: this.inventoryOverlay.equipped
+            ? Object.keys(this.inventoryOverlay.equipped).filter((slot) => this.inventoryOverlay.equipped[slot]).length
+            : 0,
+        },
+      });
+    }
+
+    if (this.interactionPromptOverlay) {
+      overlays.push({
+        id: 'interactionPrompt',
+        label: 'Interaction Prompt',
+        visible: Boolean(this.interactionPromptOverlay.visible),
+        summary: truncate(this.interactionPromptOverlay.prompt?.text, 60) || 'idle',
+        metadata: {},
+      });
+    }
+
+    if (this.questNotification) {
+      const notification = this.questNotification.currentNotification ?? null;
+      overlays.push({
+        id: 'questNotification',
+        label: 'Quest Notification',
+        visible: Boolean(notification),
+        summary: notification
+          ? `${notification.title}: ${truncate(notification.message, 60) ?? ''}`
+          : 'idle',
+        metadata: {},
+      });
+    }
+
+    if (this.caseFileUI) {
+      overlays.push({
+        id: 'caseFile',
+        label: 'Case File',
+        visible: Boolean(this.caseFileUI.visible),
+        summary: this.caseFileUI.visible
+          ? `case ${truncate(this.caseFileUI.caseData?.title ?? 'unnamed', 48) ?? 'active'}`
+          : 'closed',
+        metadata: {
+          caseId: this.caseFileUI.caseData?.id ?? null,
+        },
+      });
+    }
+
+    if (this.deductionBoard) {
+      overlays.push({
+        id: 'deductionBoard',
+        label: 'Deduction Board',
+        visible: Boolean(this.deductionBoard.visible),
+        summary: this.deductionBoard.visible
+          ? `nodes=${this.deductionBoard.nodes?.size ?? 0} links=${this.deductionBoard.connections?.length ?? 0}`
+          : 'closed',
+        metadata: {},
+      });
+    }
+
+    if (this.movementIndicatorOverlay) {
+      const indicator = this.movementIndicatorOverlay.indicator ?? null;
+      overlays.push({
+        id: 'movementIndicator',
+        label: 'Movement Indicator',
+        visible: Boolean(indicator),
+        summary: indicator ? `ttl=${indicator.ttl?.toFixed?.(2) ?? indicator.ttl}` : 'inactive',
+        metadata: {},
+      });
+    }
+
+    return overlays;
+  }
+
+  /**
    * Render game overlays (called after main render)
    * @param {CanvasRenderingContext2D} ctx - Canvas context
    */
@@ -629,12 +1043,29 @@ export class Game {
       this.questNotification.render(ctx);
     }
 
+    if (this.inventoryOverlay) {
+      this.inventoryOverlay.render(ctx);
+    }
+
     // Render quest log UI (on top if visible)
     if (this.questLogUI) {
       this.questLogUI.render(ctx);
     }
 
-    // Render tutorial overlay (on top of other UIs)
+    // Render dialogue box above HUD but below tutorial overlay for clarity
+    if (this.dialogueBox) {
+      this.dialogueBox.render(this.engine.canvas.width, this.engine.canvas.height);
+    }
+
+    if (this.movementIndicatorOverlay) {
+      this.movementIndicatorOverlay.render(ctx);
+    }
+
+    if (this.interactionPromptOverlay) {
+      this.interactionPromptOverlay.render(ctx);
+    }
+
+    // Render tutorial overlay (kept highest priority)
     if (this.tutorialOverlay) {
       this.tutorialOverlay.render(ctx);
     }
@@ -661,6 +1092,11 @@ export class Game {
   cleanup() {
     console.log('[Game] Cleaning up...');
 
+    if (typeof this._detachFrameHooks === 'function') {
+      this._detachFrameHooks();
+      this._detachFrameHooks = null;
+    }
+
     // Cleanup UI overlays
     if (this.tutorialOverlay && this.tutorialOverlay.cleanup) {
       this.tutorialOverlay.cleanup();
@@ -677,13 +1113,47 @@ export class Game {
     if (this.questTrackerHUD && this.questTrackerHUD.cleanup) {
       this.questTrackerHUD.cleanup();
     }
+    if (this.inventoryOverlay && this.inventoryOverlay.cleanup) {
+      this.inventoryOverlay.cleanup();
+    }
+    if (this.interactionPromptOverlay && this.interactionPromptOverlay.cleanup) {
+      this.interactionPromptOverlay.cleanup();
+    }
+    if (this.movementIndicatorOverlay && this.movementIndicatorOverlay.cleanup) {
+      this.movementIndicatorOverlay.cleanup();
+    }
     if (this.questNotification && this.questNotification.cleanup) {
       this.questNotification.cleanup();
+    }
+    if (this.dialogueBox && this.dialogueBox.cleanup) {
+      this.dialogueBox.cleanup();
+    }
+    if (this.audioFeedback && this.audioFeedback.cleanup) {
+      this.audioFeedback.cleanup();
+      this.audioFeedback = null;
+    }
+
+    if (this._handleDialogueInput) {
+      window.removeEventListener('keydown', this._handleDialogueInput);
+      this._handleDialogueInput = null;
     }
 
     // Cleanup SaveManager (performs final autosave)
     if (this.saveManager && this.saveManager.cleanup) {
       this.saveManager.cleanup();
+    }
+
+    if (this._offGameEventHandlers.length) {
+      this._offGameEventHandlers.forEach((off) => {
+        if (typeof off === 'function') {
+          off();
+        }
+      });
+      this._offGameEventHandlers.length = 0;
+    }
+
+    if (this.questManager && typeof this.questManager.cleanup === 'function') {
+      this.questManager.cleanup();
     }
 
     // Cleanup all game systems

@@ -6,6 +6,9 @@
  *
  * @class QuestLogUI
  */
+import { emitOverlayVisibility } from './helpers/overlayEvents.js';
+import { buildQuestListByStatus, buildQuestViewModel, summarizeQuestProgress } from './helpers/questViewModel.js';
+
 export class QuestLogUI {
   /**
    * Create a QuestLogUI
@@ -22,10 +25,12 @@ export class QuestLogUI {
     // Quest data
     this.questManager = options.questManager;
     this.eventBus = options.eventBus;
+    this.worldStateStore = options.worldStateStore ?? null;
 
     // UI state
     this.visible = false;
     this.selectedTab = 'active'; // active, completed, failed
+    this.selectedQuestId = null;
     this.selectedQuest = null;
     this.scrollOffset = 0;
     this.maxScroll = 0;
@@ -53,8 +58,11 @@ export class QuestLogUI {
       ...options.style
     };
 
-    // Subscribe to events
-    this._subscribeToEvents();
+    // Store subscription handle
+    this.unsubscribe = null;
+
+    // Subscribe to world state updates
+    this._subscribeToUpdates();
   }
 
   /**
@@ -65,27 +73,41 @@ export class QuestLogUI {
   }
 
   /**
-   * Subscribe to quest events
+   * Subscribe to world state updates.
    * @private
    */
-  _subscribeToEvents() {
-    if (!this.eventBus) return;
+  _subscribeToUpdates() {
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = null;
+    }
 
-    this.eventBus.subscribe('quest:started', () => {
-      this._updateQuestList();
-    });
+    if (this.worldStateStore && typeof this.worldStateStore.onUpdate === 'function') {
+      this.unsubscribe = this.worldStateStore.onUpdate(() => {
+        this._handleWorldStateUpdate();
+      });
+    }
 
-    this.eventBus.subscribe('quest:completed', () => {
-      this._updateQuestList();
-    });
+    this._handleWorldStateUpdate();
+  }
 
-    this.eventBus.subscribe('quest:failed', () => {
-      this._updateQuestList();
-    });
+  /**
+   * Cleanup store listener.
+   */
+  destroy() {
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = null;
+    }
+  }
 
-    this.eventBus.subscribe('quest:updated', () => {
-      this._updateQuestList();
-    });
+  /**
+   * Handle world state updates by refreshing quest view cache.
+   * @private
+   */
+  _handleWorldStateUpdate() {
+    this._updateQuestList();
+    this._refreshSelectedQuest();
   }
 
   /**
@@ -113,40 +135,83 @@ export class QuestLogUI {
    * @private
    */
   _getQuestsForTab() {
-    if (!this.questManager) return [];
+    return buildQuestListByStatus(this.worldStateStore, this.questManager, this.selectedTab);
+  }
 
-    if (this.selectedTab === 'active') {
-      return this.questManager.getActiveQuests();
-    } else if (this.selectedTab === 'completed') {
-      return this.questManager.getCompletedQuests();
-    } else if (this.selectedTab === 'failed') {
-      return this.questManager.getFailedQuests();
+  /**
+   * Refresh selected quest view model from store.
+   * @private
+   */
+  _refreshSelectedQuest() {
+    if (!this.selectedQuestId) {
+      this.selectedQuest = null;
+      return;
     }
 
-    return [];
+    const quest = buildQuestViewModel(this.worldStateStore, this.questManager, this.selectedQuestId);
+    if (!quest) {
+      this.selectedQuestId = null;
+      this.selectedQuest = null;
+      return;
+    }
+
+    this.selectedQuest = quest;
   }
 
   /**
    * Toggle visibility
    */
-  toggle() {
-    this.visible = !this.visible;
-    if (this.visible) {
-      this._updateQuestList();
-      // Auto-select first quest if none selected
-      const quests = this._getQuestsForTab();
-      if (quests.length > 0 && !this.selectedQuest) {
-        this.selectedQuest = quests[0];
-      }
-    }
+  toggle(source = 'toggle') {
+    return this._setVisible(!this.visible, source);
   }
 
   /**
    * Set visibility
    * @param {boolean} visible - Visibility state
+   * @param {string} [source='setVisible'] - Source identifier for instrumentation
    */
-  setVisible(visible) {
-    this.visible = visible;
+  setVisible(visible, source = 'setVisible') {
+    return this._setVisible(Boolean(visible), source);
+  }
+
+  /**
+   * Apply visibility change, emit events, and refresh state as needed.
+   * @param {boolean} nextVisible
+   * @param {string} source
+   * @returns {boolean}
+   * @private
+   */
+  _setVisible(nextVisible, source) {
+    const desired = Boolean(nextVisible);
+    if (this.visible === desired) {
+      return this.visible;
+    }
+
+    this.visible = desired;
+
+    if (this.eventBus) {
+      const legacyEvent = this.visible ? 'ui:quest_log_opened' : 'ui:quest_log_closed';
+      this.eventBus.emit(legacyEvent, {
+        overlayId: 'questLog',
+        source,
+      });
+    }
+
+    emitOverlayVisibility(this.eventBus, 'questLog', this.visible, { source });
+
+    if (this.visible) {
+      this._updateQuestList();
+      // Auto-select first quest if none selected
+      const quests = this._getQuestsForTab();
+      if (quests.length > 0 && !this.selectedQuestId) {
+        this.selectedQuestId = quests[0].id;
+        this.selectedQuest = quests[0];
+      } else {
+        this._refreshSelectedQuest();
+      }
+    }
+
+    return this.visible;
   }
 
   /**
@@ -155,6 +220,7 @@ export class QuestLogUI {
    */
   switchTab(tab) {
     this.selectedTab = tab;
+    this.selectedQuestId = null;
     this.selectedQuest = null;
     this.scrollOffset = 0;
     this._updateQuestList();
@@ -165,7 +231,14 @@ export class QuestLogUI {
    * @param {Object} quest - Quest to select
    */
   selectQuest(quest) {
-    this.selectedQuest = quest;
+    if (!quest) {
+      this.selectedQuestId = null;
+      this.selectedQuest = null;
+      return;
+    }
+
+    this.selectedQuestId = quest.id;
+    this.selectedQuest = buildQuestViewModel(this.worldStateStore, this.questManager, quest.id);
   }
 
   /**
@@ -300,7 +373,7 @@ export class QuestLogUI {
    * @private
    */
   _renderQuestListItem(ctx, quest, x, y, width) {
-    const isSelected = this.selectedQuest && this.selectedQuest.id === quest.id;
+    const isSelected = this.selectedQuestId === quest.id;
 
     // Highlight selected quest
     if (isSelected) {
@@ -377,7 +450,8 @@ export class QuestLogUI {
     // Quest description
     ctx.fillStyle = this.style.textColor;
     ctx.font = `${this.style.fontSize}px ${this.style.fontFamily}`;
-    const descLines = this._wrapText(ctx, this.selectedQuest.description, detailsWidth - this.style.padding * 2);
+    const description = this.selectedQuest.description || 'No quest description available.';
+    const descLines = this._wrapText(ctx, description, detailsWidth - this.style.padding * 2);
     descLines.forEach((line) => {
       ctx.fillText(line, detailsX + this.style.padding, currentY);
       currentY += this.style.lineHeight;
@@ -409,9 +483,10 @@ export class QuestLogUI {
     const checkboxX = x;
     const checkboxY = y + this.style.lineHeight / 2 - checkboxSize / 2;
     const textX = x + checkboxSize + 8;
+    const isCompleted = objective.status === 'completed';
 
     // Draw checkbox
-    if (objective.completed) {
+    if (isCompleted) {
       ctx.fillStyle = this.style.completedColor;
       ctx.fillRect(checkboxX, checkboxY, checkboxSize, checkboxSize);
       // Checkmark
@@ -429,8 +504,14 @@ export class QuestLogUI {
     }
 
     // Draw text
-    ctx.fillStyle = objective.completed ? this.style.dimmedColor : this.style.textColor;
-    const text = this._truncateText(ctx, objective.description, maxWidth - textX - this.style.padding);
+    ctx.fillStyle = isCompleted ? this.style.dimmedColor : this.style.textColor;
+    const description = objective.description || objective.title || objective.id;
+    let text = description;
+    if (!isCompleted && typeof objective.target === 'number' && objective.target > 1) {
+      const progressValue = typeof objective.progress === 'number' ? objective.progress : 0;
+      text += ` (${Math.min(progressValue, objective.target)}/${objective.target})`;
+    }
+    text = this._truncateText(ctx, text, maxWidth - textX - this.style.padding);
     ctx.fillText(text, textX, y);
   }
 
@@ -463,10 +544,7 @@ export class QuestLogUI {
    * @private
    */
   _getQuestProgress(quest) {
-    const objectives = quest.objectives.filter(obj => !obj.hidden);
-    const completed = objectives.filter(obj => obj.completed).length;
-    const total = objectives.length;
-    return { completed, total };
+    return summarizeQuestProgress(quest);
   }
 
   /**

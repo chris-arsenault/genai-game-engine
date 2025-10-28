@@ -47,6 +47,8 @@ export class QuestNotification {
       ...options.style
     };
 
+    this._offHandlers = [];
+
     // Subscribe to quest events
     this._subscribeToEvents();
   }
@@ -65,29 +67,35 @@ export class QuestNotification {
   _subscribeToEvents() {
     if (!this.eventBus) return;
 
-    this.eventBus.subscribe('quest:started', (data) => {
-      this.addNotification('Quest Started', data.quest.title, 'started');
-    });
+    this._offHandlers.push(this.eventBus.on('quest:started', (data) => {
+      const questTitle = data?.quest?.title ?? data?.title ?? data?.questTitle ?? 'Unknown Quest';
+      this.addNotification('Quest Started', questTitle, 'started');
+    }));
 
-    this.eventBus.subscribe('quest:completed', (data) => {
-      this.addNotification('Quest Completed', data.quest.title, 'completed');
-    });
+    this._offHandlers.push(this.eventBus.on('quest:completed', (data) => {
+      const questTitle = data?.quest?.title ?? data?.title ?? data?.questTitle ?? 'Unknown Quest';
+      this.addNotification('Quest Completed', questTitle, 'completed');
+    }));
 
-    this.eventBus.subscribe('quest:failed', (data) => {
-      this.addNotification('Quest Failed', data.quest.title, 'failed');
-    });
+    this._offHandlers.push(this.eventBus.on('quest:failed', (data) => {
+      const questTitle = data?.quest?.title ?? data?.title ?? data?.questTitle ?? 'Unknown Quest';
+      const reason = data?.reason ? `${questTitle}: ${data.reason}` : questTitle;
+      this.addNotification('Quest Failed', reason, 'failed');
+    }));
 
-    this.eventBus.subscribe('quest:objective_completed', (data) => {
-      const message = data.objective.description;
+    this._offHandlers.push(this.eventBus.on('quest:objective_completed', (data) => {
+      const message = data?.objective?.description ?? data?.objective?.title ?? 'Objective complete';
       this.addNotification('Objective Completed', message, 'objective');
-    });
+    }));
 
-    this.eventBus.subscribe('quest:updated', (data) => {
+    this._offHandlers.push(this.eventBus.on('quest:updated', (data) => {
       // Show update for new objectives
-      if (data.newObjective) {
-        this.addNotification('New Objective', data.newObjective.description, 'updated');
+      const newObjective = data?.newObjective;
+      if (newObjective) {
+        const description = newObjective.description ?? newObjective.title ?? 'Objective updated';
+        this.addNotification('New Objective', description, 'updated');
       }
-    });
+    }));
   }
 
   /**
@@ -248,5 +256,16 @@ export class QuestNotification {
   cleanup() {
     this.clear();
     console.log('[QuestNotification] Cleaned up');
+  }
+
+  cleanup() {
+    if (this._offHandlers.length) {
+      this._offHandlers.forEach((off) => {
+        if (typeof off === 'function') {
+          off();
+        }
+      });
+      this._offHandlers.length = 0;
+    }
   }
 }

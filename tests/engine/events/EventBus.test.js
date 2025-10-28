@@ -61,6 +61,20 @@ describe('EventBus', () => {
 
       expect(capturedThis).toBe(context);
     });
+
+    it('should keep subscribe compatibility by returning unsubscribe', () => {
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const callback = jest.fn();
+
+      const unsubscribe = eventBus.subscribe('legacy:event', callback);
+      expect(typeof unsubscribe).toBe('function');
+
+      unsubscribe();
+      eventBus.emit('legacy:event');
+
+      expect(callback).not.toHaveBeenCalled();
+      warnSpy.mockRestore();
+    });
   });
 
   describe('Event Unsubscription', () => {

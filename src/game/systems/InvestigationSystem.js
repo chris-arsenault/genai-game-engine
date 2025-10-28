@@ -10,6 +10,7 @@
 
 import { System } from '../../engine/ecs/System.js';
 import { GameConfig } from '../config/GameConfig.js';
+import { evidenceToInventoryItem } from '../state/inventory/inventoryEvents.js';
 
 export class InvestigationSystem extends System {
   constructor(componentRegistry, eventBus) {
@@ -32,6 +33,7 @@ export class InvestigationSystem extends System {
     // Performance tracking
     this.evidenceCache = new Map(); // entityId -> Evidence component
     this.lastCacheUpdate = 0;
+    this.promptVisible = false;
   }
 
   /**
@@ -145,6 +147,7 @@ export class InvestigationSystem extends System {
     if (!playerController) return;
 
     const interactPressed = playerController.input.interact;
+    let promptShown = false;
 
     for (const entityId of entities) {
       const zone = this.getComponent(entityId, 'InteractionZone');
@@ -161,11 +164,14 @@ export class InvestigationSystem extends System {
         if (interactPressed || !zone.requiresInput) {
           this.collectEvidence(entityId, zone.data.evidenceId);
         } else {
-          // Show prompt
-          this.eventBus.emit('ui:show_prompt', {
-            text: zone.prompt,
-            position: { x: transform.x, y: transform.y }
-          });
+          if (!promptShown) {
+            this.eventBus.emit('ui:show_prompt', {
+              text: zone.prompt,
+              position: { x: transform.x, y: transform.y }
+            });
+            promptShown = true;
+            this.promptVisible = true;
+          }
         }
       } else if (zone.type === 'trigger') {
         // Area trigger (automatic, no input required)
@@ -192,14 +198,22 @@ export class InvestigationSystem extends System {
             entityId
           });
           console.log(`[InvestigationSystem] Interacting with NPC: ${zone.id}`);
+          this.hideActivePrompt();
         } else {
-          // Show prompt
-          this.eventBus.emit('ui:show_prompt', {
-            text: zone.prompt || 'Press E to talk',
-            position: { x: transform.x, y: transform.y }
-          });
+          if (!promptShown) {
+            this.eventBus.emit('ui:show_prompt', {
+              text: zone.prompt || 'Press E to talk',
+              position: { x: transform.x, y: transform.y }
+            });
+            promptShown = true;
+            this.promptVisible = true;
+          }
         }
       }
+    }
+
+    if (!promptShown && this.promptVisible) {
+      this.hideActivePrompt();
     }
   }
 
@@ -240,10 +254,20 @@ export class InvestigationSystem extends System {
       entityId
     });
 
+    const inventoryPayload = evidenceToInventoryItem(evidence, {
+      source: 'investigation',
+      entityId,
+    });
+    if (inventoryPayload) {
+      this.eventBus.emit('inventory:item_added', inventoryPayload);
+    }
+
     // Check if this evidence derives any clues
     this.checkClueDerivation(evidence);
 
     console.log(`[InvestigationSystem] Collected evidence: ${evidence.title}`);
+
+    this.hideActivePrompt();
   }
 
   /**
@@ -380,5 +404,16 @@ export class InvestigationSystem extends System {
   cleanup() {
     this.collectedEvidence.clear();
     this.discoveredClues.clear();
+  }
+
+  /**
+   * Hide the currently active interaction prompt if present.
+   */
+  hideActivePrompt() {
+    if (!this.promptVisible) {
+      return;
+    }
+    this.eventBus.emit('ui:hide_prompt');
+    this.promptVisible = false;
   }
 }

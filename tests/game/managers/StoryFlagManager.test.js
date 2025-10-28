@@ -53,7 +53,7 @@ describe('StoryFlagManager', () => {
 
   describe('Event Emission', () => {
     test('should emit event when flag changes', (done) => {
-      eventBus.subscribe('story:flag:changed', (data) => {
+      eventBus.on('story:flag:changed', (data) => {
         expect(data.flagId).toBe('test_event_flag');
         expect(data.newValue).toBe(true);
         expect(data.previousValue).toBe(null);
@@ -66,7 +66,7 @@ describe('StoryFlagManager', () => {
     test('should emit event when flag is removed', (done) => {
       storyFlags.setFlag('remove_flag');
 
-      eventBus.subscribe('story:flag:removed', (data) => {
+      eventBus.on('story:flag:removed', (data) => {
         expect(data.flagId).toBe('remove_flag');
         done();
       });
@@ -78,7 +78,7 @@ describe('StoryFlagManager', () => {
       storyFlags.setFlag('unchanged_flag', 'value');
 
       let eventCount = 0;
-      eventBus.subscribe('story:flag:changed', () => {
+      eventBus.on('story:flag:changed', () => {
         eventCount++;
       });
 

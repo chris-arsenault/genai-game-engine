@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Changed
+- Migrated gameplay systems, managers, and UI overlays to use `EventBus.on`/`off` with stored unsubscribe handles, eliminating deprecated API warnings and ensuring clean teardown during `Game.cleanup`.
+
+### Fixed
+- Resolved EventBus deprecation logs by providing a backward-compatible `subscribe` shim while aligning all runtime code with the modern API.
+- Ensured `QuestManager`, `SaveManager`, and tutorial/UI layers unregister their listeners on cleanup to prevent duplicate event handling in long sessions.
+
+### Testing
+- Added EventBus regression coverage for the deprecated `subscribe` shim and new QuestManager cleanup behavior.
+- Updated quest/story manager tests to exercise the new event lifecycle and validated UI overlay toggle stability.
+
 ## [0.1.0] - 2025-10-26
 
 ### Added - Phase 0: Bootstrap

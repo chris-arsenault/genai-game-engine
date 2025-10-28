@@ -27,9 +27,6 @@ export class DeductionSystem extends System {
     this.isOpen = false;
     this.currentCase = null;
 
-    // Key bindings
-    this.toggleKey = 'Tab'; // Press Tab to open/close board
-
     // Setup event listeners
     this.setupEventListeners();
   }
@@ -48,13 +45,18 @@ export class DeductionSystem extends System {
       this.onClueDerived(data);
     });
 
+    // React to edge-triggered toggle input
+    this.eventBus.on('input:deductionBoard:pressed', () => {
+      this.toggleBoard('input:deductionBoard');
+    });
+
     // Setup deduction board callbacks
     this.deductionBoard.onValidate = (theory) => {
       return this.validateTheory(theory);
     };
 
     this.deductionBoard.onClose = () => {
-      this.closeBoard();
+      this.closeBoard('ui:close');
     };
   }
 
@@ -75,31 +77,20 @@ export class DeductionSystem extends System {
   }
 
   /**
-   * Handle keyboard input
-   * @param {KeyboardEvent} event - Keyboard event
-   */
-  onKeyDown(event) {
-    if (event.key === this.toggleKey) {
-      this.toggleBoard();
-      event.preventDefault();
-    }
-  }
-
-  /**
    * Toggle deduction board open/closed
    */
-  toggleBoard() {
+  toggleBoard(source = 'toggle') {
     if (this.isOpen) {
-      this.closeBoard();
+      this.closeBoard(source);
     } else {
-      this.openBoard();
+      this.openBoard(source);
     }
   }
 
   /**
    * Open deduction board
    */
-  openBoard() {
+  openBoard(source = 'toggle') {
     // Check if there's an active case
     const activeCase = this.caseManager.getActiveCase();
     if (!activeCase) {
@@ -116,11 +107,12 @@ export class DeductionSystem extends System {
 
     this.currentCase = activeCase;
     this.deductionBoard.loadClues(clues);
-    this.deductionBoard.show();
+    this.deductionBoard.show(source);
     this.isOpen = true;
 
     this.eventBus.emit('deduction_board:opened', {
-      caseId: activeCase.id
+      caseId: activeCase.id,
+      source
     });
 
     console.log('[DeductionSystem] Deduction board opened');
@@ -129,12 +121,13 @@ export class DeductionSystem extends System {
   /**
    * Close deduction board
    */
-  closeBoard() {
-    this.deductionBoard.hide();
+  closeBoard(source = 'toggle') {
+    this.deductionBoard.hide(source);
     this.isOpen = false;
 
     this.eventBus.emit('deduction_board:closed', {
-      caseId: this.currentCase?.id
+      caseId: this.currentCase?.id,
+      source
     });
 
     console.log('[DeductionSystem] Deduction board closed');

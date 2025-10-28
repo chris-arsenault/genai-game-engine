@@ -25,6 +25,7 @@ export class RenderSystem {
     this.eventBus = eventBus;
     this.layeredRenderer = layeredRenderer;
     this.camera = camera;
+    this.dynamicLayers = ['background', 'ground', 'environment', 'entities', 'effects'];
 
     this.requiredComponents = ['Transform', 'Sprite'];
     this.enabled = true;
@@ -72,12 +73,23 @@ export class RenderSystem {
    * @param {number[]} entities - Entity IDs matching required components
    */
   update(deltaTime, entities) {
+    // Dynamic layers (background + world layers) are redrawn each frame
+    for (const layerName of this.dynamicLayers) {
+      const layer = this.layeredRenderer.getLayer(layerName);
+      if (layer) {
+        layer.markDirty();
+      }
+    }
+
     const startTime = performance.now();
     this.renderedCount = 0;
     this.culledCount = 0;
 
     // Group entities by layer
     const entitiesByLayer = this._groupEntitiesByLayer(entities);
+
+    // Render static background first (no entity data required)
+    this._renderBackgroundLayer();
 
     // Render each layer
     for (const [layerName, layerEntities] of entitiesByLayer) {
@@ -231,6 +243,43 @@ export class RenderSystem {
         layer.markClean();
       }
     }
+  }
+
+  /**
+   * Renders the background layer with a simple stylized grid to provide visual context.
+   * @private
+   */
+  _renderBackgroundLayer() {
+    const layer = this.layeredRenderer.getLayer('background');
+    if (!layer || !layer.dirty) {
+      return;
+    }
+
+    const { ctx, width, height } = layer;
+    layer.clear();
+
+    // Neon gradient backdrop
+    const gradient = ctx.createLinearGradient(0, 0, 0, height);
+    gradient.addColorStop(0, '#080b1c');
+    gradient.addColorStop(1, '#0e1a33');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+
+    // Subtle grid to convey scale
+    const gridSize = 64;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+    ctx.lineWidth = 1;
+
+    ctx.beginPath();
+    for (let x = 0; x <= width; x += gridSize) {
+      ctx.moveTo(x + 0.5, 0);
+      ctx.lineTo(x + 0.5, height);
+    }
+    for (let y = 0; y <= height; y += gridSize) {
+      ctx.moveTo(0, y + 0.5);
+      ctx.lineTo(width, y + 0.5);
+    }
+    ctx.stroke();
   }
 
   /**

@@ -142,6 +142,19 @@ export class DialogueTree {
    * @returns {boolean} True if condition passes
    */
   evaluateCondition(condition, context) {
+    if (typeof condition === 'string') {
+      return this.evaluateStringCondition(condition, context);
+    }
+
+    if (condition && typeof condition === 'object') {
+      return this.evaluateObjectCondition(condition, context);
+    }
+
+    console.warn('[DialogueTree] Unsupported condition format', condition);
+    return false;
+  }
+
+  evaluateStringCondition(condition, context) {
     const [type, ...params] = condition.split(':');
 
     switch (type) {
@@ -151,13 +164,15 @@ export class DialogueTree {
       case 'has_evidence':
         return context.evidence?.has(params[0]) || false;
 
-      case 'reputation_min':
+      case 'reputation_min': {
         const [faction, minRep] = params;
-        return (context.reputation?.[faction] || 0) >= parseInt(minRep);
+        return (context.reputation?.[faction] || 0) >= parseInt(minRep, 10);
+      }
 
-      case 'reputation_max':
+      case 'reputation_max': {
         const [faction2, maxRep] = params;
-        return (context.reputation?.[faction2] || 0) <= parseInt(maxRep);
+        return (context.reputation?.[faction2] || 0) <= parseInt(maxRep, 10);
+      }
 
       case 'flag':
         return context.flags?.has(params[0]) || false;
@@ -175,6 +190,65 @@ export class DialogueTree {
         console.warn(`[DialogueTree] Unknown condition type: ${type}`);
         return false;
     }
+  }
+
+  evaluateObjectCondition(condition, context) {
+    const type = typeof condition.type === 'string' ? condition.type : null;
+    if (!type) {
+      console.warn('[DialogueTree] Condition object missing type', condition);
+      return false;
+    }
+
+    switch (type) {
+      case 'hasItem':
+        return this.checkInventoryQuantity(context, condition.item || condition.itemId, condition.amount);
+
+      case 'notHasItem':
+        return !this.checkInventoryQuantity(context, condition.item || condition.itemId, condition.amount);
+
+      case 'hasItemWithTag':
+        return this.checkInventoryTag(context, condition.tag, condition.amount);
+
+      default:
+        console.warn(`[DialogueTree] Unknown object condition type: ${type}`);
+        return false;
+    }
+  }
+
+  checkInventoryQuantity(context, itemId, amount = 1) {
+    if (!itemId) {
+      return false;
+    }
+
+    const required = Number.isFinite(amount) ? Math.max(1, Math.trunc(amount)) : 1;
+    const quantities = context.inventory?.quantities || {};
+    const quantity = Number.isFinite(quantities[itemId]) ? quantities[itemId] : 0;
+    return quantity >= required;
+  }
+
+  checkInventoryTag(context, tag, amount = 1) {
+    if (!tag) {
+      return false;
+    }
+
+    const items = context.inventory?.items || [];
+    let matchedCount = 0;
+
+    for (const item of items) {
+      if (!item || !Array.isArray(item.tags)) {
+        continue;
+      }
+
+      if (item.tags.includes(tag)) {
+        matchedCount += Number.isFinite(item.quantity) ? Math.max(1, Math.trunc(item.quantity)) : 1;
+      }
+
+      if (matchedCount >= amount) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /**

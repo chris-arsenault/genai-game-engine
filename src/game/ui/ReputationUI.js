@@ -15,6 +15,7 @@
  *
  * @class ReputationUI
  */
+import { emitOverlayVisibility } from './helpers/overlayEvents.js';
 
 export class ReputationUI {
   /**
@@ -101,28 +102,50 @@ export class ReputationUI {
   /**
    * Toggle visibility
    */
-  toggle() {
-    this.visible = !this.visible;
-    if (this.visible && this.eventBus) {
-      this.eventBus.emit('ui:reputation_opened', {});
-    }
+  toggle(source = 'toggle') {
+    return this._setVisible(!this.visible, source);
   }
 
   /**
    * Show UI
    */
-  show() {
-    this.visible = true;
-    if (this.eventBus) {
-      this.eventBus.emit('ui:reputation_opened', {});
-    }
+  show(source = 'show') {
+    return this._setVisible(true, source);
   }
 
   /**
    * Hide UI
    */
-  hide() {
-    this.visible = false;
+  hide(source = 'hide') {
+    return this._setVisible(false, source);
+  }
+
+  /**
+   * Apply visibility change and emit events.
+   * @param {boolean} nextVisible
+   * @param {string} source
+   * @returns {boolean}
+   * @private
+   */
+  _setVisible(nextVisible, source) {
+    const desired = Boolean(nextVisible);
+    if (this.visible === desired) {
+      return this.visible;
+    }
+
+    this.visible = desired;
+
+    if (this.eventBus) {
+      const legacyEvent = this.visible ? 'ui:reputation_opened' : 'ui:reputation_closed';
+      this.eventBus.emit(legacyEvent, {
+        overlayId: 'reputation',
+        source,
+      });
+    }
+
+    emitOverlayVisibility(this.eventBus, 'reputation', this.visible, { source });
+
+    return this.visible;
   }
 
   /**
