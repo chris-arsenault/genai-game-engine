@@ -321,7 +321,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Tags**: `gameplay`, `input`, `ui`
 - **Effort**: 3 hours
 - **Dependencies**: CORE-301
-- **Status**: In Progress — Visual + audio feedback wired with automated smoke; manual palette polish review remains.
+- **Status**: In Progress — Canvas overlay palette unified across HUD layers and inventory overlay integrated; audio feedback polish review remains.
 - **Description**: Provide immediate feedback for player input (camera centering, movement easing, interaction prompts) so WASD/E produce visible results.
 - **Acceptance Criteria**:
   - Camera centers on the player at start and follows smoothly during movement.
@@ -406,6 +406,58 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - CaseFileUI and DeductionBoard call `emitOverlayVisibility` with contextual metadata.
   - `Game.getOverlayStateSnapshot()` reports case/deduction state when instances are present.
   - UI-level Jest coverage verifies event payloads.
+
+---
+
+### Session #36 Inventory Overlay Integration
+
+#### UI-412: Neon noir overlay theme harmonisation
+- **Priority**: P1
+- **Tags**: `ux`, `ui`, `core`
+- **Effort**: 2 hours
+- **Dependencies**: CORE-302 palette review
+- **Status**: ✅ Completed — Session #36 introduced `overlayTheme` to consolidate tutorial, prompt, movement indicator, and inventory styling.
+- **Description**: Refactor canvas-based overlays to share the neon noir palette, typography, and spacing so HUD layers read coherently during manual QA sweeps.
+- **Acceptance Criteria**:
+  - TutorialOverlay, InteractionPromptOverlay, MovementIndicatorOverlay, and InventoryOverlay consume shared color/typography tokens.
+  - Overlay padding and clamping respect global margins on all resolutions.
+  - Palette aligns with debug HUD and manual CORE-302 review notes.
+
+#### INV-301: Inventory overlay world-state integration
+- **Priority**: P1
+- **Tags**: `ui`, `inventory`, `world-state`
+- **Effort**: 3 hours
+- **Dependencies**: WorldStateStore event bus instrumentation
+- **Status**: ✅ Completed — Session #36 seeded an inventory slice, toggled overlays via edge-triggered input, and exposed summaries through the debug HUD.
+- **Description**: Surface operative inventory within the HUD, backed by WorldStateStore data and frame hooks so QA can verify evidence items during the Hollow Case tutorial.
+- **Acceptance Criteria**:
+  - `inventory:*` EventBus actions populate WorldStateStore and SaveManager snapshots.
+  - `input:inventory:pressed` toggles the InventoryOverlay once per key edge and updates debug overlay listings.
+  - Inventory overlay lists seeded items with navigation via move inputs and highlights equipped slots.
+
+#### INV-302: Replace seeded inventory with live acquisition events
+- **Priority**: P2
+- **Tags**: `inventory`, `quest`, `save`
+- **Effort**: 4 hours
+- **Dependencies**: INV-301
+- **Status**: Pending — requires wiring quest rewards and loot pickups into the inventory slice.
+- **Description**: Remove bootstrap seeding and drive inventory from evidence pickups, quest rewards, and NPC trades so the overlay reflects real player progress.
+- **Acceptance Criteria**:
+  - Evidence collection, quest rewards, and faction vendors emit `inventory:item_added` with metadata tags.
+  - Save/load round-trips preserve inventory and equipment slots.
+  - Debug HUD summary reflects live counts without relying on `seedInventoryState`.
+
+#### QA-245: Debug overlay inventory smoke
+- **Priority**: P1
+- **Tags**: `test`, `playwright`, `ui`
+- **Effort**: 1 hour
+- **Dependencies**: INV-301, UI-412
+- **Status**: ✅ Completed — Session #36 added Playwright coverage ensuring debug overlay rows mirror inventory visibility and summaries.
+- **Description**: Extend existing Playwright suite to assert inventory listings appear in debug HUD and update when the overlay opens, preventing regressions to QA tooling.
+- **Acceptance Criteria**:
+  - Playwright test loads the game, opens the debug overlay, and confirms inventory rows list item counts.
+  - Toggling inventory overlay flips the debug overlay `data-visible` flag.
+  - Test asserts no console errors while exercising the scene.
 
 ---
 

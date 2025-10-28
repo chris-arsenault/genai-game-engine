@@ -35,6 +35,7 @@ import { QuestNotification } from './ui/QuestNotification.js';
 import { InteractionPromptOverlay } from './ui/InteractionPromptOverlay.js';
 import { MovementIndicatorOverlay } from './ui/MovementIndicatorOverlay.js';
 import { QuestLogUI } from './ui/QuestLogUI.js';
+import { InventoryOverlay } from './ui/InventoryOverlay.js';
 import { AudioFeedbackController } from './audio/AudioFeedbackController.js';
 
 // Managers
@@ -118,6 +119,7 @@ export class Game {
     this.questLogUI = null;
     this.questTrackerHUD = null;
     this.questNotification = null;
+    this.inventoryOverlay = null;
     this.interactionPromptOverlay = null;
     this.movementIndicatorOverlay = null;
     this.caseFileUI = null;
@@ -132,6 +134,7 @@ export class Game {
 
     // Engine frame hook cleanup
     this._detachFrameHooks = null;
+    this._inventorySeeded = false;
   }
 
   /**
@@ -145,6 +148,9 @@ export class Game {
 
     // Initialize game systems
     this.initializeGameSystems();
+
+    // Prime narrative-driven inventory data before UI overlays mount
+    this.seedInventoryState();
 
     // Initialize UI overlays
     this.initializeUIOverlays();
@@ -338,6 +344,78 @@ export class Game {
   /**
    * Initialize UI overlays
    */
+  seedInventoryState() {
+    if (this._inventorySeeded) {
+      return;
+    }
+
+    if (!this.eventBus || !this.worldStateStore) {
+      return;
+    }
+
+    const currentInventory = this.worldStateStore.getState()?.inventory;
+    if (currentInventory && Array.isArray(currentInventory.items) && currentInventory.items.length > 0) {
+      this._inventorySeeded = true;
+      return;
+    }
+
+    const starterItems = [
+      {
+        id: 'evidence_polaroid_hollow_wharf',
+        name: 'Polaroid: Hollow Wharf Exchange',
+        description: 'Photograph capturing a clandestine memory trade between Cipher agents and Wraith brokers along the Hollow Wharf.',
+        type: 'Evidence',
+        rarity: 'evidence',
+        tags: ['evidence', 'case:act1', 'quest:intro'],
+        metadata: {
+          caseId: 'act1_hollow_case',
+          priority: 6,
+          lead: 'Confirm broker identities through dialogue branch C.',
+        },
+      },
+      {
+        id: 'gadget_siphon_glove',
+        name: 'Siphon Glove Prototype',
+        description: 'Vanguard Prime glove that extracts residual memory threads from touched surfaces; requires cooldown between uses.',
+        type: 'Gadget',
+        rarity: 'rare',
+        tags: ['gadget', 'faction:vanguard', 'tool'],
+        metadata: {
+          cooldown: '12s',
+          priority: 4,
+        },
+      },
+      {
+        id: 'intel_cipher_shard',
+        name: 'Cipher Memory Shard',
+        description: 'Encrypted shard storing fragmented coordinates to a Syndicate vault. Needs decryption via Deduction Board.',
+        type: 'Intel',
+        rarity: 'epic',
+        tags: ['evidence', 'cipher_collective', 'quest:act1'],
+        metadata: {
+          priority: 5,
+          prerequisite: 'Complete tutorial dialogue with Captain Reese.',
+        },
+      },
+    ];
+
+    for (const item of starterItems) {
+      this.eventBus.emit('inventory:item_added', item);
+    }
+
+    this.eventBus.emit('inventory:equipped', {
+      slot: 'gadget',
+      itemId: 'gadget_siphon_glove',
+    });
+
+    this.eventBus.emit('inventory:equipped', {
+      slot: 'focus',
+      itemId: 'intel_cipher_shard',
+    });
+
+    this._inventorySeeded = true;
+  }
+
   initializeUIOverlays() {
     console.log('[Game] Initializing UI overlays...');
 
@@ -408,6 +486,17 @@ export class Game {
       y: (this.engine.canvas.height - 500) / 2
     });
     this.questLogUI.init();
+
+    // Create inventory overlay (operates on world state inventory slice)
+    this.inventoryOverlay = new InventoryOverlay(
+      this.engine.canvas,
+      this.eventBus,
+      {
+        store: this.worldStateStore,
+        title: 'Operative Inventory',
+      }
+    );
+    this.inventoryOverlay.init();
 
     // Create interaction prompt overlay (HUD)
     this.interactionPromptOverlay = new InteractionPromptOverlay(
@@ -649,6 +738,9 @@ export class Game {
     if (this.questLogUI) {
       this.questLogUI.update(deltaTime);
     }
+    if (this.inventoryOverlay) {
+      this.inventoryOverlay.update(deltaTime);
+    }
     if (this.dialogueBox) {
       this.dialogueBox.update(deltaTime * 1000);
     }
@@ -677,6 +769,10 @@ export class Game {
     // Toggle quest log UI with 'Q' key
     if (this.questLogUI && this.inputState.wasJustPressed('quest')) {
       this.questLogUI.toggle('input:quest');
+    }
+
+    if (this.inventoryOverlay && this.inputState.wasJustPressed('inventory')) {
+      this.inventoryOverlay.toggle('input:inventory');
     }
   }
 
@@ -836,6 +932,28 @@ export class Game {
       });
     }
 
+    if (this.inventoryOverlay) {
+      const selected = typeof this.inventoryOverlay.getSelectedItem === 'function'
+        ? this.inventoryOverlay.getSelectedItem()
+        : null;
+      overlays.push({
+        id: 'inventory',
+        label: 'Inventory',
+        visible: typeof this.inventoryOverlay.isVisible === 'function'
+          ? this.inventoryOverlay.isVisible()
+          : Boolean(this.inventoryOverlay.visible),
+        summary: typeof this.inventoryOverlay.getSummary === 'function'
+          ? this.inventoryOverlay.getSummary()
+          : `items=${Array.isArray(this.inventoryOverlay.items) ? this.inventoryOverlay.items.length : 0}`,
+        metadata: {
+          selectedItemId: selected?.id ?? null,
+          equippedSlots: this.inventoryOverlay.equipped
+            ? Object.keys(this.inventoryOverlay.equipped).filter((slot) => this.inventoryOverlay.equipped[slot]).length
+            : 0,
+        },
+      });
+    }
+
     if (this.interactionPromptOverlay) {
       overlays.push({
         id: 'interactionPrompt',
@@ -926,6 +1044,10 @@ export class Game {
       this.questNotification.render(ctx);
     }
 
+    if (this.inventoryOverlay) {
+      this.inventoryOverlay.render(ctx);
+    }
+
     // Render quest log UI (on top if visible)
     if (this.questLogUI) {
       this.questLogUI.render(ctx);
@@ -991,6 +1113,9 @@ export class Game {
     }
     if (this.questTrackerHUD && this.questTrackerHUD.cleanup) {
       this.questTrackerHUD.cleanup();
+    }
+    if (this.inventoryOverlay && this.inventoryOverlay.cleanup) {
+      this.inventoryOverlay.cleanup();
     }
     if (this.interactionPromptOverlay && this.interactionPromptOverlay.cleanup) {
       this.interactionPromptOverlay.cleanup();

@@ -3,6 +3,7 @@ import { storySlice } from './slices/storySlice.js';
 import { factionSlice } from './slices/factionSlice.js';
 import { tutorialSlice } from './slices/tutorialSlice.js';
 import { dialogueSlice } from './slices/dialogueSlice.js';
+import { inventorySlice } from './slices/inventorySlice.js';
 
 const DEFAULT_ACTION_HISTORY = 50;
 const DEFAULT_DIALOGUE_HISTORY_LIMIT = 10;
@@ -13,6 +14,7 @@ const sliceRegistry = {
   faction: factionSlice,
   tutorial: tutorialSlice,
   dialogue: dialogueSlice,
+  inventory: inventorySlice,
 };
 
 function isDevEnvironment() {
@@ -193,6 +195,45 @@ export class WorldStateStore {
           payload: {
             flagId: payload.flagId,
           },
+        });
+      }),
+
+      this.eventBus.on('inventory:item_added', (payload) => {
+        this.dispatch({
+          type: 'INVENTORY_ITEM_ADDED',
+          domain: 'inventory',
+          payload,
+        });
+      }),
+
+      this.eventBus.on('inventory:item_updated', (payload) => {
+        this.dispatch({
+          type: 'INVENTORY_ITEM_UPDATED',
+          domain: 'inventory',
+          payload,
+        });
+      }),
+
+      this.eventBus.on('inventory:item_removed', (payload) => {
+        this.dispatch({
+          type: 'INVENTORY_ITEM_REMOVED',
+          domain: 'inventory',
+          payload,
+        });
+      }),
+
+      this.eventBus.on('inventory:equipped', (payload) => {
+        this.dispatch({
+          type: 'INVENTORY_EQUIPPED',
+          domain: 'inventory',
+          payload,
+        });
+      }),
+
+      this.eventBus.on('inventory:cleared', () => {
+        this.dispatch({
+          type: 'INVENTORY_CLEAR',
+          domain: 'inventory',
         });
       }),
 
@@ -516,6 +557,7 @@ export class WorldStateStore {
     const factions = sliceRegistry.faction.serialize(this.state.faction);
     const tutorial = sliceRegistry.tutorial.serialize(this.state.tutorial);
     const dialogue = sliceRegistry.dialogue.serialize(this.state.dialogue);
+    const inventory = sliceRegistry.inventory.serialize(this.state.inventory);
 
     return {
       storyFlags,
@@ -523,6 +565,7 @@ export class WorldStateStore {
       factions,
       tutorial,
       dialogue,
+      inventory,
       tutorialComplete: Boolean(tutorial?.completed),
     };
   }
@@ -540,6 +583,7 @@ export class WorldStateStore {
       factions: snapshot.factions ?? {},
       tutorial: snapshot.tutorial ?? {},
       dialogue: snapshot.dialogue ?? {},
+      inventory: snapshot.inventory ?? {},
     };
 
     this.dispatch({

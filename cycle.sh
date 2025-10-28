@@ -12,7 +12,7 @@ while true; do
   git checkout -b "$branch" || git checkout "$branch"
 
   # Run Codex autonomous development
-  codex --yolo --search exec "review AGENTS.md and execute an autonomous development cycle"
+  codex --yolo --search exec "review AGENTS.md fetch handoff from game-mcp-server, and use result to plan and execute an autonomous development cycle"
 
   # Commit and push results
   git add -A

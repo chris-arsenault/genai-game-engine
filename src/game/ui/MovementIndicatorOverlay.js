@@ -1,3 +1,5 @@
+import { overlayTheme } from './theme/overlayTheme.js';
+
 /**
  * MovementIndicatorOverlay
  *
@@ -11,7 +13,15 @@ export class MovementIndicatorOverlay {
     this.camera = camera;
     this.indicator = null;
     this.defaultTTL = options.duration || 0.18; // seconds
-    this.color = options.color || 'rgba(0, 204, 255, 1)';
+    const { palette } = overlayTheme;
+    this.style = {
+      coreRadius: options.coreRadius || 10,
+      haloRadius: options.haloRadius || 24,
+      pulseColor: options.color || palette.accent,
+      haloColor: options.haloColor || 'rgba(91, 201, 255, 0.32)',
+      outlineColor: options.outlineColor || palette.outlineSoft,
+      arrowColor: options.arrowColor || palette.accentMuted,
+    };
     this._unbindMoving = null;
     this._unbindMoved = null;
   }
@@ -57,11 +67,33 @@ export class MovementIndicatorOverlay {
     ctx.save();
     ctx.globalAlpha = alpha;
 
-    // Base pulse
-    ctx.fillStyle = this.color;
+    const haloGradient = ctx.createRadialGradient(
+      screen.x,
+      screen.y,
+      this.style.coreRadius * 0.6,
+      screen.x,
+      screen.y,
+      this.style.haloRadius
+    );
+    haloGradient.addColorStop(0, this.style.pulseColor);
+    haloGradient.addColorStop(0.7, this.style.haloColor);
+    haloGradient.addColorStop(1, 'rgba(91, 201, 255, 0)');
+
+    // Halo
+    ctx.fillStyle = haloGradient;
     ctx.beginPath();
-    ctx.arc(screen.x, screen.y, 10, 0, Math.PI * 2);
+    ctx.arc(screen.x, screen.y, this.style.haloRadius, 0, Math.PI * 2);
     ctx.fill();
+
+    // Core pulse
+    ctx.fillStyle = this.style.pulseColor;
+    ctx.beginPath();
+    ctx.arc(screen.x, screen.y, this.style.coreRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = this.style.outlineColor;
+    ctx.lineWidth = 2;
+    ctx.stroke();
 
     // Direction indicator
     if (direction.x !== 0 || direction.y !== 0) {
@@ -71,7 +103,7 @@ export class MovementIndicatorOverlay {
       ctx.beginPath();
       ctx.moveTo(screen.x, screen.y);
       ctx.lineTo(endX, endY);
-      ctx.strokeStyle = this.color;
+      ctx.strokeStyle = this.style.arrowColor;
       ctx.lineWidth = 2;
       ctx.stroke();
     }

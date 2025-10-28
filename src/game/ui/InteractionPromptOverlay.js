@@ -5,22 +5,28 @@
  * either to the player's HUD or a world position supplied by gameplay systems.
  */
 import { emitOverlayVisibility } from './helpers/overlayEvents.js';
+import { overlayTheme, withOverlayTheme } from './theme/overlayTheme.js';
 export class InteractionPromptOverlay {
   constructor(canvas, eventBus, camera, options = {}) {
     this.canvas = canvas;
     this.eventBus = eventBus;
     this.camera = camera;
-    this.style = {
-      backgroundColor: 'rgba(12, 18, 32, 0.88)',
-      borderColor: '#4a9eff',
+    const styleOverrides = options.styleOverrides ?? {};
+    const { palette, typography, metrics } = overlayTheme;
+    this.style = withOverlayTheme({
+      backgroundColor: palette.backgroundPrimary,
+      borderColor: palette.outlineStrong,
       borderWidth: 2,
-      textColor: '#e8f1ff',
-      font: '16px Arial',
-      paddingX: 16,
-      paddingY: 12,
-      maxWidth: options.maxWidth || 320,
-      cornerRadius: 8
-    };
+      textColor: palette.textPrimary,
+      font: typography.hud,
+      paddingX: metrics.hudPaddingX,
+      paddingY: metrics.hudPaddingY,
+      maxWidth: options.maxWidth || metrics.hudMaxWidth,
+      cornerRadius: metrics.overlayCornerRadius,
+      shadowColor: 'rgba(0, 0, 0, 0.6)',
+      shadowBlur: 18,
+      lineHeight: 22
+    }, styleOverrides);
 
     this.visible = false;
     this.prompt = null;
@@ -130,17 +136,22 @@ export class InteractionPromptOverlay {
       : 0;
     const textWidth = Math.min(maxWidth - paddingX * 2, measuredWidth);
     const boxWidth = textWidth + paddingX * 2;
-    const boxHeight = lines.length * 20 + paddingY * 2;
+    const boxHeight = lines.length * this.style.lineHeight + paddingY * 2;
 
     const halfWidth = boxWidth / 2;
     let boxX = targetX - halfWidth;
     let boxY = targetY - boxHeight / 2;
 
     // Clamp to canvas bounds
-    boxX = Math.max(20, Math.min(canvasWidth - boxWidth - 20, boxX));
-    boxY = Math.max(20, Math.min(canvasHeight - boxHeight - 20, boxY));
+    const margin = overlayTheme.metrics.overlayMargin;
+    boxX = Math.max(margin, Math.min(canvasWidth - boxWidth - margin, boxX));
+    boxY = Math.max(margin, Math.min(canvasHeight - boxHeight - margin, boxY));
 
     ctx.globalAlpha = this.fadeAlpha;
+    ctx.shadowColor = this.style.shadowColor;
+    ctx.shadowBlur = this.style.shadowBlur;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 6;
 
     // Draw background with rounded corners
     this._drawRoundedRect(ctx, boxX, boxY, boxWidth, boxHeight, this.style.cornerRadius);
@@ -151,10 +162,13 @@ export class InteractionPromptOverlay {
     ctx.stroke();
 
     // Draw text
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
     ctx.fillStyle = this.style.textColor;
     ctx.textBaseline = 'top';
     for (let i = 0; i < lines.length; i++) {
-      ctx.fillText(lines[i], boxX + paddingX, boxY + paddingY + i * 20);
+      ctx.fillText(lines[i], boxX + paddingX, boxY + paddingY + i * this.style.lineHeight);
     }
 
     // Draw pointer connector if anchored to world
@@ -167,7 +181,7 @@ export class InteractionPromptOverlay {
       const boxCenterX = boxX + boxWidth / 2;
       const boxTop = boxY + boxHeight;
       ctx.lineTo(boxCenterX, boxTop);
-      ctx.strokeStyle = this.style.borderColor;
+      ctx.strokeStyle = overlayTheme.palette.outlineSoft;
       ctx.lineWidth = 2;
       ctx.stroke();
     }

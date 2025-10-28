@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- WorldStateStore now tracks an `inventory` slice driven by EventBus `inventory:*` actions, powering the new InventoryOverlay and SaveManager snapshots (`src/game/state/WorldStateStore.js`, `src/game/state/slices/inventorySlice.js`).
+- Shared `overlayTheme` module standardizes the neon noir canvas styling across tutorial, interaction prompt, movement indicator, and inventory overlays (`src/game/ui/theme/overlayTheme.js`, updated `src/game/ui/*.js`).
+- Operative Inventory overlay with edge-triggered input integration, navigation via move actions, and debug HUD summaries seeded during Game initialization (`src/game/ui/InventoryOverlay.js`, `src/game/Game.js`).
 - Audio feedback controller bridges `player:moving`, `ui:show_prompt`, and evidence events to shared SFX stubs to satisfy CORE-302 acceptance criteria (`src/game/audio/AudioFeedbackController.js`, wired in `src/game/Game.js`).
 - Playwright feedback overlay smoke validates movement pulses, interaction prompts, and audio hook timestamps (`tests/e2e/feedback-overlays.spec.js`).
 - Developer debug overlay enumerates UI overlay states with contextual summaries sourced from `Game.getOverlayStateSnapshot()` (`index.html`, `src/main.js`, `src/game/Game.js`).
@@ -22,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Game registers engine frame hooks to drive `update()` and `renderOverlays()` each frame, ensuring HUD layers display in runtime builds instead of only in tests (`src/game/Game.js`).
 
 ### Testing
+- Added unit coverage for WorldStateStore inventory reducers, inventory overlay navigation, and Playwright smoke ensuring debug overlay entries reflect inventory state (`tests/game/state/inventorySlice.test.js`, `tests/game/Game.uiOverlays.test.js`, `tests/e2e/debug-overlay-inventory.spec.js`).
 - Added unit coverage for AudioFeedbackController throttling and SFX dispatch (`tests/game/audio/AudioFeedbackController.test.js`).
 - Added regression coverage for InputState edge detection and overlay toggles (`tests/game/config/Controls.test.js`, `tests/game/Game.uiOverlays.test.js`).
 - Added Jest coverage for overlay visibility instrumentation and knowledge gate evaluation (`tests/game/Game.uiOverlays.test.js`, `tests/game/systems/KnowledgeProgressionSystem.test.js`).

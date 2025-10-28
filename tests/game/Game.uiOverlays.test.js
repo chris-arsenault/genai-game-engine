@@ -74,6 +74,35 @@ describe('Game UI overlays', () => {
     game = new Game(engineStub);
   });
 
+  it('advances inventory selection on navigation input events', () => {
+    game.worldStateStore = new WorldStateStore(eventBus);
+    game.worldStateStore.init();
+    game.seedInventoryState();
+    game.initializeUIOverlays();
+    game.loaded = true;
+
+    // Open inventory overlay to enable navigation
+    game.inventoryOverlay.show('test');
+    expect(game.inventoryOverlay.visible).toBe(true);
+
+    const initialSelected = game.inventoryOverlay.getSelectedItem();
+    eventBus.emit.mockClear();
+
+    eventBus.emit('input:moveDown:pressed', {});
+
+    const nextSelected = game.inventoryOverlay.getSelectedItem();
+    expect(nextSelected).not.toBeNull();
+    if (initialSelected) {
+      expect(nextSelected.id).not.toBe(initialSelected.id);
+    }
+    expect(eventBus.emit).toHaveBeenCalledWith(
+      'inventory:selection_changed',
+      expect.objectContaining({
+        itemId: nextSelected?.id,
+      })
+    );
+  });
+
   afterEach(() => {
     if (game) {
       game.cleanup();
@@ -86,6 +115,7 @@ describe('Game UI overlays', () => {
     worldStateStore.init();
 
     game.worldStateStore = worldStateStore;
+    game.seedInventoryState();
     game.initializeUIOverlays();
 
     expect(game.dialogueBox).toBeDefined();
@@ -126,6 +156,7 @@ describe('Game UI overlays', () => {
   it('toggles overlays once per key press', () => {
     game.worldStateStore = new WorldStateStore(eventBus);
     game.worldStateStore.init();
+    game.seedInventoryState();
     game.initializeUIOverlays();
     game.loaded = true;
 
@@ -157,11 +188,28 @@ describe('Game UI overlays', () => {
     // Subsequent updates without release do not toggle off
     game.update(0.016);
     expect(game.questLogUI.visible).toBe(true);
+
+    // Inventory overlay toggles on edge press
+    expect(game.inventoryOverlay.visible).toBe(false);
+    const inventoryKeyDown = { code: 'KeyI', preventDefault: jest.fn() };
+    game.inputState.handleKeyDown(inventoryKeyDown);
+    game.update(0.016);
+    expect(game.inventoryOverlay.visible).toBe(true);
+
+    // Holding key does not toggle repeatedly
+    game.update(0.016);
+    expect(game.inventoryOverlay.visible).toBe(true);
+
+    game.inputState.handleKeyUp({ code: 'KeyI' });
+    game.inputState.handleKeyDown({ code: 'KeyI', preventDefault: jest.fn() });
+    game.update(0.016);
+    expect(game.inventoryOverlay.visible).toBe(false);
   });
 
   it('emits overlay visibility events and exposes snapshot data', () => {
     game.worldStateStore = new WorldStateStore(eventBus);
     game.worldStateStore.init();
+    game.seedInventoryState();
     game.initializeUIOverlays();
     game.loaded = true;
 
@@ -185,6 +233,11 @@ describe('Game UI overlays', () => {
     expect(disguiseEntry).toBeDefined();
     expect(disguiseEntry.visible).toBe(true);
     expect(disguiseEntry.summary).toContain('selected');
+
+    const inventoryEntry = snapshot.find((entry) => entry.id === 'inventory');
+    expect(inventoryEntry).toBeDefined();
+    expect(inventoryEntry.summary).toContain('items');
+    expect(inventoryEntry.metadata.equippedSlots).toBeGreaterThan(0);
 
     // Toggle off
     game.inputState.handleKeyUp({ code: 'KeyG' });
