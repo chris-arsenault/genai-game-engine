@@ -19,7 +19,9 @@ describe('LayeredRenderer', () => {
 
     it('should create standard layers', () => {
       expect(renderer.getLayer('background')).toBeInstanceOf(Layer);
+      expect(renderer.getLayer('ground')).toBeInstanceOf(Layer);
       expect(renderer.getLayer('tiles')).toBeInstanceOf(Layer);
+      expect(renderer.getLayer('environment')).toBeInstanceOf(Layer);
       expect(renderer.getLayer('entities')).toBeInstanceOf(Layer);
       expect(renderer.getLayer('effects')).toBeInstanceOf(Layer);
       expect(renderer.getLayer('ui')).toBeInstanceOf(Layer);
@@ -27,10 +29,12 @@ describe('LayeredRenderer', () => {
 
     it('should create layers with correct z-index', () => {
       expect(renderer.getLayer('background').zIndex).toBe(0);
-      expect(renderer.getLayer('tiles').zIndex).toBe(1);
-      expect(renderer.getLayer('entities').zIndex).toBe(2);
-      expect(renderer.getLayer('effects').zIndex).toBe(3);
-      expect(renderer.getLayer('ui').zIndex).toBe(4);
+      expect(renderer.getLayer('ground').zIndex).toBe(1);
+      expect(renderer.getLayer('tiles').zIndex).toBe(2);
+      expect(renderer.getLayer('environment').zIndex).toBe(3);
+      expect(renderer.getLayer('entities').zIndex).toBe(4);
+      expect(renderer.getLayer('effects').zIndex).toBe(5);
+      expect(renderer.getLayer('ui').zIndex).toBe(6);
     });
   });
 
@@ -146,8 +150,8 @@ describe('LayeredRenderer', () => {
 
       renderer.composite(ctx);
 
-      // Should draw 5 layers in order
-      expect(spy).toHaveBeenCalledTimes(5);
+      // Should draw 7 layers in order
+      expect(spy).toHaveBeenCalledTimes(7);
     });
 
     it('should skip invisible layers', () => {
@@ -162,8 +166,8 @@ describe('LayeredRenderer', () => {
 
       renderer.composite(ctx);
 
-      // Should draw 4 layers (skipping entities)
-      expect(spy).toHaveBeenCalledTimes(4);
+      // Should draw 6 layers (skipping entities)
+      expect(spy).toHaveBeenCalledTimes(6);
     });
 
     it('should apply layer opacity', () => {
@@ -253,7 +257,9 @@ describe('LayeredRenderer', () => {
     it('should return all layer names', () => {
       const names = renderer.getLayerNames();
       expect(names).toContain('background');
+      expect(names).toContain('ground');
       expect(names).toContain('tiles');
+      expect(names).toContain('environment');
       expect(names).toContain('entities');
       expect(names).toContain('effects');
       expect(names).toContain('ui');
@@ -264,35 +270,38 @@ describe('LayeredRenderer', () => {
     it('should return layers sorted by z-index', () => {
       const sorted = renderer.getSortedLayers();
       expect(sorted[0].name).toBe('background');
-      expect(sorted[1].name).toBe('tiles');
-      expect(sorted[2].name).toBe('entities');
-      expect(sorted[3].name).toBe('effects');
-      expect(sorted[4].name).toBe('ui');
+      expect(sorted[1].name).toBe('ground');
+      expect(sorted[2].name).toBe('tiles');
+      expect(sorted[3].name).toBe('environment');
+      expect(sorted[4].name).toBe('entities');
+      expect(sorted[5].name).toBe('effects');
+      expect(sorted[6].name).toBe('ui');
     });
   });
 
   describe('getDirtyLayerCount', () => {
     it('should count dirty layers', () => {
       // All layers start dirty
-      expect(renderer.getDirtyLayerCount()).toBe(5);
+      expect(renderer.getDirtyLayerCount()).toBe(7);
 
       // Mark some clean
       renderer.getLayer('background').markClean();
+      renderer.getLayer('ground').markClean();
       renderer.getLayer('tiles').markClean();
 
-      expect(renderer.getDirtyLayerCount()).toBe(3);
+      expect(renderer.getDirtyLayerCount()).toBe(4);
     });
   });
 
   describe('getLayerCount', () => {
     it('should return total layer count', () => {
-      expect(renderer.getLayerCount()).toBe(5);
+      expect(renderer.getLayerCount()).toBe(7);
 
       renderer.addLayer('custom', 10);
-      expect(renderer.getLayerCount()).toBe(6);
+      expect(renderer.getLayerCount()).toBe(8);
 
       renderer.removeLayer('custom');
-      expect(renderer.getLayerCount()).toBe(5);
+      expect(renderer.getLayerCount()).toBe(7);
     });
   });
 });

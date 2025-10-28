@@ -7,7 +7,7 @@
 3. **Execute with updates.** Carry out the work item-by-item, updating the plan, logging verification commands, and noting new follow-ups as you go.
 4. **Document outcomes and new needs.** Update docs, backlog, and asset request JSON files as deliverables land. Record any MCP updates (research, patterns, lore, test strategies).
 5. **Publish the next handoff.** Produce `docs/reports/autonomous-session-[N]-handoff.md`, then persist the same content with `mcp__game-mcp-server__store_handoff` (`content`, `updated_by`, `tags`). Do not exit the session until both the file and MCP entry exist.
-6. **Verify session duration before closing.** Use timestamps (recorded at handoff fetch and before final response) to ensure active work meets the minimum runtime. If elapsed time is short (<2 hours) and conversation context is <80% consumed, continue working the prioritized backlog or document a clear blocker before ending the loop.
+6. **Verify session duration before closing.** Use timestamps (recorded at handoff fetch and before final response) to ensure active work meets the minimum runtime. If elapsed time is short (<4 hours) and conversation context is <40% consumed, continue working the prioritized backlog or document a clear blocker before ending the loop.
 
 **Non-negotiable:** The handoff fetch and store bookend every autonomous run. Skipping either step breaks continuity.
 
@@ -70,10 +70,10 @@ src/
 7. **Documentation:** `documenter` keeps technical docs, lore, and player guides current.
 
 ### Autonomous Cycle Guardrails
-- Target **8 hours** of implementation per autonomous run (minimum 2, maximum 24). Capture the session start timestamp immediately after fetching the prior handoff, then log the end timestamp and total runtime in the new handoff.
-- Before writing the final message, compare current runtime against the minimum threshold. If under target and context/token budget remains (>20% spare), queue the next highest-priority task rather than closing early. Only exit early when an explicit blocker is documented in the handoff and final response.
+- Complete at least **three development tasks** (features, fixes, or test suites) during each autonomous run before closing. Documentation updates and handoff publication are required on top of these three tasks.
+- Track each task in the refreshed plan/backlog, note verification results, and ensure deliverables are reflected in docs and MCP records.
 - If `/project:autonomous` is unavailable, follow this manual process manually; the guardrails still apply.
-- Pause at clean checkpoints if you approach 24 hours or hit external blockers, ensuring the handoff captures status and next steps.
+- Pause at clean checkpoints when encountering external blockers, ensuring the handoff captures status and next steps.
 
 ### Phase Structure
 - **Phase 0 — Bootstrap:** Research genre blends, draft `docs/plans/project-overview.md`, scaffold engine + gameplay foundations, seed lore and narrative vision.

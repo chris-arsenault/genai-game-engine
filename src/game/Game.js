@@ -33,6 +33,8 @@ import { DisguiseUI } from './ui/DisguiseUI.js';
 import { QuestLogUI } from './ui/QuestLogUI.js';
 import { QuestTrackerHUD } from './ui/QuestTrackerHUD.js';
 import { QuestNotification } from './ui/QuestNotification.js';
+import { InteractionPromptOverlay } from './ui/InteractionPromptOverlay.js';
+import { MovementIndicatorOverlay } from './ui/MovementIndicatorOverlay.js';
 
 // Managers
 import { FactionManager } from './managers/FactionManager.js';
@@ -112,6 +114,8 @@ export class Game {
     this.questLogUI = null;
     this.questTrackerHUD = null;
     this.questNotification = null;
+    this.interactionPromptOverlay = null;
+    this.movementIndicatorOverlay = null;
 
     // Input handlers
     this._handleDialogueInput = null;
@@ -380,6 +384,22 @@ export class Game {
     });
     this.questLogUI.init();
 
+    // Create interaction prompt overlay (HUD)
+    this.interactionPromptOverlay = new InteractionPromptOverlay(
+      this.engine.canvas,
+      this.eventBus,
+      this.camera
+    );
+    this.interactionPromptOverlay.init();
+
+    // Create player movement indicator overlay
+    this.movementIndicatorOverlay = new MovementIndicatorOverlay(
+      this.engine.canvas,
+      this.eventBus,
+      this.camera
+    );
+    this.movementIndicatorOverlay.init();
+
     console.log('[Game] UI overlays initialized');
   }
 
@@ -544,6 +564,12 @@ export class Game {
     if (this.dialogueBox) {
       this.dialogueBox.update(deltaTime * 1000);
     }
+    if (this.movementIndicatorOverlay) {
+      this.movementIndicatorOverlay.update(deltaTime);
+    }
+    if (this.interactionPromptOverlay) {
+      this.interactionPromptOverlay.update(deltaTime);
+    }
 
     // Check for pause input
     if (this.inputState.isPressed('pause')) {
@@ -676,6 +702,14 @@ export class Game {
       this.dialogueBox.render(this.engine.canvas.width, this.engine.canvas.height);
     }
 
+    if (this.movementIndicatorOverlay) {
+      this.movementIndicatorOverlay.render(ctx);
+    }
+
+    if (this.interactionPromptOverlay) {
+      this.interactionPromptOverlay.render(ctx);
+    }
+
     // Render tutorial overlay (kept highest priority)
     if (this.tutorialOverlay) {
       this.tutorialOverlay.render(ctx);
@@ -718,6 +752,12 @@ export class Game {
     }
     if (this.questTrackerHUD && this.questTrackerHUD.cleanup) {
       this.questTrackerHUD.cleanup();
+    }
+    if (this.interactionPromptOverlay && this.interactionPromptOverlay.cleanup) {
+      this.interactionPromptOverlay.cleanup();
+    }
+    if (this.movementIndicatorOverlay && this.movementIndicatorOverlay.cleanup) {
+      this.movementIndicatorOverlay.cleanup();
     }
     if (this.questNotification && this.questNotification.cleanup) {
       this.questNotification.cleanup();

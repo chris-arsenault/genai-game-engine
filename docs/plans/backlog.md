@@ -287,6 +287,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Tags**: `gameplay`, `rendering`
 - **Effort**: 4 hours
 - **Dependencies**: Layered renderer dynamic layer support (Session #26)
+- **Status**: In Progress — Scene decal, caution tape, and ambient props implemented; needs browser smoke for palette tuning.
 - **Description**: Ensure the Act 1 investigative scene presents readable context on load (ground decal, boundaries, NPC silhouettes, crime scene marker) so players immediately understand where they are.
 - **Acceptance Criteria**:
   - Crime scene trigger area renders using the ground layer and remains aligned as the camera moves.
@@ -298,6 +299,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Tags**: `gameplay`, `input`, `ui`
 - **Effort**: 3 hours
 - **Dependencies**: CORE-301
+- **Status**: In Progress — Movement pulse overlay and interaction prompts live; audio hooks + manual smoke still pending.
 - **Description**: Provide immediate feedback for player input (camera centering, movement easing, interaction prompts) so WASD/E produce visible results.
 - **Acceptance Criteria**:
   - Camera centers on the player at start and follows smoothly during movement.

@@ -8,6 +8,7 @@ import { InvestigationSystem } from '../../../src/game/systems/InvestigationSyst
 import { Evidence } from '../../../src/game/components/Evidence.js';
 import { Transform } from '../../../src/game/components/Transform.js';
 import { InteractionZone } from '../../../src/game/components/InteractionZone.js';
+import { PlayerController } from '../../../src/game/components/PlayerController.js';
 import { GameConfig } from '../../../src/game/config/GameConfig.js';
 
 describe('InvestigationSystem', () => {
@@ -301,6 +302,115 @@ describe('InvestigationSystem', () => {
       system.collectEvidence(2, 'evidence_1');
 
       expect(mockEventBus.emit).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Interaction Prompts', () => {
+    it('should emit ui:show_prompt when player enters an interactive zone', () => {
+      const playerTransform = new Transform(100, 100);
+      const playerController = new PlayerController();
+      playerController.input.interact = false;
+
+      const zoneTransform = new Transform(130, 100);
+      const interactionZone = new InteractionZone({
+        id: 'dialogue_vendor',
+        type: 'dialogue',
+        prompt: 'Press E to talk',
+        requiresInput: true,
+        radius: 64
+      });
+
+      mockComponentRegistry._components.set('1:Transform', playerTransform);
+      mockComponentRegistry._components.set('1:PlayerController', playerController);
+      mockComponentRegistry._components.set('2:Transform', zoneTransform);
+      mockComponentRegistry._components.set('2:InteractionZone', interactionZone);
+
+      mockEventBus.emit.mockClear();
+
+      system.checkInteractionZones(1, playerTransform, [1, 2]);
+
+      expect(mockEventBus.emit).toHaveBeenCalledWith(
+        'ui:show_prompt',
+        expect.objectContaining({
+          text: 'Press E to talk'
+        })
+      );
+    });
+
+    it('should emit ui:hide_prompt when player leaves an interaction zone', () => {
+      const playerTransform = new Transform(100, 100);
+      const playerController = new PlayerController();
+      playerController.input.interact = false;
+
+      const zoneTransform = new Transform(130, 100);
+      const interactionZone = new InteractionZone({
+        id: 'dialogue_vendor',
+        type: 'dialogue',
+        prompt: 'Press E to talk',
+        requiresInput: true,
+        radius: 64
+      });
+
+      mockComponentRegistry._components.set('1:Transform', playerTransform);
+      mockComponentRegistry._components.set('1:PlayerController', playerController);
+      mockComponentRegistry._components.set('2:Transform', zoneTransform);
+      mockComponentRegistry._components.set('2:InteractionZone', interactionZone);
+
+      // Prime the system so the prompt is visible
+      system.checkInteractionZones(1, playerTransform, [1, 2]);
+      mockEventBus.emit.mockClear();
+
+      // Move player out of range
+      playerTransform.setPosition(400, 400);
+
+      system.checkInteractionZones(1, playerTransform, [1, 2]);
+
+      expect(mockEventBus.emit).toHaveBeenCalledWith('ui:hide_prompt');
+    });
+
+    it('should hide prompt immediately when evidence is collected', () => {
+      const playerTransform = new Transform(100, 100);
+      const playerController = new PlayerController();
+      playerController.input.interact = false;
+
+      const evidenceTransform = new Transform(120, 100);
+      const interactionZone = new InteractionZone({
+        id: 'evidence_sample',
+        type: 'evidence',
+        prompt: 'Press E to collect evidence',
+        requiresInput: true,
+        radius: 64,
+        data: { evidenceId: 'sample' }
+      });
+
+      const evidence = new Evidence({
+        id: 'sample',
+        caseId: 'case_001',
+        collected: false,
+        derivedClues: []
+      });
+
+      mockComponentRegistry._components.set('1:Transform', playerTransform);
+      mockComponentRegistry._components.set('1:PlayerController', playerController);
+      mockComponentRegistry._components.set('2:Transform', evidenceTransform);
+      mockComponentRegistry._components.set('2:InteractionZone', interactionZone);
+      mockComponentRegistry._components.set('2:Evidence', evidence);
+
+      mockEventBus.emit.mockClear();
+
+      // First frame: prompt becomes visible
+      system.checkInteractionZones(1, playerTransform, [1, 2]);
+
+      playerController.input.interact = true;
+      mockEventBus.emit.mockClear();
+
+      system.checkInteractionZones(1, playerTransform, [1, 2]);
+
+      expect(mockEventBus.emit).toHaveBeenCalledWith('ui:hide_prompt');
+      expect(mockEventBus.emit).toHaveBeenCalledWith(
+        'evidence:collected',
+        expect.objectContaining({ evidenceId: 'sample' })
+      );
     });
   });
 
