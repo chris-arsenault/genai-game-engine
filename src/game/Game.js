@@ -120,6 +120,8 @@ export class Game {
     this.questNotification = null;
     this.interactionPromptOverlay = null;
     this.movementIndicatorOverlay = null;
+    this.caseFileUI = null;
+    this.deductionBoard = null;
     this.audioFeedback = null;
 
     // Input handlers
@@ -522,6 +524,39 @@ export class Game {
       this._offGameEventHandlers.length = 0;
     }
 
+    const overlayLabels = {
+      dialogue: 'Dialogue Box',
+      disguise: 'Disguise UI',
+      interactionPrompt: 'Interaction Prompt',
+      questLog: 'Quest Log',
+      reputation: 'Reputation UI',
+      tutorial: 'Tutorial Overlay',
+    };
+
+    this._offGameEventHandlers.push(this.eventBus.on('ui:overlay_visibility_changed', (data) => {
+      const overlayId = data?.overlayId ?? 'unknown';
+      const stateLabel = data?.visible ? 'opened' : 'closed';
+      const label = overlayLabels[overlayId] || overlayId;
+      const detailParts = [];
+
+      if (data?.source) {
+        detailParts.push(`source=${data.source}`);
+      }
+      if (data?.dialogueId) {
+        detailParts.push(`dialogue=${data.dialogueId}`);
+      }
+      if (data?.nodeId) {
+        detailParts.push(`node=${data.nodeId}`);
+      }
+      if (typeof data?.text === 'string' && data.text.trim().length) {
+        const snippet = data.text.length > 48 ? `${data.text.slice(0, 45)}…` : data.text;
+        detailParts.push(`text="${snippet}"`);
+      }
+
+      const suffix = detailParts.length ? ` (${detailParts.join(', ')})` : '';
+      console.log(`[UI] Overlay ${stateLabel}: ${label}${suffix}`);
+    }));
+
     // Evidence events
     this._offGameEventHandlers.push(this.eventBus.on('evidence:collected', (data) => {
       console.log(`[Game] Evidence collected: ${data.evidenceId}`);
@@ -618,17 +653,17 @@ export class Game {
 
     // Toggle reputation UI with 'R' key
     if (this.reputationUI && this.inputState.wasJustPressed('faction')) {
-      this.reputationUI.toggle();
+      this.reputationUI.toggle('input:faction');
     }
 
     // Toggle disguise UI with 'G' key
     if (this.disguiseUI && this.inputState.wasJustPressed('disguise')) {
-      this.disguiseUI.toggle();
+      this.disguiseUI.toggle('input:disguise');
     }
 
     // Toggle quest log UI with 'Q' key
     if (this.questLogUI && this.inputState.wasJustPressed('quest')) {
-      this.questLogUI.toggle();
+      this.questLogUI.toggle('input:quest');
     }
   }
 
@@ -703,6 +738,152 @@ export class Game {
       memory_keepers: 'Memory Keepers'
     };
     return names[factionId] || factionId;
+  }
+
+  /**
+   * Provide a snapshot of overlay visibility and key state for debug overlay.
+   * @returns {Array<Object>} Overlay state descriptors
+   */
+  getOverlayStateSnapshot() {
+    const overlays = [];
+    const truncate = (value, max = 48) => {
+      if (typeof value !== 'string') {
+        return null;
+      }
+      return value.length > max ? `${value.slice(0, max - 1)}…` : value;
+    };
+
+    if (this.tutorialOverlay) {
+      const progress = this.tutorialOverlay.progressInfo || {};
+      overlays.push({
+        id: 'tutorial',
+        label: 'Tutorial',
+        visible: Boolean(this.tutorialOverlay.visible),
+        summary: truncate(this.tutorialOverlay.currentPrompt?.title, 60) || 'idle',
+        metadata: {
+          step: this.tutorialOverlay.currentPrompt?.id ?? null,
+          percent: typeof progress.percent === 'number' ? Math.round(progress.percent) : null,
+        },
+      });
+    }
+
+    if (this.dialogueBox) {
+      const visible = typeof this.dialogueBox.isVisible === 'function'
+        ? this.dialogueBox.isVisible()
+        : Boolean(this.dialogueBox.visible);
+      overlays.push({
+        id: 'dialogue',
+        label: 'Dialogue',
+        visible,
+        summary: visible
+          ? `${this.dialogueBox.speaker ? `${this.dialogueBox.speaker}: ` : ''}${truncate(this.dialogueBox.text, 64) || '…'}`
+          : 'hidden',
+        metadata: {
+          dialogueId: this.dialogueBox.dialogueId ?? null,
+          nodeId: this.dialogueBox.nodeId ?? null,
+          choices: Array.isArray(this.dialogueBox.choices) ? this.dialogueBox.choices.length : 0,
+          typing: Boolean(this.dialogueBox.isTyping),
+        },
+      });
+    }
+
+    if (this.reputationUI) {
+      overlays.push({
+        id: 'reputation',
+        label: 'Reputation',
+        visible: Boolean(this.reputationUI.visible),
+        summary: `factions: ${Object.keys(this.reputationUI.standings || {}).length}`,
+        metadata: {},
+      });
+    }
+
+    if (this.disguiseUI) {
+      overlays.push({
+        id: 'disguise',
+        label: 'Disguise',
+        visible: Boolean(this.disguiseUI.visible),
+        summary: this.disguiseUI.visible
+          ? `selected: ${this.disguiseUI.currentDisguise?.name ?? 'none'}`
+          : `available: ${Array.isArray(this.disguiseUI.disguises) ? this.disguiseUI.disguises.length : 0}`,
+        metadata: {
+          suspicion: this.disguiseUI.suspicionLevel ?? null,
+        },
+      });
+    }
+
+    if (this.questLogUI) {
+      overlays.push({
+        id: 'questLog',
+        label: 'Quest Log',
+        visible: Boolean(this.questLogUI.visible),
+        summary: this.questLogUI.visible
+          ? `tab=${this.questLogUI.selectedTab ?? 'active'}${this.questLogUI.selectedQuestId ? ` › ${this.questLogUI.selectedQuestId}` : ''}`
+          : 'closed',
+        metadata: {},
+      });
+    }
+
+    if (this.interactionPromptOverlay) {
+      overlays.push({
+        id: 'interactionPrompt',
+        label: 'Interaction Prompt',
+        visible: Boolean(this.interactionPromptOverlay.visible),
+        summary: truncate(this.interactionPromptOverlay.prompt?.text, 60) || 'idle',
+        metadata: {},
+      });
+    }
+
+    if (this.questNotification) {
+      const notification = this.questNotification.currentNotification ?? null;
+      overlays.push({
+        id: 'questNotification',
+        label: 'Quest Notification',
+        visible: Boolean(notification),
+        summary: notification
+          ? `${notification.title}: ${truncate(notification.message, 60) ?? ''}`
+          : 'idle',
+        metadata: {},
+      });
+    }
+
+    if (this.caseFileUI) {
+      overlays.push({
+        id: 'caseFile',
+        label: 'Case File',
+        visible: Boolean(this.caseFileUI.visible),
+        summary: this.caseFileUI.visible
+          ? `case ${truncate(this.caseFileUI.caseData?.title ?? 'unnamed', 48) ?? 'active'}`
+          : 'closed',
+        metadata: {
+          caseId: this.caseFileUI.caseData?.id ?? null,
+        },
+      });
+    }
+
+    if (this.deductionBoard) {
+      overlays.push({
+        id: 'deductionBoard',
+        label: 'Deduction Board',
+        visible: Boolean(this.deductionBoard.visible),
+        summary: this.deductionBoard.visible
+          ? `nodes=${this.deductionBoard.nodes?.size ?? 0} links=${this.deductionBoard.connections?.length ?? 0}`
+          : 'closed',
+        metadata: {},
+      });
+    }
+
+    if (this.movementIndicatorOverlay) {
+      const indicator = this.movementIndicatorOverlay.indicator ?? null;
+      overlays.push({
+        id: 'movementIndicator',
+        label: 'Movement Indicator',
+        visible: Boolean(indicator),
+        summary: indicator ? `ttl=${indicator.ttl?.toFixed?.(2) ?? indicator.ttl}` : 'inactive',
+        metadata: {},
+      });
+    }
+
+    return overlays;
   }
 
   /**

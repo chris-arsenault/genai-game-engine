@@ -102,6 +102,34 @@
       box-shadow: 0 0 6px rgba(255, 215, 0, 0.3);
     }
 
+    #debug-ui-overlays {
+      margin-top: 8px;
+      border-top: 1px solid rgba(0, 255, 255, 0.35);
+      padding-top: 6px;
+      max-width: 320px;
+    }
+
+    .debug-overlays-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-size: 11px;
+      line-height: 1.35;
+      color: #9be7ff;
+    }
+
+    .debug-overlay-row {
+      color: #b3ffe0;
+    }
+
+    .debug-overlay-row[data-visible="false"] {
+      color: rgba(200, 200, 200, 0.65);
+    }
+
+    .debug-overlay-row.empty {
+      color: rgba(255, 255, 255, 0.55);
+    }
+
     #debug-dialogue {
       margin-top: 8px;
       border-top: 1px solid rgba(0, 255, 255, 0.35);
@@ -184,6 +212,12 @@
       <div id="debug-entities">Entities: 0</div>
       <div id="debug-memory">Memory: 0 MB</div>
       <div id="debug-frame-time">Frame: 0 ms</div>
+      <div id="debug-ui-overlays">
+        <div class="debug-title">UI Overlays</div>
+        <div id="debug-ui-overlays-list" class="debug-overlays-list">
+          <div class="debug-overlay-row empty">No overlay state</div>
+        </div>
+      </div>
       <div id="debug-dialogue">
         <div class="debug-title">Dialogue</div>
         <div id="debug-dialogue-meta" class="debug-line debug-meta">Mode: Live · Awaiting data</div>

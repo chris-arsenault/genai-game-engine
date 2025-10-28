@@ -66,17 +66,26 @@ export class KnowledgeProgressionSystem extends System {
    * @param {Array} entities
    */
   checkAllGates(entities) {
-    if (!entities) return;
+    let gateEntities = Array.isArray(entities) ? entities : null;
+    if (!gateEntities || gateEntities.length === 0) {
+      gateEntities = this.componentRegistry.queryEntities('KnowledgeGate');
+    }
+
+    if (!Array.isArray(gateEntities) || gateEntities.length === 0) {
+      return;
+    }
 
     const playerState = this.getPlayerState();
 
-    for (const entity of entities) {
-      const gate = this.components.getComponent(entity.id, 'KnowledgeGate');
-      if (!gate || gate.unlocked) continue;
+    for (const entityId of gateEntities) {
+      const gate = this.componentRegistry.getComponent(entityId, 'KnowledgeGate');
+      if (!gate || gate.unlocked) {
+        continue;
+      }
 
       // Check if requirements are met
-      if (gate.checkRequirements(playerState)) {
-        this.unlockGate(entity.id, gate);
+      if (typeof gate.checkRequirements === 'function' && gate.checkRequirements(playerState)) {
+        this.unlockGate(entityId, gate);
       }
     }
   }
@@ -87,9 +96,13 @@ export class KnowledgeProgressionSystem extends System {
    * @param {KnowledgeGate} gate
    */
   unlockGate(entityId, gate) {
-    gate.unlock();
+    if (typeof gate.unlock === 'function') {
+      gate.unlock();
+    } else {
+      gate.unlocked = true;
+    }
 
-    const transform = this.components.getComponent(entityId, 'Transform');
+    const transform = this.componentRegistry.getComponent(entityId, 'Transform');
 
     this.eventBus.emit('gate:unlocked', {
       gateId: gate.id,

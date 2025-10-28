@@ -38,6 +38,54 @@ describe('CaseFileUI', () => {
     caseFileUI = new CaseFileUI(400, 600);
   });
 
+  describe('Instrumentation', () => {
+    test('emits overlay visibility events with case metadata', () => {
+      const emit = jest.fn();
+      const eventBus = { emit };
+      caseFileUI = new CaseFileUI(400, 600, { eventBus });
+
+      caseFileUI.loadCase({
+        id: 'case-1',
+        title: 'Instrumentation Test',
+        objectives: [],
+        collectedEvidence: new Set(),
+        discoveredClues: new Set(),
+        evidenceIds: new Set(),
+        requiredClues: new Set()
+      });
+
+      caseFileUI.show('test');
+
+      expect(emit).toHaveBeenCalledWith(
+        'ui:overlay_visibility_changed',
+        expect.objectContaining({
+          overlayId: 'caseFile',
+          visible: true,
+          source: 'test',
+          caseId: 'case-1'
+        })
+      );
+      expect(emit).toHaveBeenCalledWith('ui:overlay_opened', expect.objectContaining({ overlayId: 'caseFile' }));
+      expect(emit).toHaveBeenCalledWith('case_file:opened', { caseId: 'case-1' });
+
+      emit.mockClear();
+
+      caseFileUI.hide('testHide');
+
+      expect(emit).toHaveBeenCalledWith(
+        'ui:overlay_visibility_changed',
+        expect.objectContaining({
+          overlayId: 'caseFile',
+          visible: false,
+          source: 'testHide',
+          caseId: 'case-1'
+        })
+      );
+      expect(emit).toHaveBeenCalledWith('ui:overlay_closed', expect.objectContaining({ overlayId: 'caseFile' }));
+      expect(emit).toHaveBeenCalledWith('case_file:closed', { caseId: 'case-1' });
+    });
+  });
+
   describe('Initialization', () => {
     test('should initialize with default properties', () => {
       expect(caseFileUI.width).toBe(400);

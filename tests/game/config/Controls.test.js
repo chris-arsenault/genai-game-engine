@@ -1,3 +1,4 @@
+import { EventBus } from '../../../src/engine/events/EventBus.js';
 import { InputState } from '../../../src/game/config/Controls.js';
 
 describe('InputState', () => {
@@ -41,5 +42,33 @@ describe('InputState', () => {
     inputState.reset();
     expect(inputState.isPressed('quest')).toBe(false);
     expect(inputState.wasJustPressed('quest')).toBe(false);
+  });
+
+  it('emits edge-triggered events once per action press when event bus is provided', () => {
+    const eventBus = new EventBus();
+    const generalSpy = jest.fn();
+    const specificSpy = jest.fn();
+
+    eventBus.on('input:action_pressed', generalSpy);
+    eventBus.on('input:deductionBoard:pressed', specificSpy);
+
+    const stateWithBus = new InputState(eventBus);
+
+    const tabDown = { code: 'Tab', preventDefault: jest.fn() };
+    stateWithBus.handleKeyDown(tabDown);
+
+    expect(generalSpy).toHaveBeenCalledTimes(1);
+    expect(generalSpy.mock.calls[0][0]).toMatchObject({ action: 'deductionBoard' });
+    expect(specificSpy).toHaveBeenCalledTimes(1);
+
+    // Repeated calls without release should not emit again
+    stateWithBus.handleKeyDown(tabDown);
+    expect(generalSpy).toHaveBeenCalledTimes(1);
+
+    // Release and press again emits once more
+    stateWithBus.handleKeyUp({ code: 'Tab' });
+    stateWithBus.handleKeyDown({ code: 'Tab', preventDefault: jest.fn() });
+    expect(generalSpy).toHaveBeenCalledTimes(2);
+    expect(specificSpy).toHaveBeenCalledTimes(2);
   });
 });

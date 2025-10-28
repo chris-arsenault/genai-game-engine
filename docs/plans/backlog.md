@@ -337,7 +337,75 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Acceptance Criteria**:
   - Collecting three evidence items unlocks Detective Vision and advances tutorial/quest state.
   - Witness NPC interaction triggers dialogue from Act 1 and logs progression in the quest tracker.
-  - Quest log reflects these milestones, and world state updates are visible via overlays or UI.
+- Quest log reflects these milestones, and world state updates are visible via overlays or UI.
+
+---
+
+### Session #33 Debug Overlay Instrumentation
+
+#### DEBUG-210: UI overlay visibility diagnostics
+- **Priority**: P1
+- **Tags**: `ux`, `debug`, `engine`
+- **Effort**: 2 hours
+- **Dependencies**: Session #32 EventBus cleanup
+- **Status**: ✅ Completed — Session #33 added overlay visibility summaries to the debug HUD and event logging.
+- **Description**: Extend the developer-facing debug overlay so QA can see which HUD panels are active, along with contextual details drawn from the Game instance.
+- **Acceptance Criteria**:
+  - Debug overlay lists each major UI overlay (dialogue, tutorial, quest log, etc.) with open/closed state and contextual summary.
+  - Snapshot data sourced via a dedicated `Game.getOverlayStateSnapshot()` utility.
+  - Automated tests cover overlay visibility instrumentation to prevent regressions.
+
+#### SYS-228: Knowledge gate component lookup stabilisation
+- **Priority**: P1
+- **Tags**: `engine`, `quest`, `narrative`
+- **Effort**: 1.5 hours
+- **Dependencies**: Investigation System player state
+- **Status**: ✅ Completed — Session #33 migrated gate evaluation to `componentRegistry` and added regression coverage.
+- **Description**: Ensure `KnowledgeProgressionSystem` queries gate entities correctly during event-triggered checks to avoid missed unlocks in the investigative loop.
+- **Acceptance Criteria**:
+  - `checkAllGates` handles both scheduled updates and event-driven refreshes without referencing stale `this.components`.
+  - Event Bus emits `gate:unlocked` with position metadata when requirements are met.
+  - Jest regression verifies gates unlock when triggered via `knowledge:learned` events.
+
+---
+
+### Session #34 Edge-Triggered Input Integration
+
+#### INPUT-221: Deduction board toggle via InputState edges
+- **Priority**: P1
+- **Tags**: `engine`, `ux`, `input`
+- **Effort**: 1.5 hours
+- **Dependencies**: Session #33 overlay instrumentation
+- **Status**: ✅ Completed — Session #34 routed `input:deductionBoard:pressed` through EventBus with single-fire semantics.
+- **Description**: Replace raw keydown handling in DeductionSystem with `InputState.wasJustPressed`-backed events to prevent rapid open/close loops.
+- **Acceptance Criteria**:
+  - `InputState` emits action-specific events on edge transitions.
+  - DeductionSystem subscribes to `input:deductionBoard:pressed` and no longer binds DOM-level listeners.
+  - Jest regression ensures duplicative events are not emitted while holding Tab.
+
+#### ENGINE-233: Input action event bus instrumentation
+- **Priority**: P1
+- **Tags**: `engine`, `input`, `test`
+- **Effort**: 1 hour
+- **Dependencies**: Controls.js edge-detection refactor
+- **Status**: ✅ Completed — Session #34 extended `InputState` to broadcast `input:action_pressed` plus action-scoped topics with coverage.
+- **Description**: Provide a universal event bus hook for edge-triggered actions so UI/state systems can listen for single-fire toggles without polling.
+- **Acceptance Criteria**:
+  - `InputState` emits both `input:action_pressed` and `input:{action}:pressed`.
+  - Existing escape handling remains intact.
+  - Jest suite verifies emissions occur once per key press.
+
+#### DEBUG-212: Case & deduction overlay telemetry harmonisation
+- **Priority**: P1
+- **Tags**: `ux`, `debug`, `narrative`
+- **Effort**: 1 hour
+- **Dependencies**: Session #33 overlay helper
+- **Status**: ✅ Completed — Session #34 wired CaseFileUI and DeductionBoard into the overlay helper and snapshot diagnostics.
+- **Description**: Ensure narrative overlays emit standardized visibility events and appear in the debug HUD snapshot metadata.
+- **Acceptance Criteria**:
+  - CaseFileUI and DeductionBoard call `emitOverlayVisibility` with contextual metadata.
+  - `Game.getOverlayStateSnapshot()` reports case/deduction state when instances are present.
+  - UI-level Jest coverage verifies event payloads.
 
 ---
 

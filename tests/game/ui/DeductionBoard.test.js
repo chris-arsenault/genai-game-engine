@@ -329,6 +329,44 @@ describe('DeductionBoard', () => {
       expect(board.visible).toBe(false);
       expect(mockClose).toHaveBeenCalled();
     });
+
+    it('emits overlay visibility diagnostics via event bus', () => {
+      const emit = jest.fn();
+      board = new DeductionBoard(800, 600, { eventBus: { emit } });
+      board.loadClues(mockClues);
+
+      board.show('toggle');
+
+      expect(emit).toHaveBeenCalledWith(
+        'ui:overlay_visibility_changed',
+        expect.objectContaining({
+          overlayId: 'deductionBoard',
+          visible: true,
+          source: 'toggle',
+          nodeCount: board.nodes.size,
+          connectionCount: board.connections.length
+        })
+      );
+      expect(emit).toHaveBeenCalledWith('ui:overlay_opened', expect.any(Object));
+      expect(emit).toHaveBeenCalledWith('deduction_board:opened', expect.any(Object));
+
+      emit.mockClear();
+
+      board.hide('toggle');
+
+      expect(emit).toHaveBeenCalledWith(
+        'ui:overlay_visibility_changed',
+        expect.objectContaining({
+          overlayId: 'deductionBoard',
+          visible: false,
+          source: 'toggle',
+          nodeCount: board.nodes.size,
+          connectionCount: board.connections.length
+        })
+      );
+      expect(emit).toHaveBeenCalledWith('ui:overlay_closed', expect.any(Object));
+      expect(emit).toHaveBeenCalledWith('deduction_board:closed', expect.any(Object));
+    });
   });
 
   describe('Rendering', () => {

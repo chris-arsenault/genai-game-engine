@@ -158,4 +158,46 @@ describe('Game UI overlays', () => {
     game.update(0.016);
     expect(game.questLogUI.visible).toBe(true);
   });
+
+  it('emits overlay visibility events and exposes snapshot data', () => {
+    game.worldStateStore = new WorldStateStore(eventBus);
+    game.worldStateStore.init();
+    game.initializeUIOverlays();
+    game.loaded = true;
+
+    eventBus.emit.mockClear();
+
+    // Toggle disguise overlay on
+    game.inputState.handleKeyDown({ code: 'KeyG', preventDefault: jest.fn() });
+    game.update(0.016);
+
+    expect(eventBus.emit).toHaveBeenCalledWith(
+      'ui:overlay_visibility_changed',
+      expect.objectContaining({
+        overlayId: 'disguise',
+        visible: true,
+        source: 'input:disguise',
+      })
+    );
+
+    const snapshot = game.getOverlayStateSnapshot();
+    const disguiseEntry = snapshot.find((entry) => entry.id === 'disguise');
+    expect(disguiseEntry).toBeDefined();
+    expect(disguiseEntry.visible).toBe(true);
+    expect(disguiseEntry.summary).toContain('selected');
+
+    // Toggle off
+    game.inputState.handleKeyUp({ code: 'KeyG' });
+    game.inputState.handleKeyDown({ code: 'KeyG', preventDefault: jest.fn() });
+    game.update(0.016);
+
+    expect(eventBus.emit).toHaveBeenCalledWith(
+      'ui:overlay_visibility_changed',
+      expect.objectContaining({
+        overlayId: 'disguise',
+        visible: false,
+        source: 'input:disguise',
+      })
+    );
+  });
 });

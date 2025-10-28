@@ -1,4 +1,5 @@
 import { buildTutorialOverlayView } from './helpers/tutorialViewModel.js';
+import { emitOverlayVisibility } from './helpers/overlayEvents.js';
 
 /**
  * TutorialOverlay
@@ -127,20 +128,34 @@ export class TutorialOverlay {
   /**
    * Show the overlay
    */
-  show() {
+  show(source = 'show') {
+    const wasVisible = this.visible;
     this.visible = true;
     this.targetAlpha = 1;
+
+    if (!wasVisible) {
+      emitOverlayVisibility(this.events, 'tutorial', true, { source });
+    }
   }
 
   /**
    * Hide the overlay
    */
-  hide() {
+  hide(source = 'hide') {
+    if (!this.visible && this.targetAlpha === 0) {
+      return;
+    }
+
+    const wasVisible = this.visible;
     this.visible = false;
     this.targetAlpha = 0;
     this.currentPrompt = null;
     this.highlight = null;
     this.highlightEntities = [];
+
+    if (wasVisible) {
+      emitOverlayVisibility(this.events, 'tutorial', false, { source });
+    }
   }
 
   /**

@@ -4,6 +4,7 @@
  * Renders contextual prompts (e.g., "Press E to examine") anchored
  * either to the player's HUD or a world position supplied by gameplay systems.
  */
+import { emitOverlayVisibility } from './helpers/overlayEvents.js';
 export class InteractionPromptOverlay {
   constructor(canvas, eventBus, camera, options = {}) {
     this.canvas = canvas;
@@ -46,6 +47,8 @@ export class InteractionPromptOverlay {
       return;
     }
 
+    const wasVisible = this.visible;
+
     this.prompt = {
       text: data.text,
       worldPosition: data.position ? { ...data.position } : null
@@ -53,11 +56,29 @@ export class InteractionPromptOverlay {
 
     this.visible = true;
     this.targetAlpha = 1;
+
+    if (!wasVisible) {
+      emitOverlayVisibility(this.eventBus, 'interactionPrompt', true, {
+        source: data?.source ?? 'showPrompt',
+        text: data.text,
+      });
+    }
   }
 
   hidePrompt() {
+    if (!this.visible && this.targetAlpha === 0) {
+      return;
+    }
+
+    const wasVisible = this.visible;
     this.visible = false;
     this.targetAlpha = 0;
+
+    if (wasVisible) {
+      emitOverlayVisibility(this.eventBus, 'interactionPrompt', false, {
+        source: 'hidePrompt',
+      });
+    }
   }
 
   update(deltaTime) {

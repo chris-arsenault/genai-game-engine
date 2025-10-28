@@ -16,6 +16,7 @@
  * @class CaseFileUI
  */
 import { ObjectiveList } from './ObjectiveList.js';
+import { emitOverlayVisibility } from './helpers/overlayEvents.js';
 
 export class CaseFileUI {
   /**
@@ -134,29 +135,22 @@ export class CaseFileUI {
   /**
    * Show the case file UI
    */
-  show() {
-    this.visible = true;
-
-    // Emit case_file:opened event for tutorial tracking
-    if (this.eventBus) {
-      this.eventBus.emit('case_file:opened', {
-        caseId: this.caseData?.id
-      });
-    }
+  show(source = 'show') {
+    this._setVisible(true, source);
   }
 
   /**
    * Hide the case file UI
    */
-  hide() {
-    this.visible = false;
+  hide(source = 'hide') {
+    this._setVisible(false, source);
   }
 
   /**
    * Toggle visibility
    */
-  toggle() {
-    this.visible = !this.visible;
+  toggle(source = 'toggle') {
+    return this._setVisible(!this.visible, source);
   }
 
   /**
@@ -222,7 +216,7 @@ export class CaseFileUI {
    * Close the case file UI
    */
   close() {
-    this.hide();
+    this.hide('close');
     this.onClose();
   }
 
@@ -265,6 +259,36 @@ export class CaseFileUI {
 
     // Restore context
     ctx.restore();
+  }
+
+  /**
+   * Apply visibility changes, emit instrumentation, and mirror legacy events.
+   * @param {boolean} nextVisible
+   * @param {string} source
+   * @returns {boolean} New visibility state
+   * @private
+   */
+  _setVisible(nextVisible, source = 'setVisible') {
+    const desired = Boolean(nextVisible);
+    if (this.visible === desired) {
+      return this.visible;
+    }
+
+    this.visible = desired;
+
+    const caseId = this.caseData?.id ?? null;
+    if (this.eventBus) {
+      const context = { source, caseId };
+      emitOverlayVisibility(this.eventBus, 'caseFile', this.visible, context);
+
+      if (this.visible) {
+        this.eventBus.emit('case_file:opened', { caseId });
+      } else {
+        this.eventBus.emit('case_file:closed', { caseId });
+      }
+    }
+
+    return this.visible;
   }
 
   /**

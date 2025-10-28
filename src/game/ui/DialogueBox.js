@@ -1,4 +1,5 @@
 import { buildDialogueViewModel } from './helpers/dialogueViewModel.js';
+import { emitOverlayVisibility } from './helpers/overlayEvents.js';
 
 /**
  * DialogueBox
@@ -233,6 +234,7 @@ export class DialogueBox {
    * @param {Object} data - Dialogue data
    */
   show(data) {
+    const wasVisible = this.visible;
     this.visible = true;
     this.npcId = data.npcId ?? this.npcId;
     this.dialogueId = data.dialogueId ?? this.dialogueId;
@@ -251,12 +253,21 @@ export class DialogueBox {
       this.displayedText = this.text;
       this.isTyping = false;
     }
+
+    if (!wasVisible) {
+      emitOverlayVisibility(this.eventBus, 'dialogue', true, {
+        source: data?.source ?? 'show',
+        nodeId: this.nodeId,
+        dialogueId: this.dialogueId,
+      });
+    }
   }
 
   /**
    * Hide dialogue box
    */
-  hide() {
+  hide(source = 'hide') {
+    const wasVisible = this.visible;
     this.visible = false;
     this.isTyping = false;
     this.typewriterIndex = 0;
@@ -266,6 +277,12 @@ export class DialogueBox {
     this.npcId = null;
     this.dialogueId = null;
     this.nodeId = null;
+
+    if (wasVisible) {
+      emitOverlayVisibility(this.eventBus, 'dialogue', false, {
+        source,
+      });
+    }
   }
 
   /**

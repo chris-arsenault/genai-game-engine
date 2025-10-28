@@ -104,15 +104,25 @@ export class InputState {
       this.previousActions.set(action, wasPressed);
       this.actions.set(action, isPressed);
 
+      const becamePressed = isPressed && !wasPressed;
+
       // Emit events for action press (edge detection)
-      if (isPressed && !wasPressed && this.eventBus) {
+      if (becamePressed && this.eventBus) {
+        const payload = {
+          action,
+          timestamp: Date.now()
+        };
+
         // Escape key special handling for tutorial system
         if (action === 'pause' || action === 'cancel') {
           this.eventBus.emit('input:escape', { action });
         }
+
+        this.eventBus.emit('input:action_pressed', payload);
+        this.eventBus.emit(`input:${action}:pressed`, payload);
       }
 
-      if (isPressed && !wasPressed) {
+      if (becamePressed) {
         this.justPressedActions.set(action, true);
       } else if (!isPressed) {
         this.justPressedActions.set(action, false);

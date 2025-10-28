@@ -14,6 +14,7 @@
  * @class DeductionBoard
  */
 import { ClueNode } from './ClueNode.js';
+import { emitOverlayVisibility } from './helpers/overlayEvents.js';
 
 export class DeductionBoard {
   /**
@@ -340,30 +341,22 @@ export class DeductionBoard {
   /**
    * Show the deduction board
    */
-  show() {
-    this.visible = true;
-
-    // Emit deduction_board:opened event for tutorial tracking
-    if (this.eventBus) {
-      this.eventBus.emit('deduction_board:opened', {
-        nodeCount: this.nodes.size,
-        connectionCount: this.connections.length
-      });
-    }
+  show(source = 'show') {
+    this._setVisible(true, source);
   }
 
   /**
    * Hide the deduction board
    */
-  hide() {
-    this.visible = false;
+  hide(source = 'hide') {
+    this._setVisible(false, source);
   }
 
   /**
    * Close the deduction board
    */
   close() {
-    this.hide();
+    this.hide('close');
     this.onClose();
   }
 
@@ -403,6 +396,40 @@ export class DeductionBoard {
     this._renderButtons(ctx);
     this._renderAccuracyBar(ctx);
     this._renderFeedback(ctx);
+  }
+
+  /**
+   * Apply visibility change, emit overlay diagnostics, and mirror legacy events.
+   * @param {boolean} nextVisible
+  * @param {string} source
+   * @private
+   * @returns {boolean} Current visibility
+   */
+  _setVisible(nextVisible, source = 'setVisible') {
+    const desired = Boolean(nextVisible);
+    if (this.visible === desired) {
+      return this.visible;
+    }
+
+    this.visible = desired;
+
+    if (this.eventBus) {
+      const payload = {
+        source,
+        nodeCount: this.nodes.size,
+        connectionCount: this.connections.length,
+      };
+
+      emitOverlayVisibility(this.eventBus, 'deductionBoard', this.visible, payload);
+
+      if (this.visible) {
+        this.eventBus.emit('deduction_board:opened', payload);
+      } else {
+        this.eventBus.emit('deduction_board:closed', payload);
+      }
+    }
+
+    return this.visible;
   }
 
   /**

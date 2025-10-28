@@ -125,9 +125,11 @@ describe('DeductionSystem', () => {
 
       system.openBoard();
 
-      expect(openedSpy).toHaveBeenCalledWith({
-        caseId: 'case_1'
-      });
+      expect(openedSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          caseId: 'case_1'
+        })
+      );
     });
 
     it('should set current case', () => {
@@ -168,9 +170,11 @@ describe('DeductionSystem', () => {
       system.openBoard();
       system.closeBoard();
 
-      expect(closedSpy).toHaveBeenCalledWith({
-        caseId: 'case_1'
-      });
+      expect(closedSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          caseId: 'case_1'
+        })
+      );
     });
   });
 
@@ -200,6 +204,14 @@ describe('DeductionSystem', () => {
       system.openBoard();
       system.toggleBoard();
 
+      expect(system.isOpen).toBe(false);
+    });
+
+    it('responds to input events emitted by the event bus', () => {
+      mockEventBus.emit('input:deductionBoard:pressed', { action: 'deductionBoard' });
+      expect(system.isOpen).toBe(true);
+
+      mockEventBus.emit('input:deductionBoard:pressed', { action: 'deductionBoard' });
       expect(system.isOpen).toBe(false);
     });
   });
@@ -320,45 +332,6 @@ describe('DeductionSystem', () => {
       });
 
       expect(mockDeductionBoard.loadClues).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('Keyboard Input', () => {
-    it('should toggle board on Tab key', () => {
-      const mockCase = {
-        id: 'case_1',
-        title: 'Test Case',
-        discoveredClues: new Set(['clue_1'])
-      };
-
-      mockCaseManager.getActiveCase.mockReturnValue(mockCase);
-      mockCaseManager.clueDatabase.set('clue_1', {
-        title: 'Clue 1',
-        description: 'Test',
-        confidence: 0.9
-      });
-
-      const mockEvent = {
-        key: 'Tab',
-        preventDefault: jest.fn()
-      };
-
-      system.onKeyDown(mockEvent);
-
-      expect(system.isOpen).toBe(true);
-      expect(mockEvent.preventDefault).toHaveBeenCalled();
-    });
-
-    it('should not toggle on other keys', () => {
-      const mockEvent = {
-        key: 'Escape',
-        preventDefault: jest.fn()
-      };
-
-      system.onKeyDown(mockEvent);
-
-      expect(system.isOpen).toBe(false);
-      expect(mockEvent.preventDefault).not.toHaveBeenCalled();
     });
   });
 

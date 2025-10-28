@@ -51,6 +51,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   const debugDialogueTranscript = document.getElementById('debug-dialogue-transcript');
   const debugDialogueMeta = document.getElementById('debug-dialogue-meta');
   const debugDialogueControls = document.getElementById('debug-dialogue-controls');
+  const debugUiOverlayList = document.getElementById('debug-ui-overlays-list');
 
   const formatClock = (timestamp) => {
     if (!timestamp || Number.isNaN(timestamp)) {
@@ -136,6 +137,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   let lastDialogueView = null;
   let lastTranscriptSignature = null;
+  let lastOverlaySignature = null;
   let debugTranscriptNeedsScroll = true;
 
   if (debugDialogueControls) {
@@ -198,6 +200,43 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (frameTimeElement) {
       const frameTime = (engine.getDeltaTime() * 1000).toFixed(1);
       frameTimeElement.textContent = `Frame: ${frameTime} ms`;
+    }
+
+    if (debugUiOverlayList && window.game?.getOverlayStateSnapshot) {
+      let overlaySnapshot = [];
+      try {
+        overlaySnapshot = window.game.getOverlayStateSnapshot() || [];
+      } catch (error) {
+        console.warn('[DebugOverlay] Failed to read overlay snapshot', error);
+        overlaySnapshot = [];
+      }
+
+      const signature = overlaySnapshot
+        .map((overlay) => `${overlay.id ?? 'unknown'}:${overlay.visible ? 1 : 0}:${overlay.summary ?? ''}`)
+        .join('|');
+
+      if (signature !== lastOverlaySignature) {
+        lastOverlaySignature = signature;
+        debugUiOverlayList.innerHTML = '';
+
+        if (!Array.isArray(overlaySnapshot) || overlaySnapshot.length === 0) {
+          const row = document.createElement('div');
+          row.className = 'debug-overlay-row empty';
+          row.textContent = 'No overlay state';
+          debugUiOverlayList.appendChild(row);
+        } else {
+          for (const overlay of overlaySnapshot) {
+            const row = document.createElement('div');
+            row.className = 'debug-overlay-row';
+            row.dataset.visible = overlay.visible ? 'true' : 'false';
+            const name = overlay.label ?? overlay.id ?? 'overlay';
+            const summary = overlay.summary ? ` – ${overlay.summary}` : '';
+            const state = overlay.visible ? 'open' : 'closed';
+            row.textContent = `${name}: ${state}${summary}`;
+            debugUiOverlayList.appendChild(row);
+          }
+        }
+      }
     }
 
     if (window.worldStateStore && debugDialogueStatus) {

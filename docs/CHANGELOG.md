@@ -10,13 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Audio feedback controller bridges `player:moving`, `ui:show_prompt`, and evidence events to shared SFX stubs to satisfy CORE-302 acceptance criteria (`src/game/audio/AudioFeedbackController.js`, wired in `src/game/Game.js`).
 - Playwright feedback overlay smoke validates movement pulses, interaction prompts, and audio hook timestamps (`tests/e2e/feedback-overlays.spec.js`).
+- Developer debug overlay enumerates UI overlay states with contextual summaries sourced from `Game.getOverlayStateSnapshot()` (`index.html`, `src/main.js`, `src/game/Game.js`).
+- InputState now broadcasts `input:action_pressed` and action-scoped events for edge-triggered input consumers (`src/game/config/Controls.js`).
+- DeductionSystem consumes the new `input:deductionBoard:pressed` signal to avoid per-frame toggles (`src/game/systems/DeductionSystem.js`).
+- CaseFileUI and DeductionBoard emit unified overlay visibility telemetry and populate the debug HUD snapshot metadata (`src/game/ui/CaseFileUI.js`, `src/game/ui/DeductionBoard.js`, `src/game/Game.js`).
 
 ### Fixed
 - Input edge detection now treats pause, disguise, and quest toggles as single actions per key press so UI overlays and dialogue prompts remain visible during manual QA (`src/game/config/Controls.js`, `src/game/Game.js`).
+- KnowledgeProgressionSystem now queries gates via `componentRegistry` for both scheduled and event-driven checks, preventing missed gate unlocks when knowledge events fire (`src/game/systems/KnowledgeProgressionSystem.js`).
 
 ### Testing
 - Added unit coverage for AudioFeedbackController throttling and SFX dispatch (`tests/game/audio/AudioFeedbackController.test.js`).
 - Added regression coverage for InputState edge detection and overlay toggles (`tests/game/config/Controls.test.js`, `tests/game/Game.uiOverlays.test.js`).
+- Added Jest coverage for overlay visibility instrumentation and knowledge gate evaluation (`tests/game/Game.uiOverlays.test.js`, `tests/game/systems/KnowledgeProgressionSystem.test.js`).
+- Added targeted tests for input event emission, deduction board toggling, and overlay telemetry (`tests/game/config/Controls.test.js`, `tests/game/systems/DeductionSystem.test.js`, `tests/game/ui/CaseFileUI.test.js`, `tests/game/ui/DeductionBoard.test.js`).
 
 ## [0.7.0] - 2025-10-27 - Sprint 7: Polish & Playtest
 

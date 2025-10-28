@@ -6,6 +6,7 @@
  *
  * @class QuestLogUI
  */
+import { emitOverlayVisibility } from './helpers/overlayEvents.js';
 import { buildQuestListByStatus, buildQuestViewModel, summarizeQuestProgress } from './helpers/questViewModel.js';
 
 export class QuestLogUI {
@@ -160,8 +161,44 @@ export class QuestLogUI {
   /**
    * Toggle visibility
    */
-  toggle() {
-    this.visible = !this.visible;
+  toggle(source = 'toggle') {
+    return this._setVisible(!this.visible, source);
+  }
+
+  /**
+   * Set visibility
+   * @param {boolean} visible - Visibility state
+   * @param {string} [source='setVisible'] - Source identifier for instrumentation
+   */
+  setVisible(visible, source = 'setVisible') {
+    return this._setVisible(Boolean(visible), source);
+  }
+
+  /**
+   * Apply visibility change, emit events, and refresh state as needed.
+   * @param {boolean} nextVisible
+   * @param {string} source
+   * @returns {boolean}
+   * @private
+   */
+  _setVisible(nextVisible, source) {
+    const desired = Boolean(nextVisible);
+    if (this.visible === desired) {
+      return this.visible;
+    }
+
+    this.visible = desired;
+
+    if (this.eventBus) {
+      const legacyEvent = this.visible ? 'ui:quest_log_opened' : 'ui:quest_log_closed';
+      this.eventBus.emit(legacyEvent, {
+        overlayId: 'questLog',
+        source,
+      });
+    }
+
+    emitOverlayVisibility(this.eventBus, 'questLog', this.visible, { source });
+
     if (this.visible) {
       this._updateQuestList();
       // Auto-select first quest if none selected
@@ -173,14 +210,8 @@ export class QuestLogUI {
         this._refreshSelectedQuest();
       }
     }
-  }
 
-  /**
-   * Set visibility
-   * @param {boolean} visible - Visibility state
-   */
-  setVisible(visible) {
-    this.visible = visible;
+    return this.visible;
   }
 
   /**
