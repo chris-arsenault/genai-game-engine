@@ -19,6 +19,7 @@ export class QuestSystem extends System {
     super(componentRegistry, eventBus, ['Quest']);
     this.priority = 27;
     this.quests = questManager;
+    this.components = this.componentRegistry;
 
     // Track which quests have been auto-started
     this.autoStartedQuests = new Set();
