@@ -8,10 +8,12 @@
  * Events: dialogue:started, dialogue:ended, dialogue:choice, dialogue:node_changed
  */
 
-export class DialogueSystem {
+import { System } from '../../engine/ecs/System.js';
+
+export class DialogueSystem extends System {
   constructor(componentRegistry, eventBus, caseManager = null, factionManager = null) {
-    this.components = componentRegistry;
-    this.events = eventBus;
+    super(componentRegistry, eventBus, []);
+    this.priority = 40;
     this.caseManager = caseManager;
     this.factionManager = factionManager;
 
@@ -30,7 +32,7 @@ export class DialogueSystem {
    */
   init() {
     // Subscribe to interaction events
-    this.events.on('interaction:dialogue', (data) => {
+    this.eventBus.on('interaction:dialogue', (data) => {
       this.onDialogueInteraction(data);
     });
 
@@ -122,7 +124,7 @@ export class DialogueSystem {
     }
 
     // Emit dialogue started event
-    this.events.emit('dialogue:started', {
+    this.eventBus.emit('dialogue:started', {
       npcId,
       dialogueId,
       nodeId: tree.startNode,
@@ -187,7 +189,7 @@ export class DialogueSystem {
     const choice = availableChoices[choiceIndex];
 
     // Emit choice event
-    this.events.emit('dialogue:choice', {
+    this.eventBus.emit('dialogue:choice', {
       npcId: this.activeDialogue.npcId,
       dialogueId: this.activeDialogue.dialogueId,
       nodeId: this.activeDialogue.currentNode,
@@ -251,7 +253,7 @@ export class DialogueSystem {
     this.activeDialogue.context = this.buildDialogueContext(this.activeDialogue.npcId);
 
     // Emit node changed event
-    this.events.emit('dialogue:node_changed', {
+    this.eventBus.emit('dialogue:node_changed', {
       npcId: this.activeDialogue.npcId,
       dialogueId: this.activeDialogue.dialogueId,
       nodeId,
@@ -278,7 +280,18 @@ export class DialogueSystem {
     }
 
     // Emit ended event
-    this.events.emit('dialogue:ended', {
+    this.eventBus.emit('dialogue:ended', {
+      npcId,
+      dialogueId
+    });
+
+    // Also emit quest-compatible events
+    this.eventBus.emit('dialogue:completed', {
+      npcId,
+      dialogueId
+    });
+
+    this.eventBus.emit('npc:interviewed', {
       npcId,
       dialogueId
     });
@@ -301,7 +314,7 @@ export class DialogueSystem {
       if (activeCase) {
         for (const clueId of consequences.revealClues) {
           activeCase.discoveredClues.add(clueId);
-          this.events.emit('clue:revealed', {
+          this.eventBus.emit('clue:revealed', {
             caseId: activeCase.id,
             clueId,
             source: 'dialogue'
@@ -323,13 +336,13 @@ export class DialogueSystem {
     // Set flags
     if (consequences.setFlags) {
       for (const flag of consequences.setFlags) {
-        this.events.emit('flag:set', { flag });
+        this.eventBus.emit('flag:set', { flag });
       }
     }
 
     // Emit custom consequence event
     if (consequences.customEvent) {
-      this.events.emit(consequences.customEvent.type, consequences.customEvent.data || {});
+      this.eventBus.emit(consequences.customEvent.type, consequences.customEvent.data || {});
     }
   }
 

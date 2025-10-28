@@ -91,8 +91,14 @@ export class Engine {
    * @param {Object} metrics - Frame timing metrics
    */
   _onFrame(metrics) {
-    // Render (happens even when paused)
-    this.renderer.render(this.componentRegistry);
+    // Rendering is now handled by RenderSystem via SystemManager
+    // This ensures proper ECS integration and layer management
+
+    // Composite layers to main canvas (after RenderSystem has drawn to them)
+    this.renderer.beginFrame();
+    this.renderer.clear();
+    this.renderer.layeredRenderer.composite(this.renderer.ctx);
+    this.renderer.endFrame();
 
     // Process event queue
     this.eventBus.processQueue();

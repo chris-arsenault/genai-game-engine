@@ -19,6 +19,9 @@ import { NPCMemorySystem } from './systems/NPCMemorySystem.js';
 import { DisguiseSystem } from './systems/DisguiseSystem.js';
 import { QuestSystem } from './systems/QuestSystem.js';
 
+// Engine systems
+import { RenderSystem } from '../engine/renderer/RenderSystem.js';
+
 // UI Components
 import { TutorialOverlay } from './ui/TutorialOverlay.js';
 import { ReputationUI } from './ui/ReputationUI.js';
@@ -44,6 +47,9 @@ import { createPlayerEntity } from './entities/PlayerEntity.js';
 import { createEvidenceEntity } from './entities/EvidenceEntity.js';
 import { createNPCEntity } from './entities/NPCEntity.js';
 
+// Scenes
+import { loadAct1Scene } from './scenes/Act1Scene.js';
+
 // Configuration
 import { GameConfig } from './config/GameConfig.js';
 import { InputState } from './config/Controls.js';
@@ -65,7 +71,7 @@ export class Game {
     this.systemManager = engine.systemManager;
     this.eventBus = engine.eventBus;
     this.renderer = engine.renderer;
-    this.camera = engine.camera;
+    this.camera = engine.renderer.getCamera();
 
     // Game state
     this.inputState = new InputState(engine.eventBus);
@@ -89,7 +95,8 @@ export class Game {
       tutorial: null,
       npcMemory: null,
       disguise: null,
-      quest: null
+      quest: null,
+      render: null  // RenderSystem (engine system managed by game)
     };
 
     // UI overlays
@@ -116,8 +123,8 @@ export class Game {
     // Initialize UI overlays
     this.initializeUIOverlays();
 
-    // Load initial scene
-    await this.loadTestScene();
+    // Load initial scene (Act 1: The Hollow Case)
+    await this.loadAct1Scene();
 
     this.loaded = true;
 
@@ -259,8 +266,17 @@ export class Game {
     );
     this.gameSystems.quest.init();
 
+    // Create render system (engine system, runs last after all logic)
+    this.gameSystems.render = new RenderSystem(
+      this.componentRegistry,
+      this.eventBus,
+      this.renderer.layeredRenderer,
+      this.camera
+    );
+    this.gameSystems.render.init();
+
     // Register systems with engine SystemManager
-    // Priority order: Tutorial (5), PlayerMovement (10), NPCMemory (20), Disguise (22), Faction (25), Quest (27), Investigation (30), Knowledge (35), Dialogue (40), Camera (90)
+    // Priority order: Tutorial (5), PlayerMovement (10), NPCMemory (20), Disguise (22), Faction (25), Quest (27), Investigation (30), Knowledge (35), Dialogue (40), Camera (90), Render (100)
     this.systemManager.registerSystem(this.gameSystems.tutorial, 5);
     this.systemManager.registerSystem(this.gameSystems.playerMovement, 10);
     this.systemManager.registerSystem(this.gameSystems.npcMemory, 20);
@@ -271,6 +287,7 @@ export class Game {
     this.systemManager.registerSystem(this.gameSystems.knowledgeProgression, 35);
     this.systemManager.registerSystem(this.gameSystems.dialogue, 40);
     this.systemManager.registerSystem(this.gameSystems.cameraFollow, 90);
+    this.systemManager.registerSystem(this.gameSystems.render, 100);  // Render last
 
     console.log('[Game] Game systems initialized');
   }
@@ -333,49 +350,20 @@ export class Game {
   }
 
   /**
-   * Load test scene for initial playtesting
+   * Load Act 1 scene (The Hollow Case)
    */
-  async loadTestScene() {
-    console.log('[Game] Loading test scene...');
+  async loadAct1Scene() {
+    console.log('[Game] Loading Act 1 scene...');
 
-    // Create player at center
-    const playerId = createPlayerEntity(
+    // Load the Act 1 scene with all required entities
+    const sceneData = await loadAct1Scene(
       this.entityManager,
       this.componentRegistry,
-      400, // x
-      300  // y
+      this.eventBus
     );
 
-    // Snap camera to player position
-    this.gameSystems.cameraFollow.snapTo(400, 300);
-
-    // Create evidence items around player
-    const evidencePositions = [
-      { x: 300, y: 200, title: 'Fingerprint', type: 'forensic', category: 'fingerprint' },
-      { x: 500, y: 250, title: 'Security Log', type: 'digital', category: 'document' },
-      { x: 350, y: 400, title: 'Witness Statement', type: 'testimony', category: 'testimony' },
-      { x: 450, y: 350, title: 'Memory Fragment', type: 'physical', category: 'memory_chip' }
-    ];
-
-    for (const evidenceData of evidencePositions) {
-      createEvidenceEntity(
-        this.entityManager,
-        this.componentRegistry,
-        {
-          ...evidenceData,
-          id: `evidence_${evidenceData.title.toLowerCase().replace(/\s+/g, '_')}`,
-          description: `A piece of evidence: ${evidenceData.title}`,
-          caseId: 'case_tutorial',
-          derivedClues: [`clue_${evidenceData.category}`]
-        }
-      );
-    }
-
-    // Create boundary walls (simple collision boxes)
-    this.createBoundary(0, 0, 800, 20); // Top
-    this.createBoundary(0, 580, 800, 20); // Bottom
-    this.createBoundary(0, 0, 20, 600); // Left
-    this.createBoundary(780, 0, 20, 600); // Right
+    // Snap camera to player spawn position
+    this.gameSystems.cameraFollow.snapTo(sceneData.spawnPoint.x, sceneData.spawnPoint.y);
 
     // Subscribe to game events for logging
     this.subscribeToGameEvents();
@@ -383,7 +371,7 @@ export class Game {
     // Start Act 1 first quest (The Hollow Case)
     this.startGame();
 
-    console.log('[Game] Test scene loaded');
+    console.log('[Game] Act 1 scene loaded');
   }
 
   /**

@@ -8,14 +8,14 @@
  * Queries: [PlayerController, Transform]
  */
 
+import { System } from '../../engine/ecs/System.js';
 import { GameConfig } from '../config/GameConfig.js';
 
-export class PlayerMovementSystem {
+export class PlayerMovementSystem extends System {
   constructor(componentRegistry, eventBus, inputState) {
-    this.components = componentRegistry;
-    this.events = eventBus;
+    super(componentRegistry, eventBus, ['PlayerController', 'Transform']);
     this.input = inputState;
-    this.requiredComponents = ['PlayerController', 'Transform'];
+    this.priority = 10;
   }
 
   /**
@@ -23,11 +23,11 @@ export class PlayerMovementSystem {
    */
   init() {
     // Subscribe to relevant events
-    this.events.subscribe('game:pause', () => {
+    this.eventBus.subscribe('game:pause', () => {
       this.paused = true;
     });
 
-    this.events.subscribe('game:resume', () => {
+    this.eventBus.subscribe('game:resume', () => {
       this.paused = false;
     });
 
@@ -37,18 +37,17 @@ export class PlayerMovementSystem {
   /**
    * Update player movement each frame
    * @param {number} deltaTime - Time since last frame (seconds)
-   * @param {Array} entities - Entities with required components
+   * @param {Array<number>} entities - Entity IDs with required components
    */
   update(deltaTime, entities) {
     if (this.paused) return;
 
-    // Find player entity (should only be one)
-    const playerEntities = entities.filter(e => e.hasTag && e.hasTag('player'));
-    if (playerEntities.length === 0) return;
+    // Find player entity (should only be one with PlayerController component)
+    if (entities.length === 0) return;
 
-    const entity = playerEntities[0];
-    const controller = this.components.getComponent(entity.id, 'PlayerController');
-    const transform = this.components.getComponent(entity.id, 'Transform');
+    const entityId = entities[0];
+    const controller = this.getComponent(entityId, 'PlayerController');
+    const transform = this.getComponent(entityId, 'Transform');
 
     if (!controller || !transform) return;
 
@@ -62,7 +61,7 @@ export class PlayerMovementSystem {
       controller.velocityY += moveVector.y * accel;
 
       // Emit movement event
-      this.events.emit('player:moving', {
+      this.eventBus.emit('player:moving', {
         direction: { x: moveVector.x, y: moveVector.y },
         position: { x: transform.x, y: transform.y }
       });
@@ -101,7 +100,7 @@ export class PlayerMovementSystem {
     );
 
     if (distMoved > 1) {
-      this.events.emit('player:moved', {
+      this.eventBus.emit('player:moved', {
         from: { x: oldX, y: oldY },
         to: { x: transform.x, y: transform.y },
         velocity: { x: controller.velocityX, y: controller.velocityY }
@@ -131,7 +130,7 @@ export class PlayerMovementSystem {
    * Cleanup system
    */
   cleanup() {
-    this.events.unsubscribe('game:pause');
-    this.events.unsubscribe('game:resume');
+    this.eventBus.unsubscribe('game:pause');
+    this.eventBus.unsubscribe('game:resume');
   }
 }

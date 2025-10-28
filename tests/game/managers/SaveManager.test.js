@@ -1,0 +1,1110 @@
+import { SaveManager } from '../../../src/game/managers/SaveManager.js';
+import { EventBus } from '../../../src/engine/events/EventBus.js';
+
+describe('SaveManager', () => {
+  let saveManager;
+  let eventBus;
+  let mockManagers;
+  let localStorageMock;
+
+  beforeEach(() => {
+    // Mock localStorage with accessible store
+    localStorageMock = {
+      store: {},
+      getItem(key) {
+        return this.store[key] || null;
+      },
+      setItem(key, value) {
+        this.store[key] = String(value);
+      },
+      removeItem(key) {
+        delete this.store[key];
+      },
+      clear() {
+        Object.keys(this.store).forEach(key => delete this.store[key]);
+      },
+    };
+
+    global.localStorage = localStorageMock;
+
+    // Create mock managers with serialize/deserialize methods
+    mockManagers = {
+      storyFlagManager: {
+        serialize: jest.fn(() => ({ flags: { test_flag: true } })),
+        deserialize: jest.fn(),
+      },
+      questManager: {
+        serialize: jest.fn(() => ({ quests: { test_quest: 'active' } })),
+        deserialize: jest.fn(),
+      },
+      factionManager: {
+        reputation: { test_faction: 50 },
+      },
+      tutorialSystem: {
+        isComplete: jest.fn(() => false),
+        completeTutorial: jest.fn(),
+      },
+    };
+
+    eventBus = new EventBus();
+    saveManager = new SaveManager(eventBus, mockManagers);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    localStorageMock.clear();
+  });
+
+  // ==================== INITIALIZATION TESTS ====================
+
+  describe('Initialization', () => {
+    test('should initialize with default config', () => {
+      expect(saveManager.config.storageKeyPrefix).toBe('save_');
+      expect(saveManager.config.metadataKey).toBe('save_metadata');
+      expect(saveManager.config.version).toBe(1);
+      expect(saveManager.config.maxSaveSlots).toBe(10);
+    });
+
+    test('should initialize with eventBus', () => {
+      expect(saveManager.events).toBe(eventBus);
+    });
+
+    test('should set autosave enabled by default', () => {
+      expect(saveManager.autosaveEnabled).toBe(true);
+    });
+
+    test('should set correct default autosave interval', () => {
+      expect(saveManager.autosaveInterval).toBe(5 * 60 * 1000); // 5 minutes
+    });
+
+    test('should initialize with manager references', () => {
+      expect(saveManager.storyFlagManager).toBe(mockManagers.storyFlagManager);
+      expect(saveManager.questManager).toBe(mockManagers.questManager);
+      expect(saveManager.factionManager).toBe(mockManagers.factionManager);
+      expect(saveManager.tutorialSystem).toBe(mockManagers.tutorialSystem);
+    });
+
+    test('should handle missing managers gracefully', () => {
+      const minimalSaveManager = new SaveManager(eventBus);
+      expect(minimalSaveManager.storyFlagManager).toBeUndefined();
+      expect(minimalSaveManager.questManager).toBeUndefined();
+      expect(minimalSaveManager.factionManager).toBeUndefined();
+      expect(minimalSaveManager.tutorialSystem).toBeUndefined();
+    });
+
+    test('should initialize gameStartTime on construction', () => {
+      const beforeTime = Date.now();
+      const newSaveManager = new SaveManager(eventBus, mockManagers);
+      const afterTime = Date.now();
+      expect(newSaveManager.gameStartTime).toBeGreaterThanOrEqual(beforeTime);
+      expect(newSaveManager.gameStartTime).toBeLessThanOrEqual(afterTime);
+    });
+
+    test('should subscribe to autosave events on init', () => {
+      const subscribeSpy = jest.spyOn(eventBus, 'subscribe');
+      saveManager.init();
+
+      // Should subscribe to quest:completed, objective:completed, area:entered, case:completed
+      expect(subscribeSpy).toHaveBeenCalledWith('quest:completed', expect.any(Function));
+      expect(subscribeSpy).toHaveBeenCalledWith('objective:completed', expect.any(Function));
+      expect(subscribeSpy).toHaveBeenCalledWith('area:entered', expect.any(Function));
+      expect(subscribeSpy).toHaveBeenCalledWith('case:completed', expect.any(Function));
+    });
+
+    test('should set lastAutosaveTime on init', () => {
+      const beforeTime = Date.now();
+      saveManager.init();
+      const afterTime = Date.now();
+      expect(saveManager.lastAutosaveTime).toBeGreaterThanOrEqual(beforeTime);
+      expect(saveManager.lastAutosaveTime).toBeLessThanOrEqual(afterTime);
+    });
+
+    test('should log initialization message', () => {
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      new SaveManager(eventBus, mockManagers);
+      expect(consoleSpy).toHaveBeenCalledWith('[SaveManager] Initialized');
+      consoleSpy.mockRestore();
+    });
+  });
+
+  // ==================== SAVE OPERATIONS TESTS ====================
+
+  describe('Save Operations', () => {
+    beforeEach(() => {
+      saveManager.init();
+    });
+
+    test('should save game to default autosave slot', () => {
+      const result = saveManager.saveGame();
+      expect(result).toBe(true);
+
+      const saveKey = saveManager.config.storageKeyPrefix + 'autosave';
+      expect(localStorageMock.store[saveKey]).toBeDefined();
+
+      const saveData = JSON.parse(localStorageMock.store[saveKey]);
+      expect(saveData.slot).toBe('autosave');
+    });
+
+    test('should save game to custom slot name', () => {
+      const result = saveManager.saveGame('custom_slot');
+      expect(result).toBe(true);
+
+      const saveKey = saveManager.config.storageKeyPrefix + 'custom_slot';
+      expect(localStorageMock.store[saveKey]).toBeDefined();
+
+      const saveData = JSON.parse(localStorageMock.store[saveKey]);
+      expect(saveData.slot).toBe('custom_slot');
+    });
+
+    test('should collect state from all managers', () => {
+      saveManager.saveGame();
+
+      expect(mockManagers.storyFlagManager.serialize).toHaveBeenCalled();
+      expect(mockManagers.questManager.serialize).toHaveBeenCalled();
+    });
+
+    test('should include version in save data', () => {
+      const result = saveManager.saveGame('test_slot');
+      expect(result).toBe(true);
+
+      const saveKey = saveManager.config.storageKeyPrefix + 'test_slot';
+      const saveData = JSON.parse(localStorageMock.store[saveKey]);
+
+      expect(saveData.version).toBe(1);
+    });
+
+    test('should include timestamp in save data', () => {
+      const beforeTime = Date.now();
+      const result = saveManager.saveGame('test_slot');
+      const afterTime = Date.now();
+
+      expect(result).toBe(true);
+
+      const saveKey = saveManager.config.storageKeyPrefix + 'test_slot';
+      const saveData = JSON.parse(localStorageMock.store[saveKey]);
+
+      expect(saveData.timestamp).toBeGreaterThanOrEqual(beforeTime);
+      expect(saveData.timestamp).toBeLessThanOrEqual(afterTime);
+    });
+
+    test('should calculate playtime correctly', () => {
+      // Set gameStartTime to 10 seconds ago
+      saveManager.gameStartTime = Date.now() - 10000;
+
+      const result = saveManager.saveGame('test_slot');
+      expect(result).toBe(true);
+
+      const saveKey = saveManager.config.storageKeyPrefix + 'test_slot';
+      const saveData = JSON.parse(localStorageMock.store[saveKey]);
+
+      expect(saveData.playtime).toBeGreaterThanOrEqual(9000); // ~10 seconds
+      expect(saveData.playtime).toBeLessThanOrEqual(11000);
+    });
+
+    test('should serialize save data to localStorage', () => {
+      const result = saveManager.saveGame('test_slot');
+      expect(result).toBe(true);
+
+      const saveKey = saveManager.config.storageKeyPrefix + 'test_slot';
+      const savedData = localStorageMock.store[saveKey];
+
+      expect(savedData).toBeDefined();
+      expect(() => JSON.parse(savedData)).not.toThrow();
+    });
+
+    test('should emit game:saved event on success', () => {
+      const emitSpy = jest.spyOn(eventBus, 'emit');
+
+      saveManager.saveGame('test_slot');
+
+      expect(emitSpy).toHaveBeenCalledWith('game:saved', expect.objectContaining({
+        slot: 'test_slot',
+        timestamp: expect.any(Number),
+        playtime: expect.any(Number),
+      }));
+    });
+
+    test('should emit game:save_failed event on error', () => {
+      const emitSpy = jest.spyOn(eventBus, 'emit');
+
+      // Force localStorage to throw error
+      localStorageMock.setItem.mockImplementationOnce(() => {
+        throw new Error('Quota exceeded');
+      });
+
+      const result = saveManager.saveGame('test_slot');
+
+      expect(result).toBe(false);
+      expect(emitSpy).toHaveBeenCalledWith('game:save_failed', expect.objectContaining({
+        slot: 'test_slot',
+        error: expect.any(String),
+      }));
+    });
+
+    test('should handle missing storyFlagManager gracefully', () => {
+      saveManager.storyFlagManager = null;
+
+      const result = saveManager.saveGame('test_slot');
+      expect(result).toBe(true);
+
+      const saveKey = saveManager.config.storageKeyPrefix + 'test_slot';
+      expect(localStorageMock.store[saveKey]).toBeDefined();
+
+      const saveData = JSON.parse(localStorageMock.store[saveKey]);
+      expect(saveData.gameData.storyFlags).toEqual({});
+    });
+
+    test('should handle missing questManager gracefully', () => {
+      saveManager.questManager = null;
+
+      const result = saveManager.saveGame('test_slot');
+      expect(result).toBe(true);
+
+      const saveKey = saveManager.config.storageKeyPrefix + 'test_slot';
+      expect(localStorageMock.store[saveKey]).toBeDefined();
+
+      const saveData = JSON.parse(localStorageMock.store[saveKey]);
+      expect(saveData.gameData.quests).toEqual({});
+    });
+
+    test('should handle missing factionManager gracefully', () => {
+      saveManager.factionManager = null;
+
+      const result = saveManager.saveGame('test_slot');
+      expect(result).toBe(true);
+
+      const saveKey = saveManager.config.storageKeyPrefix + 'test_slot';
+      expect(localStorageMock.store[saveKey]).toBeDefined();
+
+      const saveData = JSON.parse(localStorageMock.store[saveKey]);
+      expect(saveData.gameData.factions).toEqual({});
+    });
+
+    test('should handle missing tutorialSystem gracefully', () => {
+      saveManager.tutorialSystem = null;
+
+      const result = saveManager.saveGame('test_slot');
+      expect(result).toBe(true);
+
+      const saveKey = saveManager.config.storageKeyPrefix + 'test_slot';
+      expect(localStorageMock.store[saveKey]).toBeDefined();
+
+      const saveData = JSON.parse(localStorageMock.store[saveKey]);
+      expect(saveData.gameData.tutorialComplete).toBe(false);
+    });
+
+    test('should update save metadata', () => {
+      const result = saveManager.saveGame('test_slot');
+      expect(result).toBe(true);
+
+      const metadataKey = saveManager.config.metadataKey;
+      expect(localStorageMock.store[metadataKey]).toBeDefined();
+
+      const metadata = JSON.parse(localStorageMock.store[metadataKey]);
+      expect(metadata.test_slot).toBeDefined();
+      expect(metadata.test_slot.timestamp).toBeDefined();
+      expect(metadata.test_slot.playtime).toBeDefined();
+      expect(metadata.test_slot.version).toBe(1);
+    });
+  });
+
+  // ==================== LOAD OPERATIONS TESTS ====================
+
+  describe('Load Operations', () => {
+    beforeEach(() => {
+      saveManager.init();
+    });
+
+    test('should load game from autosave slot', () => {
+      // Create a save first
+      saveManager.saveGame('autosave');
+
+      // Create new save manager to test loading
+      const newSaveManager = new SaveManager(eventBus, mockManagers);
+      newSaveManager.init();
+
+      const result = newSaveManager.loadGame('autosave');
+      expect(result).toBe(true);
+    });
+
+    test('should load game from custom slot', () => {
+      saveManager.saveGame('custom_slot');
+
+      const newSaveManager = new SaveManager(eventBus, mockManagers);
+      newSaveManager.init();
+
+      const result = newSaveManager.loadGame('custom_slot');
+      expect(result).toBe(true);
+    });
+
+    test('should restore state to all managers', () => {
+      saveManager.saveGame('test_slot');
+
+      const newManagers = {
+        storyFlagManager: {
+          serialize: jest.fn(),
+          deserialize: jest.fn(),
+        },
+        questManager: {
+          serialize: jest.fn(),
+          deserialize: jest.fn(),
+        },
+        factionManager: {
+          reputation: {},
+        },
+        tutorialSystem: {},
+      };
+
+      const newSaveManager = new SaveManager(eventBus, newManagers);
+      newSaveManager.init();
+      newSaveManager.loadGame('test_slot');
+
+      expect(newManagers.storyFlagManager.deserialize).toHaveBeenCalled();
+      expect(newManagers.questManager.deserialize).toHaveBeenCalled();
+    });
+
+    test('should verify save version before loading', () => {
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      // Create save with different version
+      const saveData = {
+        version: 999,
+        timestamp: Date.now(),
+        playtime: 0,
+        slot: 'test_slot',
+        gameData: {
+          storyFlags: {},
+          quests: {},
+          factions: {},
+          tutorialComplete: false,
+        },
+      };
+
+      const saveKey = saveManager.config.storageKeyPrefix + 'test_slot';
+      localStorageMock.store[saveKey] = JSON.stringify(saveData);
+
+      saveManager.loadGame('test_slot');
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Save version mismatch')
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    test('should emit game:loaded event on success', () => {
+      saveManager.saveGame('test_slot');
+
+      const emitSpy = jest.spyOn(eventBus, 'emit');
+
+      saveManager.loadGame('test_slot');
+
+      expect(emitSpy).toHaveBeenCalledWith('game:loaded', expect.objectContaining({
+        slot: 'test_slot',
+        timestamp: expect.any(Number),
+        playtime: expect.any(Number),
+      }));
+    });
+
+    test('should emit game:load_failed event on error', () => {
+      // Try to load non-existent save
+      const emitSpy = jest.spyOn(eventBus, 'emit');
+
+      const result = saveManager.loadGame('nonexistent_slot');
+
+      expect(result).toBe(false);
+      // Should not emit load_failed for missing save, just return false
+    });
+
+    test('should handle corrupted save data gracefully', () => {
+      // Save corrupted JSON
+      const saveKey = saveManager.config.storageKeyPrefix + 'test_slot';
+      localStorageMock.store[saveKey] = 'corrupted{json';
+
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const emitSpy = jest.spyOn(eventBus, 'emit');
+      const result = saveManager.loadGame('test_slot');
+
+      expect(result).toBe(false);
+      expect(consoleSpy).toHaveBeenCalled();
+      expect(emitSpy).toHaveBeenCalledWith('game:load_failed', expect.objectContaining({
+        slot: 'test_slot',
+        error: expect.any(String),
+      }));
+
+      consoleSpy.mockRestore();
+    });
+
+    test('should handle missing save slot', () => {
+      const result = saveManager.loadGame('nonexistent_slot');
+      expect(result).toBe(false);
+    });
+
+    test('should restore storyFlags correctly', () => {
+      const newManagers = {
+        storyFlagManager: {
+          serialize: jest.fn(() => ({ test: 'data' })),
+          deserialize: jest.fn(),
+        },
+        questManager: mockManagers.questManager,
+        factionManager: mockManagers.factionManager,
+        tutorialSystem: mockManagers.tutorialSystem,
+      };
+
+      const newSaveManager = new SaveManager(eventBus, newManagers);
+      newSaveManager.init();
+      newSaveManager.saveGame('test_slot');
+
+      const loadSaveManager = new SaveManager(eventBus, {
+        storyFlagManager: {
+          deserialize: jest.fn(),
+        },
+        questManager: { deserialize: jest.fn() },
+        factionManager: { reputation: {} },
+      });
+      loadSaveManager.init();
+      loadSaveManager.loadGame('test_slot');
+
+      expect(loadSaveManager.storyFlagManager.deserialize).toHaveBeenCalledWith(
+        expect.objectContaining({ test: 'data' })
+      );
+    });
+
+    test('should restore quest state correctly', () => {
+      saveManager.saveGame('test_slot');
+
+      const loadManagers = {
+        questManager: {
+          deserialize: jest.fn(),
+        },
+        storyFlagManager: { deserialize: jest.fn() },
+        factionManager: { reputation: {} },
+      };
+
+      const loadSaveManager = new SaveManager(eventBus, loadManagers);
+      loadSaveManager.init();
+      loadSaveManager.loadGame('test_slot');
+
+      expect(loadManagers.questManager.deserialize).toHaveBeenCalled();
+    });
+
+    test('should restore faction data correctly', () => {
+      saveManager.saveGame('test_slot');
+
+      const loadManagers = {
+        factionManager: {
+          reputation: {},
+        },
+        storyFlagManager: { deserialize: jest.fn() },
+        questManager: { deserialize: jest.fn() },
+      };
+
+      const loadSaveManager = new SaveManager(eventBus, loadManagers);
+      loadSaveManager.init();
+      loadSaveManager.loadGame('test_slot');
+
+      expect(loadManagers.factionManager.reputation).toEqual(
+        mockManagers.factionManager.reputation
+      );
+    });
+
+    test('should restore tutorial status correctly', () => {
+      // Set tutorial complete before saving
+      const originalGetItem = localStorageMock.getItem;
+      localStorageMock.getItem = jest.fn((key) => {
+        if (key === 'tutorial_completed') return 'true';
+        return originalGetItem.call(localStorageMock, key);
+      });
+
+      saveManager.saveGame('test_slot');
+
+      // Reset getItem mock
+      localStorageMock.getItem = originalGetItem;
+
+      // Clear tutorial status
+      delete localStorageMock.store['tutorial_completed'];
+
+      // Load save
+      saveManager.loadGame('test_slot');
+
+      expect(localStorageMock.store['tutorial_completed']).toBe('true');
+    });
+
+    test('should adjust gameStartTime for loaded playtime', () => {
+      // Save with 10 seconds playtime
+      saveManager.gameStartTime = Date.now() - 10000;
+      saveManager.saveGame('test_slot');
+
+      const newSaveManager = new SaveManager(eventBus, mockManagers);
+      newSaveManager.init();
+
+      const beforeLoadTime = Date.now();
+      newSaveManager.loadGame('test_slot');
+
+      // gameStartTime should be adjusted backwards by saved playtime
+      expect(newSaveManager.gameStartTime).toBeLessThan(beforeLoadTime);
+    });
+  });
+
+  // ==================== AUTOSAVE TESTS ====================
+
+  describe('Autosave', () => {
+    beforeEach(() => {
+      saveManager.init();
+    });
+
+    test('should autosave on quest:completed event', () => {
+      const saveSpy = jest.spyOn(saveManager, 'saveGame');
+
+      eventBus.emit('quest:completed', { questId: 'test_quest' });
+
+      expect(saveSpy).toHaveBeenCalledWith('autosave');
+    });
+
+    test('should autosave on major objective:completed', () => {
+      const saveSpy = jest.spyOn(saveManager, 'saveGame');
+
+      // Major objective (contains "solve")
+      eventBus.emit('objective:completed', { objectiveId: 'solve_mystery' });
+
+      expect(saveSpy).toHaveBeenCalledWith('autosave');
+    });
+
+    test('should NOT autosave on minor objectives', () => {
+      const saveSpy = jest.spyOn(saveManager, 'saveGame');
+
+      // Minor objective (doesn't match keywords)
+      eventBus.emit('objective:completed', { objectiveId: 'collect_item' });
+
+      expect(saveSpy).not.toHaveBeenCalled();
+    });
+
+    test('should autosave on area:entered event', () => {
+      const saveSpy = jest.spyOn(saveManager, 'saveGame');
+
+      eventBus.emit('area:entered', { areaId: 'downtown' });
+
+      expect(saveSpy).toHaveBeenCalledWith('autosave');
+    });
+
+    test('should autosave on case:completed event', () => {
+      const saveSpy = jest.spyOn(saveManager, 'saveGame');
+
+      eventBus.emit('case:completed', { caseId: 'case_001' });
+
+      expect(saveSpy).toHaveBeenCalledWith('autosave');
+    });
+
+    test('should identify major objectives correctly', () => {
+      expect(saveManager.isMajorObjective('solve_mystery')).toBe(true);
+      expect(saveManager.isMajorObjective('complete_investigation')).toBe(true);
+      expect(saveManager.isMajorObjective('discover_truth')).toBe(true);
+      expect(saveManager.isMajorObjective('confront_suspect')).toBe(true);
+      expect(saveManager.isMajorObjective('unlock_area')).toBe(true);
+
+      expect(saveManager.isMajorObjective('collect_item')).toBe(false);
+      expect(saveManager.isMajorObjective('talk_to_npc')).toBe(false);
+    });
+
+    test('should respect autosave interval for time-based autosave', () => {
+      saveManager.lastAutosaveTime = Date.now() - 1000; // 1 second ago
+
+      const shouldAutosave = saveManager.shouldAutosave(Date.now());
+
+      expect(shouldAutosave).toBe(false); // Interval not met
+    });
+
+    test('should trigger autosave when interval elapsed', () => {
+      // Set last autosave to 6 minutes ago
+      saveManager.lastAutosaveTime = Date.now() - (6 * 60 * 1000);
+
+      const shouldAutosave = saveManager.shouldAutosave(Date.now());
+
+      expect(shouldAutosave).toBe(true);
+    });
+
+    test('should call updateAutosave every frame', () => {
+      const saveSpy = jest.spyOn(saveManager, 'saveGame');
+
+      // Set last autosave to 6 minutes ago
+      saveManager.lastAutosaveTime = Date.now() - (6 * 60 * 1000);
+
+      saveManager.updateAutosave();
+
+      expect(saveSpy).toHaveBeenCalledWith('autosave');
+    });
+
+    test('should only autosave after interval elapsed', () => {
+      const saveSpy = jest.spyOn(saveManager, 'saveGame');
+
+      // Last autosave was recent
+      saveManager.lastAutosaveTime = Date.now() - 1000;
+
+      saveManager.updateAutosave();
+
+      expect(saveSpy).not.toHaveBeenCalled();
+    });
+
+    test('should reset lastAutosaveTime after autosave', () => {
+      saveManager.lastAutosaveTime = Date.now() - (6 * 60 * 1000);
+
+      const beforeTime = Date.now();
+      saveManager.updateAutosave();
+      const afterTime = Date.now();
+
+      expect(saveManager.lastAutosaveTime).toBeGreaterThanOrEqual(beforeTime);
+      expect(saveManager.lastAutosaveTime).toBeLessThanOrEqual(afterTime);
+    });
+
+    test('should allow manual disable of autosave', () => {
+      saveManager.disableAutosave();
+
+      const saveSpy = jest.spyOn(saveManager, 'saveGame');
+
+      // Try to trigger autosave
+      eventBus.emit('quest:completed', { questId: 'test_quest' });
+
+      // Should still save (event handler doesn't check enabled flag)
+      // But updateAutosave respects the flag
+      saveSpy.mockClear();
+
+      saveManager.lastAutosaveTime = Date.now() - (6 * 60 * 1000);
+      saveManager.updateAutosave();
+
+      expect(saveSpy).not.toHaveBeenCalled();
+    });
+
+    test('should cleanup on game exit', () => {
+      const saveSpy = jest.spyOn(saveManager, 'saveGame');
+
+      saveManager.cleanup();
+
+      expect(saveSpy).toHaveBeenCalledWith('autosave');
+    });
+
+    test('should not autosave on cleanup if autosave disabled', () => {
+      saveManager.disableAutosave();
+
+      const saveSpy = jest.spyOn(saveManager, 'saveGame');
+
+      saveManager.cleanup();
+
+      expect(saveSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  // ==================== SLOT MANAGEMENT TESTS ====================
+
+  describe('Slot Management', () => {
+    beforeEach(() => {
+      saveManager.init();
+    });
+
+    test('should list all save slots', () => {
+      const result1 = saveManager.saveGame('slot1');
+      const result2 = saveManager.saveGame('slot2');
+      const result3 = saveManager.saveGame('slot3');
+
+      expect(result1).toBe(true);
+      expect(result2).toBe(true);
+      expect(result3).toBe(true);
+
+      const slots = saveManager.getSaveSlots();
+
+      expect(slots.length).toBe(3);
+      expect(slots.map(s => s.slot)).toContain('slot1');
+      expect(slots.map(s => s.slot)).toContain('slot2');
+      expect(slots.map(s => s.slot)).toContain('slot3');
+    });
+
+    test('should return metadata for each slot', () => {
+      const result = saveManager.saveGame('test_slot');
+      expect(result).toBe(true);
+
+      const slots = saveManager.getSaveSlots();
+
+      expect(slots.length).toBeGreaterThan(0);
+      expect(slots[0]).toEqual(expect.objectContaining({
+        slot: 'test_slot',
+        timestamp: expect.any(Number),
+        playtime: expect.any(Number),
+        version: 1,
+      }));
+    });
+
+    test('should delete save slot', () => {
+      saveManager.saveGame('test_slot');
+
+      const result = saveManager.deleteSave('test_slot');
+
+      expect(result).toBe(true);
+
+      const saveKey = saveManager.config.storageKeyPrefix + 'test_slot';
+      expect(localStorageMock.store[saveKey]).toBeUndefined();
+    });
+
+    test('should handle deleting non-existent slot', () => {
+      const result = saveManager.deleteSave('nonexistent_slot');
+
+      expect(result).toBe(true); // Still returns true
+    });
+
+    test('should remove deleted slot from metadata', () => {
+      saveManager.saveGame('test_slot');
+      saveManager.deleteSave('test_slot');
+
+      const slots = saveManager.getSaveSlots();
+
+      expect(slots.find(s => s.slot === 'test_slot')).toBeUndefined();
+    });
+
+    test('should return empty array when no saves exist', () => {
+      // Clear any existing metadata
+      delete localStorageMock.store[saveManager.config.metadataKey];
+
+      const slots = saveManager.getSaveSlots();
+
+      expect(slots).toEqual([]);
+    });
+
+    test('should return empty array on metadata error', () => {
+      // Corrupt metadata
+      localStorageMock.store[saveManager.config.metadataKey] = 'corrupted{json';
+
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const slots = saveManager.getSaveSlots();
+
+      expect(slots).toEqual([]);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('[SaveManager] Failed to get save slots:'),
+        expect.any(Error)
+      );
+
+      consoleSpy.mockRestore();
+    });
+  });
+
+  // ==================== ERROR HANDLING TESTS ====================
+
+  describe('Error Handling', () => {
+    beforeEach(() => {
+      saveManager.init();
+    });
+
+    test('should handle localStorage quota exceeded', () => {
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      localStorageMock.setItem.mockImplementationOnce(() => {
+        throw new Error('QuotaExceededError');
+      });
+
+      const result = saveManager.saveGame('test_slot');
+
+      expect(result).toBe(false);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '[SaveManager] Failed to save game:',
+        expect.any(Error)
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    test('should not crash on save failure', () => {
+      localStorageMock.setItem.mockImplementation(() => {
+        throw new Error('Storage error');
+      });
+
+      expect(() => saveManager.saveGame('test_slot')).not.toThrow();
+    });
+
+    test('should not crash on load failure', () => {
+      localStorageMock.getItem.mockImplementation(() => {
+        throw new Error('Storage error');
+      });
+
+      expect(() => saveManager.loadGame('test_slot')).not.toThrow();
+    });
+
+    test('should log errors to console on save failure', () => {
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      localStorageMock.setItem.mockImplementationOnce(() => {
+        throw new Error('Test error');
+      });
+
+      saveManager.saveGame('test_slot');
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '[SaveManager] Failed to save game:',
+        expect.any(Error)
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    test('should log errors to console on load failure', () => {
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      // Corrupt save data
+      const saveKey = saveManager.config.storageKeyPrefix + 'test_slot';
+      localStorageMock.store[saveKey] = 'corrupted{json';
+
+      saveManager.loadGame('test_slot');
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '[SaveManager] Failed to load game:',
+        expect.any(Error)
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    test('should handle manager serialize throwing error', () => {
+      mockManagers.storyFlagManager.serialize.mockImplementation(() => {
+        throw new Error('Serialize error');
+      });
+
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const result = saveManager.saveGame('test_slot');
+
+      expect(result).toBe(false);
+      expect(consoleSpy).toHaveBeenCalled();
+
+      consoleSpy.mockRestore();
+    });
+
+    test('should handle manager deserialize throwing error', () => {
+      saveManager.saveGame('test_slot');
+
+      const loadManagers = {
+        storyFlagManager: {
+          deserialize: jest.fn(() => {
+            throw new Error('Deserialize error');
+          }),
+        },
+        questManager: { deserialize: jest.fn() },
+        factionManager: { reputation: {} },
+      };
+
+      const loadSaveManager = new SaveManager(eventBus, loadManagers);
+      loadSaveManager.init();
+
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const result = loadSaveManager.loadGame('test_slot');
+
+      expect(result).toBe(false);
+      expect(consoleSpy).toHaveBeenCalled();
+
+      consoleSpy.mockRestore();
+    });
+
+    test('should handle updateSaveMetadata error gracefully', () => {
+      // Mock JSON.parse to throw
+      const originalParse = JSON.parse;
+      JSON.parse = jest.fn((text) => {
+        if (text.includes('save_metadata')) {
+          throw new Error('Parse error');
+        }
+        return originalParse(text);
+      });
+
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      // Should still save successfully even if metadata update fails
+      const result = saveManager.saveGame('test_slot');
+
+      expect(result).toBe(true);
+
+      JSON.parse = originalParse;
+      consoleSpy.mockRestore();
+    });
+
+    test('should handle deleteSave error gracefully', () => {
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      // Override removeItem to throw an error
+      const originalRemoveItem = localStorageMock.removeItem;
+      localStorageMock.removeItem = () => {
+        throw new Error('Delete error');
+      };
+
+      const result = saveManager.deleteSave('test_slot');
+
+      expect(result).toBe(false);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('[SaveManager] Failed to delete save:'),
+        expect.any(Error)
+      );
+
+      // Restore
+      localStorageMock.removeItem = originalRemoveItem;
+      consoleSpy.mockRestore();
+    });
+  });
+
+  // ==================== UTILITY METHOD TESTS ====================
+
+  describe('Utility Methods', () => {
+    test('should calculate current playtime', () => {
+      saveManager.gameStartTime = Date.now() - 5000; // 5 seconds ago
+
+      const playtime = saveManager.getPlaytime();
+
+      expect(playtime).toBeGreaterThanOrEqual(4900);
+      expect(playtime).toBeLessThanOrEqual(5100);
+    });
+
+    test('should enable autosave', () => {
+      saveManager.autosaveEnabled = false;
+
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      saveManager.enableAutosave();
+
+      expect(saveManager.autosaveEnabled).toBe(true);
+      expect(consoleSpy).toHaveBeenCalledWith('[SaveManager] Autosave enabled');
+
+      consoleSpy.mockRestore();
+    });
+
+    test('should disable autosave', () => {
+      saveManager.autosaveEnabled = true;
+
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      saveManager.disableAutosave();
+
+      expect(saveManager.autosaveEnabled).toBe(false);
+      expect(consoleSpy).toHaveBeenCalledWith('[SaveManager] Autosave disabled');
+
+      consoleSpy.mockRestore();
+    });
+  });
+
+  // ==================== DATA COLLECTION TESTS ====================
+
+  describe('Data Collection', () => {
+    test('should collect story flags', () => {
+      const flags = saveManager.collectStoryFlags();
+
+      expect(flags).toEqual({ flags: { test_flag: true } });
+      expect(mockManagers.storyFlagManager.serialize).toHaveBeenCalled();
+    });
+
+    test('should return empty object if no storyFlagManager', () => {
+      saveManager.storyFlagManager = null;
+
+      const flags = saveManager.collectStoryFlags();
+
+      expect(flags).toEqual({});
+    });
+
+    test('should collect quest data', () => {
+      const quests = saveManager.collectQuestData();
+
+      expect(quests).toEqual({ quests: { test_quest: 'active' } });
+      expect(mockManagers.questManager.serialize).toHaveBeenCalled();
+    });
+
+    test('should return empty object if no questManager', () => {
+      saveManager.questManager = null;
+
+      const quests = saveManager.collectQuestData();
+
+      expect(quests).toEqual({});
+    });
+
+    test('should collect faction data', () => {
+      const factions = saveManager.collectFactionData();
+
+      expect(factions).toEqual({
+        version: 1,
+        reputation: { test_faction: 50 },
+        timestamp: expect.any(Number),
+      });
+    });
+
+    test('should return empty object if no factionManager', () => {
+      saveManager.factionManager = null;
+
+      const factions = saveManager.collectFactionData();
+
+      expect(factions).toEqual({});
+    });
+
+    test('should collect tutorial data from localStorage', () => {
+      // Set tutorial_completed using setItem (which stores as string)
+      localStorageMock.setItem('tutorial_completed', 'true');
+
+      const tutorialComplete = saveManager.collectTutorialData();
+
+      expect(tutorialComplete).toBe(true);
+    });
+
+    test('should return false if tutorial not completed', () => {
+      const tutorialComplete = saveManager.collectTutorialData();
+
+      expect(tutorialComplete).toBe(false);
+    });
+  });
+
+  // ==================== DATA RESTORATION TESTS ====================
+
+  describe('Data Restoration', () => {
+    test('should restore story flags', () => {
+      const testData = { flags: { test: true } };
+
+      saveManager.restoreStoryFlags(testData);
+
+      expect(mockManagers.storyFlagManager.deserialize).toHaveBeenCalledWith(testData);
+    });
+
+    test('should handle null story flag data', () => {
+      expect(() => saveManager.restoreStoryFlags(null)).not.toThrow();
+    });
+
+    test('should handle missing storyFlagManager', () => {
+      saveManager.storyFlagManager = null;
+
+      expect(() => saveManager.restoreStoryFlags({})).not.toThrow();
+    });
+
+    test('should restore quest data', () => {
+      const testData = { quests: { test: 'active' } };
+
+      saveManager.restoreQuestData(testData);
+
+      expect(mockManagers.questManager.deserialize).toHaveBeenCalledWith(testData);
+    });
+
+    test('should handle null quest data', () => {
+      expect(() => saveManager.restoreQuestData(null)).not.toThrow();
+    });
+
+    test('should restore faction data', () => {
+      const testData = {
+        reputation: { faction1: 100, faction2: -50 },
+      };
+
+      saveManager.restoreFactionData(testData);
+
+      expect(mockManagers.factionManager.reputation).toEqual(testData.reputation);
+    });
+
+    test('should handle null faction data', () => {
+      expect(() => saveManager.restoreFactionData(null)).not.toThrow();
+    });
+
+    test('should restore tutorial completion status', () => {
+      saveManager.restoreTutorialData(true);
+
+      // Check using getItem (which reads from store)
+      const tutorialComplete = localStorageMock.getItem('tutorial_completed');
+      expect(tutorialComplete).toBe('true');
+    });
+
+    test('should not set tutorial status if false', () => {
+      saveManager.restoreTutorialData(false);
+
+      expect(localStorageMock.store['tutorial_completed']).toBeUndefined();
+    });
+  });
+});

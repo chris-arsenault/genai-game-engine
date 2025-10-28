@@ -27,8 +27,37 @@ export class SystemManager {
    * @param {System} system - System instance to register
    * @param {string} name - System name for lookup (optional)
    * @throws {Error} If system with same name already registered
+   * @throws {Error} If system is missing required properties
    */
   registerSystem(system, name = null) {
+    // Validate system has required properties
+    if (typeof system.priority !== 'number') {
+      throw new Error(
+        `System ${name || system.constructor.name} is missing required 'priority' property. ` +
+        `All systems must extend the base System class or define priority as a number.`
+      );
+    }
+
+    if (typeof system.enabled !== 'boolean') {
+      throw new Error(
+        `System ${name || system.constructor.name} is missing required 'enabled' property. ` +
+        `All systems must extend the base System class or define enabled as a boolean.`
+      );
+    }
+
+    if (!system.requiredComponents || !Array.isArray(system.requiredComponents)) {
+      throw new Error(
+        `System ${name || system.constructor.name} is missing required 'requiredComponents' array. ` +
+        `All systems must define which components they operate on.`
+      );
+    }
+
+    if (typeof system.update !== 'function') {
+      throw new Error(
+        `System ${name || system.constructor.name} is missing required 'update' method.`
+      );
+    }
+
     // Check for duplicate name
     if (name && this.systemsByName.has(name)) {
       throw new Error(`System with name "${name}" already registered`);

@@ -8,12 +8,13 @@
  * Queries: [FactionMember]
  */
 
-export class FactionReputationSystem {
+import { System } from '../../engine/ecs/System.js';
+
+export class FactionReputationSystem extends System {
   constructor(componentRegistry, eventBus, factionManager) {
-    this.components = componentRegistry;
-    this.events = eventBus;
+    super(componentRegistry, eventBus, ['FactionMember']);
     this.factionManager = factionManager;
-    this.requiredComponents = ['FactionMember'];
+    this.priority = 25;
 
     // District control (maps district IDs to controlling faction IDs)
     this.districtControl = new Map();
@@ -27,11 +28,11 @@ export class FactionReputationSystem {
    */
   init() {
     // Subscribe to reputation-affecting events
-    this.events.subscribe('evidence:collected', (data) => {
+    this.eventBus.subscribe('evidence:collected', (data) => {
       this.onEvidenceCollected(data);
     });
 
-    this.events.subscribe('case:solved', (data) => {
+    this.eventBus.subscribe('case:solved', (data) => {
       this.onCaseSolved(data);
     });
 
@@ -48,14 +49,14 @@ export class FactionReputationSystem {
   /**
    * Update faction system
    * @param {number} deltaTime
-   * @param {Array} entities
+   * @param {Array} entities - Entity IDs with FactionMember component
    */
   update(deltaTime, entities) {
-    // Cache player faction member
+    // Cache player faction member by checking for PlayerController component
     if (!this.playerFactionMember) {
-      const player = entities.find(e => e.hasTag && e.hasTag('player'));
-      if (player) {
-        this.playerFactionMember = this.components.getComponent(player.id, 'FactionMember');
+      const playerEntities = this.componentRegistry.queryEntities(['PlayerController', 'FactionMember']);
+      if (playerEntities.length > 0) {
+        this.playerFactionMember = this.getComponent(playerEntities[0], 'FactionMember');
       }
     }
 
@@ -119,7 +120,7 @@ export class FactionReputationSystem {
 
     this.playerFactionMember.equipDisguise(factionId);
 
-    this.events.emit('disguise:equipped', {
+    this.eventBus.emit('disguise:equipped', {
       factionId
     });
 
@@ -135,7 +136,7 @@ export class FactionReputationSystem {
     const oldDisguise = this.playerFactionMember.currentDisguise;
     this.playerFactionMember.removeDisguise();
 
-    this.events.emit('disguise:removed', {
+    this.eventBus.emit('disguise:removed', {
       factionId: oldDisguise
     });
 
@@ -155,7 +156,7 @@ export class FactionReputationSystem {
    * Cleanup system
    */
   cleanup() {
-    this.events.unsubscribe('evidence:collected');
-    this.events.unsubscribe('case:solved');
+    this.eventBus.unsubscribe('evidence:collected');
+    this.eventBus.unsubscribe('case:solved');
   }
 }
