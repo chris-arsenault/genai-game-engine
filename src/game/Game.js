@@ -129,6 +129,9 @@ export class Game {
 
     // Event unsubscriber storage
     this._offGameEventHandlers = [];
+
+    // Engine frame hook cleanup
+    this._detachFrameHooks = null;
   }
 
   /**
@@ -147,6 +150,16 @@ export class Game {
     this.initializeUIOverlays();
     // Initialize audio integrations that respond to UI/gameplay feedback
     this.initializeAudioIntegrations();
+
+    if (typeof this.engine.setFrameHooks === 'function') {
+      this._detachFrameHooks = this.engine.setFrameHooks({
+        onUpdate: (deltaTime) => this.update(deltaTime),
+        onRenderOverlay: (ctx) => this.renderOverlays(ctx),
+      });
+      console.log('[Game] Frame hooks registered with engine');
+    } else {
+      console.warn('[Game] Engine does not support frame hooks; overlays will not auto-render');
+    }
 
     // Load initial scene (Act 1: The Hollow Case)
     await this.loadAct1Scene();
@@ -957,6 +970,11 @@ export class Game {
    */
   cleanup() {
     console.log('[Game] Cleaning up...');
+
+    if (typeof this._detachFrameHooks === 'function') {
+      this._detachFrameHooks();
+      this._detachFrameHooks = null;
+    }
 
     // Cleanup UI overlays
     if (this.tutorialOverlay && this.tutorialOverlay.cleanup) {

@@ -14,16 +14,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - InputState now broadcasts `input:action_pressed` and action-scoped events for edge-triggered input consumers (`src/game/config/Controls.js`).
 - DeductionSystem consumes the new `input:deductionBoard:pressed` signal to avoid per-frame toggles (`src/game/systems/DeductionSystem.js`).
 - CaseFileUI and DeductionBoard emit unified overlay visibility telemetry and populate the debug HUD snapshot metadata (`src/game/ui/CaseFileUI.js`, `src/game/ui/DeductionBoard.js`, `src/game/Game.js`).
+- Engine exposes `setFrameHooks` so game coordinators can wire per-frame update and overlay rendering without duplicating requestAnimationFrame plumbing (`src/engine/Engine.js`).
 
 ### Fixed
 - Input edge detection now treats pause, disguise, and quest toggles as single actions per key press so UI overlays and dialogue prompts remain visible during manual QA (`src/game/config/Controls.js`, `src/game/Game.js`).
 - KnowledgeProgressionSystem now queries gates via `componentRegistry` for both scheduled and event-driven checks, preventing missed gate unlocks when knowledge events fire (`src/game/systems/KnowledgeProgressionSystem.js`).
+- Game registers engine frame hooks to drive `update()` and `renderOverlays()` each frame, ensuring HUD layers display in runtime builds instead of only in tests (`src/game/Game.js`).
 
 ### Testing
 - Added unit coverage for AudioFeedbackController throttling and SFX dispatch (`tests/game/audio/AudioFeedbackController.test.js`).
 - Added regression coverage for InputState edge detection and overlay toggles (`tests/game/config/Controls.test.js`, `tests/game/Game.uiOverlays.test.js`).
 - Added Jest coverage for overlay visibility instrumentation and knowledge gate evaluation (`tests/game/Game.uiOverlays.test.js`, `tests/game/systems/KnowledgeProgressionSystem.test.js`).
 - Added targeted tests for input event emission, deduction board toggling, and overlay telemetry (`tests/game/config/Controls.test.js`, `tests/game/systems/DeductionSystem.test.js`, `tests/game/ui/CaseFileUI.test.js`, `tests/game/ui/DeductionBoard.test.js`).
+- Added frame hook regression tests covering Engine hook invocation and Game registration/cleanup (`tests/engine/Engine.frameHooks.test.js`, `tests/game/Game.frameHooks.test.js`).
 
 ## [0.7.0] - 2025-10-27 - Sprint 7: Polish & Playtest
 
