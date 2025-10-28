@@ -162,6 +162,7 @@ Phase 2: UI consumers + benchmarking (Est: 1.5 hours)
 - Files: `src/game/ui/QuestLogUI.js`, `src/game/ui/QuestTrackerHUD.js`, `benchmarks/state-store-prototype.js`
 - Tests: UI integration harness + snapshot tests, benchmark updated for real reducers
 - Success criteria: UI selectors used; benchmark asserts <0.5 ms per action.
+  - _Status 2025-10-28_: QuestLogUI + QuestTrackerHUD now bind to store selectors; benchmarking updates still pending.
 
 File Changes
 

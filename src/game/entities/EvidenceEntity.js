@@ -11,6 +11,18 @@ import { Evidence } from '../components/Evidence.js';
 import { InteractionZone } from '../components/InteractionZone.js';
 import { Collider } from '../components/Collider.js';
 
+function shouldLog() {
+  if (typeof __DEV__ !== 'undefined') {
+    return Boolean(__DEV__);
+  }
+
+  if (typeof process !== 'undefined' && process.env && typeof process.env.NODE_ENV === 'string') {
+    return process.env.NODE_ENV !== 'test';
+  }
+
+  return true;
+}
+
 /**
  * Create evidence entity
  * @param {Object} entityManager - Entity manager instance
@@ -100,7 +112,9 @@ export function createEvidenceEntity(entityManager, componentRegistry, evidenceD
   collider.type = 'Collider';
   componentRegistry.addComponent(entityId, collider);
 
-  console.log(`[EvidenceEntity] Created evidence: ${title} at (${x}, ${y})`);
+  if (shouldLog()) {
+    console.log(`[EvidenceEntity] Created evidence: ${title} at (${x}, ${y})`);
+  }
 
   return entityId;
 }

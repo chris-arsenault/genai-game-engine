@@ -341,6 +341,7 @@ export class Game {
     this.questTrackerHUD = new QuestTrackerHUD({
       eventBus: this.eventBus,
       questManager: this.questManager,
+      worldStateStore: this.worldStateStore,
       x: this.engine.canvas.width - 320,
       y: 120
     });
@@ -350,6 +351,7 @@ export class Game {
     this.questLogUI = new QuestLogUI(700, 500, {
       eventBus: this.eventBus,
       questManager: this.questManager,
+      worldStateStore: this.worldStateStore,
       x: (this.engine.canvas.width - 700) / 2,
       y: (this.engine.canvas.height - 500) / 2
     });

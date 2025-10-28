@@ -82,6 +82,12 @@ export class WorldStateStore {
             questId: payload.questId,
             title: payload.title,
             type: payload.type,
+            description: payload.description,
+            act: payload.act,
+            objectives: payload.objectives,
+            rewards: payload.rewards,
+            branches: payload.branches,
+            autoStart: payload.autoStart,
             metadata: payload.metadata,
           },
         });

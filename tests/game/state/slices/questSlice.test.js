@@ -15,6 +15,24 @@ describe('questSlice', () => {
     let state = questSlice.getInitialState();
 
     state = reduce(state, {
+      type: 'QUEST_REGISTERED',
+      domain: 'quest',
+      payload: {
+        questId: 'quest_1',
+        title: 'Test Quest',
+        type: 'main',
+        description: 'Track metadata',
+        objectives: [
+          {
+            id: 'obj_1',
+            description: 'Complete intro',
+            trigger: { count: 2 },
+          },
+        ],
+      },
+    });
+
+    state = reduce(state, {
       type: 'QUEST_STARTED',
       domain: 'quest',
       payload: { questId: 'quest_1', title: 'Test Quest', type: 'main' },
@@ -56,6 +74,9 @@ describe('questSlice', () => {
 
     expect(state.completedIds).toContain('quest_1');
     expect(state.activeIds).not.toContain('quest_1');
+    expect(state.byId.quest_1.description).toBe('Track metadata');
+    expect(state.byId.quest_1.objectives.obj_1.target).toBe(2);
+    expect(state.byId.quest_1.objectivesOrder).toContain('obj_1');
   });
 
   test('hydrates snapshot payload', () => {

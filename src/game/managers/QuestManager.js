@@ -78,9 +78,17 @@ export class QuestManager {
       questId: questData.id,
       title: questData.title,
       type: questData.type,
+      description: questData.description,
+      act: questData.act,
+      objectives: questData.objectives || [],
+      rewards: questData.rewards || null,
+      branches: questData.branches || null,
+      autoStart: Boolean(questData.autoStart),
       metadata: {
         act: questData.act,
         prerequisites: questData.prerequisites,
+        genreBeats: questData.genreBeats,
+        narrativeBeats: questData.narrativeBeats,
       }
     });
   }

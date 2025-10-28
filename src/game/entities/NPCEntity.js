@@ -12,6 +12,18 @@ import { Collider } from '../components/Collider.js';
 import { InteractionZone } from '../components/InteractionZone.js';
 import { NPC } from '../components/NPC.js';
 
+function shouldLog() {
+  if (typeof __DEV__ !== 'undefined') {
+    return Boolean(__DEV__);
+  }
+
+  if (typeof process !== 'undefined' && process.env && typeof process.env.NODE_ENV === 'string') {
+    return process.env.NODE_ENV !== 'test';
+  }
+
+  return true;
+}
+
 /**
  * Create NPC entity
  * @param {Object} entityManager - Entity manager instance
@@ -109,7 +121,9 @@ export function createNPCEntity(entityManager, componentRegistry, npcData) {
     componentRegistry.addComponent(entityId, interactionZone);
   }
 
-  console.log(`[NPCEntity] Created NPC: ${name} (${faction}) at (${x}, ${y})`);
+  if (shouldLog()) {
+    console.log(`[NPCEntity] Created NPC: ${name} (${faction}) at (${x}, ${y})`);
+  }
 
   return entityId;
 }

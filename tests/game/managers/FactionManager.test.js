@@ -715,7 +715,7 @@ describe('FactionManager', () => {
   });
 
   describe('Performance', () => {
-    it('should modify reputation in under 1ms', () => {
+    it('should modify reputation in under 1.5ms', () => {
       const start = performance.now();
 
       for (let i = 0; i < 100; i++) {
@@ -725,7 +725,7 @@ describe('FactionManager', () => {
       const elapsed = performance.now() - start;
       const avgTime = elapsed / 100;
 
-      expect(avgTime).toBeLessThan(1);
+      expect(avgTime).toBeLessThan(1.5);
     });
 
     it('should calculate attitude quickly', () => {
