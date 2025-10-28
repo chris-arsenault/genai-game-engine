@@ -37,18 +37,17 @@ export class PlayerMovementSystem {
   /**
    * Update player movement each frame
    * @param {number} deltaTime - Time since last frame (seconds)
-   * @param {Array} entities - Entities with required components
+   * @param {Array<number>} entities - Entity IDs with required components
    */
   update(deltaTime, entities) {
     if (this.paused) return;
 
-    // Find player entity (should only be one)
-    const playerEntities = entities.filter(e => e.hasTag && e.hasTag('player'));
-    if (playerEntities.length === 0) return;
+    // Find player entity (should only be one with PlayerController component)
+    if (entities.length === 0) return;
 
-    const entity = playerEntities[0];
-    const controller = this.components.getComponent(entity.id, 'PlayerController');
-    const transform = this.components.getComponent(entity.id, 'Transform');
+    const entityId = entities[0];
+    const controller = this.components.getComponent(entityId, 'PlayerController');
+    const transform = this.components.getComponent(entityId, 'Transform');
 
     if (!controller || !transform) return;
 
