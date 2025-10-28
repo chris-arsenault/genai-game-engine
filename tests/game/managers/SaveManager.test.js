@@ -869,6 +869,53 @@ describe('SaveManager', () => {
       saveManager.init();
     });
 
+    test('should surface descriptive error when storage unavailable during save', () => {
+      const originalGlobalStorage = global.localStorage;
+      // Simulate environment without localStorage
+      delete global.localStorage;
+      const managerWithoutStorage = new SaveManager(eventBus, {
+        storage: null,
+      });
+
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const result = managerWithoutStorage.saveGame('test_slot');
+
+      expect(result).toBe(false);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '[SaveManager] Failed to save game:',
+        expect.objectContaining({ message: 'Storage unavailable' })
+      );
+
+      consoleSpy.mockRestore();
+      global.localStorage = originalGlobalStorage ?? localStorageMock;
+    });
+
+    test('should emit load_failed when storage unavailable during load', () => {
+      const originalGlobalStorage = global.localStorage;
+      delete global.localStorage;
+      const managerWithoutStorage = new SaveManager(eventBus, {
+        storage: null,
+      });
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const emitSpy = jest.spyOn(eventBus, 'emit');
+
+      const result = managerWithoutStorage.loadGame('test_slot');
+
+      expect(result).toBe(false);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '[SaveManager] Failed to load game:',
+        expect.objectContaining({ message: 'Storage unavailable' })
+      );
+      expect(emitSpy).toHaveBeenCalledWith('game:load_failed', expect.objectContaining({
+        slot: 'test_slot',
+        error: 'Storage unavailable',
+      }));
+
+      consoleSpy.mockRestore();
+      emitSpy.mockRestore();
+      global.localStorage = originalGlobalStorage ?? localStorageMock;
+    });
+
     test('should handle localStorage quota exceeded', () => {
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
 

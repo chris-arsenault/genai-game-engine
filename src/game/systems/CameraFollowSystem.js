@@ -46,6 +46,12 @@ export class CameraFollowSystem extends System {
 
     if (!transform || !controller) return;
 
+    const prevCameraX = this.camera.x;
+    const prevCameraY = this.camera.y;
+
+    const halfViewWidth = this.camera.width / 2;
+    const halfViewHeight = this.camera.height / 2;
+
     // Calculate target position with look-ahead
     const lookAhead = GameConfig.camera.lookAheadDistance;
     const velocityMagnitude = Math.sqrt(
@@ -60,8 +66,8 @@ export class CameraFollowSystem extends System {
       lookAheadY = (controller.velocityY / velocityMagnitude) * lookAhead;
     }
 
-    this.targetX = transform.x + lookAheadX;
-    this.targetY = transform.y + lookAheadY;
+    this.targetX = transform.x - halfViewWidth + lookAheadX;
+    this.targetY = transform.y - halfViewHeight + lookAheadY;
 
     // Apply deadzone
     const deadzone = GameConfig.camera.deadzone;
@@ -82,6 +88,13 @@ export class CameraFollowSystem extends System {
     // Round to prevent subpixel jitter
     this.camera.x = Math.round(this.camera.x);
     this.camera.y = Math.round(this.camera.y);
+
+    if (this.camera.x !== prevCameraX || this.camera.y !== prevCameraY) {
+      this.eventBus.emit('camera:moved', {
+        x: this.camera.x,
+        y: this.camera.y,
+      });
+    }
   }
 
   /**
@@ -107,12 +120,19 @@ export class CameraFollowSystem extends System {
    */
   snapTo(x, y) {
     if (this.camera) {
-      this.camera.x = x;
-      this.camera.y = y;
+      const centeredX = Math.round(x - this.camera.width / 2);
+      const centeredY = Math.round(y - this.camera.height / 2);
+      this.camera.x = centeredX;
+      this.camera.y = centeredY;
     }
 
-    this.targetX = x;
-    this.targetY = y;
+    this.targetX = this.camera.x;
+    this.targetY = this.camera.y;
+
+    this.eventBus.emit('camera:moved', {
+      x: this.camera.x,
+      y: this.camera.y,
+    });
   }
 
   /**

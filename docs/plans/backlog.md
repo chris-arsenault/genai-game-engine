@@ -195,6 +195,7 @@ _Progress 2025-10-28 (Session #20 implementation): Dialogue/tutorial slices land
 _Progress 2025-10-28 (Session #21 implementation): DialogueBox now instantiated via `Game.initializeUIOverlays`, forwarding keyboard input through EventBus and rendering on the HUD; Playwright selector wiring remains outstanding._
 _Progress 2025-10-28 (Session #22 implementation): Procedural performance tests rebaselined (TileMap <20 ms for 10k ops, SeededRandom >5 M ops/sec) to stabilize CI while retaining performance guardrails._
 _Progress 2025-10-28 (Session #23 implementation): Added Playwright smoke validating dialogue overlay + transcript selectors via WorldStateStore and prototyped debug overlay readout; next up quest path coverage._
+_Progress 2025-10-28 (Session #24 implementation): Quest 001 Playwright scenario landed (branches into Case 002) and dialogue debug overlay now offers timestamped transcripts with pause/resume controls; tutorial automation + transcript retention tuning remain open._
 
 **Acceptance Criteria**:
 - Quest log + tracker HUD read from selectors and stay in sync during quest progression playtest.
@@ -202,6 +203,117 @@ _Progress 2025-10-28 (Session #23 implementation): Added Playwright smoke valida
 - Tutorial completion stored once; SaveManager load restores state via store snapshot.
 - Playwright scenario covering Quest 001 validates UI state after each milestone.
 - Added regression tests guard against missing reducer payload fields (throws descriptive error).
+
+### Session #24 Backlog Updates
+
+#### QA-201: Tutorial Playwright Regression
+- **Priority**: P1
+- **Tags**: `test`, `tutorial`, `narrative`
+- **Effort**: 4 hours
+- **Dependencies**: PO-003 selector APIs, Playwright harness
+- **Description**: Extend the Playwright pack to cover tutorial prompts, ensuring `TutorialOverlay` and store selectors remain synchronized during onboarding beats.
+- **Acceptance Criteria**:
+  - Playwright scenario drives tutorial onboarding to completion using store-driven selectors.
+  - Assertions cover prompt visibility, dismissal, and history tracking.
+  - Test artifacts (screenshots/video) stored on failure.
+  - Documentation updated with scenario scope and troubleshooting notes.
+_Progress 2025-10-28 (Session #25 implementation): Added `tests/e2e/tutorial-overlay.spec.js` validating tutorial progression, overlay visibility, and store completion state._
+
+#### QA-202: SaveManager LocalStorage Regression
+- **Priority**: P1
+- **Tags**: `test`, `engine`
+- **Effort**: 3 hours
+- **Dependencies**: PO-002 serialization hooks
+- **Description**: Restore failing SaveManager LocalStorage tests and validate parity against the new WorldStateStore snapshot pipeline.
+- **Acceptance Criteria**:
+  - LocalStorage-backed SaveManager Jest tests green and running in CI.
+  - Negative cases assert descriptive errors for corrupted payloads.
+  - TestStatus.md reflects coverage status and ownership.
+_Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable regression tests, confirmed SaveManager suite passes, and updated TestStatus.md to document coverage._
+
+#### TOOL-045: Dialogue Transcript Retention Audit
+- **Priority**: P3
+- **Tags**: `narrative`, `ux`, `perf`
+- **Effort**: 3 hours
+- **Dependencies**: Debug overlay enhancements (Session #24)
+- **Description**: Profile transcript growth, define retention limits, and implement truncation/pagination safeguards to keep overlay responsive during long play sessions.
+- **Status**: Deprioritized until the core gameplay vertical slice is interactive.
+- **Acceptance Criteria**:
+  - Benchmarks capture overlay update cost at 10, 25, and 50 transcript entries.
+  - Configurable retention limit agreed with narrative team and enforced in `dialogueSlice`.
+  - Overlay UI communicates when transcripts are truncated.
+  - Findings documented in `docs/tech/state-store.md` (or successor).
+
+#### PERF-118: LevelSpawnSystem Spawn Loop Baseline
+- **Priority**: P3
+- **Tags**: `perf`, `engine`
+- **Effort**: 3 hours
+- **Dependencies**: Level spawn instrumentation
+- **Description**: Reproduce the >50 ms spawn spike noted in Session #17, capture telemetry, and adjust thresholds or optimize spawn batching once core systems are playable.
+- **Acceptance Criteria**:
+  - Benchmark script records spawn time across 5 runs with averages and variance.
+  - CI perf threshold updated (or code optimized) so baseline stays <50 ms on target hardware.
+  - Root cause and mitigations summarized in performance notes.
+
+#### PERF-119: Procedural Guardrail Monitoring
+- **Priority**: P3
+- **Tags**: `perf`, `test`
+- **Effort**: 2 hours
+- **Dependencies**: Session #22 perf rebaseline
+- **Description**: Capture telemetry for TileMap and SeededRandom suites post-rebaseline to confirm thresholds remain stable and alerting works after interactive build lands.
+- **Acceptance Criteria**:
+  - CI telemetry logged for five consecutive runs.
+  - Threshold adjustments (if any) documented and linked to raw data.
+  - Failing runs emit actionable messaging for engineers.
+
+#### CI-014: Playwright Smoke Integration
+- **Priority**: P3
+- **Tags**: `test`, `ci`
+- **Effort**: 4 hours
+- **Dependencies**: CI agent access to browsers, QA-201/202
+- **Description**: Wire quest and dialogue Playwright smokes into the CI pipeline with junit + artifact publication to enable flake tracking once gameplay loop stabilizes.
+- **Acceptance Criteria**:
+  - CI pipeline installs browsers (`npx playwright install --with-deps`) and runs smoke pack headless.
+  - JUnit + line reporters uploaded for telemetry dashboards.
+  - Failure artifacts (video, trace) retained for 7 days.
+  - Pipeline gate enforces zero retries before surfacing failures to engineers.
+
+---
+
+### Session #27 Core Gameplay Focus
+
+#### CORE-301: Act 1 Scene Visual Bring-Up
+- **Priority**: P0
+- **Tags**: `gameplay`, `rendering`
+- **Effort**: 4 hours
+- **Dependencies**: Layered renderer dynamic layer support (Session #26)
+- **Description**: Ensure the Act 1 investigative scene presents readable context on load (ground decal, boundaries, NPC silhouettes, crime scene marker) so players immediately understand where they are.
+- **Acceptance Criteria**:
+  - Crime scene trigger area renders using the ground layer and remains aligned as the camera moves.
+  - Boundary walls/environment props are visible with a distinct palette from the background grid.
+  - Background layer provides a stylized gradient/grid without obscuring entities.
+
+#### CORE-302: Player Feedback & Movement Loop
+- **Priority**: P0
+- **Tags**: `gameplay`, `input`, `ui`
+- **Effort**: 3 hours
+- **Dependencies**: CORE-301
+- **Description**: Provide immediate feedback for player input (camera centering, movement easing, interaction prompts) so WASD/E produce visible results.
+- **Acceptance Criteria**:
+  - Camera centers on the player at start and follows smoothly during movement.
+  - Interaction prompts (e.g., evidence collection, area entry) appear when the player enters the relevant zone.
+  - Movement emits audio/log cues or UI feedback confirming action registration.
+
+#### CORE-303: Investigative Loop Skeleton
+- **Priority**: P1
+- **Tags**: `gameplay`, `narrative`
+- **Effort**: 6 hours
+- **Dependencies**: CORE-301, CORE-302
+- **Description**: Implement the minimal investigative loop—collect evidence, unlock Detective Vision, interview witness—to prove the hybrid narrative/mechanics hook.
+- **Acceptance Criteria**:
+  - Collecting three evidence items unlocks Detective Vision and advances tutorial/quest state.
+  - Witness NPC interaction triggers dialogue from Act 1 and logs progression in the quest tracker.
+  - Quest log reflects these milestones, and world state updates are visible via overlays or UI.
 
 ---
 

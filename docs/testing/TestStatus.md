@@ -337,6 +337,8 @@ tests/game/
 
 **Implemented Smoke Coverage**:
 - `tests/e2e/dialogue-overlay.spec.js` – Launches Vite via `wslview`, drives `DialogueSystem`, and asserts `WorldStateStore` + Canvas overlay remain in sync after branching choices.
+- `tests/e2e/quest-progression.spec.js` – Simulates Case 001 quest flow via EventBus triggers, verifies world-state parity, quest tracker HUD updates, and branch into Case 002 without console regressions.
+- `tests/e2e/tutorial-overlay.spec.js` – Resets tutorial flags, steps through the tutorial system, and confirms overlay visibility, prompt history retention, and completion state in the store.
 
 **Planned E2E Test Scenarios**:
 1. Complete Act 1 quest chain (end-to-end)
@@ -344,11 +346,17 @@ tests/game/
 3. Quest log UI navigation
 4. Save/load game functionality
 5. Faction reputation changes
-6. Tutorial flow
-7. Evidence collection and deduction board
-8. NPC interactions and memory system
+6. Evidence collection and deduction board
+7. NPC interactions and memory system
 
 **Priority**: HIGH (Sprint 8)
+
+**CI Integration Notes**:
+- Install browsers on runners before execution: `npx playwright install --with-deps`.
+- Export `PLAYWRIGHT_JUNIT_OUTPUT_NAME=playwright-report.xml` and run `npx playwright test --reporter=line,junit` to capture pass/fail telemetry for dashboards.
+- Persist `test-results/` and `playwright-report/` directories as artifacts; they contain failure videos, traces, and quest/dialogue overlays for regression triage.
+- Set `BROWSER=chromium` (or override via `PLAYWRIGHT_BROWSER`) on CI agents—local dev uses `wslview`, but headless Chromium keeps pipelines deterministic.
+- Record suite duration and flake rate in build metrics; target <90s runtime for smoke pack and alert if retries trigger (`CI=1` enables single retry).
 
 ---
 
@@ -486,7 +494,7 @@ tests/game/
 3. **UI Component Testing** - Improve coverage from 42% to 60%+
 
 #### MEDIUM Priority
-4. **SaveManager Unit Tests** - New SaveManager needs test suite (currently untested)
+4. **SaveManager Unit Tests** - ✅ Completed (Session #26) — storage parity + error handling covered
 5. **Integration Test Expansion** - More cross-system integration tests
 6. **Test Documentation** - Document testing patterns and best practices
 
