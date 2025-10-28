@@ -333,11 +333,14 @@ tests/game/
 
 ## E2E Tests (Playwright)
 
-### Status: ⚠️ NOT IMPLEMENTED YET
+### Status: 🚧 IN PROGRESS
+
+**Implemented Smoke Coverage**:
+- `tests/e2e/dialogue-overlay.spec.js` – Launches Vite via `wslview`, drives `DialogueSystem`, and asserts `WorldStateStore` + Canvas overlay remain in sync after branching choices.
 
 **Planned E2E Test Scenarios**:
 1. Complete Act 1 quest chain (end-to-end)
-2. Dialogue interaction and branching choices
+2. Dialogue interaction and branching choices _(expanded assertions + debug overlay UI)_
 3. Quest log UI navigation
 4. Save/load game functionality
 5. Faction reputation changes

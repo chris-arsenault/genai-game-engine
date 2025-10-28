@@ -177,7 +177,7 @@ Implement Phase 0 of the hybrid Event-Sourced WorldStateStore (see `docs/plans/w
 - **Tags**: `gameplay`, `narrative`, `ecs`, `ux`
 - **Effort**: 6-8 hours
 - **Dependencies**: PO-002
-- **Status**: In Progress — Dialogue/tutorial slices and UI now consume WorldStateStore; Playwright selector wiring pending
+- **Status**: In Progress — Dialogue/tutorial slices and UI consume WorldStateStore; first Playwright smoke (dialogue overlay) operational, debug tooling still pending
 - **Reported**: 2025-10-28 (Autonomous Session #16)
 
 **Problem**:
@@ -194,6 +194,7 @@ _Progress 2025-10-28 (Session #19 planning): Dialogue & Tutorial Store Integrati
 _Progress 2025-10-28 (Session #20 implementation): Dialogue/tutorial slices landed with store-driven overlays, SaveManager parity, and benchmarking updates; pending Playwright selectors & debug tooling._
 _Progress 2025-10-28 (Session #21 implementation): DialogueBox now instantiated via `Game.initializeUIOverlays`, forwarding keyboard input through EventBus and rendering on the HUD; Playwright selector wiring remains outstanding._
 _Progress 2025-10-28 (Session #22 implementation): Procedural performance tests rebaselined (TileMap <20 ms for 10k ops, SeededRandom >5 M ops/sec) to stabilize CI while retaining performance guardrails._
+_Progress 2025-10-28 (Session #23 implementation): Added Playwright smoke validating dialogue overlay + transcript selectors via WorldStateStore and prototyped debug overlay readout; next up quest path coverage._
 
 **Acceptance Criteria**:
 - Quest log + tracker HUD read from selectors and stay in sync during quest progression playtest.

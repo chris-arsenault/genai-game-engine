@@ -96,6 +96,38 @@
     #debug-overlay.visible {
       display: block;
     }
+
+    #debug-dialogue {
+      margin-top: 8px;
+      border-top: 1px solid rgba(0, 255, 255, 0.35);
+      padding-top: 6px;
+      max-width: 320px;
+    }
+
+    #debug-dialogue .debug-title {
+      font-weight: bold;
+      margin-bottom: 4px;
+      color: #66ffff;
+    }
+
+    #debug-dialogue .debug-line {
+      margin-bottom: 2px;
+    }
+
+    #debug-dialogue .debug-transcript {
+      margin-top: 4px;
+      max-height: 120px;
+      overflow-y: auto;
+      font-size: 11px;
+      line-height: 1.3;
+      padding-right: 4px;
+      white-space: pre-wrap;
+    }
+
+    #debug-dialogue .debug-transcript-entry {
+      margin-bottom: 2px;
+      color: #99ffcc;
+    }
   </style>
 </head>
 <body>
@@ -114,6 +146,14 @@
       <div id="debug-entities">Entities: 0</div>
       <div id="debug-memory">Memory: 0 MB</div>
       <div id="debug-frame-time">Frame: 0 ms</div>
+      <div id="debug-dialogue">
+        <div class="debug-title">Dialogue</div>
+        <div id="debug-dialogue-status" class="debug-line">Status: idle</div>
+        <div id="debug-dialogue-text" class="debug-line"></div>
+        <div id="debug-dialogue-choices" class="debug-line"></div>
+        <div id="debug-dialogue-last-choice" class="debug-line"></div>
+        <div id="debug-dialogue-transcript" class="debug-transcript"></div>
+      </div>
     </div>
   </div>
 
