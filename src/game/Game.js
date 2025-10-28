@@ -19,6 +19,9 @@ import { NPCMemorySystem } from './systems/NPCMemorySystem.js';
 import { DisguiseSystem } from './systems/DisguiseSystem.js';
 import { QuestSystem } from './systems/QuestSystem.js';
 
+// Engine systems
+import { RenderSystem } from '../engine/renderer/RenderSystem.js';
+
 // UI Components
 import { TutorialOverlay } from './ui/TutorialOverlay.js';
 import { ReputationUI } from './ui/ReputationUI.js';
@@ -68,7 +71,7 @@ export class Game {
     this.systemManager = engine.systemManager;
     this.eventBus = engine.eventBus;
     this.renderer = engine.renderer;
-    this.camera = engine.camera;
+    this.camera = engine.renderer.getCamera();
 
     // Game state
     this.inputState = new InputState(engine.eventBus);
@@ -92,7 +95,8 @@ export class Game {
       tutorial: null,
       npcMemory: null,
       disguise: null,
-      quest: null
+      quest: null,
+      render: null  // RenderSystem (engine system managed by game)
     };
 
     // UI overlays
@@ -262,8 +266,17 @@ export class Game {
     );
     this.gameSystems.quest.init();
 
+    // Create render system (engine system, runs last after all logic)
+    this.gameSystems.render = new RenderSystem(
+      this.componentRegistry,
+      this.eventBus,
+      this.renderer.layeredRenderer,
+      this.camera
+    );
+    this.gameSystems.render.init();
+
     // Register systems with engine SystemManager
-    // Priority order: Tutorial (5), PlayerMovement (10), NPCMemory (20), Disguise (22), Faction (25), Quest (27), Investigation (30), Knowledge (35), Dialogue (40), Camera (90)
+    // Priority order: Tutorial (5), PlayerMovement (10), NPCMemory (20), Disguise (22), Faction (25), Quest (27), Investigation (30), Knowledge (35), Dialogue (40), Camera (90), Render (100)
     this.systemManager.registerSystem(this.gameSystems.tutorial, 5);
     this.systemManager.registerSystem(this.gameSystems.playerMovement, 10);
     this.systemManager.registerSystem(this.gameSystems.npcMemory, 20);
@@ -274,6 +287,7 @@ export class Game {
     this.systemManager.registerSystem(this.gameSystems.knowledgeProgression, 35);
     this.systemManager.registerSystem(this.gameSystems.dialogue, 40);
     this.systemManager.registerSystem(this.gameSystems.cameraFollow, 90);
+    this.systemManager.registerSystem(this.gameSystems.render, 100);  // Render last
 
     console.log('[Game] Game systems initialized');
   }
