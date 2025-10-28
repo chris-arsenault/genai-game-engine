@@ -48,6 +48,10 @@ export class SaveManager {
     this._offObjectiveCompleted = null;
     this._offAreaEntered = null;
     this._offCaseCompleted = null;
+    this._offInventoryAdded = null;
+    this._offInventoryRemoved = null;
+    this._offInventoryUpdated = null;
+    this._lastInventoryAutosave = 0;
 
     console.log('[SaveManager] Initialized');
   }
@@ -92,6 +96,25 @@ export class SaveManager {
       console.log(`[SaveManager] Case completed (${data.caseId}), autosaving...`);
       this.saveGame('autosave');
     });
+
+    const inventoryAutosave = () => {
+      if (!this.autosaveEnabled) {
+        return;
+      }
+
+      const now = Date.now();
+      if (now - this._lastInventoryAutosave < 1000) {
+        return;
+      }
+
+      this._lastInventoryAutosave = now;
+      console.log('[SaveManager] Inventory changed, autosaving...');
+      this.saveGame('autosave');
+    };
+
+    this._offInventoryAdded = this.events.on('inventory:item_added', inventoryAutosave);
+    this._offInventoryUpdated = this.events.on('inventory:item_updated', inventoryAutosave);
+    this._offInventoryRemoved = this.events.on('inventory:item_removed', inventoryAutosave);
   }
 
   /**
@@ -115,15 +138,16 @@ export class SaveManager {
       // Calculate current playtime
       const playtime = Date.now() - this.gameStartTime;
 
-      const legacyGameData = this.collectLegacyGameData();
       let snapshot = null;
 
       if (this.worldStateStore) {
         snapshot = this.worldStateStore.snapshot();
+      }
 
-        if (this.config.verifyWorldStateParity) {
-          this.verifySnapshotParity(snapshot, legacyGameData);
-        }
+      const legacyGameData = this.collectLegacyGameData(snapshot?.inventory);
+
+      if (snapshot && this.config.verifyWorldStateParity) {
+        this.verifySnapshotParity(snapshot, legacyGameData);
       }
 
       const gameData = snapshot ? { ...snapshot } : legacyGameData;
@@ -162,6 +186,7 @@ export class SaveManager {
         playtime: saveData.playtime,
       });
 
+      this._lastInventoryAutosave = Date.now();
       console.log(`[SaveManager] Game saved to slot: ${slot}`);
       return true;
     } catch (error) {
@@ -354,18 +379,32 @@ export class SaveManager {
    * Provides fallback during WorldStateStore migration.
    * @returns {Object}
    */
-  collectLegacyGameData() {
+  collectLegacyGameData(inventorySnapshot = null) {
     const storyFlags = this.collectStoryFlags();
     const quests = this.collectQuestData();
     const factions = this.collectFactionData();
     const tutorialComplete = this.collectTutorialData();
     const tutorialProgress = this.tutorialSystem?.getProgress?.() ?? null;
+    const inventory = inventorySnapshot
+      ? {
+          items: Array.isArray(inventorySnapshot.items)
+            ? inventorySnapshot.items.map((item) => ({ ...item }))
+            : [],
+          equipped: inventorySnapshot.equipped ? { ...inventorySnapshot.equipped } : {},
+          lastUpdatedAt: inventorySnapshot.lastUpdatedAt ?? Date.now(),
+        }
+      : {
+          items: [],
+          equipped: {},
+          lastUpdatedAt: Date.now(),
+        };
 
     return {
       storyFlags,
       quests,
       factions,
       tutorialComplete,
+      inventory,
       tutorial: {
         completed: Boolean(tutorialComplete),
         completedSteps: [],
@@ -501,6 +540,7 @@ export class SaveManager {
         tutorialComplete: snapshot.tutorialComplete,
         tutorial: summarizeTutorialState(snapshot.tutorial),
         dialogue: summarizeDialogueState(snapshot.dialogue),
+        inventory: summarizeInventoryState(snapshot.inventory),
       };
 
       const comparableLegacy = {
@@ -510,6 +550,7 @@ export class SaveManager {
         tutorialComplete: legacyData.tutorialComplete,
         tutorial: summarizeTutorialState(legacyData.tutorial),
         dialogue: summarizeDialogueState(legacyData.dialogue),
+        inventory: summarizeInventoryState(legacyData.inventory),
       };
 
       if (!deepEqual(comparableSnapshot, comparableLegacy)) {
@@ -572,6 +613,18 @@ export class SaveManager {
       this._offCaseCompleted();
       this._offCaseCompleted = null;
     }
+    if (this._offInventoryAdded) {
+      this._offInventoryAdded();
+      this._offInventoryAdded = null;
+    }
+    if (this._offInventoryRemoved) {
+      this._offInventoryRemoved();
+      this._offInventoryRemoved = null;
+    }
+    if (this._offInventoryUpdated) {
+      this._offInventoryUpdated();
+      this._offInventoryUpdated = null;
+    }
     console.log('[SaveManager] Cleanup complete');
   }
 }
@@ -611,6 +664,37 @@ function summarizeDialogueState(dialogue) {
     activeNpc: dialogue.active?.npcId ?? null,
     activeDialogueId: dialogue.active?.dialogueId ?? null,
     completedNpcCount: Object.keys(dialogue.completedByNpc ?? {}).length,
+  };
+}
+
+function summarizeInventoryState(inventory) {
+  if (!inventory) {
+    return {
+      itemIds: [],
+      quantities: {},
+      equipped: {},
+    };
+  }
+
+  const items = Array.isArray(inventory.items) ? inventory.items : [];
+  const itemIds = [];
+  const quantities = {};
+
+  for (const item of items) {
+    if (!item || typeof item.id !== 'string') {
+      continue;
+    }
+    itemIds.push(item.id);
+    const quantity = Number.isFinite(item.quantity) ? Math.trunc(item.quantity) : 1;
+    quantities[item.id] = quantity;
+  }
+
+  itemIds.sort();
+
+  return {
+    itemIds,
+    quantities,
+    equipped: inventory.equipped ? { ...inventory.equipped } : {},
   };
 }
 

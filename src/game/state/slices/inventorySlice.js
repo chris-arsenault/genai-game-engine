@@ -21,6 +21,27 @@ function sanitizeTags(tags) {
     .filter(Boolean);
 }
 
+function mergeTags(existingTags = [], newTags = []) {
+  const combined = [];
+
+  if (Array.isArray(existingTags)) {
+    combined.push(...existingTags);
+  }
+  if (Array.isArray(newTags)) {
+    combined.push(...newTags);
+  }
+
+  const unique = [];
+  const seen = new Set();
+  for (const tag of sanitizeTags(combined)) {
+    if (!seen.has(tag)) {
+      seen.add(tag);
+      unique.push(tag);
+    }
+  }
+  return unique;
+}
+
 function normalizeItem(payload = {}) {
   const id = typeof payload.id === 'string' ? payload.id : null;
   if (!id) {
@@ -40,26 +61,79 @@ function normalizeItem(payload = {}) {
   };
 }
 
-function insertOrUpdateItem(state, item, timestamp) {
+function insertOrUpdateItem(state, item = {}, timestamp) {
+  if (!item || typeof item.id !== 'string') {
+    return;
+  }
+
+  const quantityDelta = Number.isFinite(item.quantityDelta)
+    ? Math.trunc(item.quantityDelta)
+    : null;
+  const metadata = item.metadata ? { ...item.metadata } : {};
+  const lastSeenAt = timestamp ?? item.lastSeenAt ?? Date.now();
+
   const existingIndex = state.items.findIndex((entry) => entry.id === item.id);
   if (existingIndex >= 0) {
     const existing = state.items[existingIndex];
+    let nextQuantity;
+
+    if (quantityDelta !== null && quantityDelta !== 0) {
+      const currentQuantity = Number.isFinite(existing.quantity) ? existing.quantity : 0;
+      nextQuantity = currentQuantity + quantityDelta;
+    } else if (Number.isFinite(item.quantity)) {
+      nextQuantity = Math.trunc(item.quantity);
+    } else {
+      nextQuantity = Number.isFinite(existing.quantity) ? existing.quantity : 1;
+    }
+
+    if (!Number.isFinite(nextQuantity)) {
+      nextQuantity = Number.isFinite(existing.quantity) ? existing.quantity : 1;
+    }
+
+    if (nextQuantity <= 0) {
+      state.items.splice(existingIndex, 1);
+      return;
+    }
+
+    const mergedTags = mergeTags(existing.tags, item.tags);
+
     state.items[existingIndex] = {
       ...existing,
       ...item,
-      quantity: item.quantity ?? existing.quantity ?? 1,
-      lastSeenAt: timestamp ?? item.lastSeenAt ?? Date.now(),
-      tags: sanitizeTags(item.tags ?? existing.tags),
+      quantity: Math.max(1, nextQuantity),
+      tags: mergedTags,
       metadata: {
         ...(existing.metadata || {}),
-        ...(item.metadata || {}),
+        ...metadata,
       },
+      lastSeenAt,
     };
+
+    delete state.items[existingIndex].quantityDelta;
   } else {
-    state.items.push({
+    let quantity = Number.isFinite(item.quantity) ? Math.trunc(item.quantity) : 1;
+
+    if (quantityDelta !== null) {
+      if (quantityDelta <= 0) {
+        return;
+      }
+      quantity = quantityDelta;
+    }
+
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      return;
+    }
+
+    const newItem = {
       ...item,
-      lastSeenAt: timestamp ?? item.lastSeenAt ?? Date.now(),
-    });
+      quantity: Math.max(1, quantity),
+      tags: sanitizeTags(item.tags),
+      metadata,
+      lastSeenAt,
+    };
+
+    delete newItem.quantityDelta;
+    state.items.push(newItem);
   }
 }
 
@@ -188,4 +262,3 @@ export const inventorySlice = {
 };
 
 export default inventorySlice;
-

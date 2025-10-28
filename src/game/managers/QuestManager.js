@@ -15,6 +15,11 @@
  * - branches: Conditional next quests based on completion
  */
 
+import {
+  questRewardToInventoryItem,
+  currencyDeltaToInventoryUpdate,
+} from '../state/inventory/inventoryEvents.js';
+
 export class QuestManager {
   constructor(eventBus, factionManager, storyFlagManager) {
     this.events = eventBus;
@@ -354,7 +359,7 @@ export class QuestManager {
 
     // Grant rewards
     if (quest.rewards) {
-      this.grantRewards(quest.rewards);
+      this.grantRewards(questId, quest, quest.rewards);
     }
 
     // Emit completion event
@@ -375,9 +380,15 @@ export class QuestManager {
 
   /**
    * Grant quest rewards
+   * @param {string} questId
+   * @param {Object} quest
    * @param {Object} rewards
    */
-  grantRewards(rewards) {
+  grantRewards(questId, quest, rewards) {
+    if (!rewards) {
+      return;
+    }
+
     // Ability unlock
     if (rewards.abilityUnlock) {
       this.events.emit('ability:unlocked', { abilityId: rewards.abilityUnlock });
@@ -405,9 +416,43 @@ export class QuestManager {
       console.log('[QuestManager] Faction reputation granted');
     }
 
-    // Items (future implementation)
-    if (rewards.items) {
-      console.log(`[QuestManager] Items granted: ${rewards.items.join(', ')}`);
+    if (Number.isFinite(rewards.credits) && rewards.credits !== 0) {
+      const creditsAmount = Math.trunc(rewards.credits);
+      console.log(`[QuestManager] Credits granted: ${creditsAmount}`);
+      this.events.emit('credits:earned', {
+        amount: creditsAmount,
+        questId,
+      });
+
+      const currencyPayload = currencyDeltaToInventoryUpdate({
+        amount: creditsAmount,
+        source: 'quest_reward',
+        metadata: {
+          questId,
+          questTitle: quest?.title ?? null,
+          questType: quest?.type ?? null,
+        },
+      });
+
+      if (currencyPayload) {
+        this.events.emit('inventory:item_updated', currencyPayload);
+      }
+    }
+
+    if (Array.isArray(rewards.items) && rewards.items.length > 0) {
+      for (const rewardItem of rewards.items) {
+        const inventoryPayload = questRewardToInventoryItem(rewardItem, {
+          questId,
+          questTitle: quest?.title ?? null,
+          questType: quest?.type ?? null,
+          source: 'quest_reward',
+        });
+
+        if (inventoryPayload) {
+          this.events.emit('inventory:item_added', inventoryPayload);
+          console.log(`[QuestManager] Item granted: ${inventoryPayload.id}`);
+        }
+      }
     }
   }
 

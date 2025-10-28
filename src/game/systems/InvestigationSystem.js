@@ -10,6 +10,7 @@
 
 import { System } from '../../engine/ecs/System.js';
 import { GameConfig } from '../config/GameConfig.js';
+import { evidenceToInventoryItem } from '../state/inventory/inventoryEvents.js';
 
 export class InvestigationSystem extends System {
   constructor(componentRegistry, eventBus) {
@@ -252,6 +253,14 @@ export class InvestigationSystem extends System {
       category: evidence.category,
       entityId
     });
+
+    const inventoryPayload = evidenceToInventoryItem(evidence, {
+      source: 'investigation',
+      entityId,
+    });
+    if (inventoryPayload) {
+      this.eventBus.emit('inventory:item_added', inventoryPayload);
+    }
 
     // Check if this evidence derives any clues
     this.checkClueDerivation(evidence);

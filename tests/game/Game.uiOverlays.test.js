@@ -34,6 +34,50 @@ function createMockCanvas() {
   };
 }
 
+function seedInventory(eventBus) {
+  const starterItems = [
+    {
+      id: 'evidence_polaroid_hollow_wharf',
+      name: 'Polaroid: Hollow Wharf Exchange',
+      description: 'Photograph capturing a clandestine memory trade between Cipher agents and Wraith brokers.',
+      type: 'Evidence',
+      rarity: 'evidence',
+      tags: ['evidence', 'case:act1', 'quest:intro'],
+    },
+    {
+      id: 'gadget_siphon_glove',
+      name: 'Siphon Glove Prototype',
+      description: 'Glove that extracts residual memory threads from touched surfaces.',
+      type: 'Gadget',
+      rarity: 'rare',
+      tags: ['gadget', 'tool'],
+      metadata: { cooldown: '12s' },
+    },
+    {
+      id: 'intel_cipher_shard',
+      name: 'Cipher Memory Shard',
+      description: 'Encrypted shard storing vault coordinates that need decryption.',
+      type: 'Intel',
+      rarity: 'epic',
+      tags: ['intel', 'quest:act1'],
+    },
+  ];
+
+  for (const item of starterItems) {
+    eventBus.emit('inventory:item_added', item);
+  }
+
+  eventBus.emit('inventory:equipped', {
+    slot: 'gadget',
+    itemId: 'gadget_siphon_glove',
+  });
+
+  eventBus.emit('inventory:equipped', {
+    slot: 'focus',
+    itemId: 'intel_cipher_shard',
+  });
+}
+
 describe('Game UI overlays', () => {
   let game;
   let engineStub;
@@ -77,7 +121,8 @@ describe('Game UI overlays', () => {
   it('advances inventory selection on navigation input events', () => {
     game.worldStateStore = new WorldStateStore(eventBus);
     game.worldStateStore.init();
-    game.seedInventoryState();
+    seedInventory(eventBus);
+    eventBus.emit.mockClear();
     game.initializeUIOverlays();
     game.loaded = true;
 
@@ -115,7 +160,8 @@ describe('Game UI overlays', () => {
     worldStateStore.init();
 
     game.worldStateStore = worldStateStore;
-    game.seedInventoryState();
+    seedInventory(eventBus);
+    eventBus.emit.mockClear();
     game.initializeUIOverlays();
 
     expect(game.dialogueBox).toBeDefined();
@@ -156,7 +202,8 @@ describe('Game UI overlays', () => {
   it('toggles overlays once per key press', () => {
     game.worldStateStore = new WorldStateStore(eventBus);
     game.worldStateStore.init();
-    game.seedInventoryState();
+    seedInventory(eventBus);
+    eventBus.emit.mockClear();
     game.initializeUIOverlays();
     game.loaded = true;
 
@@ -209,7 +256,7 @@ describe('Game UI overlays', () => {
   it('emits overlay visibility events and exposes snapshot data', () => {
     game.worldStateStore = new WorldStateStore(eventBus);
     game.worldStateStore.init();
-    game.seedInventoryState();
+    seedInventory(eventBus);
     game.initializeUIOverlays();
     game.loaded = true;
 

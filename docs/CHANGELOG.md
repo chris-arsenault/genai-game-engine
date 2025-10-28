@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - WorldStateStore now tracks an `inventory` slice driven by EventBus `inventory:*` actions, powering the new InventoryOverlay and SaveManager snapshots (`src/game/state/WorldStateStore.js`, `src/game/state/slices/inventorySlice.js`).
 - Shared `overlayTheme` module standardizes the neon noir canvas styling across tutorial, interaction prompt, movement indicator, and inventory overlays (`src/game/ui/theme/overlayTheme.js`, updated `src/game/ui/*.js`).
 - Operative Inventory overlay with edge-triggered input integration, navigation via move actions, and debug HUD summaries seeded during Game initialization (`src/game/ui/InventoryOverlay.js`, `src/game/Game.js`).
+- Inventory event helpers translate evidence pickups, quest rewards, and vendor transactions into normalized EventBus payloads with consistent tagging (`src/game/state/inventory/inventoryEvents.js`).
 - Audio feedback controller bridges `player:moving`, `ui:show_prompt`, and evidence events to shared SFX stubs to satisfy CORE-302 acceptance criteria (`src/game/audio/AudioFeedbackController.js`, wired in `src/game/Game.js`).
 - Playwright feedback overlay smoke validates movement pulses, interaction prompts, and audio hook timestamps (`tests/e2e/feedback-overlays.spec.js`).
 - Developer debug overlay enumerates UI overlay states with contextual summaries sourced from `Game.getOverlayStateSnapshot()` (`index.html`, `src/main.js`, `src/game/Game.js`).
@@ -31,6 +32,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added Jest coverage for overlay visibility instrumentation and knowledge gate evaluation (`tests/game/Game.uiOverlays.test.js`, `tests/game/systems/KnowledgeProgressionSystem.test.js`).
 - Added targeted tests for input event emission, deduction board toggling, and overlay telemetry (`tests/game/config/Controls.test.js`, `tests/game/systems/DeductionSystem.test.js`, `tests/game/ui/CaseFileUI.test.js`, `tests/game/ui/DeductionBoard.test.js`).
 - Added frame hook regression tests covering Engine hook invocation and Game registration/cleanup (`tests/engine/Engine.frameHooks.test.js`, `tests/game/Game.frameHooks.test.js`).
+- Expanded inventory coverage to include quantity delta reducers, SaveManager inventory autosave throttling, and end-to-end inventory persistence (`tests/game/state/inventorySlice.test.js`, `tests/game/managers/SaveManager.test.js`, `tests/game/Game.uiOverlays.test.js`).
+
+### Changed
+- Removed `Game.seedInventoryState` bootstrap in favor of live acquisition events emitted from InvestigationSystem, TutorialScene, QuestManager, and vendor economy bridges, ensuring overlays mirror player progress in runtime builds (`src/game/Game.js`, `src/game/systems/InvestigationSystem.js`, `src/game/scenes/TutorialScene.js`, `src/game/managers/QuestManager.js`).
+- SaveManager now listens to `inventory:*` events, stores inventory snapshots, and throttles autosaves when inventory changes to guarantee save/load parity for items and equipment (`src/game/managers/SaveManager.js`).
 
 ## [0.7.0] - 2025-10-27 - Sprint 7: Polish & Playtest
 

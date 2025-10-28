@@ -97,5 +97,45 @@ describe('inventorySlice', () => {
     const snapshot = inventorySlice.serialize(hydrated);
     expect(snapshot.items[0].id).toBe('evidence_polaroid');
   });
-});
 
+  it('applies quantity deltas and removes items when quantity reaches zero', () => {
+    const baseState = inventorySlice.getInitialState();
+
+    const afterCreditGain = inventorySlice.reducer(baseState, {
+      type: 'INVENTORY_ITEM_UPDATED',
+      timestamp: 1000,
+      payload: {
+        id: 'credits',
+        name: 'Credits',
+        type: 'Currency',
+        quantityDelta: 500,
+        tags: ['currency'],
+      },
+    });
+
+    expect(afterCreditGain.items).toHaveLength(1);
+    expect(afterCreditGain.items[0].quantity).toBe(500);
+
+    const afterPurchase = inventorySlice.reducer(afterCreditGain, {
+      type: 'INVENTORY_ITEM_UPDATED',
+      timestamp: 1100,
+      payload: {
+        id: 'credits',
+        quantityDelta: -125,
+      },
+    });
+
+    expect(afterPurchase.items[0].quantity).toBe(375);
+
+    const afterFullSpend = inventorySlice.reducer(afterPurchase, {
+      type: 'INVENTORY_ITEM_UPDATED',
+      timestamp: 1200,
+      payload: {
+        id: 'credits',
+        quantityDelta: -400,
+      },
+    });
+
+    expect(afterFullSpend.items).toHaveLength(0);
+  });
+});

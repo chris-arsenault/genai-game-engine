@@ -21,6 +21,10 @@ import { QuestSystem } from './systems/QuestSystem.js';
 
 // State
 import { WorldStateStore } from './state/WorldStateStore.js';
+import {
+  questRewardToInventoryItem,
+  currencyDeltaToInventoryUpdate,
+} from './state/inventory/inventoryEvents.js';
 
 // Engine systems
 import { RenderSystem } from '../engine/renderer/RenderSystem.js';
@@ -134,7 +138,6 @@ export class Game {
 
     // Engine frame hook cleanup
     this._detachFrameHooks = null;
-    this._inventorySeeded = false;
   }
 
   /**
@@ -148,9 +151,6 @@ export class Game {
 
     // Initialize game systems
     this.initializeGameSystems();
-
-    // Prime narrative-driven inventory data before UI overlays mount
-    this.seedInventoryState();
 
     // Initialize UI overlays
     this.initializeUIOverlays();
@@ -339,81 +339,6 @@ export class Game {
     this.systemManager.registerSystem(this.gameSystems.render, 100);  // Render last
 
     console.log('[Game] Game systems initialized');
-  }
-
-  /**
-   * Initialize UI overlays
-   */
-  seedInventoryState() {
-    if (this._inventorySeeded) {
-      return;
-    }
-
-    if (!this.eventBus || !this.worldStateStore) {
-      return;
-    }
-
-    const currentInventory = this.worldStateStore.getState()?.inventory;
-    if (currentInventory && Array.isArray(currentInventory.items) && currentInventory.items.length > 0) {
-      this._inventorySeeded = true;
-      return;
-    }
-
-    const starterItems = [
-      {
-        id: 'evidence_polaroid_hollow_wharf',
-        name: 'Polaroid: Hollow Wharf Exchange',
-        description: 'Photograph capturing a clandestine memory trade between Cipher agents and Wraith brokers along the Hollow Wharf.',
-        type: 'Evidence',
-        rarity: 'evidence',
-        tags: ['evidence', 'case:act1', 'quest:intro'],
-        metadata: {
-          caseId: 'act1_hollow_case',
-          priority: 6,
-          lead: 'Confirm broker identities through dialogue branch C.',
-        },
-      },
-      {
-        id: 'gadget_siphon_glove',
-        name: 'Siphon Glove Prototype',
-        description: 'Vanguard Prime glove that extracts residual memory threads from touched surfaces; requires cooldown between uses.',
-        type: 'Gadget',
-        rarity: 'rare',
-        tags: ['gadget', 'faction:vanguard', 'tool'],
-        metadata: {
-          cooldown: '12s',
-          priority: 4,
-        },
-      },
-      {
-        id: 'intel_cipher_shard',
-        name: 'Cipher Memory Shard',
-        description: 'Encrypted shard storing fragmented coordinates to a Syndicate vault. Needs decryption via Deduction Board.',
-        type: 'Intel',
-        rarity: 'epic',
-        tags: ['evidence', 'cipher_collective', 'quest:act1'],
-        metadata: {
-          priority: 5,
-          prerequisite: 'Complete tutorial dialogue with Captain Reese.',
-        },
-      },
-    ];
-
-    for (const item of starterItems) {
-      this.eventBus.emit('inventory:item_added', item);
-    }
-
-    this.eventBus.emit('inventory:equipped', {
-      slot: 'gadget',
-      itemId: 'gadget_siphon_glove',
-    });
-
-    this.eventBus.emit('inventory:equipped', {
-      slot: 'focus',
-      itemId: 'intel_cipher_shard',
-    });
-
-    this._inventorySeeded = true;
   }
 
   initializeUIOverlays() {
@@ -686,6 +611,79 @@ export class Game {
     // Ability events
     this._offGameEventHandlers.push(this.eventBus.on('ability:unlocked', (data) => {
       console.log(`[Game] Ability unlocked: ${data.abilityId}`);
+    }));
+
+    // Vendor economy events
+    this._offGameEventHandlers.push(this.eventBus.on('economy:purchase:completed', (data = {}) => {
+      const vendorId = data.vendorId ?? null;
+      const vendorName = data.vendorName ?? vendorId ?? 'vendor';
+      const vendorFaction = data.vendorFaction ?? null;
+      const items = [];
+
+      if (Array.isArray(data.items)) {
+        items.push(...data.items);
+      }
+      if (data.item) {
+        items.push(data.item);
+      }
+
+      for (const rawItem of items) {
+        const inventoryPayload = questRewardToInventoryItem(rawItem, {
+          questId: vendorId,
+          questTitle: vendorName,
+          questType: vendorFaction,
+          source: 'vendor_purchase',
+        });
+
+        if (inventoryPayload) {
+          const vendorTags = [
+            vendorId ? `vendor:${vendorId}` : null,
+            vendorFaction ? `vendorFaction:${vendorFaction}` : null,
+          ].filter(Boolean);
+
+          const mergedTags = Array.isArray(inventoryPayload.tags)
+            ? [...inventoryPayload.tags]
+            : [];
+
+          for (const tag of vendorTags) {
+            if (!mergedTags.includes(tag)) {
+              mergedTags.push(tag);
+            }
+          }
+
+          inventoryPayload.tags = mergedTags;
+          inventoryPayload.metadata = {
+            ...(inventoryPayload.metadata || {}),
+            vendorId,
+            vendorName,
+            vendorFaction,
+            transactionId: data.transactionId ?? null,
+            source: 'vendor_purchase',
+          };
+
+          this.eventBus.emit('inventory:item_added', inventoryPayload);
+          console.log(`[Vendor] Purchase completed: ${vendorName} sold ${inventoryPayload.id}`);
+        }
+      }
+
+      if (data.cost && Number.isFinite(data.cost.credits) && data.cost.credits !== 0) {
+        const creditsSpent = Math.trunc(Math.abs(data.cost.credits));
+        const currencyPayload = currencyDeltaToInventoryUpdate({
+          amount: -creditsSpent,
+          source: 'vendor_purchase',
+          metadata: {
+            vendorId,
+            vendorName,
+            vendorFaction,
+            transactionId: data.transactionId ?? null,
+          },
+        });
+
+        if (currencyPayload) {
+          this.eventBus.emit('inventory:item_updated', currencyPayload);
+          console.log(`[Vendor] Credits spent: ${creditsSpent} at ${vendorName}`);
+        }
+      }
     }));
 
     // Player movement

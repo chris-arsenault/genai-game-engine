@@ -13,6 +13,11 @@
  * @class TutorialScene
  */
 import { tutorialCase, tutorialEvidence, tutorialClues } from '../data/cases/tutorialCase.js';
+import {
+  evidenceToInventoryItem,
+  currencyDeltaToInventoryUpdate,
+  questRewardToInventoryItem,
+} from '../state/inventory/inventoryEvents.js';
 
 export class TutorialScene {
   /**
@@ -260,6 +265,22 @@ export class TutorialScene {
       evidenceId: evidenceComp.evidenceId
     });
 
+    const inventoryPayload = evidenceToInventoryItem({
+      id: evidenceComp.evidenceId,
+      title: evidenceComp.title,
+      description: evidenceComp.description,
+      type: evidenceComp.type,
+      category: evidenceComp.category,
+      caseId: evidenceComp.caseId,
+      derivedClues: evidenceComp.derivedClues,
+    }, {
+      source: 'tutorial',
+    });
+
+    if (inventoryPayload) {
+      this.eventBus.emit('inventory:item_added', inventoryPayload);
+    }
+
     // Derive clues from evidence
     evidenceComp.derivedClues.forEach(clueId => {
       this.eventBus.emit('clue:derived', {
@@ -315,6 +336,19 @@ export class TutorialScene {
       this.eventBus.emit('credits:earned', {
         amount: rewards.credits
       });
+
+      const currencyPayload = currencyDeltaToInventoryUpdate({
+        amount: rewards.credits,
+        source: 'tutorial_case',
+        metadata: {
+          caseId: tutorialCase.id,
+          rewardType: 'case_solution',
+        },
+      });
+
+      if (currencyPayload) {
+        this.eventBus.emit('inventory:item_updated', currencyPayload);
+      }
     }
 
     if (rewards.reputation) {
@@ -332,6 +366,21 @@ export class TutorialScene {
       this.eventBus.emit('experience:earned', {
         amount: rewards.experience
       });
+    }
+
+    if (Array.isArray(rewards.items)) {
+      for (const rewardItem of rewards.items) {
+        const inventoryPayload = questRewardToInventoryItem(rewardItem, {
+          questId: tutorialCase.id,
+          questTitle: tutorialCase.title,
+          questType: 'tutorial_case',
+          source: 'tutorial_case_reward',
+        });
+
+        if (inventoryPayload) {
+          this.eventBus.emit('inventory:item_added', inventoryPayload);
+        }
+      }
     }
   }
 

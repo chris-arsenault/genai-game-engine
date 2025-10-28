@@ -376,6 +376,37 @@ export class DialogueSystem extends System {
       }
     }
 
+    if (consequences.removeItem && typeof consequences.removeItem.item === 'string') {
+      const amount = Number.isFinite(consequences.removeItem.amount)
+        ? Math.trunc(consequences.removeItem.amount)
+        : null;
+      const npcId = this.activeDialogue?.npcId ?? null;
+      const dialogueId = this.activeDialogue?.dialogueId ?? null;
+
+      if (amount && amount > 0) {
+        this.eventBus.emit('inventory:item_updated', {
+          id: consequences.removeItem.item,
+          quantityDelta: -amount,
+          metadata: {
+            source: 'dialogue_consequence',
+            npcId,
+            dialogueId,
+          },
+        });
+        console.log(`[DialogueSystem] Removed ${amount}x ${consequences.removeItem.item} via dialogue consequence`);
+      } else {
+        this.eventBus.emit('inventory:item_removed', {
+          id: consequences.removeItem.item,
+          metadata: {
+            source: 'dialogue_consequence',
+            npcId,
+            dialogueId,
+          },
+        });
+        console.log(`[DialogueSystem] Removed item ${consequences.removeItem.item} via dialogue consequence`);
+      }
+    }
+
     // Emit custom consequence event
     if (consequences.customEvent) {
       this.eventBus.emit(consequences.customEvent.type, consequences.customEvent.data || {});

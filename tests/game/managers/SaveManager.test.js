@@ -53,6 +53,13 @@ describe('SaveManager', () => {
   });
 
   afterEach(() => {
+    if (saveManager) {
+      try {
+        saveManager.cleanup();
+      } catch (error) {
+        // ignore cleanup errors in tests
+      }
+    }
     jest.clearAllMocks();
     localStorageMock.clear();
   });
@@ -103,14 +110,21 @@ describe('SaveManager', () => {
     });
 
     test('should subscribe to autosave events on init', () => {
-      const subscribeSpy = jest.spyOn(eventBus, 'subscribe');
+      const onSpy = jest.spyOn(eventBus, 'on');
       saveManager.init();
 
-      // Should subscribe to quest:completed, objective:completed, area:entered, case:completed
-      expect(subscribeSpy).toHaveBeenCalledWith('quest:completed', expect.any(Function));
-      expect(subscribeSpy).toHaveBeenCalledWith('objective:completed', expect.any(Function));
-      expect(subscribeSpy).toHaveBeenCalledWith('area:entered', expect.any(Function));
-      expect(subscribeSpy).toHaveBeenCalledWith('case:completed', expect.any(Function));
+      const subscribedEvents = onSpy.mock.calls.map(([eventType]) => eventType);
+      expect(subscribedEvents).toEqual(
+        expect.arrayContaining([
+          'quest:completed',
+          'objective:completed',
+          'area:entered',
+          'case:completed',
+          'inventory:item_added',
+          'inventory:item_updated',
+          'inventory:item_removed',
+        ])
+      );
     });
 
     test('should set lastAutosaveTime on init', () => {
@@ -203,6 +217,26 @@ describe('SaveManager', () => {
       expect(saveData.playtime).toBeLessThanOrEqual(11000);
     });
 
+    test('autosaves when inventory changes with throttling', () => {
+      const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(1000);
+      const saveSpy = jest.spyOn(saveManager, 'saveGame').mockReturnValue(true);
+
+      eventBus.emit('inventory:item_added', { id: 'intel_fragment', quantity: 1 });
+      expect(saveSpy).toHaveBeenCalledWith('autosave');
+
+      saveSpy.mockClear();
+      // Without advancing time, should be throttled
+      eventBus.emit('inventory:item_updated', { id: 'intel_fragment', quantityDelta: 1 });
+      expect(saveSpy).not.toHaveBeenCalled();
+
+      nowSpy.mockReturnValue(2105);
+      eventBus.emit('inventory:item_removed', { id: 'intel_fragment' });
+      expect(saveSpy).toHaveBeenCalledWith('autosave');
+
+      saveSpy.mockRestore();
+      nowSpy.mockRestore();
+    });
+
     test('should serialize save data to localStorage', () => {
       const result = saveManager.saveGame('test_slot');
       expect(result).toBe(true);
@@ -230,6 +264,11 @@ describe('SaveManager', () => {
           completedByNpc: {},
           transcriptEnabled: true,
         },
+        inventory: {
+          items: [],
+          equipped: {},
+          lastUpdatedAt: 100,
+        },
       };
 
       const storeMock = { snapshot: jest.fn(() => snapshot) };
@@ -248,6 +287,66 @@ describe('SaveManager', () => {
 
       expect(saveData.meta.snapshotSource).toBe('worldStateStore');
       expect(saveData.gameData.tutorialComplete).toBe(true);
+    });
+
+    test('persists and hydrates inventory via world state store', () => {
+      const inventorySnapshot = {
+        items: [
+          { id: 'intel_case_file', quantity: 1, tags: ['intel'] },
+          { id: 'gadget_siphon_glove', quantity: 1, tags: ['gadget'] },
+        ],
+        equipped: { focus: 'intel_case_file' },
+        lastUpdatedAt: 777,
+      };
+
+      const snapshot = {
+        storyFlags: {},
+        quests: {},
+        factions: {},
+        tutorial: {},
+        tutorialComplete: false,
+        dialogue: {},
+        inventory: inventorySnapshot,
+      };
+
+      const worldStateStore = {
+        snapshot: jest.fn(() => snapshot),
+        hydrate: jest.fn(),
+      };
+
+      const dedicatedBus = new EventBus();
+      const managerWithStore = new SaveManager(dedicatedBus, {
+        ...mockManagers,
+        worldStateStore,
+      });
+      managerWithStore.init();
+
+      managerWithStore.saveGame('inventory_slot');
+
+      const saveKey = managerWithStore.config.storageKeyPrefix + 'inventory_slot';
+      const saveData = JSON.parse(localStorageMock.store[saveKey]);
+
+      expect(saveData.gameData.inventory.items).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: 'intel_case_file', quantity: 1 }),
+          expect.objectContaining({ id: 'gadget_siphon_glove' }),
+        ])
+      );
+      expect(saveData.gameData.inventory.equipped.focus).toBe('intel_case_file');
+
+      worldStateStore.snapshot.mockClear();
+      managerWithStore.loadGame('inventory_slot');
+
+      expect(worldStateStore.hydrate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          inventory: expect.objectContaining({
+            items: expect.arrayContaining([expect.objectContaining({ id: 'intel_case_file' })]),
+            equipped: expect.objectContaining({ focus: 'intel_case_file' }),
+          }),
+        })
+      );
+
+      managerWithStore.cleanup();
     });
 
     test('logs parity warning when snapshot differs from legacy data', () => {
