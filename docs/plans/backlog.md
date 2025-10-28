@@ -82,6 +82,28 @@ Nice-to-have features, polish items, or speculative improvements.
 
 **Critical Issues Blocking Manual Validation**
 
+### BUG-312: UI Overlay Toggle Edge Detection (Resolved)
+- **Priority**: **P0 - CRITICAL BLOCKER**
+- **Tags**: `ux`, `engine`, `input`, `test`
+- **Effort**: 1 hour (completed Session #31)
+- **Status**: ✅ **Resolved** – Manual QA confirmed overlays stay open per key press
+- **Reported**: 2025-10-29 (Manual QA smoke)
+
+**Problem**:
+Faction/disguise/quest overlays and dialogue prompts were invisible during browser QA because `InputState.isPressed` toggled UI state every frame a key remained down, instantly hiding panels and preventing dialogue from staying open.
+
+**Fix**:
+- Added `InputState.wasJustPressed()` backed by per-action edge tracking to report key transitions exactly once.
+- Game loop now guards overlay toggles with the new edge detection to avoid per-frame flapping.
+- Added regression tests covering input edge detection and overlay toggles (`tests/game/config/Controls.test.js`, updated `tests/game/Game.uiOverlays.test.js`).
+
+**Verification**:
+- Jest targeted suite: `tests/game/config/Controls.test.js`, `tests/game/Game.uiOverlays.test.js`.
+- Manual repro no longer occurs; overlays remain visible and dialogue advances normally.
+
+**Follow-up**:
+- Audit other toggle-style interactions (inventory, deduction board) once their UI hooks land to ensure they use `wasJustPressed`.
+
 ### PO-001: Fix Game Loading - Unable to Run Locally ⚠️
 - **Priority**: **P0 - CRITICAL BLOCKER**
 - **Tags**: `engine`, `critical`, `blocker`, `integration`

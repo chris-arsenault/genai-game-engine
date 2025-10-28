@@ -49,11 +49,13 @@ export class InputState {
 
     // Track previous action states for edge detection
     this.previousActions = new Map();
+    this.justPressedActions = new Map();
 
     // Initialize action states
     Object.keys(Controls).forEach(action => {
       this.actions.set(action, false);
       this.previousActions.set(action, false);
+      this.justPressedActions.set(action, false);
     });
 
     // Bind keyboard events
@@ -109,6 +111,12 @@ export class InputState {
           this.eventBus.emit('input:escape', { action });
         }
       }
+
+      if (isPressed && !wasPressed) {
+        this.justPressedActions.set(action, true);
+      } else if (!isPressed) {
+        this.justPressedActions.set(action, false);
+      }
     }
   }
 
@@ -119,6 +127,20 @@ export class InputState {
    */
   isPressed(action) {
     return this.actions.get(action) || false;
+  }
+
+  /**
+   * Check if action transitioned from not pressed to pressed this frame.
+   * @param {string} action - Action name
+   * @returns {boolean}
+   */
+  wasJustPressed(action) {
+    const justPressed = this.justPressedActions.get(action) || false;
+    if (justPressed) {
+      this.justPressedActions.set(action, false);
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -137,6 +159,8 @@ export class InputState {
     this.keys.clear();
     this.actions.forEach((_, action) => {
       this.actions.set(action, false);
+      this.previousActions.set(action, false);
+      this.justPressedActions.set(action, false);
     });
   }
 

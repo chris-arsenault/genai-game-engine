@@ -600,22 +600,22 @@ export class Game {
     }
 
     // Check for pause input
-    if (this.inputState.isPressed('pause')) {
+    if (this.inputState.wasJustPressed('pause')) {
       this.togglePause();
     }
 
     // Toggle reputation UI with 'R' key
-    if (this.inputState.isPressed('faction')) {
+    if (this.reputationUI && this.inputState.wasJustPressed('faction')) {
       this.reputationUI.toggle();
     }
 
     // Toggle disguise UI with 'G' key
-    if (this.inputState.isPressed('disguise')) {
+    if (this.disguiseUI && this.inputState.wasJustPressed('disguise')) {
       this.disguiseUI.toggle();
     }
 
     // Toggle quest log UI with 'Q' key
-    if (this.inputState.isPressed('quest')) {
+    if (this.questLogUI && this.inputState.wasJustPressed('quest')) {
       this.questLogUI.toggle();
     }
   }

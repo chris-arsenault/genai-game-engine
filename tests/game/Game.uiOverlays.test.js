@@ -122,4 +122,40 @@ describe('Game UI overlays', () => {
     game.cleanup();
     game = null;
   });
+
+  it('toggles overlays once per key press', () => {
+    game.worldStateStore = new WorldStateStore(eventBus);
+    game.worldStateStore.init();
+    game.initializeUIOverlays();
+    game.loaded = true;
+
+    expect(game.disguiseUI.visible).toBe(false);
+    expect(game.questLogUI.visible).toBe(false);
+
+    const disguiseKeyDown = { code: 'KeyG', preventDefault: jest.fn() };
+    game.inputState.handleKeyDown(disguiseKeyDown);
+    game.update(0.016);
+    expect(game.disguiseUI.visible).toBe(true);
+
+    // Still held - should remain visible (no retrigger)
+    game.update(0.016);
+    expect(game.disguiseUI.visible).toBe(true);
+
+    game.inputState.handleKeyUp({ code: 'KeyG' });
+
+    // Toggle off on second press
+    game.inputState.handleKeyDown({ code: 'KeyG', preventDefault: jest.fn() });
+    game.update(0.016);
+    expect(game.disguiseUI.visible).toBe(false);
+
+    // Quest log toggles similarly
+    const questKeyDown = { code: 'KeyQ', preventDefault: jest.fn() };
+    game.inputState.handleKeyDown(questKeyDown);
+    game.update(0.016);
+    expect(game.questLogUI.visible).toBe(true);
+
+    // Subsequent updates without release do not toggle off
+    game.update(0.016);
+    expect(game.questLogUI.visible).toBe(true);
+  });
 });
