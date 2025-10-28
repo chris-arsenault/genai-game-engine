@@ -310,7 +310,10 @@ export class Game {
     // Create tutorial overlay
     this.tutorialOverlay = new TutorialOverlay(
       this.engine.canvas,
-      this.eventBus
+      this.eventBus,
+      {
+        store: this.worldStateStore,
+      }
     );
     this.tutorialOverlay.init();
 

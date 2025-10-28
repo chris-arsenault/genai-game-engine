@@ -2,14 +2,17 @@ import { questSlice } from './slices/questSlice.js';
 import { storySlice } from './slices/storySlice.js';
 import { factionSlice } from './slices/factionSlice.js';
 import { tutorialSlice } from './slices/tutorialSlice.js';
+import { dialogueSlice } from './slices/dialogueSlice.js';
 
 const DEFAULT_ACTION_HISTORY = 50;
+const DEFAULT_DIALOGUE_HISTORY_LIMIT = 10;
 
 const sliceRegistry = {
   quest: questSlice,
   story: storySlice,
   faction: factionSlice,
   tutorial: tutorialSlice,
+  dialogue: dialogueSlice,
 };
 
 function isDevEnvironment() {
@@ -42,7 +45,23 @@ export class WorldStateStore {
     this.config = {
       actionHistoryLimit: config.actionHistoryLimit ?? DEFAULT_ACTION_HISTORY,
       enableDebug: config.enableDebug ?? isDevEnvironment(),
+      dialogueHistoryLimit: config.dialogueHistoryLimit ?? DEFAULT_DIALOGUE_HISTORY_LIMIT,
+      dialogueTranscriptEnabled: config.dialogueTranscriptEnabled ?? true,
+      tutorialPromptHistoryLimit: config.tutorialPromptHistoryLimit ?? 5,
     };
+
+    if (typeof dialogueSlice.configure === 'function') {
+      dialogueSlice.configure({
+        historyLimit: this.config.dialogueHistoryLimit,
+        transcriptEnabled: this.config.dialogueTranscriptEnabled,
+      });
+    }
+
+    if (typeof tutorialSlice.configure === 'function') {
+      tutorialSlice.configure({
+        promptHistoryLimit: this.config.tutorialPromptHistoryLimit,
+      });
+    }
 
     this.state = {};
     this.listeners = new Set();
@@ -262,6 +281,82 @@ export class WorldStateStore {
           },
         });
       }),
+
+      this.eventBus.on('dialogue:started', (payload) => {
+        this.dispatch({
+          type: 'DIALOGUE_STARTED',
+          domain: 'dialogue',
+          payload: {
+            npcId: payload.npcId,
+            dialogueId: payload.dialogueId,
+            nodeId: payload.nodeId,
+            speaker: payload.speaker,
+            text: payload.text,
+            choices: payload.choices,
+            hasChoices: payload.hasChoices,
+            canAdvance: payload.canAdvance,
+            metadata: payload.metadata,
+            startedAt: payload.startedAt,
+          },
+        });
+      }),
+
+      this.eventBus.on('dialogue:node_changed', (payload) => {
+        this.dispatch({
+          type: 'DIALOGUE_NODE_CHANGED',
+          domain: 'dialogue',
+          payload: {
+            npcId: payload.npcId,
+            dialogueId: payload.dialogueId,
+            nodeId: payload.nodeId,
+            speaker: payload.speaker,
+            text: payload.text,
+            choices: payload.choices,
+            hasChoices: payload.hasChoices,
+            canAdvance: payload.canAdvance,
+            metadata: payload.metadata,
+          },
+        });
+      }),
+
+      this.eventBus.on('dialogue:choice', (payload) => {
+        this.dispatch({
+          type: 'DIALOGUE_CHOICE_MADE',
+          domain: 'dialogue',
+          payload: {
+            npcId: payload.npcId,
+            dialogueId: payload.dialogueId,
+            nodeId: payload.nodeId,
+            choiceId: payload.choiceId ?? payload.choice?.id ?? payload.choiceIndex ?? null,
+            choiceText: payload.choiceText ?? payload.choice?.text ?? null,
+          },
+        });
+      }),
+
+      this.eventBus.on('dialogue:ended', (payload) => {
+        this.dispatch({
+          type: 'DIALOGUE_ENDED',
+          domain: 'dialogue',
+          payload: {
+            npcId: payload.npcId,
+            dialogueId: payload.dialogueId,
+            nodeId: payload.nodeId,
+          },
+        });
+      }),
+
+      this.eventBus.on('dialogue:completed', (payload) => {
+        this.dispatch({
+          type: 'DIALOGUE_COMPLETED',
+          domain: 'dialogue',
+          payload: {
+            npcId: payload.npcId,
+            dialogueId: payload.dialogueId,
+            nodeId: payload.nodeId,
+            choiceId: payload.choiceId,
+          },
+        });
+      }),
     ];
 
     this.subscriptions = subscriptions.filter(Boolean);
@@ -420,12 +515,14 @@ export class WorldStateStore {
     const quests = sliceRegistry.quest.serialize(this.state.quest);
     const factions = sliceRegistry.faction.serialize(this.state.faction);
     const tutorial = sliceRegistry.tutorial.serialize(this.state.tutorial);
+    const dialogue = sliceRegistry.dialogue.serialize(this.state.dialogue);
 
     return {
       storyFlags,
       quests,
       factions,
       tutorial,
+      dialogue,
       tutorialComplete: Boolean(tutorial?.completed),
     };
   }
@@ -442,6 +539,7 @@ export class WorldStateStore {
       story: snapshot.storyFlags ?? {},
       factions: snapshot.factions ?? {},
       tutorial: snapshot.tutorial ?? {},
+      dialogue: snapshot.dialogue ?? {},
     };
 
     this.dispatch({

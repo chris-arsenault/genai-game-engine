@@ -5,6 +5,31 @@
  */
 
 import { DialogueBox } from '../../../src/game/ui/DialogueBox.js';
+import { dialogueSlice } from '../../../src/game/state/slices/dialogueSlice.js';
+
+function createMockStore(initialState) {
+  let state = initialState;
+  const listeners = new Set();
+
+  return {
+    onUpdate(callback) {
+      listeners.add(callback);
+      return () => listeners.delete(callback);
+    },
+    getState() {
+      return state;
+    },
+    setState(nextState) {
+      state = nextState;
+      for (const callback of listeners) {
+        callback(state);
+      }
+    },
+    getListenerCount() {
+      return listeners.size;
+    },
+  };
+}
 
 describe('DialogueBox', () => {
   let dialogueBox;
@@ -137,6 +162,84 @@ describe('DialogueBox', () => {
 
       expect(dialogueBox.visible).toBe(false);
       expect(dialogueBox.isTyping).toBe(false);
+    });
+  });
+
+  describe('Store integration', () => {
+    it('updates when world state changes', () => {
+      const initialState = {
+        dialogue: dialogueSlice.getInitialState(),
+      };
+      const store = createMockStore(initialState);
+      const storeEventBus = {
+        emit: jest.fn(),
+        on: jest.fn(),
+        off: jest.fn(),
+      };
+      const storeDialogueBox = new DialogueBox(mockCtx, storeEventBus, {
+        store,
+        enableTypewriter: false,
+      });
+
+      expect(storeEventBus.on).not.toHaveBeenCalled();
+      expect(storeDialogueBox.visible).toBe(false);
+
+      const activeState = {
+        dialogue: {
+          ...initialState.dialogue,
+          active: {
+            npcId: 'npc_alpha',
+            dialogueId: 'dlg_intro',
+            nodeId: 'node_1',
+            speaker: 'NPC Alpha',
+            text: 'Welcome detective.',
+            choices: [{ id: 'c1', text: 'Thanks' }],
+            canAdvance: true,
+            hasChoices: true,
+            startedAt: 100,
+            updatedAt: 100,
+          },
+          historyByNpc: {
+            npc_alpha: [
+              {
+                type: 'node',
+                dialogueId: 'dlg_intro',
+                nodeId: 'node_1',
+                text: 'Welcome detective.',
+                timestamp: 100,
+              },
+            ],
+          },
+          completedByNpc: {},
+        },
+      };
+
+      store.setState(activeState);
+
+      expect(storeDialogueBox.visible).toBe(true);
+      expect(storeDialogueBox.speaker).toBe('NPC Alpha');
+      expect(storeDialogueBox.text).toBe('Welcome detective.');
+      expect(storeDialogueBox.choices).toHaveLength(1);
+
+      store.setState({
+        dialogue: {
+          ...initialState.dialogue,
+          historyByNpc: activeState.dialogue.historyByNpc,
+          completedByNpc: {
+            npc_alpha: {
+              lastDialogueId: 'dlg_intro',
+              lastNodeId: 'node_1',
+              lastChoiceId: 'c1',
+              completedAt: 200,
+            },
+          },
+          active: null,
+        },
+      });
+
+      expect(storeDialogueBox.visible).toBe(false);
+      storeDialogueBox.cleanup();
+      expect(store.getListenerCount()).toBe(0);
     });
   });
 

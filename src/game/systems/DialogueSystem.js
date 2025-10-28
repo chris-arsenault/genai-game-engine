@@ -22,6 +22,7 @@ export class DialogueSystem extends System {
 
     // Active dialogue state
     this.activeDialogue = null;
+    this.lastChoice = null;
 
     // Dialogue history per NPC (for tracking visited nodes)
     this.dialogueHistory = new Map(); // npcId -> Set<nodeId>
@@ -98,14 +99,19 @@ export class DialogueSystem extends System {
     }
 
     // Initialize dialogue state
+    const startedAt = Date.now();
+
     this.activeDialogue = {
       npcId,
       dialogueId,
       tree,
       currentNode: tree.startNode,
       visitedNodes: this.getVisitedNodes(npcId),
-      context: this.buildDialogueContext(npcId)
+      context: this.buildDialogueContext(npcId),
+      startedAt,
+      lastUpdatedAt: startedAt,
     };
+    this.lastChoice = null;
 
     // Get start node
     const startNode = tree.getNode(tree.startNode);
@@ -132,7 +138,9 @@ export class DialogueSystem extends System {
       text: startNode.text,
       choices: tree.getAvailableChoices(tree.startNode, this.activeDialogue.context),
       hasChoices: startNode.choices.length > 0,
-      canAdvance: startNode.nextNode !== null
+      canAdvance: startNode.nextNode !== null,
+      startedAt,
+      timestamp: startedAt,
     });
 
     console.log(`[DialogueSystem] Started dialogue: ${dialogueId} with NPC: ${npcId}`);
@@ -187,6 +195,16 @@ export class DialogueSystem extends System {
     }
 
     const choice = availableChoices[choiceIndex];
+    const timestamp = Date.now();
+
+    this.lastChoice = {
+      npcId: this.activeDialogue.npcId,
+      dialogueId: this.activeDialogue.dialogueId,
+      nodeId: this.activeDialogue.currentNode,
+      choiceId: choice.id ?? null,
+      choiceText: choice.text,
+      timestamp,
+    };
 
     // Emit choice event
     this.eventBus.emit('dialogue:choice', {
@@ -194,8 +212,10 @@ export class DialogueSystem extends System {
       dialogueId: this.activeDialogue.dialogueId,
       nodeId: this.activeDialogue.currentNode,
       choiceIndex,
+      choiceId: choice.id ?? `choice_${choiceIndex}`,
       choiceText: choice.text,
-      nextNode: choice.nextNode
+      nextNode: choice.nextNode,
+      timestamp,
     });
 
     // Apply consequences
@@ -221,7 +241,8 @@ export class DialogueSystem extends System {
     if (!this.activeDialogue) return;
 
     const tree = this.activeDialogue.tree;
-    const currentNode = tree.getNode(this.activeDialogue.currentNode);
+    const previousNodeId = this.activeDialogue.currentNode;
+    const currentNode = tree.getNode(previousNodeId);
     const nextNode = tree.getNode(nodeId);
 
     if (!nextNode) {
@@ -252,6 +273,9 @@ export class DialogueSystem extends System {
     // Update context (in case consequences changed it)
     this.activeDialogue.context = this.buildDialogueContext(this.activeDialogue.npcId);
 
+    const timestamp = Date.now();
+    this.activeDialogue.lastUpdatedAt = timestamp;
+
     // Emit node changed event
     this.eventBus.emit('dialogue:node_changed', {
       npcId: this.activeDialogue.npcId,
@@ -261,7 +285,11 @@ export class DialogueSystem extends System {
       text: nextNode.text,
       choices: tree.getAvailableChoices(nodeId, this.activeDialogue.context),
       hasChoices: nextNode.choices.length > 0,
-      canAdvance: nextNode.nextNode !== null
+      canAdvance: nextNode.nextNode !== null,
+      timestamp,
+      metadata: {
+        previousNodeId,
+      },
     });
   }
 
@@ -272,6 +300,7 @@ export class DialogueSystem extends System {
     if (!this.activeDialogue) return;
 
     const { npcId, dialogueId, currentNode } = this.activeDialogue;
+    const endedAt = Date.now();
 
     // Execute exit callback on current node
     const node = this.activeDialogue.tree.getNode(currentNode);
@@ -282,13 +311,19 @@ export class DialogueSystem extends System {
     // Emit ended event
     this.eventBus.emit('dialogue:ended', {
       npcId,
-      dialogueId
+      dialogueId,
+      nodeId: currentNode,
+      endedAt,
     });
 
     // Also emit quest-compatible events
     this.eventBus.emit('dialogue:completed', {
       npcId,
-      dialogueId
+      dialogueId,
+      nodeId: currentNode,
+      choiceId: this.lastChoice?.choiceId ?? null,
+      choiceText: this.lastChoice?.choiceText ?? null,
+      completedAt: endedAt,
     });
 
     this.eventBus.emit('npc:interviewed', {
@@ -297,6 +332,7 @@ export class DialogueSystem extends System {
     });
 
     this.activeDialogue = null;
+    this.lastChoice = null;
 
     console.log('[DialogueSystem] Dialogue ended');
   }

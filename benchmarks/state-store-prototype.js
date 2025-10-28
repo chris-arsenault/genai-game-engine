@@ -17,6 +17,7 @@ import { questSlice } from '../src/game/state/slices/questSlice.js';
 import { storySlice } from '../src/game/state/slices/storySlice.js';
 import { factionSlice } from '../src/game/state/slices/factionSlice.js';
 import { tutorialSlice } from '../src/game/state/slices/tutorialSlice.js';
+import { dialogueSlice } from '../src/game/state/slices/dialogueSlice.js';
 
 /**
  * Utility: run a function N times and return aggregate timing.
@@ -176,6 +177,25 @@ function createWorldStateSeed() {
     ),
   };
 
+  const dialogue = {
+    active: null,
+    historyByNpc: {
+      npc_alpha: [
+        {
+          type: 'node',
+          dialogueId: 'dlg_intro',
+          nodeId: 'intro_0',
+          speaker: 'Alpha',
+          text: 'Benchmark welcome.',
+          timestamp: Date.now(),
+        },
+      ],
+    },
+    completedByNpc: {},
+    transcriptEnabled: true,
+    historyLimit: 10,
+  };
+
   return {
     storyFlags,
     quests: questSnapshot,
@@ -187,6 +207,7 @@ function createWorldStateSeed() {
       totalSteps: 5,
     },
     tutorialComplete: false,
+    dialogue,
   };
 }
 
@@ -465,7 +486,7 @@ function runWorldStateStoreBenchmark() {
 
   const updateIterations = 500;
   const updateTiming = timeIterations((i) => {
-    const step = i % 4;
+    const step = i % 5;
 
     if (step === 0) {
       const questId = `quest_${(i % 120).toString().padStart(3, '0')}`;
@@ -502,14 +523,91 @@ function runWorldStateStoreBenchmark() {
           deltaInfamy: -1,
         },
       });
-    } else {
+    } else if (step === 3) {
+      const stepId = `step_${i % 5}`;
+      const stepIndex = i % 5;
+      store.dispatch({
+        type: 'TUTORIAL_STEP_STARTED',
+        domain: 'tutorial',
+        payload: {
+          stepId,
+          stepIndex,
+          totalSteps: 5,
+          title: `Benchmark Step ${stepIndex + 1}`,
+          description: 'Synthetic tutorial prompt for benchmark',
+          highlight: { type: 'entity', entityId: `entity_${stepIndex}` },
+          canSkip: stepIndex % 2 === 0,
+        },
+      });
       store.dispatch({
         type: 'TUTORIAL_STEP_COMPLETED',
         domain: 'tutorial',
         payload: {
-          stepId: `step_${i % 5}`,
+          stepId,
+          stepIndex,
         },
       });
+    } else {
+      const npcId = `npc_${i % 7}`;
+      const dialogueId = `dlg_${i % 10}`;
+      const nodeId = `node_${i % 4}`;
+
+      store.dispatch({
+        type: 'DIALOGUE_STARTED',
+        domain: 'dialogue',
+        payload: {
+          npcId,
+          dialogueId,
+          nodeId,
+          speaker: `NPC ${npcId}`,
+          text: `Benchmark line ${i}`,
+          choices: [{ id: 'choice_a', text: 'Affirmative', nextNode: `node_${(i + 1) % 4}` }],
+          canAdvance: true,
+          hasChoices: true,
+        },
+      });
+
+      if (i % 2 === 0) {
+        store.dispatch({
+          type: 'DIALOGUE_NODE_CHANGED',
+          domain: 'dialogue',
+          payload: {
+            npcId,
+            dialogueId,
+            nodeId: `node_${(i + 1) % 4}`,
+            speaker: `NPC ${npcId}`,
+            text: `Follow-up line ${i}`,
+            choices: [],
+            canAdvance: i % 3 === 0,
+            hasChoices: false,
+          },
+        });
+      }
+
+      store.dispatch({
+        type: 'DIALOGUE_CHOICE_MADE',
+        domain: 'dialogue',
+        payload: {
+          npcId,
+          dialogueId,
+          nodeId,
+          choiceId: 'choice_a',
+          choiceText: 'Affirmative',
+        },
+      });
+
+      if (i % 3 === 0) {
+        store.dispatch({
+          type: 'DIALOGUE_COMPLETED',
+          domain: 'dialogue',
+          payload: {
+            npcId,
+            dialogueId,
+            nodeId: `node_${(i + 1) % 4}`,
+            choiceId: 'choice_a',
+          },
+        });
+      }
     }
   }, updateIterations);
 
@@ -519,12 +617,19 @@ function runWorldStateStoreBenchmark() {
     const currentAct = store.select(storySlice.selectors.selectCurrentAct);
     const factionOverview = store.select(factionSlice.selectors.selectFactionOverview);
     const tutorialProgress = store.select(tutorialSlice.selectors.selectTutorialProgress);
+    const dialogueActive = store.select(dialogueSlice.selectors.selectActiveDialogue);
+    const dialogueTranscript = store.select(
+      dialogueSlice.selectors.selectDialogueTranscript,
+      dialogueActive?.npcId ?? 'npc_0'
+    );
 
     return {
       activeQuests,
       currentAct,
       factionOverview,
       tutorialProgress,
+      dialogueActive,
+      dialogueTranscript,
     };
   }, queryIterations);
 

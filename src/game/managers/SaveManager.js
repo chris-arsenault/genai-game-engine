@@ -201,7 +201,7 @@ export class SaveManager {
       this.restoreStoryFlags(saveData.gameData.storyFlags);
       this.restoreQuestData(saveData.gameData.quests);
       this.restoreFactionData(saveData.gameData.factions);
-      this.restoreTutorialData(saveData.gameData.tutorialComplete);
+      this.restoreTutorialData(saveData.gameData.tutorial ?? saveData.gameData.tutorialComplete);
 
       if (this.worldStateStore) {
         this.worldStateStore.hydrate(saveData.gameData);
@@ -353,6 +353,7 @@ export class SaveManager {
     const quests = this.collectQuestData();
     const factions = this.collectFactionData();
     const tutorialComplete = this.collectTutorialData();
+    const tutorialProgress = this.tutorialSystem?.getProgress?.() ?? null;
 
     return {
       storyFlags,
@@ -363,7 +364,17 @@ export class SaveManager {
         completed: Boolean(tutorialComplete),
         completedSteps: [],
         skipped: false,
-        totalSteps: this.tutorialSystem?.getProgress?.().totalSteps ?? 0,
+        totalSteps: tutorialProgress?.totalSteps ?? 0,
+        currentStep: tutorialProgress?.currentStep ?? null,
+        currentStepIndex: tutorialProgress?.currentStepIndex ?? -1,
+        lastActionAt: null,
+      },
+      dialogue: {
+        active: null,
+        historyByNpc: {},
+        completedByNpc: {},
+        transcriptEnabled: false,
+        historyLimit: 0,
       },
     };
   }
@@ -446,10 +457,25 @@ export class SaveManager {
    * Restore tutorial completion status
    * @param {boolean} completed
    */
-  restoreTutorialData(completed) {
+  restoreTutorialData(tutorialState) {
     if (!this.storage) return;
-    if (completed) {
+
+    const isCompleted =
+      typeof tutorialState === 'boolean'
+        ? tutorialState
+        : Boolean(tutorialState?.completed);
+    const isSkipped = typeof tutorialState === 'object' ? Boolean(tutorialState.skipped) : false;
+
+    if (isCompleted) {
       this.storage.setItem('tutorial_completed', 'true');
+    } else {
+      this.storage.removeItem?.('tutorial_completed');
+    }
+
+    if (isSkipped) {
+      this.storage.setItem('tutorial_skipped', 'true');
+    } else {
+      this.storage.removeItem?.('tutorial_skipped');
     }
   }
 
@@ -467,6 +493,8 @@ export class SaveManager {
         quests: snapshot.quests,
         factions: snapshot.factions,
         tutorialComplete: snapshot.tutorialComplete,
+        tutorial: summarizeTutorialState(snapshot.tutorial),
+        dialogue: summarizeDialogueState(snapshot.dialogue),
       };
 
       const comparableLegacy = {
@@ -474,6 +502,8 @@ export class SaveManager {
         quests: legacyData.quests,
         factions: legacyData.factions,
         tutorialComplete: legacyData.tutorialComplete,
+        tutorial: summarizeTutorialState(legacyData.tutorial),
+        dialogue: summarizeDialogueState(legacyData.dialogue),
       };
 
       if (!deepEqual(comparableSnapshot, comparableLegacy)) {
@@ -521,6 +551,44 @@ export class SaveManager {
     }
     console.log('[SaveManager] Cleanup complete');
   }
+}
+
+function summarizeTutorialState(tutorial) {
+  if (!tutorial) {
+    return null;
+  }
+
+  const completedSteps = Array.isArray(tutorial.completedSteps)
+    ? tutorial.completedSteps.length
+    : typeof tutorial.completedSteps === 'number'
+    ? tutorial.completedSteps
+    : 0;
+
+  return {
+    completed: Boolean(tutorial.completed),
+    skipped: Boolean(tutorial.skipped),
+    totalSteps: tutorial.totalSteps ?? 0,
+    completedSteps,
+  };
+}
+
+function summarizeDialogueState(dialogue) {
+  if (!dialogue) {
+    return null;
+  }
+
+  const historyTotal = Object.values(dialogue.historyByNpc ?? {}).reduce((sum, entries) => {
+    if (!Array.isArray(entries)) return sum;
+    return sum + entries.length;
+  }, 0);
+
+  return {
+    transcriptEnabled: Boolean(dialogue.transcriptEnabled),
+    historyTotal,
+    activeNpc: dialogue.active?.npcId ?? null,
+    activeDialogueId: dialogue.active?.dialogueId ?? null,
+    completedNpcCount: Object.keys(dialogue.completedByNpc ?? {}).length,
+  };
 }
 
 function deepEqual(a, b) {

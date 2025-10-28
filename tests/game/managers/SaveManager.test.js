@@ -212,6 +212,9 @@ describe('SaveManager', () => {
 
       expect(savedData).toBeDefined();
       expect(() => JSON.parse(savedData)).not.toThrow();
+
+      const parsed = JSON.parse(savedData);
+      expect(parsed.gameData.dialogue).toBeDefined();
     });
 
     test('uses world state store snapshot when available', () => {
@@ -221,6 +224,12 @@ describe('SaveManager', () => {
         factions: { byId: {} },
         tutorial: { completed: true, completedSteps: [] },
         tutorialComplete: true,
+        dialogue: {
+          active: null,
+          historyByNpc: {},
+          completedByNpc: {},
+          transcriptEnabled: true,
+        },
       };
 
       const storeMock = { snapshot: jest.fn(() => snapshot) };
@@ -250,6 +259,12 @@ describe('SaveManager', () => {
         factions: { byId: {} },
         tutorial: { completed: false, completedSteps: [] },
         tutorialComplete: false,
+        dialogue: {
+          active: null,
+          historyByNpc: {},
+          completedByNpc: {},
+          transcriptEnabled: true,
+        },
       };
 
       const storeMock = { snapshot: jest.fn(() => divergentSnapshot) };
@@ -1157,17 +1172,21 @@ describe('SaveManager', () => {
     });
 
     test('should restore tutorial completion status', () => {
-      saveManager.restoreTutorialData(true);
+      saveManager.restoreTutorialData({ completed: true, skipped: false });
 
-      // Check using getItem (which reads from store)
       const tutorialComplete = localStorageMock.getItem('tutorial_completed');
       expect(tutorialComplete).toBe('true');
+      expect(localStorageMock.getItem('tutorial_skipped')).toBeNull();
     });
 
-    test('should not set tutorial status if false', () => {
-      saveManager.restoreTutorialData(false);
+    test('should honor skipped flag and clear completion when false', () => {
+      saveManager.restoreTutorialData({ completed: false, skipped: true });
 
       expect(localStorageMock.store['tutorial_completed']).toBeUndefined();
+      expect(localStorageMock.getItem('tutorial_skipped')).toBe('true');
+
+      saveManager.restoreTutorialData(false);
+      expect(localStorageMock.store['tutorial_skipped']).toBeUndefined();
     });
   });
 });

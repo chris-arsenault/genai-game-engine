@@ -587,9 +587,13 @@ describe('TutorialSystem', () => {
     it('should emit tutorial:started event with correct data', () => {
       tutorialSystem.startTutorial();
 
-      expect(mockEventBus.emit).toHaveBeenCalledWith('tutorial:started', {
+    expect(mockEventBus.emit).toHaveBeenCalledWith(
+      'tutorial:started',
+      expect.objectContaining({
         totalSteps: tutorialSteps.length,
-      });
+        startedAt: expect.any(Number),
+      })
+    );
     });
 
     it('should emit tutorial:step_started event with complete step data', () => {
@@ -605,6 +609,7 @@ describe('TutorialSystem', () => {
           highlight: step.highlight,
           position: step.position,
           canSkip: step.canSkip,
+          startedAt: expect.any(Number),
         })
       );
     });
@@ -617,6 +622,8 @@ describe('TutorialSystem', () => {
         expect.objectContaining({
           stepIndex: 0,
           totalSteps: tutorialSteps.length,
+          completedAt: expect.any(Number),
+          durationMs: expect.any(Number),
         })
       );
     });
@@ -632,6 +639,7 @@ describe('TutorialSystem', () => {
         expect.objectContaining({
           totalSteps: tutorialSteps.length,
           completedSteps: expect.any(Number),
+          completedAt: expect.any(Number),
         })
       );
     });
@@ -644,6 +652,7 @@ describe('TutorialSystem', () => {
         expect.objectContaining({
           stepId: expect.any(String),
           stepIndex: expect.any(Number),
+          skippedAt: expect.any(Number),
         })
       );
     });

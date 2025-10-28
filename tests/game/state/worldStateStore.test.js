@@ -4,6 +4,7 @@ import { questSlice } from '../../../src/game/state/slices/questSlice.js';
 import { storySlice } from '../../../src/game/state/slices/storySlice.js';
 import { factionSlice } from '../../../src/game/state/slices/factionSlice.js';
 import { tutorialSlice } from '../../../src/game/state/slices/tutorialSlice.js';
+import { dialogueSlice } from '../../../src/game/state/slices/dialogueSlice.js';
 
 describe('WorldStateStore', () => {
   let eventBus;
@@ -50,7 +51,7 @@ describe('WorldStateStore', () => {
     expect(quest.objectives.obj_1.status).toBe('completed');
   });
 
-  test('tracks story flags, faction reputation, and tutorial progress', () => {
+  test('tracks story flags, faction reputation, tutorial progress, and dialogue state', () => {
     eventBus.emit('story:flag:changed', {
       flagId: 'act1_started',
       newValue: true,
@@ -66,8 +67,38 @@ describe('WorldStateStore', () => {
     });
 
     eventBus.emit('tutorial:started', { totalSteps: 3 });
-    eventBus.emit('tutorial:step_started', { stepId: 'movement', stepIndex: 0, totalSteps: 3 });
+    eventBus.emit('tutorial:step_started', {
+      stepId: 'movement',
+      stepIndex: 0,
+      totalSteps: 3,
+      title: 'Move',
+      description: 'Move around',
+      highlight: { type: 'entity', entityId: 'player' },
+    });
     eventBus.emit('tutorial:step_completed', { stepId: 'movement', stepIndex: 0 });
+
+    eventBus.emit('dialogue:started', {
+      npcId: 'npc_alpha',
+      dialogueId: 'dlg_alpha',
+      nodeId: 'start',
+      speaker: 'NPC Alpha',
+      text: 'Welcome.',
+      choices: [{ id: 'c1', text: 'Thanks' }],
+      canAdvance: false,
+    });
+    eventBus.emit('dialogue:choice', {
+      npcId: 'npc_alpha',
+      dialogueId: 'dlg_alpha',
+      nodeId: 'start',
+      choiceId: 'c1',
+      choiceText: 'Thanks',
+    });
+    eventBus.emit('dialogue:completed', {
+      npcId: 'npc_alpha',
+      dialogueId: 'dlg_alpha',
+      nodeId: 'end',
+      choiceId: 'c1',
+    });
 
     const currentAct = store.select(storySlice.selectors.selectCurrentAct);
     expect(currentAct).toBe('act1');
@@ -78,6 +109,11 @@ describe('WorldStateStore', () => {
     const tutorial = store.select(tutorialSlice.selectors.selectTutorialProgress);
     expect(tutorial.enabled).toBe(true);
     expect(tutorial.completedSteps).toContain('movement');
+
+    const dialogue = store.select(dialogueSlice.selectors.selectDialogueTranscript, 'npc_alpha');
+    expect(dialogue).toHaveLength(2);
+    const lastChoice = store.select(dialogueSlice.selectors.selectLastChoiceForNPC, 'npc_alpha');
+    expect(lastChoice.dialogueId).toBe('dlg_alpha');
   });
 
   test('produces and hydrates snapshots', () => {
@@ -86,8 +122,19 @@ describe('WorldStateStore', () => {
       newValue: true,
     });
 
+    eventBus.emit('dialogue:started', {
+      npcId: 'npc_beta',
+      dialogueId: 'dlg_beta',
+      nodeId: 'start',
+      speaker: 'NPC Beta',
+      text: 'Howdy',
+      choices: [],
+      canAdvance: true,
+    });
+
     const snapshot = store.snapshot();
     expect(snapshot.storyFlags.flags.act1_started.value).toBe(true);
+    expect(snapshot.dialogue.active.dialogueId).toBe('dlg_beta');
     expect(snapshot.meta).toBeUndefined();
 
     const secondBus = new EventBus();
@@ -97,6 +144,9 @@ describe('WorldStateStore', () => {
 
     const restoredFlag = restoredStore.select(storySlice.selectors.selectFlag, 'act1_started');
     expect(restoredFlag).toBe(true);
+
+    const restoredDialogue = restoredStore.select(dialogueSlice.selectors.selectActiveDialogue);
+    expect(restoredDialogue.dialogueId).toBe('dlg_beta');
 
     restoredStore.destroy();
   });

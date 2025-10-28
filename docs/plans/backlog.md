@@ -177,7 +177,7 @@ Implement Phase 0 of the hybrid Event-Sourced WorldStateStore (see `docs/plans/w
 - **Tags**: `gameplay`, `narrative`, `ecs`, `ux`
 - **Effort**: 6-8 hours
 - **Dependencies**: PO-002
-- **Status**: In Progress — Quest log & tracker HUD now consume WorldStateStore selectors; tutorial/dialogue migration pending
+- **Status**: In Progress — Dialogue/tutorial slices and UI now consume WorldStateStore; Playwright selector wiring pending
 - **Reported**: 2025-10-28 (Autonomous Session #16)
 
 **Problem**:
@@ -191,6 +191,7 @@ High-touch narrative systems (QuestSystem, DialogueSystem, TutorialSystem) curre
 
 _Progress 2025-10-28 (Session #18): Quest log UI + tracker HUD migrated to store selectors; quest/state parity tests added._
 _Progress 2025-10-28 (Session #19 planning): Dialogue & Tutorial Store Integration plan drafted (`docs/plans/dialogue-tutorial-store-plan.md`) to unblock overlay migration; implementation remains outstanding._
+_Progress 2025-10-28 (Session #20 implementation): Dialogue/tutorial slices landed with store-driven overlays, SaveManager parity, and benchmarking updates; pending Playwright selectors & debug tooling._
 
 **Acceptance Criteria**:
 - Quest log + tracker HUD read from selectors and stay in sync during quest progression playtest.

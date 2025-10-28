@@ -129,6 +129,7 @@ export class TutorialSystem extends System {
 
     this.eventBus.emit('tutorial:started', {
       totalSteps: tutorialSteps.length,
+      startedAt: this.stepStartTime,
     });
 
     this.startStep(this.currentStep);
@@ -144,6 +145,7 @@ export class TutorialSystem extends System {
     this.currentStep = step;
     this.stepStartTime = Date.now();
     this.stepDuration = step.duration || 0;
+    const startedAt = this.stepStartTime;
 
     this.eventBus.emit('tutorial:step_started', {
       stepId: step.id,
@@ -154,6 +156,7 @@ export class TutorialSystem extends System {
       highlight: step.highlight,
       position: step.position,
       canSkip: step.canSkip,
+      startedAt,
     });
 
     console.log(`[TutorialSystem] Started step: ${step.id} (${this.currentStepIndex + 1}/${tutorialSteps.length})`);
@@ -168,10 +171,13 @@ export class TutorialSystem extends System {
     const stepId = this.currentStep.id;
     this.completedSteps.add(stepId);
 
+    const completedAt = Date.now();
     this.eventBus.emit('tutorial:step_completed', {
       stepId,
       stepIndex: this.currentStepIndex,
       totalSteps: tutorialSteps.length,
+      completedAt,
+      durationMs: completedAt - this.stepStartTime,
     });
 
     console.log(`[TutorialSystem] Completed step: ${stepId}`);
@@ -206,6 +212,7 @@ export class TutorialSystem extends System {
     this.eventBus.emit('tutorial:skipped', {
       stepId: this.currentStep?.id,
       stepIndex: this.currentStepIndex,
+      skippedAt: Date.now(),
     });
 
     console.log('[TutorialSystem] Tutorial skipped');
@@ -226,6 +233,7 @@ export class TutorialSystem extends System {
     this.eventBus.emit('tutorial:completed', {
       totalSteps: tutorialSteps.length,
       completedSteps: this.completedSteps.size,
+      completedAt: Date.now(),
     });
 
     console.log('[TutorialSystem] Tutorial completed!');

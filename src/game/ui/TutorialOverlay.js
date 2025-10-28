@@ -1,3 +1,5 @@
+import { buildTutorialOverlayView } from './helpers/tutorialViewModel.js';
+
 /**
  * TutorialOverlay
  *
@@ -6,14 +8,22 @@
  */
 
 export class TutorialOverlay {
-  constructor(canvas, eventBus) {
+  constructor(canvas, eventBus, config = {}) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.events = eventBus;
+    const { store = null } = config;
+    this.store = store;
 
     // Overlay state
     this.visible = false;
     this.currentPrompt = null;
+    this.progressInfo = {
+      completed: 0,
+      total: 0,
+      percent: 0,
+      completedSteps: [],
+    };
     this.fadeAlpha = 0;
     this.targetAlpha = 1;
     this.fadeSpeed = 3; // Alpha per second
@@ -57,12 +67,23 @@ export class TutorialOverlay {
     // Animation state
     this.pulseTime = 0;
     this.highlightEntities = [];
+    this.highlight = null;
+
+    this.unsubscribe = null;
   }
 
   /**
    * Initialize overlay
    */
   init() {
+    if (this.store) {
+      this.unsubscribe = this.store.onUpdate((state) => {
+        this.handleStoreUpdate(state);
+      });
+      this.handleStoreUpdate(this.store.getState());
+      return;
+    }
+
     // Subscribe to tutorial events
     this.events.subscribe('tutorial:started', () => {
       this.show();
@@ -87,6 +108,22 @@ export class TutorialOverlay {
   }
 
   /**
+   * Handle store-driven updates.
+   * @param {Object} state
+   */
+  handleStoreUpdate(state) {
+    const overlay = buildTutorialOverlayView(state);
+    this.progressInfo = overlay.progress;
+
+    if (overlay.visible && overlay.prompt) {
+      this.show();
+      this.showPrompt(overlay.prompt);
+    } else {
+      this.hide();
+    }
+  }
+
+  /**
    * Show the overlay
    */
   show() {
@@ -101,6 +138,8 @@ export class TutorialOverlay {
     this.visible = false;
     this.targetAlpha = 0;
     this.currentPrompt = null;
+    this.highlight = null;
+    this.highlightEntities = [];
   }
 
   /**
@@ -110,7 +149,12 @@ export class TutorialOverlay {
   showPrompt(promptData) {
     this.currentPrompt = promptData;
     this.targetAlpha = 1;
-    this.highlightEntities = promptData.highlight?.entityTag ? [promptData.highlight.entityTag] : [];
+    this.highlight = promptData.highlight ?? null;
+    if (this.highlight?.entityTag) {
+      this.highlightEntities = [this.highlight.entityTag];
+    } else {
+      this.highlightEntities = [];
+    }
   }
 
   /**
@@ -219,7 +263,8 @@ export class TutorialOverlay {
     const ctx = this.ctx;
     const style = this.style.progress;
 
-    const progressPercent = (prompt.stepIndex + 1) / prompt.totalSteps;
+    const totalSteps = prompt.totalSteps > 0 ? prompt.totalSteps : 1;
+    const progressPercent = Math.max(0, Math.min(1, (prompt.stepIndex + 1) / totalSteps));
 
     // Position at bottom of screen
     const barWidth = 300;
@@ -322,5 +367,9 @@ export class TutorialOverlay {
   cleanup() {
     this.visible = false;
     this.currentPrompt = null;
+    if (typeof this.unsubscribe === 'function') {
+      this.unsubscribe();
+      this.unsubscribe = null;
+    }
   }
 }
