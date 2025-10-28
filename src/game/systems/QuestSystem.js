@@ -23,6 +23,9 @@ export class QuestSystem extends System {
 
     // Track which quests have been auto-started
     this.autoStartedQuests = new Set();
+
+    // Event unsubscriber references
+    this._offQuestEvents = [];
   }
 
   /**
@@ -30,11 +33,13 @@ export class QuestSystem extends System {
    */
   init() {
     // Subscribe to quest events for UI updates
-    this.eventBus.subscribe('quest:started', (data) => this.onQuestStarted(data));
-    this.eventBus.subscribe('quest:completed', (data) => this.onQuestCompleted(data));
-    this.eventBus.subscribe('quest:failed', (data) => this.onQuestFailed(data));
-    this.eventBus.subscribe('objective:progress', (data) => this.onObjectiveProgress(data));
-    this.eventBus.subscribe('objective:completed', (data) => this.onObjectiveCompleted(data));
+    this._offQuestEvents = [
+      this.eventBus.on('quest:started', (data) => this.onQuestStarted(data)),
+      this.eventBus.on('quest:completed', (data) => this.onQuestCompleted(data)),
+      this.eventBus.on('quest:failed', (data) => this.onQuestFailed(data)),
+      this.eventBus.on('objective:progress', (data) => this.onObjectiveProgress(data)),
+      this.eventBus.on('objective:completed', (data) => this.onObjectiveCompleted(data))
+    ];
 
     console.log('[QuestSystem] Initialized');
   }
@@ -420,5 +425,13 @@ export class QuestSystem extends System {
    */
   cleanup() {
     this.autoStartedQuests.clear();
+    if (this._offQuestEvents && this._offQuestEvents.length) {
+      for (const off of this._offQuestEvents) {
+        if (typeof off === 'function') {
+          off();
+        }
+      }
+      this._offQuestEvents.length = 0;
+    }
   }
 }

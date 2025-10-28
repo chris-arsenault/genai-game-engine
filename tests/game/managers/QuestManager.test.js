@@ -188,7 +188,7 @@ describe('QuestManager', () => {
     });
 
     test('should start a quest', (done) => {
-      eventBus.subscribe('quest:started', (data) => {
+      eventBus.on('quest:started', (data) => {
         expect(data.questId).toBe('test_quest');
         expect(data.title).toBe('Test Quest');
         done();
@@ -263,7 +263,7 @@ describe('QuestManager', () => {
     test('should track objective progress', (done) => {
       let progressCount = 0;
 
-      eventBus.subscribe('objective:progress', (data) => {
+      eventBus.on('objective:progress', (data) => {
         progressCount++;
         if (progressCount === 3) {
           expect(data.questId).toBe('test_quest');
@@ -281,7 +281,7 @@ describe('QuestManager', () => {
     });
 
     test('should complete objective when target reached', (done) => {
-      eventBus.subscribe('objective:completed', (data) => {
+      eventBus.on('objective:completed', (data) => {
         expect(data.questId).toBe('test_quest');
         expect(data.objectiveId).toBe('obj_collect');
         done();
@@ -296,7 +296,7 @@ describe('QuestManager', () => {
     test('should only trigger matching objectives', () => {
       let progressCount = 0;
 
-      eventBus.subscribe('objective:progress', () => {
+      eventBus.on('objective:progress', () => {
         progressCount++;
       });
 
@@ -348,7 +348,7 @@ describe('QuestManager', () => {
     });
 
     test('should complete quest when all required objectives done', (done) => {
-      eventBus.subscribe('quest:completed', (data) => {
+      eventBus.on('quest:completed', (data) => {
         expect(data.questId).toBe('test_quest');
         expect(questManager.completedQuests.has('test_quest')).toBe(true);
         expect(questManager.activeQuests.has('test_quest')).toBe(false);
@@ -380,6 +380,19 @@ describe('QuestManager', () => {
 
       expect(questManager.completedQuests.has('test_quest')).toBe(false);
       expect(questManager.activeQuests.has('test_quest')).toBe(true);
+    });
+  });
+
+  describe('Cleanup', () => {
+    test('should remove event listeners from EventBus', () => {
+      // Sanity check: listeners registered during init
+      const beforeCount = (eventBus.listeners.get('evidence:collected') || []).length;
+      expect(beforeCount).toBeGreaterThan(0);
+
+      questManager.cleanup();
+
+      const afterCount = (eventBus.listeners.get('evidence:collected') || []).length;
+      expect(afterCount).toBe(0);
     });
   });
 
@@ -426,7 +439,7 @@ describe('QuestManager', () => {
       storyFlags.setFlag('branch_flag');
 
       let quest1Started = false;
-      eventBus.subscribe('quest:started', (data) => {
+      eventBus.on('quest:started', (data) => {
         if (data.questId === 'quest1') {
           quest1Started = true;
         } else if (data.questId === 'quest2' && quest1Started) {
@@ -451,7 +464,7 @@ describe('QuestManager', () => {
       questManager.registerQuest(testQuest);
       questManager.startQuest('test_quest');
 
-      eventBus.subscribe('quest:failed', (data) => {
+      eventBus.on('quest:failed', (data) => {
         expect(data.questId).toBe('test_quest');
         expect(data.reason).toBe('Test reason');
         expect(questManager.failedQuests.has('test_quest')).toBe(true);

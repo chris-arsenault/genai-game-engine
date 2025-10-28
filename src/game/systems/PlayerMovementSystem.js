@@ -16,6 +16,8 @@ export class PlayerMovementSystem extends System {
     super(componentRegistry, eventBus, ['PlayerController', 'Transform']);
     this.input = inputState;
     this.priority = 10;
+    this._offPause = null;
+    this._offResume = null;
   }
 
   /**
@@ -23,11 +25,11 @@ export class PlayerMovementSystem extends System {
    */
   init() {
     // Subscribe to relevant events
-    this.eventBus.subscribe('game:pause', () => {
+    this._offPause = this.eventBus.on('game:pause', () => {
       this.paused = true;
     });
 
-    this.eventBus.subscribe('game:resume', () => {
+    this._offResume = this.eventBus.on('game:resume', () => {
       this.paused = false;
     });
 
@@ -130,7 +132,13 @@ export class PlayerMovementSystem extends System {
    * Cleanup system
    */
   cleanup() {
-    this.eventBus.unsubscribe('game:pause');
-    this.eventBus.unsubscribe('game:resume');
+    if (this._offPause) {
+      this._offPause();
+      this._offPause = null;
+    }
+    if (this._offResume) {
+      this._offResume();
+      this._offResume = null;
+    }
   }
 }

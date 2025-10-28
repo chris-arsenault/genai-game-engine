@@ -70,6 +70,7 @@ export class TutorialOverlay {
     this.highlight = null;
 
     this.unsubscribe = null;
+    this._offHandlers = [];
   }
 
   /**
@@ -85,26 +86,26 @@ export class TutorialOverlay {
     }
 
     // Subscribe to tutorial events
-    this.events.subscribe('tutorial:started', () => {
+    this._offHandlers.push(this.events.on('tutorial:started', () => {
       this.show();
-    });
+    }));
 
-    this.events.subscribe('tutorial:step_started', (data) => {
+    this._offHandlers.push(this.events.on('tutorial:step_started', (data) => {
       this.showPrompt(data);
-    });
+    }));
 
-    this.events.subscribe('tutorial:step_completed', () => {
+    this._offHandlers.push(this.events.on('tutorial:step_completed', () => {
       // Brief fade before next step
       this.targetAlpha = 0.5;
-    });
+    }));
 
-    this.events.subscribe('tutorial:completed', () => {
+    this._offHandlers.push(this.events.on('tutorial:completed', () => {
       this.hide();
-    });
+    }));
 
-    this.events.subscribe('tutorial:skipped', () => {
+    this._offHandlers.push(this.events.on('tutorial:skipped', () => {
       this.hide();
-    });
+    }));
   }
 
   /**
@@ -370,6 +371,14 @@ export class TutorialOverlay {
     if (typeof this.unsubscribe === 'function') {
       this.unsubscribe();
       this.unsubscribe = null;
+    }
+    if (this._offHandlers.length) {
+      this._offHandlers.forEach((off) => {
+        if (typeof off === 'function') {
+          off();
+        }
+      });
+      this._offHandlers.length = 0;
     }
   }
 }

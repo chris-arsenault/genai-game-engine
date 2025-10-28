@@ -85,6 +85,9 @@ export class TutorialSystem extends System {
     // Step timers
     this.stepStartTime = 0;
     this.stepDuration = 0;
+
+    // Event unsubscriber references
+    this._offEventHandlers = [];
   }
 
   /**
@@ -243,86 +246,95 @@ export class TutorialSystem extends System {
    * Subscribe to game events for context tracking
    */
   subscribeToEvents() {
+    if (this._offEventHandlers.length) {
+      this._offEventHandlers.forEach((off) => {
+        if (typeof off === 'function') {
+          off();
+        }
+      });
+      this._offEventHandlers.length = 0;
+    }
+
     // Movement tracking
-    this.eventBus.subscribe('player:moved', () => {
+    this._offEventHandlers.push(this.eventBus.on('player:moved', () => {
       this.context.playerMoved = true;
-    });
+    }));
 
     // Evidence events
-    this.eventBus.subscribe('evidence:detected', () => {
+    this._offEventHandlers.push(this.eventBus.on('evidence:detected', () => {
       this.context.evidenceDetected++;
-    });
+    }));
 
-    this.eventBus.subscribe('evidence:collected', () => {
+    this._offEventHandlers.push(this.eventBus.on('evidence:collected', () => {
       this.context.evidenceCollected++;
-    });
+    }));
 
     // Clue events
-    this.eventBus.subscribe('clue:derived', () => {
+    this._offEventHandlers.push(this.eventBus.on('clue:derived', () => {
       this.context.cluesDerived++;
-    });
+    }));
 
     // Ability events
-    this.eventBus.subscribe('ability:activated', (data) => {
+    this._offEventHandlers.push(this.eventBus.on('ability:activated', (data) => {
       if (data.abilityId === 'detective_vision') {
         this.context.detectiveVisionUsed = true;
       }
-    });
+    }));
 
     // UI events
-    this.eventBus.subscribe('case_file:opened', () => {
+    this._offEventHandlers.push(this.eventBus.on('case_file:opened', () => {
       this.context.caseFileOpened = true;
-    });
+    }));
 
-    this.eventBus.subscribe('deduction_board:opened', () => {
+    this._offEventHandlers.push(this.eventBus.on('deduction_board:opened', () => {
       this.context.deductionBoardOpened = true;
-    });
+    }));
 
-    this.eventBus.subscribe('deduction_board:connection_created', () => {
+    this._offEventHandlers.push(this.eventBus.on('deduction_board:connection_created', () => {
       this.context.deductionConnectionsCreated++;
-    });
+    }));
 
     // Forensic events
-    this.eventBus.subscribe('forensic:complete', () => {
+    this._offEventHandlers.push(this.eventBus.on('forensic:complete', () => {
       this.context.forensicAnalysisComplete++;
-    });
+    }));
 
     // Case events
-    this.eventBus.subscribe('case:theory_validated', () => {
+    this._offEventHandlers.push(this.eventBus.on('case:theory_validated', () => {
       this.context.theoryValidated = true;
-    });
+    }));
 
-    this.eventBus.subscribe('case:completed', () => {
+    this._offEventHandlers.push(this.eventBus.on('case:completed', () => {
       this.context.caseSolved = true;
-    });
+    }));
 
     // Quest integration events - sync tutorial with Case 001 quest
-    this.eventBus.subscribe('quest:started', (data) => {
+    this._offEventHandlers.push(this.eventBus.on('quest:started', (data) => {
       if (data.questId === 'case_001_hollow_case') {
         console.log('[TutorialSystem] Case 001 quest started - tutorial active');
       }
-    });
+    }));
 
-    this.eventBus.subscribe('quest:objective_completed', (data) => {
+    this._offEventHandlers.push(this.eventBus.on('quest:objective_completed', (data) => {
       if (data.questId === 'case_001_hollow_case') {
         console.log(`[TutorialSystem] Quest objective completed: ${data.objectiveId}`);
         // Tutorial steps will progress naturally via game events
       }
-    });
+    }));
 
-    this.eventBus.subscribe('quest:completed', (data) => {
+    this._offEventHandlers.push(this.eventBus.on('quest:completed', (data) => {
       if (data.questId === 'case_001_hollow_case' && this.enabled) {
         console.log('[TutorialSystem] Case 001 completed - completing tutorial');
         this.completeTutorial();
       }
-    });
+    }));
 
     // Skip input (Esc key)
-    this.eventBus.subscribe('input:escape', () => {
+    this._offEventHandlers.push(this.eventBus.on('input:escape', () => {
       if (this.enabled && this.currentStep?.canSkip) {
         this.skipTutorial();
       }
-    });
+    }));
   }
 
   /**
@@ -408,6 +420,14 @@ export class TutorialSystem extends System {
   cleanup() {
     // Unsubscribe from events if needed
     this.enabled = false;
+    if (this._offEventHandlers.length) {
+      this._offEventHandlers.forEach((off) => {
+        if (typeof off === 'function') {
+          off();
+        }
+      });
+      this._offEventHandlers.length = 0;
+    }
   }
 
   _getStorageCandidates() {

@@ -21,6 +21,10 @@ export class FactionReputationSystem extends System {
 
     // Player faction member (cached for performance)
     this.playerFactionMember = null;
+
+    // Event unsubscriber references
+    this._offEvidenceCollected = null;
+    this._offCaseSolved = null;
   }
 
   /**
@@ -28,11 +32,11 @@ export class FactionReputationSystem extends System {
    */
   init() {
     // Subscribe to reputation-affecting events
-    this.eventBus.subscribe('evidence:collected', (data) => {
+    this._offEvidenceCollected = this.eventBus.on('evidence:collected', (data) => {
       this.onEvidenceCollected(data);
     });
 
-    this.eventBus.subscribe('case:solved', (data) => {
+    this._offCaseSolved = this.eventBus.on('case:solved', (data) => {
       this.onCaseSolved(data);
     });
 
@@ -156,7 +160,13 @@ export class FactionReputationSystem extends System {
    * Cleanup system
    */
   cleanup() {
-    this.eventBus.unsubscribe('evidence:collected');
-    this.eventBus.unsubscribe('case:solved');
+    if (this._offEvidenceCollected) {
+      this._offEvidenceCollected();
+      this._offEvidenceCollected = null;
+    }
+    if (this._offCaseSolved) {
+      this._offCaseSolved();
+      this._offCaseSolved = null;
+    }
   }
 }

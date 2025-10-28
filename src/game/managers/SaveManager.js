@@ -43,6 +43,12 @@ export class SaveManager {
       verifyWorldStateParity: true,
     };
 
+    // Event unsubscriber references
+    this._offQuestCompleted = null;
+    this._offObjectiveCompleted = null;
+    this._offAreaEntered = null;
+    this._offCaseCompleted = null;
+
     console.log('[SaveManager] Initialized');
   }
 
@@ -60,13 +66,13 @@ export class SaveManager {
    */
   subscribeToAutosaveEvents() {
     // Autosave on quest completion
-    this.events.subscribe('quest:completed', (data) => {
+    this._offQuestCompleted = this.events.on('quest:completed', (data) => {
       console.log(`[SaveManager] Quest completed (${data.questId}), autosaving...`);
       this.saveGame('autosave');
     });
 
     // Autosave on major objectives only (optional - can be configured)
-    this.events.subscribe('objective:completed', (data) => {
+    this._offObjectiveCompleted = this.events.on('objective:completed', (data) => {
       // Only autosave on major objectives (not every single objective)
       // You can add logic here to determine "major" objectives
       if (this.isMajorObjective(data.objectiveId)) {
@@ -76,13 +82,13 @@ export class SaveManager {
     });
 
     // Autosave when entering new areas
-    this.events.subscribe('area:entered', (data) => {
+    this._offAreaEntered = this.events.on('area:entered', (data) => {
       console.log(`[SaveManager] Entered area (${data.areaId}), autosaving...`);
       this.saveGame('autosave');
     });
 
     // Autosave when case is completed
-    this.events.subscribe('case:completed', (data) => {
+    this._offCaseCompleted = this.events.on('case:completed', (data) => {
       console.log(`[SaveManager] Case completed (${data.caseId}), autosaving...`);
       this.saveGame('autosave');
     });
@@ -548,6 +554,23 @@ export class SaveManager {
     // Perform final autosave before cleanup
     if (this.autosaveEnabled) {
       this.saveGame('autosave');
+    }
+
+    if (this._offQuestCompleted) {
+      this._offQuestCompleted();
+      this._offQuestCompleted = null;
+    }
+    if (this._offObjectiveCompleted) {
+      this._offObjectiveCompleted();
+      this._offObjectiveCompleted = null;
+    }
+    if (this._offAreaEntered) {
+      this._offAreaEntered();
+      this._offAreaEntered = null;
+    }
+    if (this._offCaseCompleted) {
+      this._offCaseCompleted();
+      this._offCaseCompleted = null;
     }
     console.log('[SaveManager] Cleanup complete');
   }

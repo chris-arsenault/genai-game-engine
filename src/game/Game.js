@@ -124,6 +124,9 @@ export class Game {
 
     // Input handlers
     this._handleDialogueInput = null;
+
+    // Event unsubscriber storage
+    this._offGameEventHandlers = [];
   }
 
   /**
@@ -510,39 +513,48 @@ export class Game {
    * Subscribe to game events for logging and debugging
    */
   subscribeToGameEvents() {
-    // Evidence events
-    this.eventBus.subscribe('evidence:collected', (data) => {
-      console.log(`[Game] Evidence collected: ${data.evidenceId}`);
-    });
+    if (this._offGameEventHandlers.length) {
+      this._offGameEventHandlers.forEach((off) => {
+        if (typeof off === 'function') {
+          off();
+        }
+      });
+      this._offGameEventHandlers.length = 0;
+    }
 
-    this.eventBus.subscribe('evidence:detected', (data) => {
+    // Evidence events
+    this._offGameEventHandlers.push(this.eventBus.on('evidence:collected', (data) => {
+      console.log(`[Game] Evidence collected: ${data.evidenceId}`);
+    }));
+
+    this._offGameEventHandlers.push(this.eventBus.on('evidence:detected', () => {
       // Visual feedback for detected evidence (could highlight sprite)
-    });
+    }));
 
     // Clue events
-    this.eventBus.subscribe('clue:derived', (data) => {
+    this._offGameEventHandlers.push(this.eventBus.on('clue:derived', (data) => {
       console.log(`[Game] New clue: ${data.clueId} from ${data.evidenceId}`);
-    });
+    }));
 
     // Reputation events
-    this.eventBus.subscribe('reputation:changed', (data) => {
+    this._offGameEventHandlers.push(this.eventBus.on('reputation:changed', (data) => {
       console.log(`[Game] Reputation changed: ${data.factionId} - ${data.newFame} fame, ${data.newInfamy} infamy`);
-    });
+    }));
 
     // Gate events
-    this.eventBus.subscribe('gate:unlocked', (data) => {
+    this._offGameEventHandlers.push(this.eventBus.on('gate:unlocked', (data) => {
       console.log(`[Game] Gate unlocked: ${data.gateId}`);
-    });
+    }));
 
     // Ability events
-    this.eventBus.subscribe('ability:unlocked', (data) => {
+    this._offGameEventHandlers.push(this.eventBus.on('ability:unlocked', (data) => {
       console.log(`[Game] Ability unlocked: ${data.abilityId}`);
-    });
+    }));
 
     // Player movement
-    this.eventBus.subscribe('player:moved', (data) => {
+    this._offGameEventHandlers.push(this.eventBus.on('player:moved', () => {
       // Could add footstep sounds here
-    });
+    }));
   }
 
   /**
@@ -806,6 +818,19 @@ export class Game {
     // Cleanup SaveManager (performs final autosave)
     if (this.saveManager && this.saveManager.cleanup) {
       this.saveManager.cleanup();
+    }
+
+    if (this._offGameEventHandlers.length) {
+      this._offGameEventHandlers.forEach((off) => {
+        if (typeof off === 'function') {
+          off();
+        }
+      });
+      this._offGameEventHandlers.length = 0;
+    }
+
+    if (this.questManager && typeof this.questManager.cleanup === 'function') {
+      this.questManager.cleanup();
     }
 
     // Cleanup all game systems

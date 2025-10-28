@@ -29,6 +29,9 @@ export class QuestManager {
 
     // Objective state
     this.objectiveProgress = new Map(); // objectiveId -> progress data
+
+    // Event unsubscriber references
+    this._offEventHandlers = [];
   }
 
   /**
@@ -36,15 +39,17 @@ export class QuestManager {
    */
   init() {
     // Subscribe to game events for objective tracking
-    this.events.subscribe('evidence:collected', (data) => this.onEvidenceCollected(data));
-    this.events.subscribe('case:solved', (data) => this.onCaseSolved(data));
-    this.events.subscribe('theory:validated', (data) => this.onTheoryValidated(data));
-    this.events.subscribe('dialogue:completed', (data) => this.onDialogueCompleted(data));
-    this.events.subscribe('npc:interviewed', (data) => this.onNPCInterviewed(data));
-    this.events.subscribe('ability:unlocked', (data) => this.onAbilityUnlocked(data));
-    this.events.subscribe('area:entered', (data) => this.onAreaEntered(data));
-    this.events.subscribe('faction:reputation:changed', (data) => this.onReputationChanged(data));
-    this.events.subscribe('knowledge:learned', (data) => this.onKnowledgeLearned(data));
+    this._offEventHandlers = [
+      this.events.on('evidence:collected', (data) => this.onEvidenceCollected(data)),
+      this.events.on('case:solved', (data) => this.onCaseSolved(data)),
+      this.events.on('theory:validated', (data) => this.onTheoryValidated(data)),
+      this.events.on('dialogue:completed', (data) => this.onDialogueCompleted(data)),
+      this.events.on('npc:interviewed', (data) => this.onNPCInterviewed(data)),
+      this.events.on('ability:unlocked', (data) => this.onAbilityUnlocked(data)),
+      this.events.on('area:entered', (data) => this.onAreaEntered(data)),
+      this.events.on('faction:reputation:changed', (data) => this.onReputationChanged(data)),
+      this.events.on('knowledge:learned', (data) => this.onKnowledgeLearned(data))
+    ];
 
     console.log('[QuestManager] Initialized');
   }
@@ -590,5 +595,19 @@ export class QuestManager {
 
   onKnowledgeLearned(data) {
     this.updateObjectives('knowledge:learned', data);
+  }
+
+  /**
+   * Cleanup all event subscriptions.
+   */
+  cleanup() {
+    if (this._offEventHandlers && this._offEventHandlers.length) {
+      for (const off of this._offEventHandlers) {
+        if (typeof off === 'function') {
+          off();
+        }
+      }
+      this._offEventHandlers.length = 0;
+    }
   }
 }
