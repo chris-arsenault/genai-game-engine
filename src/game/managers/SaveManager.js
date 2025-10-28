@@ -21,6 +21,12 @@ export class SaveManager {
     this.questManager = managers.questManager;
     this.factionManager = managers.factionManager;
     this.tutorialSystem = managers.tutorialSystem;
+    this.worldStateStore = managers.worldStateStore ?? null;
+    this.storage =
+      managers.storage ??
+      (typeof globalThis !== 'undefined' && globalThis.localStorage
+        ? globalThis.localStorage
+        : null);
 
     // Save state
     this.autosaveEnabled = true;
@@ -34,6 +40,7 @@ export class SaveManager {
       metadataKey: 'save_metadata',
       version: 1,
       maxSaveSlots: 10,
+      verifyWorldStateParity: true,
     };
 
     console.log('[SaveManager] Initialized');
@@ -102,13 +109,22 @@ export class SaveManager {
       // Calculate current playtime
       const playtime = Date.now() - this.gameStartTime;
 
-      // Collect data from all managers
-      const gameData = {
-        storyFlags: this.collectStoryFlags(),
-        quests: this.collectQuestData(),
-        factions: this.collectFactionData(),
-        tutorialComplete: this.collectTutorialData(),
-      };
+      const legacyGameData = this.collectLegacyGameData();
+      let snapshot = null;
+
+      if (this.worldStateStore) {
+        snapshot = this.worldStateStore.snapshot();
+
+        if (this.config.verifyWorldStateParity) {
+          this.verifySnapshotParity(snapshot, legacyGameData);
+        }
+      }
+
+      const gameData = snapshot ? { ...snapshot } : legacyGameData;
+
+      if (typeof gameData.tutorialComplete === 'undefined') {
+        gameData.tutorialComplete = legacyGameData.tutorialComplete ?? false;
+      }
 
       // Create save object
       const saveData = {
@@ -117,12 +133,18 @@ export class SaveManager {
         playtime,
         slot,
         gameData,
+        meta: {
+          snapshotSource: snapshot ? 'worldStateStore' : 'legacy-managers',
+        },
       };
 
-      // Serialize and save to localStorage
+      // Serialize and save to persistent storage
       const serialized = JSON.stringify(saveData);
       const storageKey = this.config.storageKeyPrefix + slot;
-      localStorage.setItem(storageKey, serialized);
+      if (!this.storage) {
+        throw new Error('Storage unavailable');
+      }
+      this.storage.setItem(storageKey, serialized);
 
       // Update save metadata
       this.updateSaveMetadata(slot, saveData);
@@ -153,9 +175,13 @@ export class SaveManager {
    */
   loadGame(slot = 'autosave') {
     try {
-      // Retrieve save data from localStorage
+      if (!this.storage) {
+        throw new Error('Storage unavailable');
+      }
+
+      // Retrieve save data from storage
       const storageKey = this.config.storageKeyPrefix + slot;
-      const serialized = localStorage.getItem(storageKey);
+      const serialized = this.storage.getItem(storageKey);
 
       if (!serialized) {
         console.warn(`[SaveManager] No save found in slot: ${slot}`);
@@ -176,6 +202,10 @@ export class SaveManager {
       this.restoreQuestData(saveData.gameData.quests);
       this.restoreFactionData(saveData.gameData.factions);
       this.restoreTutorialData(saveData.gameData.tutorialComplete);
+
+      if (this.worldStateStore) {
+        this.worldStateStore.hydrate(saveData.gameData);
+      }
 
       // Update game start time to account for saved playtime
       this.gameStartTime = Date.now() - saveData.playtime;
@@ -205,7 +235,11 @@ export class SaveManager {
    */
   getSaveSlots() {
     try {
-      const metadataSerialized = localStorage.getItem(this.config.metadataKey);
+      if (!this.storage) {
+        throw new Error('Storage unavailable');
+      }
+
+      const metadataSerialized = this.storage.getItem(this.config.metadataKey);
       if (!metadataSerialized) {
         return [];
       }
@@ -230,16 +264,20 @@ export class SaveManager {
    */
   deleteSave(slot) {
     try {
-      // Remove from localStorage
+      if (!this.storage) {
+        throw new Error('Storage unavailable');
+      }
+
+      // Remove from storage
       const storageKey = this.config.storageKeyPrefix + slot;
-      localStorage.removeItem(storageKey);
+      this.storage.removeItem(storageKey);
 
       // Remove from metadata
-      const metadataSerialized = localStorage.getItem(this.config.metadataKey);
+      const metadataSerialized = this.storage.getItem(this.config.metadataKey);
       if (metadataSerialized) {
         const metadata = JSON.parse(metadataSerialized);
         delete metadata[slot];
-        localStorage.setItem(this.config.metadataKey, JSON.stringify(metadata));
+        this.storage.setItem(this.config.metadataKey, JSON.stringify(metadata));
       }
 
       console.log(`[SaveManager] Deleted save slot: ${slot}`);
@@ -257,8 +295,12 @@ export class SaveManager {
    */
   updateSaveMetadata(slot, saveData) {
     try {
+      if (!this.storage) {
+        throw new Error('Storage unavailable');
+      }
+
       // Get existing metadata
-      const metadataSerialized = localStorage.getItem(this.config.metadataKey);
+      const metadataSerialized = this.storage.getItem(this.config.metadataKey);
       const metadata = metadataSerialized ? JSON.parse(metadataSerialized) : {};
 
       // Update metadata for this slot
@@ -269,7 +311,7 @@ export class SaveManager {
       };
 
       // Save updated metadata
-      localStorage.setItem(this.config.metadataKey, JSON.stringify(metadata));
+      this.storage.setItem(this.config.metadataKey, JSON.stringify(metadata));
     } catch (error) {
       console.error('[SaveManager] Failed to update save metadata:', error);
     }
@@ -300,6 +342,31 @@ export class SaveManager {
   }
 
   // ==================== Data Collection Methods ====================
+
+  /**
+   * Collect game data using legacy manager scrapers.
+   * Provides fallback during WorldStateStore migration.
+   * @returns {Object}
+   */
+  collectLegacyGameData() {
+    const storyFlags = this.collectStoryFlags();
+    const quests = this.collectQuestData();
+    const factions = this.collectFactionData();
+    const tutorialComplete = this.collectTutorialData();
+
+    return {
+      storyFlags,
+      quests,
+      factions,
+      tutorialComplete,
+      tutorial: {
+        completed: Boolean(tutorialComplete),
+        completedSteps: [],
+        skipped: false,
+        totalSteps: this.tutorialSystem?.getProgress?.().totalSteps ?? 0,
+      },
+    };
+  }
 
   /**
    * Collect story flags from StoryFlagManager
@@ -337,9 +404,10 @@ export class SaveManager {
    * @returns {boolean}
    */
   collectTutorialData() {
-    // Check localStorage for tutorial completion
-    if (typeof localStorage === 'undefined') return false;
-    return localStorage.getItem('tutorial_completed') === 'true';
+    if (!this.storage) {
+      return false;
+    }
+    return this.storage.getItem('tutorial_completed') === 'true';
   }
 
   // ==================== Data Restoration Methods ====================
@@ -379,9 +447,43 @@ export class SaveManager {
    * @param {boolean} completed
    */
   restoreTutorialData(completed) {
-    if (typeof localStorage === 'undefined') return;
+    if (!this.storage) return;
     if (completed) {
-      localStorage.setItem('tutorial_completed', 'true');
+      this.storage.setItem('tutorial_completed', 'true');
+    }
+  }
+
+  /**
+   * Compare WorldStateStore snapshot with legacy data to detect divergences.
+   * @param {Object} snapshot
+   * @param {Object} legacyData
+   */
+  verifySnapshotParity(snapshot, legacyData) {
+    if (!snapshot || !legacyData) return;
+
+    try {
+      const comparableSnapshot = {
+        storyFlags: snapshot.storyFlags,
+        quests: snapshot.quests,
+        factions: snapshot.factions,
+        tutorialComplete: snapshot.tutorialComplete,
+      };
+
+      const comparableLegacy = {
+        storyFlags: legacyData.storyFlags,
+        quests: legacyData.quests,
+        factions: legacyData.factions,
+        tutorialComplete: legacyData.tutorialComplete,
+      };
+
+      if (!deepEqual(comparableSnapshot, comparableLegacy)) {
+        console.warn('[SaveManager] WorldStateStore snapshot differs from legacy collectors', {
+          snapshot: comparableSnapshot,
+          legacy: comparableLegacy,
+        });
+      }
+    } catch (error) {
+      console.warn('[SaveManager] Failed to verify world state parity', error);
     }
   }
 
@@ -418,5 +520,14 @@ export class SaveManager {
       this.saveGame('autosave');
     }
     console.log('[SaveManager] Cleanup complete');
+  }
+}
+
+function deepEqual(a, b) {
+  try {
+    return JSON.stringify(a) === JSON.stringify(b);
+  } catch (error) {
+    console.warn('[SaveManager] deepEqual comparison failed', error);
+    return false;
   }
 }

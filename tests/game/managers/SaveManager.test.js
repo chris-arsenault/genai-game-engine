@@ -9,20 +9,19 @@ describe('SaveManager', () => {
 
   beforeEach(() => {
     // Mock localStorage with accessible store
+    const backingStore = {};
     localStorageMock = {
-      store: {},
-      getItem(key) {
-        return this.store[key] || null;
-      },
-      setItem(key, value) {
-        this.store[key] = String(value);
-      },
-      removeItem(key) {
-        delete this.store[key];
-      },
-      clear() {
-        Object.keys(this.store).forEach(key => delete this.store[key]);
-      },
+      store: backingStore,
+      getItem: jest.fn((key) => (Object.prototype.hasOwnProperty.call(backingStore, key) ? backingStore[key] : null)),
+      setItem: jest.fn((key, value) => {
+        backingStore[key] = String(value);
+      }),
+      removeItem: jest.fn((key) => {
+        delete backingStore[key];
+      }),
+      clear: jest.fn(() => {
+        Object.keys(backingStore).forEach((key) => delete backingStore[key]);
+      }),
     };
 
     global.localStorage = localStorageMock;
@@ -41,9 +40,12 @@ describe('SaveManager', () => {
         reputation: { test_faction: 50 },
       },
       tutorialSystem: {
+        getProgress: jest.fn(() => ({ totalSteps: 3 })),
         isComplete: jest.fn(() => false),
         completeTutorial: jest.fn(),
       },
+      worldStateStore: null,
+      storage: localStorageMock,
     };
 
     eventBus = new EventBus();
@@ -212,6 +214,64 @@ describe('SaveManager', () => {
       expect(() => JSON.parse(savedData)).not.toThrow();
     });
 
+    test('uses world state store snapshot when available', () => {
+      const snapshot = {
+        storyFlags: { flags: { test_flag: { value: true } } },
+        quests: { byId: {} },
+        factions: { byId: {} },
+        tutorial: { completed: true, completedSteps: [] },
+        tutorialComplete: true,
+      };
+
+      const storeMock = { snapshot: jest.fn(() => snapshot) };
+      const managerWithStore = new SaveManager(eventBus, {
+        ...mockManagers,
+        worldStateStore: storeMock,
+      });
+      managerWithStore.init();
+
+      const result = managerWithStore.saveGame('store_slot');
+      expect(result).toBe(true);
+      expect(storeMock.snapshot).toHaveBeenCalled();
+
+      const saveKey = managerWithStore.config.storageKeyPrefix + 'store_slot';
+      const saveData = JSON.parse(localStorageMock.store[saveKey]);
+
+      expect(saveData.meta.snapshotSource).toBe('worldStateStore');
+      expect(saveData.gameData.tutorialComplete).toBe(true);
+    });
+
+    test('logs parity warning when snapshot differs from legacy data', () => {
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const divergentSnapshot = {
+        storyFlags: { flags: { test_flag: { value: false } } },
+        quests: { byId: {} },
+        factions: { byId: {} },
+        tutorial: { completed: false, completedSteps: [] },
+        tutorialComplete: false,
+      };
+
+      const storeMock = { snapshot: jest.fn(() => divergentSnapshot) };
+      const managerWithStore = new SaveManager(eventBus, {
+        ...mockManagers,
+        worldStateStore: storeMock,
+      });
+      managerWithStore.init();
+
+      managerWithStore.saveGame('parity_slot');
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[SaveManager] WorldStateStore snapshot differs from legacy collectors',
+        expect.objectContaining({
+          snapshot: expect.any(Object),
+          legacy: expect.any(Object),
+        })
+      );
+
+      warnSpy.mockRestore();
+    });
+
     test('should emit game:saved event on success', () => {
       const emitSpy = jest.spyOn(eventBus, 'emit');
 
@@ -355,7 +415,10 @@ describe('SaveManager', () => {
         tutorialSystem: {},
       };
 
-      const newSaveManager = new SaveManager(eventBus, newManagers);
+      const newSaveManager = new SaveManager(eventBus, {
+        ...newManagers,
+        storage: localStorageMock,
+      });
       newSaveManager.init();
       newSaveManager.loadGame('test_slot');
 

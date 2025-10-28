@@ -150,14 +150,14 @@ Ensure all systems receive EventBus reference either:
 - **Tags**: `engine`, `ecs`, `narrative`, `refactor`
 - **Effort**: 4-6 hours
 - **Dependencies**: Session #16 research report (`docs/research/engine/game-state-management-comparison.md`)
-- **Status**: Pending — requires architecture decision + implementation plan sign-off
+- **Status**: In Progress — Phase 0 WorldStateStore scaffolding delivered (Session #17); UI migration covered by PO-003
 - **Reported**: 2025-10-28 (Autonomous Session #16)
 
 **Problem**:
 Lack of centralized, queryable world state prevents verification of quest, dialogue, faction, and tutorial progression. Silent event failures cannot be detected without an authoritative store.
 
 **Solution Outline**:
-Implement Phase 0 of the hybrid Event-Sourced WorldStateStore:
+Implement Phase 0 of the hybrid Event-Sourced WorldStateStore (see `docs/plans/world-state-store-plan.md`):
 1. Scaffold `WorldStateStore` with normalized slices (quests, story flags, factions, tutorial).
 2. Subscribe store to EventBus (`quest:*`, `story:*`, `faction:*`, `tutorial:*`).
 3. Publish memoized selectors for UI overlays and SaveManager.

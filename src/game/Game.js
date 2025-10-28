@@ -19,6 +19,9 @@ import { NPCMemorySystem } from './systems/NPCMemorySystem.js';
 import { DisguiseSystem } from './systems/DisguiseSystem.js';
 import { QuestSystem } from './systems/QuestSystem.js';
 
+// State
+import { WorldStateStore } from './state/WorldStateStore.js';
+
 // Engine systems
 import { RenderSystem } from '../engine/renderer/RenderSystem.js';
 
@@ -83,6 +86,7 @@ export class Game {
     this.questManager = null;
     this.storyFlagManager = null;
     this.saveManager = null;
+    this.worldStateStore = null;
 
     // Game systems (game-specific, not engine)
     this.gameSystems = {
@@ -146,6 +150,10 @@ export class Game {
   initializeGameSystems() {
     console.log('[Game] Initializing game systems...');
 
+    // Initialize world state store before systems start emitting events
+    this.worldStateStore = new WorldStateStore(this.eventBus);
+    this.worldStateStore.init();
+
     // Initialize FactionManager (must be created before systems that depend on it)
     this.factionManager = new FactionManager(this.eventBus);
     console.log('[Game] FactionManager initialized');
@@ -174,6 +182,7 @@ export class Game {
       questManager: this.questManager,
       factionManager: this.factionManager,
       tutorialSystem: null, // Will be set after tutorial system is created
+      worldStateStore: this.worldStateStore,
     });
     this.saveManager.init();
     console.log('[Game] SaveManager initialized');

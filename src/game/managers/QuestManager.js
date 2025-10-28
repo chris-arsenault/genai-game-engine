@@ -73,6 +73,16 @@ export class QuestManager {
     });
 
     console.log(`[QuestManager] Registered quest: ${questData.title} (${questData.id})`);
+
+    this.events.emit('quest:registered', {
+      questId: questData.id,
+      title: questData.title,
+      type: questData.type,
+      metadata: {
+        act: questData.act,
+        prerequisites: questData.prerequisites,
+      }
+    });
   }
 
   /**

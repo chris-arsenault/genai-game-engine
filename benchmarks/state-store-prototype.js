@@ -11,6 +11,12 @@
  */
 
 import { performance } from 'node:perf_hooks';
+import { EventBus } from '../src/engine/events/EventBus.js';
+import { WorldStateStore } from '../src/game/state/WorldStateStore.js';
+import { questSlice } from '../src/game/state/slices/questSlice.js';
+import { storySlice } from '../src/game/state/slices/storySlice.js';
+import { factionSlice } from '../src/game/state/slices/factionSlice.js';
+import { tutorialSlice } from '../src/game/state/slices/tutorialSlice.js';
 
 /**
  * Utility: run a function N times and return aggregate timing.
@@ -89,6 +95,99 @@ function createFactionData(count = 12) {
     };
   }
   return factions;
+}
+
+/**
+ * Create snapshot payload compatible with WorldStateStore.hydrate().
+ */
+function createWorldStateSeed() {
+  const questsRaw = createQuestData();
+  const storyFlagsRaw = createStoryFlags();
+  const factionsRaw = createFactionData();
+
+  const questSnapshot = {
+    byId: {},
+    activeIds: [],
+    completedIds: [],
+    failedIds: [],
+  };
+
+  let questIndex = 0;
+  for (const [questId, questData] of Object.entries(questsRaw)) {
+    const statusCycle = questIndex % 3;
+    const status = statusCycle === 0 ? 'active' : statusCycle === 1 ? 'completed' : 'not_started';
+
+    questSnapshot.byId[questId] = {
+      id: questId,
+      title: `Quest ${questId}`,
+      type: ['main', 'side', 'faction'][questIndex % 3],
+      status,
+      objectives: questData.objectives.reduce((acc, objective, idx) => {
+        acc[objective.id] = {
+          id: objective.id,
+          status:
+            status === 'completed'
+              ? 'completed'
+              : idx === 0
+              ? 'in_progress'
+              : 'pending',
+          progress: status === 'completed' ? 1 : idx === 0 ? 0 : 0,
+          target: 1,
+        };
+        return acc;
+      }, {}),
+    };
+
+    if (status === 'active') questSnapshot.activeIds.push(questId);
+    if (status === 'completed') questSnapshot.completedIds.push(questId);
+
+    questIndex++;
+  }
+
+  const storyFlags = {
+    flags: Object.fromEntries(
+      Object.entries(storyFlagsRaw).map(([flagId, data]) => [
+        flagId,
+        {
+          value: data.value,
+          metadata: data.metadata,
+          updatedAt: data.timestamp,
+        },
+      ])
+    ),
+  };
+
+  const factions = {
+    byId: Object.fromEntries(
+      Object.entries(factionsRaw).map(([factionId, data]) => {
+        const fame = Math.max(0, 100 + data.reputation);
+        const infamy = Math.max(0, 100 - data.reputation);
+        return [
+          factionId,
+          {
+            id: factionId,
+            fame,
+            infamy,
+            attitude: data.attitude,
+            lastReason: 'benchmark_seed',
+          },
+        ];
+      })
+    ),
+  };
+
+  return {
+    storyFlags,
+    quests: questSnapshot,
+    factions,
+    tutorial: {
+      completed: false,
+      completedSteps: [],
+      skipped: false,
+      totalSteps: 5,
+    },
+    tutorialComplete: false,
+  };
 }
 
 /**
@@ -353,6 +452,99 @@ function runEcsIntegratedBenchmark() {
   };
 }
 
+/**
+ * Prototype 3: Actual WorldStateStore implementation (hybrid event-sourced).
+ */
+function runWorldStateStoreBenchmark() {
+  const eventBus = new EventBus();
+  const store = new WorldStateStore(eventBus, { enableDebug: false });
+  store.init();
+
+  const seed = createWorldStateSeed();
+  store.hydrate(seed);
+
+  const updateIterations = 500;
+  const updateTiming = timeIterations((i) => {
+    const step = i % 4;
+
+    if (step === 0) {
+      const questId = `quest_${(i % 120).toString().padStart(3, '0')}`;
+      store.dispatch({
+        type: 'OBJECTIVE_PROGRESS',
+        domain: 'quest',
+        payload: {
+          questId,
+          objectiveId: `${questId}_obj_0`,
+          progress: 1,
+          target: 1,
+        },
+      });
+    } else if (step === 1) {
+      const flagId = `flag_${(i % 240).toString().padStart(3, '0')}`;
+      store.dispatch({
+        type: 'STORY_FLAG_SET',
+        domain: 'story',
+        payload: {
+          flagId,
+          value: i % 2 === 0,
+        },
+      });
+    } else if (step === 2) {
+      const factionId = `faction_${(i % 12).toString().padStart(2, '0')}`;
+      store.dispatch({
+        type: 'FACTION_REPUTATION_CHANGED',
+        domain: 'faction',
+        payload: {
+          factionId,
+          newFame: 40 + (i % 20),
+          newInfamy: 20 + (i % 10),
+          deltaFame: 1,
+          deltaInfamy: -1,
+        },
+      });
+    } else {
+      store.dispatch({
+        type: 'TUTORIAL_STEP_COMPLETED',
+        domain: 'tutorial',
+        payload: {
+          stepId: `step_${i % 5}`,
+        },
+      });
+    }
+  }, updateIterations);
+
+  const queryIterations = 200;
+  const queryTiming = timeIterations(() => {
+    const activeQuests = store.select(questSlice.selectors.selectActiveQuests);
+    const currentAct = store.select(storySlice.selectors.selectCurrentAct);
+    const factionOverview = store.select(factionSlice.selectors.selectFactionOverview);
+    const tutorialProgress = store.select(tutorialSlice.selectors.selectTutorialProgress);
+
+    return {
+      activeQuests,
+      currentAct,
+      factionOverview,
+      tutorialProgress,
+    };
+  }, queryIterations);
+
+  const snapshotTiming = timeIterations(() => {
+    JSON.stringify(store.snapshot());
+  }, 50);
+
+  const serialized = JSON.stringify(store.snapshot());
+
+  store.destroy();
+
+  return {
+    approach: 'WorldStateStore (hybrid event-sourced)',
+    updateTiming,
+    queryTiming,
+    snapshotTiming,
+    stateBytes: Buffer.byteLength(serialized),
+  };
+}
+
 function formatTiming(label, timing) {
   return `${label}: mean=${timing.mean.toFixed(4)}ms (min=${timing.min.toFixed(
     4
@@ -362,8 +554,9 @@ function formatTiming(label, timing) {
 function runBenchmarks() {
   const reduxResult = runReduxStyleBenchmark();
   const ecsResult = runEcsIntegratedBenchmark();
+  const worldStateResult = runWorldStateStoreBenchmark();
 
-  const results = [reduxResult, ecsResult];
+  const results = [reduxResult, ecsResult, worldStateResult];
 
   for (const result of results) {
     console.log(`\n=== ${result.approach} ===`);
