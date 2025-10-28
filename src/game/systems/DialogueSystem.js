@@ -283,6 +283,17 @@ export class DialogueSystem {
       dialogueId
     });
 
+    // Also emit quest-compatible events
+    this.events.emit('dialogue:completed', {
+      npcId,
+      dialogueId
+    });
+
+    this.events.emit('npc:interviewed', {
+      npcId,
+      dialogueId
+    });
+
     this.activeDialogue = null;
 
     console.log('[DialogueSystem] Dialogue ended');

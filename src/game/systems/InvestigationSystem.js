@@ -41,6 +41,15 @@ export class InvestigationSystem extends System {
     // Default starting ability
     this.playerAbilities.add('basic_observation');
 
+    // Listen for ability unlocks from external sources (e.g., quest rewards, scenes)
+    this.eventBus.on('ability:unlocked', (data) => {
+      // Add ability directly without re-emitting (to avoid recursion)
+      if (!this.playerAbilities.has(data.abilityId)) {
+        this.playerAbilities.add(data.abilityId);
+        console.log(`[InvestigationSystem] Ability unlocked via event: ${data.abilityId}`);
+      }
+    });
+
     console.log('[InvestigationSystem] Initialized');
   }
 
@@ -155,6 +164,38 @@ export class InvestigationSystem extends System {
           // Show prompt
           this.eventBus.emit('ui:show_prompt', {
             text: zone.prompt,
+            position: { x: transform.x, y: transform.y }
+          });
+        }
+      } else if (zone.type === 'trigger') {
+        // Area trigger (automatic, no input required)
+        if (!zone.requiresInput && !zone.triggered) {
+          zone.triggered = true;
+          this.eventBus.emit('area:entered', {
+            areaId: zone.id,
+            entityId,
+            position: { x: transform.x, y: transform.y }
+          });
+          console.log(`[InvestigationSystem] Area entered: ${zone.id}`);
+
+          // Deactivate zone if it's a one-shot trigger
+          if (zone.oneShot) {
+            zone.active = false;
+          }
+        }
+      } else if (zone.type === 'npc' || zone.type === 'dialogue') {
+        // NPC interaction zone
+        if (interactPressed) {
+          this.eventBus.emit('interaction:dialogue', {
+            npcId: zone.id,
+            dialogueId: zone.data?.dialogueId || zone.id,
+            entityId
+          });
+          console.log(`[InvestigationSystem] Interacting with NPC: ${zone.id}`);
+        } else {
+          // Show prompt
+          this.eventBus.emit('ui:show_prompt', {
+            text: zone.prompt || 'Press E to talk',
             position: { x: transform.x, y: transform.y }
           });
         }
