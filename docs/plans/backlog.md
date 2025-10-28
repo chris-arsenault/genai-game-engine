@@ -145,6 +145,59 @@ Ensure all systems receive EventBus reference either:
 
 ---
 
+### PO-002: Stand Up WorldStateStore Observability Layer
+- **Priority**: **P1 - HIGH**
+- **Tags**: `engine`, `ecs`, `narrative`, `refactor`
+- **Effort**: 4-6 hours
+- **Dependencies**: Session #16 research report (`docs/research/engine/game-state-management-comparison.md`)
+- **Status**: Pending — requires architecture decision + implementation plan sign-off
+- **Reported**: 2025-10-28 (Autonomous Session #16)
+
+**Problem**:
+Lack of centralized, queryable world state prevents verification of quest, dialogue, faction, and tutorial progression. Silent event failures cannot be detected without an authoritative store.
+
+**Solution Outline**:
+Implement Phase 0 of the hybrid Event-Sourced WorldStateStore:
+1. Scaffold `WorldStateStore` with normalized slices (quests, story flags, factions, tutorial).
+2. Subscribe store to EventBus (`quest:*`, `story:*`, `faction:*`, `tutorial:*`).
+3. Publish memoized selectors for UI overlays and SaveManager.
+4. Expose `worldStateStore.debug()` console dump gated behind `__DEV__`.
+
+**Acceptance Criteria**:
+- Store instance created in `src/game/Game.js` and shared via dependency container.
+- Events produce deterministic state snapshots accessible via selectors in <1 ms.
+- SaveManager can serialize state via store without manager scraping (parity verified in tests).
+- Jest reducer + selector tests cover quest/story/faction happy paths and error payloads.
+- Benchmark `node benchmarks/state-store-prototype.js` updated to consume real reducers.
+
+---
+
+### PO-003: Migrate Quest/Tutorial/Dialogue Systems to WorldStateStore
+- **Priority**: **P1 - HIGH**
+- **Tags**: `gameplay`, `narrative`, `ecs`, `ux`
+- **Effort**: 6-8 hours
+- **Dependencies**: PO-002
+- **Status**: Pending — blocked until store foundation exists
+- **Reported**: 2025-10-28 (Autonomous Session #16)
+
+**Problem**:
+High-touch narrative systems (QuestSystem, DialogueSystem, TutorialSystem) currently emit events without verified state ingestion, leading to UI desync (Quest log overlay) and opaque branching logic.
+
+**Solution Outline**:
+1. Dispatch structured events (`quest:state_changed`, `dialogue:node_changed`, `tutorial:step_completed`) with full payload schema.
+2. Reducers normalize data (quest objectives, dialogue options, tutorial milestones).
+3. Quest/Tutorial UI overlays consume selectors, replacing manual event subscriptions.
+4. Add invariant tests ensuring component-level state matches store-derived views.
+
+**Acceptance Criteria**:
+- Quest log + tracker HUD read from selectors and stay in sync during quest progression playtest.
+- Dialogue debug overlay can display active node/path using store data.
+- Tutorial completion stored once; SaveManager load restores state via store snapshot.
+- Playwright scenario covering Quest 001 validates UI state after each milestone.
+- Added regression tests guard against missing reducer payload fields (throws descriptive error).
+
+---
+
 ## Sprint 1: Core Engine Foundation (Weeks 1-3)
 
 **Milestone**: M1 - Core Engine
