@@ -192,6 +192,8 @@ High-touch narrative systems (QuestSystem, DialogueSystem, TutorialSystem) curre
 _Progress 2025-10-28 (Session #18): Quest log UI + tracker HUD migrated to store selectors; quest/state parity tests added._
 _Progress 2025-10-28 (Session #19 planning): Dialogue & Tutorial Store Integration plan drafted (`docs/plans/dialogue-tutorial-store-plan.md`) to unblock overlay migration; implementation remains outstanding._
 _Progress 2025-10-28 (Session #20 implementation): Dialogue/tutorial slices landed with store-driven overlays, SaveManager parity, and benchmarking updates; pending Playwright selectors & debug tooling._
+_Progress 2025-10-28 (Session #21 implementation): DialogueBox now instantiated via `Game.initializeUIOverlays`, forwarding keyboard input through EventBus and rendering on the HUD; Playwright selector wiring remains outstanding._
+_Progress 2025-10-28 (Session #22 implementation): Procedural performance tests rebaselined (TileMap <20 ms for 10k ops, SeededRandom >5 M ops/sec) to stabilize CI while retaining performance guardrails._
 
 **Acceptance Criteria**:
 - Quest log + tracker HUD read from selectors and stay in sync during quest progression playtest.

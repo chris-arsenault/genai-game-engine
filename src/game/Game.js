@@ -27,6 +27,7 @@ import { RenderSystem } from '../engine/renderer/RenderSystem.js';
 
 // UI Components
 import { TutorialOverlay } from './ui/TutorialOverlay.js';
+import { DialogueBox } from './ui/DialogueBox.js';
 import { ReputationUI } from './ui/ReputationUI.js';
 import { DisguiseUI } from './ui/DisguiseUI.js';
 import { QuestLogUI } from './ui/QuestLogUI.js';
@@ -105,11 +106,15 @@ export class Game {
 
     // UI overlays
     this.tutorialOverlay = null;
+    this.dialogueBox = null;
     this.reputationUI = null;
     this.disguiseUI = null;
     this.questLogUI = null;
     this.questTrackerHUD = null;
     this.questNotification = null;
+
+    // Input handlers
+    this._handleDialogueInput = null;
   }
 
   /**
@@ -317,6 +322,21 @@ export class Game {
     );
     this.tutorialOverlay.init();
 
+    // Create dialogue box (store-driven)
+    const dialogueCtx = this.engine.canvas.getContext('2d');
+    this.dialogueBox = new DialogueBox(dialogueCtx, this.eventBus, {
+      store: this.worldStateStore,
+    });
+
+    // Forward keyboard input to dialogue box for choice/advance handling
+    this._handleDialogueInput = (event) => {
+      if (!this.dialogueBox) {
+        return;
+      }
+      this.dialogueBox.handleInput(event.code);
+    };
+    window.addEventListener('keydown', this._handleDialogueInput);
+
     // Create reputation UI
     this.reputationUI = new ReputationUI(300, 500, {
       eventBus: this.eventBus,
@@ -521,6 +541,9 @@ export class Game {
     if (this.questLogUI) {
       this.questLogUI.update(deltaTime);
     }
+    if (this.dialogueBox) {
+      this.dialogueBox.update(deltaTime * 1000);
+    }
 
     // Check for pause input
     if (this.inputState.isPressed('pause')) {
@@ -648,7 +671,12 @@ export class Game {
       this.questLogUI.render(ctx);
     }
 
-    // Render tutorial overlay (on top of other UIs)
+    // Render dialogue box above HUD but below tutorial overlay for clarity
+    if (this.dialogueBox) {
+      this.dialogueBox.render(this.engine.canvas.width, this.engine.canvas.height);
+    }
+
+    // Render tutorial overlay (kept highest priority)
     if (this.tutorialOverlay) {
       this.tutorialOverlay.render(ctx);
     }
@@ -693,6 +721,14 @@ export class Game {
     }
     if (this.questNotification && this.questNotification.cleanup) {
       this.questNotification.cleanup();
+    }
+    if (this.dialogueBox && this.dialogueBox.cleanup) {
+      this.dialogueBox.cleanup();
+    }
+
+    if (this._handleDialogueInput) {
+      window.removeEventListener('keydown', this._handleDialogueInput);
+      this._handleDialogueInput = null;
     }
 
     // Cleanup SaveManager (performs final autosave)
