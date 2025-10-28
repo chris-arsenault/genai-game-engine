@@ -263,7 +263,8 @@ export class Game {
       this.componentRegistry,
       this.eventBus,
       this.gameSystems.investigation,
-      this.factionManager
+      this.factionManager,
+      this.worldStateStore
     );
     this.gameSystems.dialogue.init();
 

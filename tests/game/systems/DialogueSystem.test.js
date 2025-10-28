@@ -14,10 +14,19 @@ describe('DialogueSystem', () => {
   let mockCaseManager;
   let mockFactionSystem;
   let testDialogueTree;
+  let mockWorldStateStore;
   let emittedEvents;
 
   beforeEach(() => {
     emittedEvents = [];
+
+    mockWorldStateStore = {
+      getState: jest.fn(() => ({
+        inventory: {
+          items: [],
+        },
+      })),
+    };
 
     // Mock EventBus
     mockEventBus = {
@@ -101,7 +110,8 @@ describe('DialogueSystem', () => {
       mockComponentRegistry,
       mockEventBus,
       mockCaseManager,
-      mockFactionSystem
+      mockFactionSystem,
+      mockWorldStateStore
     );
     system.init();
   });
@@ -377,6 +387,85 @@ describe('DialogueSystem', () => {
       expect(flagEvent.data.flag).toBe('test_flag');
     });
 
+    it('should emit vendor transaction events when configured', () => {
+      const vendorEvents = [];
+      const vendorEventBus = {
+        emit: jest.fn((eventType, data) => {
+          vendorEvents.push({ eventType, data });
+        }),
+        on: jest.fn(),
+      };
+
+      const vendorWorldStateStore = {
+        getState: jest.fn(() => ({
+          inventory: {
+            items: [
+              { id: 'credits', quantity: 120, tags: ['currency'] },
+            ],
+          },
+        })),
+      };
+
+      const vendorSystem = new DialogueSystem(
+        mockComponentRegistry,
+        vendorEventBus,
+        mockCaseManager,
+        mockFactionSystem,
+        vendorWorldStateStore
+      );
+      vendorSystem.init();
+
+      const vendorTree = new DialogueTree({
+        id: 'vendor_test',
+        startNode: 'start',
+        nodes: {
+          start: {
+            speaker: 'Vendor',
+            text: 'Looking for intel?',
+            choices: [
+              {
+                text: 'Purchase encrypted logs',
+                nextNode: null,
+                consequences: {
+                  vendorTransaction: {
+                    vendorId: 'street_vendor',
+                    vendorName: 'Street Vendor',
+                    vendorFaction: 'independents',
+                    cost: { credits: 45 },
+                    items: [
+                      {
+                        id: 'intel_encrypted_logs',
+                        name: 'Encrypted Vendor Logs',
+                        description: 'Logs pointing toward memory parlor suppliers.',
+                        quantity: 1,
+                        type: 'Intel',
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      });
+
+      vendorSystem.registerDialogueTree(vendorTree);
+      vendorSystem.startDialogue('street_vendor', 'vendor_test');
+
+      const result = vendorSystem.selectChoice(0);
+      expect(result).toBe(true);
+
+      const vendorEvent = vendorEvents.find((event) => event.eventType === 'economy:purchase:completed');
+      expect(vendorEvent).toBeDefined();
+      expect(vendorEvent.data.vendorId).toBe('street_vendor');
+      expect(vendorEvent.data.items).toHaveLength(1);
+      expect(vendorEvent.data.cost?.credits).toBe(45);
+      expect(vendorEvent.data.context).toMatchObject({
+        dialogueId: 'vendor_test',
+        npcId: 'street_vendor',
+      });
+    });
+
     it('should emit custom consequence events', () => {
       // Create fresh event tracking
       const freshEvents = [];
@@ -457,6 +546,68 @@ describe('DialogueSystem', () => {
       const context = system.buildDialogueContext('npc_1');
       expect(context.visitedNodes.has('start')).toBe(true);
       expect(context.visitedNodes.has('response_1')).toBe(true);
+    });
+  });
+
+  describe('Inventory-aware conditions', () => {
+    beforeEach(() => {
+      const inventoryTree = new DialogueTree({
+        id: 'inventory_test',
+        startNode: 'start',
+        nodes: {
+          start: {
+            speaker: 'Vendor',
+            text: 'What do you need?',
+            choices: [
+              {
+                text: 'Offer 50 credits',
+                nextNode: null,
+                conditions: [{ type: 'hasItem', item: 'credits', amount: 50 }],
+              },
+              {
+                text: 'Offer 100 credits',
+                nextNode: null,
+                conditions: [{ type: 'hasItem', item: 'credits', amount: 100 }],
+              },
+            ],
+          },
+        },
+      });
+
+      mockWorldStateStore.getState.mockReturnValue({
+        inventory: {
+          items: [
+            { id: 'credits', quantity: 75, tags: ['currency'] },
+          ],
+        },
+      });
+
+      system.registerDialogueTree(inventoryTree);
+      system.startDialogue('vendor_npc', 'inventory_test');
+    });
+
+    it('exposes choices that meet hasItem requirement', () => {
+      const { tree, context } = system.activeDialogue;
+      const choices = tree.getAvailableChoices('start', context);
+
+      expect(choices).toHaveLength(1);
+      expect(choices[0].text).toBe('Offer 50 credits');
+    });
+
+    it('updates availability when inventory changes', () => {
+      mockWorldStateStore.getState.mockReturnValue({
+        inventory: {
+          items: [
+            { id: 'credits', quantity: 10, tags: ['currency'] },
+          ],
+        },
+      });
+
+      system.activeDialogue.context = system.buildDialogueContext('vendor_npc');
+
+      const { tree, context } = system.activeDialogue;
+      const choices = tree.getAvailableChoices('start', context);
+      expect(choices).toHaveLength(0);
     });
   });
 

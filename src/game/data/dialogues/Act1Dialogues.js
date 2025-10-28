@@ -116,8 +116,33 @@ export const DIALOGUE_WITNESS_VENDOR = new DialogueTree({
       speaker: 'Street Vendor',
       text: 'Now we\'re talking business. Yeah, I saw \'em. Two figures, one with a synth-voice. They had some kind of device, glowing neural ports. Corporate tech, way above street-level stuff.',
       consequences: {
-        removeItem: { item: 'credits', amount: 50 },
-        factionReputation: { independents: 10 }
+        factionReputation: { independents: 10 },
+        vendorTransaction: {
+          vendorId: 'witness_street_vendor',
+          vendorName: 'Street Vendor',
+          vendorFaction: 'civilian',
+          cost: { credits: 50 },
+          items: [
+            {
+              id: 'intel_vendor_testimony_neon_street',
+              name: 'Vendor Testimony: Neon Street',
+              description: 'Detailed account from the Street Vendor describing suspects heading toward the transit tunnels.',
+              type: 'Intel',
+              rarity: 'story',
+              quantity: 1,
+              tags: [
+                'intel',
+                'source:street_vendor',
+                'dialogue:witness_street_vendor',
+                'lead:memory_parlor_hint'
+              ],
+              metadata: {
+                rewardType: 'vendor_testimony',
+                relatedClueId: 'memory_parlor_location_hint'
+              }
+            }
+          ]
+        }
       },
       nextNode: 'detail_device'
     },

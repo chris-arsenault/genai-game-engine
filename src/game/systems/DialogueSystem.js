@@ -9,13 +9,22 @@
  */
 
 import { System } from '../../engine/ecs/System.js';
+import { emitVendorPurchaseEvent } from '../economy/vendorEvents.js';
+import { inventorySlice } from '../state/slices/inventorySlice.js';
 
 export class DialogueSystem extends System {
-  constructor(componentRegistry, eventBus, caseManager = null, factionManager = null) {
+  constructor(
+    componentRegistry,
+    eventBus,
+    caseManager = null,
+    factionManager = null,
+    worldStateStore = null
+  ) {
     super(componentRegistry, eventBus, []);
     this.priority = 40;
     this.caseManager = caseManager;
     this.factionManager = factionManager;
+    this.worldStateStore = worldStateStore;
 
     // Dialogue tree registry
     this.dialogueTrees = new Map(); // treeId -> DialogueTree
@@ -407,6 +416,28 @@ export class DialogueSystem extends System {
       }
     }
 
+    if (consequences.vendorTransaction) {
+      const npcId = this.activeDialogue?.npcId ?? null;
+      const dialogueId = this.activeDialogue?.dialogueId ?? null;
+      const nodeId = this.activeDialogue?.currentNode ?? null;
+      const choiceId = this.lastChoice?.choiceId ?? null;
+
+      try {
+        emitVendorPurchaseEvent(this.eventBus, {
+          ...consequences.vendorTransaction,
+          context: {
+            ...(consequences.vendorTransaction.context || {}),
+            dialogueId,
+            npcId,
+            nodeId,
+            choiceId,
+          },
+        });
+      } catch (error) {
+        console.error('[DialogueSystem] Failed to emit vendor transaction', error);
+      }
+    }
+
     // Emit custom consequence event
     if (consequences.customEvent) {
       this.eventBus.emit(consequences.customEvent.type, consequences.customEvent.data || {});
@@ -425,7 +456,12 @@ export class DialogueSystem extends System {
       clues: new Set(),
       evidence: new Set(),
       reputation: {},
-      flags: new Set()
+      flags: new Set(),
+      inventory: {
+        items: [],
+        itemsById: {},
+        quantities: {},
+      },
     };
 
     // Get active case clues and evidence
@@ -445,6 +481,34 @@ export class DialogueSystem extends System {
         if (rep) {
           context.reputation[faction] = rep.fame - rep.infamy;
         }
+      }
+    }
+
+    if (this.worldStateStore && typeof this.worldStateStore.getState === 'function') {
+      try {
+        const worldState = this.worldStateStore.getState() || {};
+        const inventoryState = worldState.inventory || {};
+        const items = inventorySlice.selectors.getItems(inventoryState) || [];
+        const itemsById = {};
+        const quantities = {};
+
+        for (const item of items) {
+          if (item && typeof item.id === 'string') {
+            itemsById[item.id] = item;
+            const quantity = Number.isFinite(item.quantity) ? Math.trunc(item.quantity) : 0;
+            if (quantity > 0) {
+              quantities[item.id] = quantity;
+            }
+          }
+        }
+
+        context.inventory = {
+          items,
+          itemsById,
+          quantities,
+        };
+      } catch (error) {
+        console.error('[DialogueSystem] Failed to read inventory state for dialogue context', error);
       }
     }
 

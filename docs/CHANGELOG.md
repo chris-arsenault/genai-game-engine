@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Vendor economy helper emits normalized `economy:purchase:completed` payloads so vendor trades and bribes feed the inventory autosave pipeline (`src/game/economy/vendorEvents.js`, `src/game/Game.js`).
+- Street Vendor bribe now grants a persistent intel item tagged with vendor metadata for narrative follow-up (`src/game/data/dialogues/Act1Dialogues.js`, `src/game/systems/DialogueSystem.js`).
 - WorldStateStore now tracks an `inventory` slice driven by EventBus `inventory:*` actions, powering the new InventoryOverlay and SaveManager snapshots (`src/game/state/WorldStateStore.js`, `src/game/state/slices/inventorySlice.js`).
 - Shared `overlayTheme` module standardizes the neon noir canvas styling across tutorial, interaction prompt, movement indicator, and inventory overlays (`src/game/ui/theme/overlayTheme.js`, updated `src/game/ui/*.js`).
 - Operative Inventory overlay with edge-triggered input integration, navigation via move actions, and debug HUD summaries seeded during Game initialization (`src/game/ui/InventoryOverlay.js`, `src/game/Game.js`).
@@ -26,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Game registers engine frame hooks to drive `update()` and `renderOverlays()` each frame, ensuring HUD layers display in runtime builds instead of only in tests (`src/game/Game.js`).
 
 ### Testing
+- Added coverage for vendor purchase emission, Game inventory integration, and dialogue inventory gating (`tests/game/economy/vendorEvents.test.js`, `tests/game/Game.vendorPurchases.test.js`, `tests/game/systems/DialogueSystem.test.js`).
 - Added unit coverage for WorldStateStore inventory reducers, inventory overlay navigation, and Playwright smoke ensuring debug overlay entries reflect inventory state (`tests/game/state/inventorySlice.test.js`, `tests/game/Game.uiOverlays.test.js`, `tests/e2e/debug-overlay-inventory.spec.js`).
 - Added unit coverage for AudioFeedbackController throttling and SFX dispatch (`tests/game/audio/AudioFeedbackController.test.js`).
 - Added regression coverage for InputState edge detection and overlay toggles (`tests/game/config/Controls.test.js`, `tests/game/Game.uiOverlays.test.js`).
@@ -35,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Expanded inventory coverage to include quantity delta reducers, SaveManager inventory autosave throttling, and end-to-end inventory persistence (`tests/game/state/inventorySlice.test.js`, `tests/game/managers/SaveManager.test.js`, `tests/game/Game.uiOverlays.test.js`).
 
 ### Changed
+- DialogueSystem now composes dialogue context with live inventory snapshots and evaluates object-form `hasItem` conditions so currency gates follow the player's actual state (`src/game/systems/DialogueSystem.js`, `src/game/data/DialogueTree.js`).
 - Removed `Game.seedInventoryState` bootstrap in favor of live acquisition events emitted from InvestigationSystem, TutorialScene, QuestManager, and vendor economy bridges, ensuring overlays mirror player progress in runtime builds (`src/game/Game.js`, `src/game/systems/InvestigationSystem.js`, `src/game/scenes/TutorialScene.js`, `src/game/managers/QuestManager.js`).
 - SaveManager now listens to `inventory:*` events, stores inventory snapshots, and throttles autosaves when inventory changes to guarantee save/load parity for items and equipment (`src/game/managers/SaveManager.js`).
 

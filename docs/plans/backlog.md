@@ -452,7 +452,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Tags**: `inventory`, `vendor`, `economy`
 - **Effort**: 3 hours
 - **Dependencies**: INV-302
-- **Status**: Pending
+- **Status**: ✅ Completed — Session #38 wired vendor transactions into `economy:purchase:completed` payloads feeding inventory autosaves.
 - **Description**: Emit normalized `economy:purchase:completed` events when faction vendors transact so inventory updates and SaveManager metadata reflect vendor interactions.
 - **Acceptance Criteria**:
   - Vendor/NPC trade logic dispatches a single `economy:purchase:completed` event with item descriptors, cost payload, vendor metadata, and optional faction alignment.
@@ -464,7 +464,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Tags**: `dialogue`, `inventory`
 - **Effort**: 3 hours
 - **Dependencies**: INV-302
-- **Status**: Pending
+- **Status**: ✅ Completed — Session #38 added inventory-aware condition evaluation and vendor consequence wiring in DialogueSystem.
 - **Description**: Evaluate dialogue choice conditions such as `hasItem` and `removeItem` objects against WorldStateStore inventory data so bribe paths and item gates respond to live inventory.
 - **Acceptance Criteria**:
   - DialogueTree condition evaluation supports object-form conditions (`{ type: 'hasItem', item: 'credits', amount: 50 }`) and integrates with WorldStateStore selectors.
