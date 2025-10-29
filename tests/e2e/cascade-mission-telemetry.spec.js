@@ -99,8 +99,8 @@ test.describe('Cascade mission telemetry export', () => {
       { timeout: 4000 }
     );
 
-    const exportResult = await page.evaluate(() => {
-      const result = window.game.saveManager.exportInspectorSummary({ prefix: 'pw-mission' });
+    const exportResult = await page.evaluate(async () => {
+      const result = await window.game.saveManager.exportInspectorSummary({ prefix: 'pw-mission' });
       const jsonArtifact = result.artifacts.find((artifact) => artifact.type === 'json');
       const cascadeCsv = result.artifacts.find(
         (artifact) => artifact.type === 'csv' && artifact.section === 'cascade'

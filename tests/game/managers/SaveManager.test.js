@@ -1301,7 +1301,7 @@ describe('SaveManager', () => {
   // ==================== INSPECTOR EXPORT TESTS ====================
 
   describe('Inspector Export', () => {
-    test('should build export artifacts and invoke writer callback', () => {
+    test('should build export artifacts and invoke writer callback', async () => {
       const cascadeSummary = {
         lastCascadeEvent: {
           targetFactionId: 'luminari_syndicate',
@@ -1354,8 +1354,8 @@ describe('SaveManager', () => {
       mockManagers.worldStateStore = store;
       saveManager = new SaveManager(eventBus, mockManagers);
 
-      const writer = jest.fn();
-      const result = saveManager.exportInspectorSummary({ writer, prefix: 'ci-artifact' });
+      const writer = jest.fn().mockResolvedValue();
+      const result = await saveManager.exportInspectorSummary({ writer, prefix: 'ci-artifact' });
 
       expect(result.summary.source).toBe('worldStateStore');
       expect(result.artifacts.length).toBe(3);
@@ -1363,11 +1363,14 @@ describe('SaveManager', () => {
       expect(writer).toHaveBeenCalledWith(
         expect.objectContaining({
           filename: expect.stringContaining('ci-artifact'),
+        }),
+        expect.objectContaining({
+          prefix: 'ci-artifact',
         })
       );
     });
 
-    test('should continue when writer throws', () => {
+    test('should continue when writer throws', async () => {
       mockManagers.worldStateStore = {
         select: jest.fn((selector) => {
           if (selector === factionSlice.selectors.selectFactionCascadeSummary) {
@@ -1385,14 +1388,62 @@ describe('SaveManager', () => {
 
       saveManager = new SaveManager(eventBus, mockManagers);
 
-      const writer = jest.fn(() => {
+      const writer = jest.fn().mockImplementation(() => {
         throw new Error('filesystem unavailable');
       });
 
-      const result = saveManager.exportInspectorSummary({ writer });
+      const eventSpy = jest.spyOn(eventBus, 'emit');
+
+      const result = await saveManager.exportInspectorSummary({ writer });
 
       expect(result.artifacts.length).toBe(3);
       expect(writer).toHaveBeenCalled();
+      expect(eventSpy).toHaveBeenCalledWith(
+        'telemetry:artifact_failed',
+        expect.objectContaining({
+          writerId: 'legacy-writer',
+          filename: expect.any(String),
+        })
+      );
+    });
+
+    test('should delegate to telemetry adapter when writer not provided', async () => {
+      const adapter = {
+        writeArtifacts: jest.fn().mockResolvedValue({
+          artifactsAttempted: 3,
+          artifactsWritten: 3,
+          failures: [],
+          writerSummaries: [],
+          durationMs: 1,
+        }),
+      };
+
+      mockManagers.telemetryAdapter = adapter;
+      saveManager = new SaveManager(eventBus, mockManagers);
+
+      const eventSpy = jest.spyOn(eventBus, 'emit');
+      const result = await saveManager.exportInspectorSummary({ prefix: 'adapter-test' });
+
+      expect(adapter.writeArtifacts).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ filename: expect.stringContaining('adapter-test') }),
+        ]),
+        expect.objectContaining({
+          prefix: 'adapter-test',
+        })
+      );
+      expect(result.metrics).toEqual(
+        expect.objectContaining({
+          artifactsAttempted: 3,
+          artifactsWritten: 3,
+        })
+      );
+      expect(eventSpy).toHaveBeenCalledWith(
+        'telemetry:export_completed',
+        expect.objectContaining({
+          metrics: expect.objectContaining({ artifactsWritten: 3 }),
+        })
+      );
     });
   });
 

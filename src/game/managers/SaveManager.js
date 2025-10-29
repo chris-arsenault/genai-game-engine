@@ -15,6 +15,7 @@
 import { factionSlice } from '../state/slices/factionSlice.js';
 import { tutorialSlice } from '../state/slices/tutorialSlice.js';
 import { createInspectorExportArtifacts } from '../telemetry/inspectorTelemetryExporter.js';
+import { TelemetryArtifactWriterAdapter } from '../telemetry/TelemetryArtifactWriterAdapter.js';
 
 export class SaveManager {
   constructor(eventBus, managers = {}) {
@@ -47,6 +48,15 @@ export class SaveManager {
       maxSaveSlots: 10,
       verifyWorldStateParity: true,
     };
+
+    // Telemetry export integration
+    const telemetryAdapterCandidate = managers.telemetryAdapter;
+    this._telemetryAdapter =
+      telemetryAdapterCandidate && typeof telemetryAdapterCandidate.writeArtifacts === 'function'
+        ? telemetryAdapterCandidate
+        : null;
+    const telemetryWriters = Array.isArray(managers.telemetryWriters) ? [...managers.telemetryWriters] : null;
+    this._telemetrySeedWriters = telemetryWriters;
 
     // Event unsubscriber references
     this._offQuestCompleted = null;
@@ -438,24 +448,76 @@ export class SaveManager {
    * @param {string} [options.prefix] - File prefix override
    * @returns {{summary: Object, artifacts: Array}}
    */
-  exportInspectorSummary(options = {}) {
+  async exportInspectorSummary(options = {}) {
     const summary = this.getInspectorSummary();
     const { summary: sanitizedSummary, artifacts } = createInspectorExportArtifacts(summary, options);
 
-    const writer = options.writer;
-    if (typeof writer === 'function') {
-      for (const artifact of artifacts) {
-        try {
-          writer({ ...artifact });
-        } catch (error) {
-          console.warn('[SaveManager] Telemetry export writer failed', error);
+    const prefix = options.prefix ?? 'save-inspector';
+    const context = {
+      prefix,
+      formats: Array.from(
+        new Set(
+          artifacts.map((artifact) => artifact.type).filter((type) => typeof type === 'string')
+        )
+      ),
+      artifactCount: artifacts.length,
+      source: sanitizedSummary.source,
+      ...(options.context ?? {}),
+      ...(options.writerContext ?? {}),
+    };
+
+    this.eventBus?.emit?.('telemetry:export_started', {
+      artifactCount: artifacts.length,
+      context,
+    });
+
+    let metrics = null;
+
+    try {
+      const writer = options.writer;
+      if (typeof writer === 'function') {
+        for (const artifact of artifacts) {
+          try {
+            await Promise.resolve(writer({ ...artifact }, context));
+          } catch (error) {
+            console.warn('[SaveManager] Telemetry export writer failed', error);
+            this.eventBus?.emit?.('telemetry:artifact_failed', {
+              writerId: 'legacy-writer',
+              filename: artifact.filename,
+              errorMessage: error instanceof Error ? error.message : String(error),
+              context,
+            });
+          }
+        }
+      } else {
+        const adapter =
+          options.writerAdapter ??
+          this._telemetryAdapter ??
+          this._instantiateTelemetryAdapter();
+
+        if (adapter) {
+          metrics = await adapter.writeArtifacts(artifacts, context);
         }
       }
+
+      this.eventBus?.emit?.('telemetry:export_completed', {
+        artifactCount: artifacts.length,
+        context,
+        metrics,
+      });
+    } catch (error) {
+      this.eventBus?.emit?.('telemetry:export_failed', {
+        artifactCount: artifacts.length,
+        context,
+        errorMessage: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
     }
 
     return {
       summary: sanitizedSummary,
       artifacts,
+      metrics,
     };
   }
 
@@ -673,6 +735,20 @@ export class SaveManager {
   disableAutosave() {
     this.autosaveEnabled = false;
     console.log('[SaveManager] Autosave disabled');
+  }
+
+  _instantiateTelemetryAdapter() {
+    if (this._telemetryAdapter) {
+      return this._telemetryAdapter;
+    }
+
+    const seedWriters = Array.isArray(this._telemetrySeedWriters) ? [...this._telemetrySeedWriters] : [];
+    this._telemetryAdapter = new TelemetryArtifactWriterAdapter({
+      eventBus: this.eventBus,
+      writers: seedWriters,
+    });
+    this._telemetrySeedWriters = null;
+    return this._telemetryAdapter;
   }
 
   /**

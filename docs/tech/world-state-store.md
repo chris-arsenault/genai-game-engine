@@ -75,10 +75,10 @@ _Updated during Autonomous Sessions #62–64 (2025-10-30)._
 - Recommended use: integrate into CI smoke to guard regressions on observability-heavy reducers.
 
 ## Telemetry Export Monitoring
-- **Adapter instrumentation** (planned in `docs/plans/telemetry-export-integration-plan.md`)
-  - `TelemetryArtifactWriterAdapter` will record per-artifact write duration and aggregate totals. Capture metrics via structured logs under the `telemetry` category.
-  - Writers emit `telemetry:artifacts_written`/`telemetry:artifact_failed` events so performance dashboards (or CI logs) can track anomalies.
-- **Writer benchmark** (new): add `benchmarks/telemetry-export-writer.js` to exercise filesystem + CI publisher adapters with synthetic artifacts, logging mean/95th percentile durations. Target <10 ms per artifact on CI runners.
+- **Adapter instrumentation**: `src/game/telemetry/TelemetryArtifactWriterAdapter.js` now records per-writer timings, success/failure counts, and emits `telemetry:artifacts_written` / `telemetry:artifact_failed`. SaveManager boots a default instance (eventBus wired) so automation pipelines only need to register writers.
+- **Filesystem writer**: `src/game/telemetry/FileSystemTelemetryWriter.js` persists artifacts with deterministic UTF-8 output and recursive dir creation. Combine with adapter fan-out for QA captures, Playwright attachments, or CI upload staging.
+- **Asynchronous export contract**: `SaveManager.exportInspectorSummary()` is now `async`—always `await window.game.saveManager.exportInspectorSummary(...)` inside automation helpers to ensure writer completion and metrics availability (`result.metrics.artifactsWritten`, etc.).
+- **Writer benchmark**: `benchmarks/telemetry-export-writer.js` exercises adapter + filesystem writer against synthetic summaries. Target <10 ms per artifact on CI runners; keep console output in the session handoff when thresholds drift.
 - **Dispatch regression guardrail**
   - After integrating adapters or transcript recorders, rerun `node benchmarks/state-store-prototype.js` and compare `dispatchMeanMs` deltas (budget: +0.01 ms max variance, guardrail still ≤0.25 ms).
   - Record benchmark outputs in `benchmark-results/` for trend analysis; link the latest run inside session handoffs.
@@ -103,7 +103,7 @@ npx playwright test tests/e2e/debug-overlay-telemetry.spec.js
 npx playwright test tests/e2e/hud-telemetry.spec.js
 npx playwright test tests/e2e/cascade-mission-telemetry.spec.js
 node benchmarks/state-store-prototype.js
-node benchmarks/telemetry-export-writer.js # (after adapter landing)
+node benchmarks/telemetry-export-writer.js # validate writer throughput (<10ms per artifact)
 DEBUG=telemetry npm run export-telemetry -- --dryRun # validates writer wiring without disk writes
 ```
 
