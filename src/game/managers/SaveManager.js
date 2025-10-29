@@ -16,6 +16,7 @@ import { factionSlice } from '../state/slices/factionSlice.js';
 import { tutorialSlice } from '../state/slices/tutorialSlice.js';
 import { createInspectorExportArtifacts } from '../telemetry/inspectorTelemetryExporter.js';
 import { TelemetryArtifactWriterAdapter } from '../telemetry/TelemetryArtifactWriterAdapter.js';
+import { buildTutorialTranscript } from '../tutorial/serializers/tutorialTranscriptSerializer.js';
 
 export class SaveManager {
   constructor(eventBus, managers = {}) {
@@ -33,6 +34,7 @@ export class SaveManager {
       (typeof globalThis !== 'undefined' && globalThis.localStorage
         ? globalThis.localStorage
         : null);
+    this.tutorialTranscriptRecorder = managers.tutorialTranscriptRecorder ?? null;
 
     // Save state
     this.autosaveEnabled = true;
@@ -404,6 +406,7 @@ export class SaveManager {
         tutorial: {
           latestSnapshot: null,
           snapshots: [],
+          transcript: [],
         },
       };
     }
@@ -414,6 +417,7 @@ export class SaveManager {
     };
     let tutorialSnapshots = [];
     let latestSnapshot = null;
+    let tutorialTranscript = [];
 
     try {
       cascadeSummary = this.worldStateStore.select(factionSlice.selectors.selectFactionCascadeSummary);
@@ -428,6 +432,15 @@ export class SaveManager {
       console.warn('[SaveManager] Failed to gather tutorial snapshots for inspector', error);
     }
 
+    if (this.tutorialTranscriptRecorder?.getTranscript) {
+      try {
+        const rawTranscript = this.tutorialTranscriptRecorder.getTranscript();
+        tutorialTranscript = buildTutorialTranscript(rawTranscript);
+      } catch (error) {
+        console.warn('[SaveManager] Failed to build tutorial transcript for inspector', error);
+      }
+    }
+
     return {
       generatedAt,
       source: 'worldStateStore',
@@ -435,6 +448,7 @@ export class SaveManager {
       tutorial: {
         latestSnapshot: latestSnapshot ?? null,
         snapshots: Array.isArray(tutorialSnapshots) ? tutorialSnapshots : [],
+        transcript: Array.isArray(tutorialTranscript) ? tutorialTranscript : [],
       },
     };
   }

@@ -1,5 +1,23 @@
 import { test, expect } from '@playwright/test';
 import { waitForGameLoad, collectConsoleErrors } from './setup.js';
+import { captureTelemetryArtifacts } from './utils/telemetryArtifacts.js';
+
+test.afterEach(async ({ page }, testInfo) => {
+  if (testInfo.status === 'skipped') {
+    return;
+  }
+  try {
+    await captureTelemetryArtifacts(page, testInfo, { formats: ['json', 'csv'] });
+  } catch (error) {
+    if (typeof testInfo.attach === 'function') {
+      const message = error instanceof Error ? `${error.message}\n${error.stack ?? ''}` : String(error);
+      await testInfo.attach('debug-inventory-telemetry-capture-error', {
+        body: Buffer.from(message, 'utf8'),
+        contentType: 'text/plain',
+      });
+    }
+  }
+});
 
 test.describe('Debug overlay inventory listing', () => {
   test('reflects inventory overlay state transitions', async ({ page }) => {

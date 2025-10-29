@@ -1222,6 +1222,7 @@ describe('SaveManager', () => {
       expect(summary.tutorial).toEqual({
         latestSnapshot: null,
         snapshots: [],
+        transcript: [],
       });
       expect(summary.generatedAt).toEqual(expect.any(Number));
     });
@@ -1294,7 +1295,42 @@ describe('SaveManager', () => {
       expect(summary.factions).toEqual(cascadeSummary);
       expect(summary.tutorial.snapshots).toEqual(tutorialSnapshots);
       expect(summary.tutorial.latestSnapshot).toEqual(latestSnapshot);
+      expect(summary.tutorial.transcript).toEqual([]);
       expect(store.select).toHaveBeenCalledTimes(3);
+    });
+
+    test('should include tutorial transcript when recorder provided', () => {
+      const store = {
+        select: jest.fn(() => []),
+      };
+
+      const transcriptRecorder = {
+        getTranscript: jest.fn(() => [
+          {
+            event: 'tutorial_step_started',
+            promptId: 'intro',
+            promptText: 'Introduction',
+            actionTaken: 'step_started',
+            timestamp: 1000,
+            metadata: { stepIndex: 0 },
+          },
+        ]),
+      };
+
+      mockManagers.worldStateStore = store;
+      mockManagers.tutorialTranscriptRecorder = transcriptRecorder;
+      saveManager = new SaveManager(eventBus, mockManagers);
+
+      const summary = saveManager.getInspectorSummary();
+
+      expect(transcriptRecorder.getTranscript).toHaveBeenCalled();
+      expect(summary.tutorial.transcript).toHaveLength(1);
+      expect(summary.tutorial.transcript[0]).toEqual(
+        expect.objectContaining({ promptId: 'intro', sequence: 0 })
+      );
+
+      mockManagers.worldStateStore = null;
+      mockManagers.tutorialTranscriptRecorder = null;
     });
   });
 

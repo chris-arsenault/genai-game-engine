@@ -77,7 +77,7 @@ _Updated during Autonomous Sessions #62–64 (2025-10-30)._
 ## Telemetry Export Monitoring
 - **Adapter instrumentation**: `src/game/telemetry/TelemetryArtifactWriterAdapter.js` now records per-writer timings, success/failure counts, and emits `telemetry:artifacts_written` / `telemetry:artifact_failed`. SaveManager boots a default instance (eventBus wired) so automation pipelines only need to register writers.
 - **Filesystem writer**: `src/game/telemetry/FileSystemTelemetryWriter.js` persists artifacts with deterministic UTF-8 output and recursive dir creation. Combine with adapter fan-out for QA captures, Playwright attachments, or CI upload staging.
-- **CLI export task**: `scripts/telemetry/exportInspectorTelemetry.js` (exposed via `npm run export-telemetry`) instantiates SaveManager with the filesystem writer, hydrates optional snapshots, and invokes the new `CiArtifactPublisher` to emit `ci-artifacts.json` manifests. Pass `--ciCommand='{"command":"gh","args":["run","upload-artifact","--name","telemetry","--path","telemetry-artifacts"]}'` to mirror CI uploads, or rely on the default dry-run metadata for local inspection.
+- **CLI export task**: `scripts/telemetry/exportInspectorTelemetry.js` (exposed via `npm run export-telemetry`) instantiates SaveManager with the filesystem writer, hydrates optional snapshots, and invokes `CiArtifactPublisher` to emit `ci-artifacts.json` manifests. Upload commands can be supplied via repeated `--ciCommand` flags **or** the new environment hooks `TELEMETRY_CI_COMMANDS` / `TELEMETRY_CI_COMMANDS_PATH`, which accept JSON arrays or newline-delimited definitions. Local runs default to dry-run metadata while CI honours command execution when `CI=true`.
 - **CI artifact publisher**: `src/game/telemetry/CiArtifactPublisher.js` writes metadata manifests and executes optional upload commands with dependency-injected runners. Lifecycle events (`telemetry:ci_publish_started/completed/failed`) bubble through the EventBus for dashboards; Jest coverage (`tests/game/telemetry/CiArtifactPublisher.test.js`) asserts command invocation, metadata payloads, and failure handling.
 - **Integration coverage**: `tests/integration/telemetryExportTask.test.js` drives `runTelemetryExport` end-to-end with a seeded `WorldStateStore`, verifying artifact persistence, metadata manifests, and dry-run logging. Treat this suite as the smoke test whenever adjusting CLI flags or publisher behaviour.
 - **Asynchronous export contract**: `SaveManager.exportInspectorSummary()` is now `async`—always `await window.game.saveManager.exportInspectorSummary(...)` inside automation helpers to ensure writer completion and metrics availability (`result.metrics.artifactsWritten`, etc.).
@@ -86,12 +86,25 @@ _Updated during Autonomous Sessions #62–64 (2025-10-30)._
   - After integrating adapters or transcript recorders, rerun `node benchmarks/state-store-prototype.js` and compare `dispatchMeanMs` deltas (budget: +0.01 ms max variance, guardrail still ≤0.25 ms).
   - Record benchmark outputs in `benchmark-results/` for trend analysis; link the latest run inside session handoffs.
 - **CI verification**
-  - CI pipelines should run `npm run export-telemetry -- --formats=json,csv --artifactDir=$CI_ARTIFACTS` (Phase 2 task). Capture summary JSON and ensure artifact upload job validates file presence.
+  - GitHub Actions (`.github/workflows/ci.yml`) now runs `npm run export-telemetry` after Playwright, setting `TELEMETRY_EXPORT_DIR=telemetry-artifacts` and piping a JSON context payload generated in-line. Artifact uploads are handled by the dedicated "Upload inspector telemetry artifacts" step, keeping manifests alongside JSON/CSV outputs.
   - On failure, parse adapter summary logs to pinpoint failing writer (filesystem vs CI publisher) and rerun locally with `DEBUG=telemetry npm run export-telemetry`.
 - **Playwright validation**
-  - `tests/e2e/utils/telemetryArtifacts.js` exposes `captureTelemetryArtifacts(page, testInfo, options)` which mirrors the filesystem writer pipeline, writes artifacts to the test output directory, and attaches JSON/CSV files plus summary blobs to Playwright reports.
-  - `tests/e2e/cascade-mission-telemetry.spec.js` (and future tutorial transcript spec) now leverage the helper so exports remain consistent across automation surfaces. Monitor report attachments to confirm writers remain wired in headless environments.
+  - `tests/e2e/utils/telemetryArtifacts.js` exposes `captureTelemetryArtifacts(page, testInfo, options)` which mirrors the filesystem writer pipeline, writes artifacts to the test output directory, and attaches JSON/CSV files plus summary blobs to Playwright reports. Failure handlers in tutorial/debug specs attach error notes if the export falters.
+  - Helper coverage now spans the cascade mission, tutorial overlay, debug telemetry, and debug inventory specs, ensuring QA receives matching exports across mission, tutorial, and debug flows. Monitor report attachments to confirm writers remain wired in headless environments.
   - Use `PLAYWRIGHT_TELEMETRY_DEBUG=1 npx playwright test ...` to surface helper diagnostics during local repro.
+
+## Tutorial Transcript Capture
+- **TutorialTranscriptRecorder (`src/game/tutorial/TutorialTranscriptRecorder.js`)**
+  - Subscribes to `tutorial:*` lifecycle events, records bounded transcripts (default 50 entries), and emits throttled `tutorial:transcript_updated` notifications for dashboards.
+  - Designed for SaveManager export integration and future tutorial QA tooling; retention/emit cadence configurable via constructor options.
+  - Jest coverage in `tests/game/tutorial/TutorialTranscriptRecorder.test.js` verifies event capture, retention limits, and update throttling.
+- **Transcript serialization helpers (`src/game/tutorial/serializers/tutorialTranscriptSerializer.js`)**
+  - `buildTutorialTranscript()` normalizes recorder entries for export pipelines and SaveManager summaries.
+  - `serializeTranscriptToCsv()` and `serializeTranscriptToMarkdown()` prep upcoming transcript artifacts (CSV/Markdown) for QA review.
+  - Jest coverage in `tests/game/tutorial/tutorialTranscriptSerializer.test.js` ensures formatting and limit handling stay stable.
+- **SaveManager summary integration**
+  - `SaveManager.getInspectorSummary()` now includes `tutorial.transcript` arrays derived from the recorder, enabling JSON artifact consumers to inspect prompt/action timelines even before CSV/Markdown exports ship.
+  - Upcoming work: extend `createInspectorExportArtifacts()` to generate transcript-specific artifacts and expose format toggles through Playwright/CLI pathways.
 
 ## Verification Commands
 ```bash
@@ -99,14 +112,18 @@ npm test -- factionSlice
 npm test -- tutorialSlice
 npm test -- worldStateStore
 npm test -- SaveManager
+npm test -- tutorialTranscriptRecorder
+npm test -- tutorialTranscriptSerializer
 npm test -- --runTestsByPath tests/game/telemetry/CiArtifactPublisher.test.js tests/integration/telemetryExportTask.test.js
 npm test -- ReputationUI
 npm test -- TutorialOverlay
 npm test -- SaveInspectorOverlay
 npm test -- tutorialViewModel
 npx playwright test tests/e2e/debug-overlay-telemetry.spec.js
+npx playwright test tests/e2e/debug-overlay-inventory.spec.js
 npx playwright test tests/e2e/hud-telemetry.spec.js
 npx playwright test tests/e2e/cascade-mission-telemetry.spec.js
+npx playwright test tests/e2e/tutorial-overlay.spec.js
 node benchmarks/state-store-prototype.js
 node benchmarks/telemetry-export-writer.js # validate writer throughput (<10ms per artifact)
 DEBUG=telemetry npm run export-telemetry -- --dryRun # validates writer wiring without disk writes

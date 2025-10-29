@@ -5,6 +5,69 @@ import { EventBus } from '../../src/engine/events/EventBus.js';
 import { WorldStateStore } from '../../src/game/state/WorldStateStore.js';
 import { runTelemetryExport } from '../../scripts/telemetry/exportInspectorTelemetry.js';
 
+function seedWorldStateStore(worldStateStore) {
+  const cascadeTimestamp = Date.UTC(2025, 9, 30, 17, 0, 0);
+  const tutorialTimestamp = Date.UTC(2025, 9, 30, 17, 5, 0);
+
+  worldStateStore.state.faction.byId = {
+    luminari_syndicate: {
+      id: 'luminari_syndicate',
+      cascadeCount: 2,
+      cascadeSources: ['vanguard_prime'],
+      lastCascade: {
+        sourceFactionId: 'vanguard_prime',
+        sourceFactionName: 'Vanguard Prime',
+        occurredAt: cascadeTimestamp,
+        newAttitude: 'friendly',
+      },
+    },
+  };
+  worldStateStore.state.faction.lastCascadeEvent = {
+    targetFactionId: 'luminari_syndicate',
+    targetFactionName: 'The Luminari Syndicate',
+    sourceFactionId: 'vanguard_prime',
+    sourceFactionName: 'Vanguard Prime',
+    newAttitude: 'friendly',
+    occurredAt: cascadeTimestamp,
+  };
+
+  worldStateStore.state.tutorial.promptHistorySnapshots = [
+    {
+      event: 'step_completed',
+      timestamp: tutorialTimestamp,
+      stepId: 'tutorial_intro',
+      stepIndex: 1,
+      totalSteps: 4,
+      completedSteps: ['intro'],
+      currentPrompt: {
+        title: 'Tutorial Intro',
+        stepId: 'tutorial_intro',
+        stepIndex: 1,
+        totalSteps: 4,
+        canSkip: false,
+      },
+      promptHistory: [],
+      analytics: {
+        completedTimeline: {},
+        stepDurations: {},
+      },
+      metadata: {
+        promptId: 'tutorial_intro',
+        zoneId: 'tutorial',
+        dismissed: false,
+      },
+    },
+  ];
+}
+
+function createSeededWorldStateStore() {
+  const eventBus = new EventBus();
+  const worldStateStore = new WorldStateStore(eventBus, { enableDebug: false });
+  worldStateStore.init();
+  seedWorldStateStore(worldStateStore);
+  return { eventBus, worldStateStore };
+}
+
 describe('telemetry export CLI', () => {
   let tempDir;
 
@@ -21,63 +84,7 @@ describe('telemetry export CLI', () => {
   test('produces inspector telemetry artifacts and CI metadata manifest', async () => {
     const artifactDir = path.join(tempDir, 'artifacts');
     const metadataPath = path.join(tempDir, 'ci', 'manifest.json');
-
-    const eventBus = new EventBus();
-    const worldStateStore = new WorldStateStore(eventBus, { enableDebug: false });
-    worldStateStore.init();
-
-    const cascadeTimestamp = Date.UTC(2025, 9, 30, 17, 0, 0);
-    const tutorialTimestamp = Date.UTC(2025, 9, 30, 17, 5, 0);
-
-    worldStateStore.state.faction.byId = {
-      luminari_syndicate: {
-        id: 'luminari_syndicate',
-        cascadeCount: 2,
-        cascadeSources: ['vanguard_prime'],
-        lastCascade: {
-          sourceFactionId: 'vanguard_prime',
-          sourceFactionName: 'Vanguard Prime',
-          occurredAt: cascadeTimestamp,
-          newAttitude: 'friendly',
-        },
-      },
-    };
-    worldStateStore.state.faction.lastCascadeEvent = {
-      targetFactionId: 'luminari_syndicate',
-      targetFactionName: 'The Luminari Syndicate',
-      sourceFactionId: 'vanguard_prime',
-      sourceFactionName: 'Vanguard Prime',
-      newAttitude: 'friendly',
-      occurredAt: cascadeTimestamp,
-    };
-
-    worldStateStore.state.tutorial.promptHistorySnapshots = [
-      {
-        event: 'step_completed',
-        timestamp: tutorialTimestamp,
-        stepId: 'tutorial_intro',
-        stepIndex: 1,
-        totalSteps: 4,
-        completedSteps: ['intro'],
-        currentPrompt: {
-          title: 'Tutorial Intro',
-          stepId: 'tutorial_intro',
-          stepIndex: 1,
-          totalSteps: 4,
-          canSkip: false,
-        },
-        promptHistory: [],
-        analytics: {
-          completedTimeline: {},
-          stepDurations: {},
-        },
-        metadata: {
-          promptId: 'tutorial_intro',
-          zoneId: 'tutorial',
-          dismissed: false,
-        },
-      },
-    ];
+    const { eventBus, worldStateStore } = createSeededWorldStateStore();
 
     const result = await runTelemetryExport({
       artifactDir,
@@ -113,6 +120,91 @@ describe('telemetry export CLI', () => {
       })
     );
     expect(result.publishResult.commandResults).toEqual([]);
+    expect(result.exportResult.summary.tutorial.transcript).toEqual([]);
+  });
+
+  test('executes CI upload commands configured via TELEMETRY_CI_COMMANDS', async () => {
+    const artifactDir = path.join(tempDir, 'artifacts-env');
+    const metadataPath = path.join(tempDir, 'ci', 'env-manifest.json');
+    const { eventBus, worldStateStore } = createSeededWorldStateStore();
+    const commandRunner = jest.fn().mockResolvedValue({
+      exitCode: 0,
+      stdout: 'uploaded',
+      stderr: '',
+    });
+
+    const result = await runTelemetryExport({
+      artifactDir,
+      metadataPath,
+      prefix: 'env',
+      env: {
+        CI: 'true',
+        TELEMETRY_CI_COMMANDS: JSON.stringify([{ command: 'echo', args: ['upload'] }]),
+      },
+      eventBus,
+      worldStateStore,
+      commandRunner,
+    });
+
+    expect(commandRunner).toHaveBeenCalledWith(
+      'echo',
+      ['upload'],
+      expect.objectContaining({
+        env: expect.objectContaining({ CI: 'true' }),
+      })
+    );
+    expect(result.publishResult.commandResults).toHaveLength(1);
+    expect(result.publishResult.commandResults[0]).toEqual(
+      expect.objectContaining({
+        command: 'echo',
+        exitCode: 0,
+      })
+    );
+  });
+
+  test('loads CI upload commands from TELEMETRY_CI_COMMANDS_PATH when env list absent', async () => {
+    const artifactDir = path.join(tempDir, 'artifacts-file');
+    const metadataPath = path.join(tempDir, 'ci', 'file-manifest.json');
+    const { eventBus, worldStateStore } = createSeededWorldStateStore();
+    const commandRunner = jest.fn().mockResolvedValue({
+      exitCode: 0,
+      stdout: 'uploaded',
+      stderr: '',
+    });
+
+    const commandFile = path.join(tempDir, 'telemetry-ci-commands.json');
+    await fs.writeFile(
+      commandFile,
+      JSON.stringify([{ command: 'echo', args: ['from-file'] }], null, 2),
+      'utf8'
+    );
+
+    const result = await runTelemetryExport({
+      artifactDir,
+      metadataPath,
+      prefix: 'file',
+      env: {
+        CI: 'true',
+        TELEMETRY_CI_COMMANDS_PATH: commandFile,
+      },
+      eventBus,
+      worldStateStore,
+      commandRunner,
+    });
+
+    expect(commandRunner).toHaveBeenCalledWith(
+      'echo',
+      ['from-file'],
+      expect.objectContaining({
+        env: expect.objectContaining({ CI: 'true' }),
+      })
+    );
+    expect(result.publishResult.commandResults).toHaveLength(1);
+    expect(result.publishResult.commandResults[0]).toEqual(
+      expect.objectContaining({
+        command: 'echo',
+        exitCode: 0,
+      })
+    );
   });
 });
-

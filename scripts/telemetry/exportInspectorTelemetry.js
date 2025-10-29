@@ -97,23 +97,80 @@ function parseList(value) {
 }
 
 function parseCommands(raw) {
-  const list = parseList(raw);
-  return list
-    .map((entry) => {
-      if (typeof entry !== 'string') {
-        return entry;
-      }
-      const trimmed = entry.trim();
-      if (!trimmed) {
-        return null;
-      }
-      try {
-        return JSON.parse(trimmed);
-      } catch {
-        return trimmed;
-      }
-    })
-    .filter(Boolean);
+  if (raw === undefined || raw === null) {
+    return [];
+  }
+
+  if (Array.isArray(raw)) {
+    return raw.flatMap((entry) => parseCommands(entry));
+  }
+
+  if (typeof raw === 'object') {
+    return [raw];
+  }
+
+  const trimmed = String(raw).trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      return parseCommands(parsed);
+    } catch {
+      // Fall through to fallback segmentation when JSON parsing fails.
+    }
+  }
+
+  if (trimmed.includes('\n')) {
+    return trimmed
+      .split(/\r?\n/)
+      .map((segment) => segment.trim())
+      .filter(Boolean)
+      .flatMap((segment) => parseCommands(segment));
+  }
+
+  if (trimmed.includes(',')) {
+    return trimmed
+      .split(',')
+      .map((segment) => segment.trim())
+      .filter(Boolean)
+      .flatMap((segment) => parseCommands(segment));
+  }
+
+  return [trimmed];
+}
+
+async function resolveCiCommands(options, env, logger) {
+  let commands = [];
+
+  if (options.ciCommands !== undefined) {
+    commands = parseCommands(options.ciCommands);
+  }
+
+  const envCandidates = [
+    env?.TELEMETRY_CI_COMMANDS,
+    env?.TELEMETRY_CI_COMMANDS_JSON,
+  ].filter((value) => value !== undefined && value !== null);
+
+  for (const candidate of envCandidates) {
+    commands = commands.concat(parseCommands(candidate));
+  }
+
+  if (commands.length === 0 && env?.TELEMETRY_CI_COMMANDS_PATH) {
+    try {
+      const raw = await fs.readFile(path.resolve(env.TELEMETRY_CI_COMMANDS_PATH), 'utf8');
+      commands = commands.concat(parseCommands(raw));
+    } catch (error) {
+      logger?.warn?.('[telemetry-export] Failed to read CI command file', {
+        path: env.TELEMETRY_CI_COMMANDS_PATH,
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  return commands;
 }
 
 function createMemoryStorage() {
@@ -203,7 +260,7 @@ export async function runTelemetryExport(options = {}) {
     path.resolve(resolvedArtifactDir, artifact.filename)
   );
 
-  const ciCommands = options.ciCommands ? parseCommands(options.ciCommands) : [];
+  const ciCommands = await resolveCiCommands(options, env, logger);
 
   const ciPublisher =
     options.ciPublisher ??

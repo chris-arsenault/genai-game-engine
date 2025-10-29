@@ -6,7 +6,7 @@
 ## Document Overview
 
 **Version**: 1.1
-**Last Updated**: 2025-10-30
+**Last Updated**: 2025-10-31
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 
@@ -173,8 +173,9 @@ _Progress 2025-10-30 (Session #62 instrumentation): Added cascade metadata + his
 _Progress 2025-10-30 (Session #64 implementation): Player-facing HUD overlays (Reputation, Tutorial, Save Inspector) now consume cascade/tutorial selectors with Jest + Playwright coverage ensuring QA can audit telemetry in builds without devtools._
 _Progress 2025-10-30 (Session #65 export tooling): SaveManager JSON/CSV export artifacts unlock QA/CI capture, cascade mission Playwright flow verifies telemetry, and benchmark dispatch latency holds at 0.0100 ms (<0.25 ms)._
 _Progress 2025-10-30 (Session #66 architecture): Authored telemetry export integration and tutorial transcript export plans (`docs/plans/telemetry-export-integration-plan.md`, `docs/plans/tutorial-transcript-export-plan.md`) plus monitoring guidance in `docs/tech/world-state-store.md`; backlog next steps aligned with the phased rollout._
-_Progress 2025-10-30 (Session #67 implementation): Delivered TelemetryArtifactWriterAdapter + FileSystemTelemetryWriter with SaveManager async integration, Jest coverage, Playwright updates, documentation refresh, and a telemetry-export-writer benchmark (mean 1.39 ms over 5 iterations)._
+_Progress 2025-10-30 (Session #67 implementation): Delivered TelemetryArtifactWriterAdapter + FileSystemTelemetryWriter with SaveManager async integration, Jest coverage, Playwright updates, documentation refresh, and a telemetry-export-writer benchmark (mean 1.39 ms over 5 iterations)._ 
 _Progress 2025-10-31 (Session #68 CLI integration): Introduced `npm run export-telemetry` with `CiArtifactPublisher` metadata manifests, Jest + integration coverage, and a Playwright telemetry helper that mirrors filesystem writer outputs for cascade mission automation._
+_Progress 2025-10-31 (Session #69 CI + transcript kickoff): GitHub Actions now runs the telemetry export CLI with configurable command sources and dedicated artifact uploads, telemetry helper coverage spans tutorial/debug suites, and TutorialTranscriptRecorder + serializer scaffolding feeds SaveManager summaries with fresh Jest suites; transcript artifact formats remain on deck._
 
 ---
 

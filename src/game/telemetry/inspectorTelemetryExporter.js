@@ -40,6 +40,7 @@ function sanitizeSummary(summary) {
 
   const tutorial = summary?.tutorial ?? {};
   const snapshots = Array.isArray(tutorial.snapshots) ? tutorial.snapshots : [];
+  const transcript = Array.isArray(tutorial.transcript) ? tutorial.transcript : [];
 
   return {
     generatedAt,
@@ -56,8 +57,10 @@ function sanitizeSummary(summary) {
     tutorial: {
       latestSnapshot: tutorial.latestSnapshot ?? null,
       snapshots,
+      transcript,
       metrics: {
         snapshotCount: snapshots.length,
+        transcriptCount: transcript.length,
       },
     },
   };
@@ -252,4 +255,3 @@ export function createInspectorExportArtifacts(summary, options = {}) {
 export const inspectorTelemetryExporter = {
   createInspectorExportArtifacts,
 };
-

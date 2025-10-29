@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { waitForGameLoad, collectConsoleErrors } from './setup.js';
+import { captureTelemetryArtifacts } from './utils/telemetryArtifacts.js';
 
 async function resetTutorialProgress(page) {
   await page.addInitScript(() => {
@@ -273,6 +274,23 @@ async function reachForensicStep(page) {
     { timeout: 5000 }
   );
 }
+
+test.afterEach(async ({ page }, testInfo) => {
+  if (testInfo.status === 'skipped') {
+    return;
+  }
+  try {
+    await captureTelemetryArtifacts(page, testInfo, { formats: ['json', 'csv'] });
+  } catch (error) {
+    if (typeof testInfo.attach === 'function') {
+      const message = error instanceof Error ? `${error.message}\n${error.stack ?? ''}` : String(error);
+      await testInfo.attach('tutorial-telemetry-capture-error', {
+        body: Buffer.from(message, 'utf8'),
+        contentType: 'text/plain',
+      });
+    }
+  }
+});
 
 test.afterEach(async ({ page }, testInfo) => {
   if (testInfo.status === testInfo.expectedStatus) {

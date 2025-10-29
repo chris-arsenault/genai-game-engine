@@ -68,6 +68,19 @@ describe('inspectorTelemetryExporter', () => {
             promptId: 'tutorial_complete_prompt',
           },
         ],
+        transcript: [
+          {
+            sequence: 0,
+            event: 'tutorial_step_started',
+            promptId: 'intro',
+            title: 'Introduction',
+            action: 'step_started',
+            timestamp: Date.UTC(2025, 9, 30, 17, 0, 0),
+            timestampIso: new Date(Date.UTC(2025, 9, 30, 17, 0, 0)).toISOString(),
+            followUpNarrative: null,
+            metadata: { stepIndex: 0 },
+          },
+        ],
       },
     };
 
@@ -79,6 +92,10 @@ describe('inspectorTelemetryExporter', () => {
     expect(sanitized.generatedAt).toBe(summary.generatedAt);
     expect(sanitized.factions.metrics.cascadeTargetCount).toBe(2);
     expect(sanitized.tutorial.metrics.snapshotCount).toBe(2);
+    expect(sanitized.tutorial.metrics.transcriptCount).toBe(1);
+    expect(sanitized.tutorial.transcript[0]).toEqual(
+      expect.objectContaining({ promptId: 'intro', sequence: 0 })
+    );
 
     expect(artifacts).toHaveLength(3);
 
@@ -112,6 +129,7 @@ describe('inspectorTelemetryExporter', () => {
     expect(summary.source).toBe('unavailable');
     expect(summary.factions.cascadeTargets).toEqual([]);
     expect(summary.tutorial.snapshots).toEqual([]);
+    expect(summary.tutorial.transcript).toEqual([]);
     expect(artifacts.length).toBe(3);
 
     const jsonArtifact = artifacts.find((artifact) => artifact.type === 'json');
@@ -119,4 +137,3 @@ describe('inspectorTelemetryExporter', () => {
     expect(JSON.parse(jsonArtifact.content).tutorial.snapshots).toEqual([]);
   });
 });
-
