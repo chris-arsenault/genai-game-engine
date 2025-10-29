@@ -310,6 +310,83 @@ describe('QuestManager', () => {
     });
   });
 
+  describe('Scrambler gating requirements', () => {
+    const questId = 'scrambler_gate_test';
+    const objectiveId = 'obj_infiltrate';
+
+    beforeEach(() => {
+      const quest = {
+        id: questId,
+        title: 'Scrambler Gate Test',
+        type: 'main',
+        objectives: [
+          {
+            id: objectiveId,
+            description: 'Enter the Memory Parlor interior',
+            trigger: {
+              event: 'area:entered',
+              areaId: 'memory_parlor_interior'
+            },
+            optional: false,
+            requirements: {
+              storyFlags: ['cipher_scrambler_access'],
+              requireActiveScrambler: true
+            },
+            blockedMessage: 'Firewall requires an active scrambler charge.'
+          }
+        ]
+      };
+
+      questManager.registerQuest(quest);
+      questManager.startQuest(questId);
+    });
+
+    test('blocks infiltration when scrambler access is missing', () => {
+      const blockedHandler = jest.fn();
+      eventBus.on('objective:blocked', blockedHandler);
+
+      eventBus.emit('area:entered', { areaId: 'memory_parlor_interior' });
+
+      expect(blockedHandler).toHaveBeenCalledTimes(1);
+      const payload = blockedHandler.mock.calls[0][0];
+      expect(payload.reason).toBe('missing_story_flag');
+      expect(payload.requirement).toBe('cipher_scrambler_access');
+      const quest = questManager.getQuest(questId);
+      const state = quest.objectiveStates.get(objectiveId);
+      expect(state.status).toBe('pending');
+    });
+
+    test('blocks infiltration when scrambler is inactive', () => {
+      const blockedHandler = jest.fn();
+      eventBus.on('objective:blocked', blockedHandler);
+
+      storyFlags.setFlag('cipher_scrambler_access', true);
+      eventBus.emit('area:entered', { areaId: 'memory_parlor_interior' });
+
+      expect(blockedHandler).toHaveBeenCalledTimes(1);
+      const payload = blockedHandler.mock.calls[0][0];
+      expect(payload.reason).toBe('scrambler_inactive');
+      expect(payload.requirement).toBe('cipher_scrambler_active');
+      const quest = questManager.getQuest(questId);
+      const state = quest.objectiveStates.get(objectiveId);
+      expect(state.status).toBe('pending');
+    });
+
+    test('completes objective when scrambler active flag is set', () => {
+      const completedHandler = jest.fn();
+      eventBus.on('objective:completed', completedHandler);
+
+      storyFlags.setFlag('cipher_scrambler_access', true);
+      storyFlags.setFlag('cipher_scrambler_active', true);
+
+      eventBus.emit('area:entered', { areaId: 'memory_parlor_interior' });
+
+      expect(completedHandler).toHaveBeenCalled();
+      const payload = completedHandler.mock.calls[0][0];
+      expect(payload.objectiveId).toBe(objectiveId);
+    });
+  });
+
   describe('Quest Completion', () => {
     let testQuest;
 

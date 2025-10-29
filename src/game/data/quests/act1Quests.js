@@ -294,6 +294,11 @@ export const QUEST_003_MEMORY_PARLOR = {
         event: 'area:entered',
         areaId: 'memory_parlor_interior'
       },
+      requirements: {
+        storyFlags: ['cipher_scrambler_access', 'cipher_scrambler_active'],
+        requireActiveScrambler: true
+      },
+      blockedMessage: 'The firewall hums. Activate a Cipher scrambler charge before crossing the threshold.',
       optional: false
     },
     {
@@ -354,7 +359,15 @@ export const QUEST_003_MEMORY_PARLOR = {
       condition: { storyFlags: ['case_003_solved'] },
       nextQuest: 'case_005_memory_drive'
     }
-  ]
+  ],
+
+  metadata: {
+    infiltration: {
+      requiresScramblerCharge: true,
+      firewallAreaId: 'memory_parlor_firewall',
+      gearRequirementFlag: 'cipher_scrambler_access'
+    }
+  }
 };
 
 /**

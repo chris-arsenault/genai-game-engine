@@ -12,6 +12,16 @@
  */
 
 import { System } from '../../engine/ecs/System.js';
+import { GameConfig } from '../config/GameConfig.js';
+
+function clamp01(value) {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  if (value <= 0) return 0;
+  if (value >= 1) return 1;
+  return value;
+}
 
 export class DisguiseSystem extends System {
   constructor(componentRegistry, eventBus, factionManager) {
@@ -30,6 +40,14 @@ export class DisguiseSystem extends System {
 
     // Track suspicious actions
     this.recentSuspiciousActions = [];
+
+    const scramblerConfig = GameConfig?.stealth?.firewallScrambler || {};
+    this.scramblerBaseConfig = scramblerConfig;
+    this.scramblerEffect = {
+      active: false,
+      detectionMultiplier: 1,
+      suspicionDecayBonusPerSecond: 0,
+    };
   }
 
   /**
@@ -47,6 +65,28 @@ export class DisguiseSystem extends System {
     // Listen for disguise equip/unequip
     this.events.on('disguise:equipped', (data) => this.onDisguiseEquipped(data));
     this.events.on('disguise:unequipped', (data) => this.onDisguiseUnequipped(data));
+
+    this.events.on('firewall:scrambler_activated', (payload = {}) => {
+      this.scramblerEffect.active = true;
+      const detectionMultiplier = clamp01(
+        Number(payload.detectionMultiplier) ||
+        Number(this.scramblerBaseConfig.detectionMultiplier) ||
+        0.35
+      );
+      this.scramblerEffect.detectionMultiplier = detectionMultiplier <= 0 ? 0.05 : detectionMultiplier;
+      this.scramblerEffect.suspicionDecayBonusPerSecond = Math.max(
+        0,
+        Number(payload.suspicionDecayBonusPerSecond) ||
+        Number(this.scramblerBaseConfig.suspicionDecayBonusPerSecond) ||
+        0
+      );
+    });
+
+    this.events.on('firewall:scrambler_expired', () => {
+      this.scramblerEffect.active = false;
+      this.scramblerEffect.detectionMultiplier = 1;
+      this.scramblerEffect.suspicionDecayBonusPerSecond = 0;
+    });
 
     console.log('[DisguiseSystem] Initialized');
   }
@@ -78,6 +118,10 @@ export class DisguiseSystem extends System {
     // Decay suspicion when not performing suspicious actions
     if (this.recentSuspiciousActions.length === 0) {
       disguise.reduceSuspicion(this.config.suspicionDecayRate * deltaTime);
+    }
+
+    if (this.scramblerEffect.active && this.scramblerEffect.suspicionDecayBonusPerSecond > 0) {
+      disguise.reduceSuspicion(this.scramblerEffect.suspicionDecayBonusPerSecond * deltaTime);
     }
 
     // Check if disguise is blown
@@ -157,7 +201,12 @@ export class DisguiseSystem extends System {
     let detectionChance = this.config.baseDetectionChance * (1 - effectiveness);
 
     // Add bonus for suspicious actions
-    const suspiciousBonus = this.recentSuspiciousActions.length * 0.1;
+    let suspiciousBonus = this.recentSuspiciousActions.length * 0.1;
+    if (this.scramblerEffect.active) {
+      const modifier = clamp01(this.scramblerEffect.detectionMultiplier);
+      suspiciousBonus *= modifier;
+      detectionChance *= modifier;
+    }
     detectionChance += suspiciousBonus;
 
     // Cap at 90% max detection chance

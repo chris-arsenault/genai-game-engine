@@ -28,12 +28,13 @@
   - Exercises `hasCurrency` and `hasItem` dialogue conditions.
   - Reuses the shared vendor metadata pipeline so InventoryOverlay and debug telemetry flag Cipher-sourced gear.
   - Playwright smoke test validates runtime vendor purchases and credit deductions.
+  - Coordinates with `FirewallScramblerSystem` to consume charges, broadcast scrambler activation/expiry events, and reduce disguise detection risk during Memory Parlor infiltration.
 
 ## Inventory & Rewards
 - **Primary Item**: `gadget_cipher_scrambler_charge` (Gadget, Rare)
   - Tags: `gadget`, `lead:parlor_infiltration`, `vendor:cipher_quartermaster`, `faction:cipher_collective`
   - Metadata: `knowledgeId: cipher_scrambler_access`, `gearId: cipher_scrambler_charge`, acquisition channel (`purchase_full_price` or `purchase_discounted`).
-  - Usage Notes: Single-use disruption that lowers firewall defenses for ~30 seconds—provides narrative justification for stealth window.
+  - Usage Notes: Single-use disruption that lowers firewall defenses for ~30 seconds; activation now sets world-state flags, consumes inventory charges, and is required for the Memory Parlor infiltration objective to advance.
 - **Future Stock Concepts** (defer until stealth toolkit lands):
   - Recharge kits that extend the scrambler effect for later acts.
   - Cipher-branded disguises granting short-term faction reputation masks.
@@ -50,3 +51,5 @@
 - `src/game/data/quests/act1Quests.js`
 - `tests/game/data/Act1Dialogues.cipherQuartermaster.test.js`
 - `tests/e2e/vendor-black-market-flow.spec.js`
+- `src/game/systems/FirewallScramblerSystem.js`
+- `tests/game/systems/FirewallScramblerSystem.test.js`

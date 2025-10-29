@@ -483,6 +483,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - New `cipher_quartermaster` dialogue tree exposes currency and trade branches using `hasCurrency` conditions plus vendor transactions that emit knowledge events.
   - Act 1 scene spawns the quartermaster NPC and the Hollow Case quest logs an optional objective when `cipher_scrambler_access` knowledge fires.
   - Jest/Playwright coverage validates the vendor metadata (tags, costs, dialogue context) and ensures credits are deducted through the shared pipeline.
+- **Notes**: Session #41 extended this deliverable with `FirewallScramblerSystem`, adding active scrambler gating to Memory Parlor infiltration and synchronized disguise detection modifiers.
 
 #### DIA-208: Support inventory-aware dialogue conditions
 - **Priority**: P1

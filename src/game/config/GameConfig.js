@@ -84,6 +84,19 @@ export const GameConfig = {
     dialogueTimeout: 30000 // auto-close after 30 seconds
   },
 
+  stealth: {
+    firewallScrambler: {
+      knowledgeId: 'cipher_scrambler_access',
+      itemId: 'gadget_cipher_scrambler_charge',
+      activationAreaId: 'memory_parlor_interior',
+      firewallAreaId: 'memory_parlor_firewall',
+      durationSeconds: 30,
+      detectionMultiplier: 0.35,
+      suspicionDecayBonusPerSecond: 12,
+      cooldownSeconds: 5
+    }
+  },
+
   camera: {
     // Follow behavior
     followSpeed: 0.1, // lerp factor (0.0-1.0), lower = smoother

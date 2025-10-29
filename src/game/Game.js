@@ -18,6 +18,7 @@ import { TutorialSystem } from './systems/TutorialSystem.js';
 import { NPCMemorySystem } from './systems/NPCMemorySystem.js';
 import { DisguiseSystem } from './systems/DisguiseSystem.js';
 import { QuestSystem } from './systems/QuestSystem.js';
+import { FirewallScramblerSystem } from './systems/FirewallScramblerSystem.js';
 
 // State
 import { WorldStateStore } from './state/WorldStateStore.js';
@@ -110,6 +111,7 @@ export class Game {
       cameraFollow: null,
       tutorial: null,
       npcMemory: null,
+      firewallScrambler: null,
       disguise: null,
       quest: null,
       render: null  // RenderSystem (engine system managed by game)
@@ -300,6 +302,14 @@ export class Game {
     );
     this.gameSystems.npcMemory.init();
 
+    // Create firewall scrambler system (bridges infiltration gadget to stealth systems)
+    this.gameSystems.firewallScrambler = new FirewallScramblerSystem(
+      this.componentRegistry,
+      this.eventBus,
+      this.storyFlagManager
+    );
+    this.gameSystems.firewallScrambler.init();
+
     // Create disguise system (requires FactionManager)
     this.gameSystems.disguise = new DisguiseSystem(
       this.componentRegistry,
@@ -330,6 +340,7 @@ export class Game {
     this.systemManager.registerSystem(this.gameSystems.tutorial, 5);
     this.systemManager.registerSystem(this.gameSystems.playerMovement, 10);
     this.systemManager.registerSystem(this.gameSystems.npcMemory, 20);
+    this.systemManager.registerSystem(this.gameSystems.firewallScrambler, 21);
     this.systemManager.registerSystem(this.gameSystems.disguise, 22);
     this.systemManager.registerSystem(this.gameSystems.factionReputation, 25);
     this.systemManager.registerSystem(this.gameSystems.quest, 27);

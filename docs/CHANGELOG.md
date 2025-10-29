@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- FirewallScramblerSystem links Cipher scrambler charges to Memory Parlor infiltration by consuming vendor gear, emitting timed firewall bypass events, and propagating disguise detection modifiers through the DisguiseSystem and quest gating (`src/game/systems/FirewallScramblerSystem.js`, `src/game/systems/DisguiseSystem.js`, `src/game/managers/QuestManager.js`, `src/game/data/quests/act1Quests.js`).
 - Optional Act 1 Black Market Broker vendor introduces purchase and trade branches that award memory parlor intel and emit knowledge events for optional quest tracking (`src/game/data/dialogues/Act1Dialogues.js`, `src/game/scenes/Act1Scene.js`, `src/game/data/quests/act1Quests.js`).
 - Cipher Collective quartermaster vendor now offers parlor scrambler gear with currency-or-trade branches, emits knowledge events, and adds a matching optional Hollow Case objective (`src/game/data/dialogues/Act1Dialogues.js`, `src/game/scenes/Act1Scene.js`, `src/game/data/quests/act1Quests.js`).
 - InventoryOverlay surfaces vendor acquisition metadata (vendor name, cost breakdown, timestamp) and highlights vendor-sourced loot for QA traceability (`src/game/ui/InventoryOverlay.js`, `src/game/Game.js`).
@@ -34,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restored the performance profiling harness by pointing `npm run profile` at `benchmark.js` and upgrading benchmark component registration to the explicit type API, eliminating `MODULE_NOT_FOUND` and component validation errors (`package.json`, `benchmark.js`).
 
 ### Testing
+- Added focused unit coverage for scrambler activation, disguise detection modifiers, and quest gating requirements to lock Memory Parlor infiltration behind the new system (`tests/game/systems/FirewallScramblerSystem.test.js`, `tests/game/systems/DisguiseSystem.scrambler.test.js`, `tests/game/managers/QuestManager.test.js`).
 - Added coverage for black market vendor dialogue data, vendor metadata rendering in InventoryOverlay, and currency-aware dialogue gating (`tests/game/data/Act1Dialogues.blackMarketVendor.test.js`, `tests/game/ui/InventoryOverlay.vendorSummary.test.js`, `tests/game/systems/DialogueSystem.test.js`).
 - Added coverage for vendor purchase emission, Game inventory integration, and dialogue inventory gating (`tests/game/economy/vendorEvents.test.js`, `tests/game/Game.vendorPurchases.test.js`, `tests/game/systems/DialogueSystem.test.js`).
 - Added unit coverage for WorldStateStore inventory reducers, inventory overlay navigation, and Playwright smoke ensuring debug overlay entries reflect inventory state (`tests/game/state/inventorySlice.test.js`, `tests/game/Game.uiOverlays.test.js`, `tests/e2e/debug-overlay-inventory.spec.js`).

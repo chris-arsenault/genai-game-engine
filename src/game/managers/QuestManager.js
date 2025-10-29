@@ -252,10 +252,27 @@ export class QuestManager {
         const state = quest.objectiveStates.get(objective.id);
         if (state.status === 'completed') continue;
 
-        // Check if this objective is triggered by this event
-        if (this.checkObjectiveTrigger(objective, eventType, eventData)) {
-          this.progressObjective(questId, objective.id, quest, state);
+        const triggerResult = this.checkObjectiveTrigger(objective, eventType, eventData);
+        if (!triggerResult.matched) continue;
+
+        if (triggerResult.blocked) {
+          this.events.emit('objective:blocked', {
+            questId,
+            questTitle: quest.title,
+            questType: quest.type,
+            objectiveId: objective.id,
+            objectiveDescription: objective.description,
+            blockedMessage: objective.blockedMessage || null,
+            reason: triggerResult.reason,
+            requirement: triggerResult.requirement || null,
+            requirements: objective.requirements || null,
+            eventType,
+            eventData
+          });
+          continue;
         }
+
+        this.progressObjective(questId, objective.id, quest, state);
       }
     }
   }
@@ -268,21 +285,88 @@ export class QuestManager {
    * @returns {boolean}
    */
   checkObjectiveTrigger(objective, eventType, eventData) {
-    if (!objective.trigger) return false;
+    if (!objective.trigger) return { matched: false };
 
     const trigger = objective.trigger;
 
     // Event type must match
-    if (trigger.event !== eventType) return false;
+    if (trigger.event !== eventType) return { matched: false };
 
     // Check additional conditions
-    if (trigger.caseId && eventData.caseId !== trigger.caseId) return false;
-    if (trigger.theoryId && eventData.theoryId !== trigger.theoryId) return false;
-    if (trigger.npcId && eventData.npcId !== trigger.npcId) return false;
-    if (trigger.areaId && eventData.areaId !== trigger.areaId) return false;
-    if (trigger.abilityId && eventData.abilityId !== trigger.abilityId) return false;
+    if (trigger.caseId && eventData.caseId !== trigger.caseId) return { matched: false };
+    if (trigger.theoryId && eventData.theoryId !== trigger.theoryId) return { matched: false };
+    if (trigger.npcId && eventData.npcId !== trigger.npcId) return { matched: false };
+    if (trigger.areaId && eventData.areaId !== trigger.areaId) return { matched: false };
+    if (trigger.abilityId && eventData.abilityId !== trigger.abilityId) return { matched: false };
 
-    return true;
+    const requirementResult = this.evaluateObjectiveRequirements(objective.requirements, eventData);
+    if (!requirementResult.met) {
+      return {
+        matched: true,
+        blocked: true,
+        reason: requirementResult.reason,
+        requirement: requirementResult.requirement || null,
+      };
+    }
+
+    return { matched: true, blocked: false };
+  }
+
+  /**
+   * Evaluate objective requirements (story flags, access conditions, etc.)
+   * @param {Object|null} requirements
+   * @param {Object} eventData
+   * @returns {{met: boolean, reason?: string, requirement?: string}}
+   */
+  evaluateObjectiveRequirements(requirements, eventData) {
+    if (!requirements) {
+      return { met: true };
+    }
+
+    if (Array.isArray(requirements.storyFlags)) {
+      for (const flagId of requirements.storyFlags) {
+        if (!this.storyFlags.hasFlag(flagId)) {
+          return {
+            met: false,
+            reason: 'missing_story_flag',
+            requirement: flagId,
+          };
+        }
+      }
+    }
+
+    if (Array.isArray(requirements.notStoryFlags)) {
+      for (const flagId of requirements.notStoryFlags) {
+        if (this.storyFlags.hasFlag(flagId)) {
+          return {
+            met: false,
+            reason: 'forbidden_story_flag',
+            requirement: flagId,
+          };
+        }
+      }
+    }
+
+    if (requirements.requireActiveScrambler && !this.storyFlags.hasFlag('cipher_scrambler_active')) {
+      return {
+        met: false,
+        reason: 'scrambler_inactive',
+        requirement: 'cipher_scrambler_active',
+      };
+    }
+
+    if (requirements.eventAreaIds && Array.isArray(requirements.eventAreaIds)) {
+      const allowedAreas = requirements.eventAreaIds;
+      if (eventData?.areaId && !allowedAreas.includes(eventData.areaId)) {
+        return {
+          met: false,
+          reason: 'area_not_authorized',
+          requirement: eventData.areaId,
+        };
+      }
+    }
+
+    return { met: true };
   }
 
   /**
