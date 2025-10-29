@@ -130,6 +130,67 @@
       color: rgba(255, 255, 255, 0.55);
     }
 
+    #debug-world-state {
+      margin-top: 8px;
+      border-top: 1px solid rgba(0, 255, 255, 0.35);
+      padding-top: 6px;
+      max-width: 320px;
+    }
+
+    #debug-world-meta {
+      font-size: 11px;
+      margin-bottom: 4px;
+      color: #9be7ff;
+    }
+
+    .debug-world-section {
+      margin-bottom: 4px;
+    }
+
+    .debug-subtitle {
+      font-weight: bold;
+      font-size: 11px;
+      margin-bottom: 2px;
+      color: #66ffff;
+    }
+
+    .debug-world-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-size: 11px;
+      line-height: 1.35;
+      color: #c6f8ff;
+    }
+
+    .debug-world-row {
+      color: #c6f8ff;
+    }
+
+    .debug-world-row[data-tone="active"] {
+      color: #8ef9d3;
+    }
+
+    .debug-world-row[data-tone="completed"] {
+      color: #9dd3ff;
+    }
+
+    .debug-world-row[data-tone="failed"] {
+      color: #ff9d9d;
+    }
+
+    .debug-world-row[data-tone="flag-active"] {
+      color: #fbc2ff;
+    }
+
+    .debug-world-row[data-tone="flag-inactive"] {
+      color: rgba(200, 200, 200, 0.72);
+    }
+
+    .debug-world-row.empty {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
     #debug-dialogue {
       margin-top: 8px;
       border-top: 1px solid rgba(0, 255, 255, 0.35);
@@ -216,6 +277,22 @@
         <div class="debug-title">UI Overlays</div>
         <div id="debug-ui-overlays-list" class="debug-overlays-list">
           <div class="debug-overlay-row empty">No overlay state</div>
+        </div>
+      </div>
+      <div id="debug-world-state">
+        <div class="debug-title">World State</div>
+        <div id="debug-world-meta" class="debug-meta">Quests: n/a · Flags: n/a</div>
+        <div class="debug-world-section">
+          <div class="debug-subtitle">Quests</div>
+          <div id="debug-quests-list" class="debug-world-list">
+            <div class="debug-world-row empty">No quest data</div>
+          </div>
+        </div>
+        <div class="debug-world-section">
+          <div class="debug-subtitle">Story Flags</div>
+          <div id="debug-story-list" class="debug-world-list">
+            <div class="debug-world-row empty">No story flags</div>
+          </div>
         </div>
       </div>
       <div id="debug-dialogue">

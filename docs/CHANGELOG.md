@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Memory Parlor infiltration scene adds neon detection halos, ambient floor lighting, and dynamic guard prompts that react to scrambler events for stealth readability (`src/game/scenes/MemoryParlorScene.js`, `tests/game/scenes/MemoryParlorScene.readability.test.js`).
+- Debug overlay now surfaces WorldStateStore quest and story slices with summarized metadata for QA inspection, backed by reusable view-model helpers and unit coverage (`index.html`, `src/main.js`, `src/game/ui/helpers/worldStateDebugView.js`, `tests/game/ui/worldStateDebugView.test.js`).
+- GitHub Actions CI workflow runs Jest and Playwright smoke suites with Chromium installation, JUnit output, and artifact retention (`.github/workflows/ci.yml`).
 - Playwright return-flow scenario validates the Memory Parlor escape transition, quest completion rewards, and Captain Reese follow-up dialogue in Act 1 (`tests/e2e/memory-parlor-return-dialogue.spec.js`).
 - Memory Parlor infiltration scene now includes stealth cover geometry, intel evidence pickups (with knowledge emission for the client registry), and an exit trigger that routes the player back to the Neon District (`src/game/scenes/MemoryParlorScene.js`).
 - Memory Parlor infiltration scene loads via the new `loadMemoryParlorScene()` transition, introducing dedicated firewall trigger volumes, barrier visuals that react to scrambler events, and interior NPC set dressing to exercise stealth beats (`src/game/scenes/MemoryParlorScene.js`, `src/game/Game.js`).

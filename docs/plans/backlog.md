@@ -218,6 +218,7 @@ _Progress 2025-10-28 (Session #21 implementation): DialogueBox now instantiated 
 _Progress 2025-10-28 (Session #22 implementation): Procedural performance tests rebaselined (TileMap <20 ms for 10k ops, SeededRandom >5 M ops/sec) to stabilize CI while retaining performance guardrails._
 _Progress 2025-10-28 (Session #23 implementation): Added Playwright smoke validating dialogue overlay + transcript selectors via WorldStateStore and prototyped debug overlay readout; next up quest path coverage._
 _Progress 2025-10-28 (Session #24 implementation): Quest 001 Playwright scenario landed (branches into Case 002) and dialogue debug overlay now offers timestamped transcripts with pause/resume controls; tutorial automation + transcript retention tuning remain open._
+_Progress 2025-10-30 (Session #45 implementation): Debug overlay now surfaces quest/story slices from WorldStateStore alongside automated coverage, satisfying PO-003 observability follow-up._
 
 **Acceptance Criteria**:
 - Quest log + tracker HUD read from selectors and stay in sync during quest progression playtest.
@@ -293,6 +294,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Tags**: `test`, `ci`
 - **Effort**: 4 hours
 - **Dependencies**: CI agent access to browsers, QA-201/202
+- **Status**: ✅ Completed — Session #45 adds GitHub Actions workflow that installs Playwright Chromium, runs Jest + smoke pack, emits JUnit results, and uploads failure artifacts.
 - **Description**: Wire quest and dialogue Playwright smokes into the CI pipeline with junit + artifact publication to enable flake tracking once gameplay loop stabilizes.
 - **Acceptance Criteria**:
   - CI pipeline installs browsers (`npx playwright install --with-deps`) and runs smoke pack headless.
@@ -520,7 +522,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Interior provides stealth cover (props, line-of-sight blockers) and at least one evidence/knowledge pickup to justify infiltration.
   - Playwright infiltration spec passes without forcing the scene load manually.
   - Manual runtime smoke confirms quest tracker, disguise modifiers, and dialogue hooks behave in the new scene.
-- **Notes**: Session #43 added stealth cover geometry, intel pickups (including the client registry knowledge hook), automatic return to Act 1 on escape, and extended Playwright coverage that exercises evidence collection through the quest exit.
+- **Notes**: Session #43 added stealth cover geometry, intel pickups (including the client registry knowledge hook), automatic return to Act 1 on escape, and extended Playwright coverage that exercises evidence collection through the quest exit. Session #45 layered in neon detection halos, guard prompt telemetry, and ambient lighting; bespoke Memory Parlor art/audio assets remain outstanding.
 
 #### DIA-208: Support inventory-aware dialogue conditions
 - **Priority**: P1

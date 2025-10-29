@@ -4,6 +4,10 @@
 import { Engine } from './engine/Engine.js';
 import { Game } from './game/Game.js';
 import { buildDialogueViewModel } from './game/ui/helpers/dialogueViewModel.js';
+import {
+  buildQuestDebugSummary,
+  buildStoryDebugSummary,
+} from './game/ui/helpers/worldStateDebugView.js';
 
 // Wait for DOM to load
 window.addEventListener('DOMContentLoaded', async () => {
@@ -52,6 +56,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   const debugDialogueMeta = document.getElementById('debug-dialogue-meta');
   const debugDialogueControls = document.getElementById('debug-dialogue-controls');
   const debugUiOverlayList = document.getElementById('debug-ui-overlays-list');
+  const debugWorldMeta = document.getElementById('debug-world-meta');
+  const debugQuestList = document.getElementById('debug-quests-list');
+  const debugStoryList = document.getElementById('debug-story-list');
 
   const formatClock = (timestamp) => {
     if (!timestamp || Number.isNaN(timestamp)) {
@@ -139,9 +146,52 @@ window.addEventListener('DOMContentLoaded', async () => {
   let lastTranscriptSignature = null;
   let lastOverlaySignature = null;
   let debugTranscriptNeedsScroll = true;
+  let lastWorldStateSignature = null;
+  let worldStateStoreErrorLogged = false;
 
   if (debugDialogueControls) {
     debugDialogueControls.textContent = 'Controls: F3 toggle overlay · F4 pause/resume transcript';
+  }
+
+  function formatDebugValue(value) {
+    if (typeof value === 'boolean') {
+      return value ? 'true' : 'false';
+    }
+    if (value == null) {
+      return 'null';
+    }
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value.toString(10);
+    }
+    if (typeof value === 'string') {
+      return value;
+    }
+    return JSON.stringify(value);
+  }
+
+  function renderWorldList(container, entries, emptyLabel) {
+    if (!container) {
+      return;
+    }
+    container.innerHTML = '';
+
+    if (!entries || entries.length === 0) {
+      const row = document.createElement('div');
+      row.className = 'debug-world-row empty';
+      row.textContent = emptyLabel;
+      container.appendChild(row);
+      return;
+    }
+
+    for (const entry of entries) {
+      const row = document.createElement('div');
+      row.className = 'debug-world-row';
+      if (entry.tone) {
+        row.dataset.tone = entry.tone;
+      }
+      row.textContent = entry.text;
+      container.appendChild(row);
+    }
   }
 
   window.addEventListener('keydown', (e) => {
@@ -177,6 +227,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (!debugEnabled || !debugOverlay) {
       return;
     }
+
+    const now = Date.now();
 
     const fpsElement = document.getElementById('debug-fps');
     const entitiesElement = document.getElementById('debug-entities');
@@ -239,8 +291,78 @@ window.addEventListener('DOMContentLoaded', async () => {
       }
     }
 
+    if (window.worldStateStore && (debugQuestList || debugStoryList || debugWorldMeta)) {
+      let worldState = null;
+      try {
+        worldState = window.worldStateStore.getState();
+      } catch (error) {
+        if (!worldStateStoreErrorLogged) {
+          console.warn('[DebugOverlay] Failed to read world state snapshot', error);
+          worldStateStoreErrorLogged = true;
+        }
+      }
+
+      if (worldState) {
+        const questSummary = buildQuestDebugSummary(worldState.quest);
+        const storySummary = buildStoryDebugSummary(worldState.story);
+
+        const questEntriesUi = questSummary.entries.map((entry) => {
+          const parts = [`${entry.title ?? entry.questId}`, `· ${entry.status}`];
+          if (entry.summary) {
+            parts.push(`— ${entry.summary}`);
+          }
+          if (entry.updatedAt) {
+            parts.push(`(${formatRelativeTime(entry.updatedAt, now)})`);
+          }
+          return {
+            text: parts.join(' '),
+            tone: entry.tone,
+          };
+        });
+
+        const storyEntriesUi = storySummary.entries.map((entry) => {
+          const parts = [`${entry.flagId}: ${formatDebugValue(entry.value)}`];
+          if (entry.updatedAt) {
+            parts.push(`(${formatRelativeTime(entry.updatedAt, now)})`);
+          }
+          return {
+            text: parts.join(' '),
+            tone: entry.tone,
+          };
+        });
+
+        const signature = JSON.stringify({
+          quest: questEntriesUi.map((entry) => `${entry.tone}:${entry.text}`),
+          story: storyEntriesUi.map((entry) => `${entry.tone}:${entry.text}`),
+          meta: {
+            active: questSummary.stats.active,
+            completed: questSummary.stats.completed,
+            failed: questSummary.stats.failed,
+            flags: storySummary.stats.total,
+          },
+        });
+
+        if (signature !== lastWorldStateSignature) {
+          if (debugQuestList) {
+            renderWorldList(debugQuestList, questEntriesUi, 'No quest data');
+          }
+          if (debugStoryList) {
+            renderWorldList(debugStoryList, storyEntriesUi, 'No story flags');
+          }
+          if (debugWorldMeta) {
+            debugWorldMeta.textContent = [
+              `Quests: ${questSummary.stats.active} active`,
+              `${questSummary.stats.completed} completed`,
+              `${questSummary.stats.failed} failed`,
+              `Flags: ${storySummary.stats.total}`,
+            ].join(' · ');
+          }
+          lastWorldStateSignature = signature;
+        }
+      }
+    }
+
     if (window.worldStateStore && debugDialogueStatus) {
-      const now = Date.now();
       let view = buildDialogueViewModel(window.worldStateStore.getState());
 
       if (!debugPaused) {

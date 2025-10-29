@@ -15,6 +15,7 @@ import { Collider } from '../components/Collider.js';
 import { InteractionZone } from '../components/InteractionZone.js';
 import { createNPCEntity } from '../entities/NPCEntity.js';
 import { createEvidenceEntity } from '../entities/EvidenceEntity.js';
+import { GameConfig } from '../config/GameConfig.js';
 
 const ROOM_WIDTH = 960;
 const ROOM_HEIGHT = 600;
@@ -28,6 +29,16 @@ const EXIT_RADIUS = 96;
 
 const FIREWALL_ID = 'memory_parlor_firewall';
 const CLIENT_REGISTRY_EVIDENCE_ID = 'evidence_memory_parlor_client_registry';
+const DETECTION_ZONE_HIGHLIGHT_MS = 1600;
+const DETECTION_CONFIG =
+  GameConfig?.stealth?.visuals?.memoryParlor ?? {
+    dangerColor: '#ff3f7c',
+    safeColor: '#31f5c9',
+    baseAlpha: 0.22,
+    highlightAlpha: 0.45,
+    safeBaseAlpha: 0.28,
+    safeHighlightAlpha: 0.5,
+  };
 
 const INTEL_EVIDENCE_DATA = [
   {
@@ -279,6 +290,18 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
   });
   sceneEntities.push(interiorFloorId);
 
+  const ambientCenterStripId = createRectEntity(entityManager, componentRegistry, {
+    x: 420,
+    y: 210,
+    width: 320,
+    height: 220,
+    color: '#2f1240',
+    alpha: 0.7,
+    layer: 'ground_fx',
+    zIndex: 1,
+  });
+  sceneEntities.push(ambientCenterStripId);
+
   const walls = [
     createWall(entityManager, componentRegistry, 0, 0, ROOM_WIDTH, WALL_THICKNESS),
     createWall(entityManager, componentRegistry, 0, ROOM_HEIGHT - WALL_THICKNESS, ROOM_WIDTH, WALL_THICKNESS),
@@ -468,6 +491,95 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
   });
   sceneEntities.push(guardA, guardB);
 
+  const detectionZoneDefinitions = [
+    {
+      id: 'memory_parlor_detection_guard_a',
+      x: 700,
+      y: 280,
+      radius: 140,
+      prompt: 'NeuroSync guard sweep — stay behind cover or trigger a scrambler.',
+      layer: 'ground_fx',
+    },
+    {
+      id: 'memory_parlor_detection_guard_b',
+      x: 760,
+      y: 360,
+      radius: 144,
+      prompt: 'Attendant scans the floor — disruption gear reduces detection chance.',
+      layer: 'ground_fx',
+    },
+  ];
+
+  const detectionZoneRecords = [];
+  for (const definition of detectionZoneDefinitions) {
+    const entityId = createTriggerZone(entityManager, componentRegistry, {
+      id: definition.id,
+      x: definition.x,
+      y: definition.y,
+      radius: definition.radius,
+      requiresInput: false,
+      oneShot: false,
+      prompt: definition.prompt,
+      layer: definition.layer,
+      color: DETECTION_CONFIG.dangerColor,
+      alpha: DETECTION_CONFIG.baseAlpha,
+    });
+    const sprite = componentRegistry.getComponent(entityId, 'Sprite');
+    if (sprite) {
+      sprite.layer = definition.layer;
+      sprite.zIndex = 0;
+      sprite.alpha = DETECTION_CONFIG.baseAlpha;
+      sprite.color = DETECTION_CONFIG.dangerColor;
+    }
+    detectionZoneRecords.push({
+      ...definition,
+      entityId,
+      sprite,
+      scramblerActive: false,
+      resetTimer: null,
+    });
+    sceneEntities.push(entityId);
+  }
+
+  const detectionZoneMap = new Map(detectionZoneRecords.map((record) => [record.id, record]));
+
+  function cancelDetectionHighlight(record) {
+    if (record.resetTimer) {
+      clearTimeout(record.resetTimer);
+      record.resetTimer = null;
+    }
+  }
+
+  function applyDetectionBaseState(record) {
+    if (!record.sprite) {
+      return;
+    }
+    const isSafe = Boolean(record.scramblerActive);
+    record.sprite.color = isSafe ? DETECTION_CONFIG.safeColor : DETECTION_CONFIG.dangerColor;
+    record.sprite.alpha = isSafe
+      ? DETECTION_CONFIG.safeBaseAlpha ?? DETECTION_CONFIG.baseAlpha
+      : DETECTION_CONFIG.baseAlpha;
+  }
+
+  function highlightDetectionZone(record) {
+    if (!record.sprite) {
+      return;
+    }
+    cancelDetectionHighlight(record);
+    const isSafe = Boolean(record.scramblerActive);
+    record.sprite.color = isSafe ? DETECTION_CONFIG.safeColor : DETECTION_CONFIG.dangerColor;
+    record.sprite.alpha = isSafe
+      ? DETECTION_CONFIG.safeHighlightAlpha ?? DETECTION_CONFIG.highlightAlpha
+      : DETECTION_CONFIG.highlightAlpha;
+    record.resetTimer = setTimeout(() => {
+      applyDetectionBaseState(record);
+    }, DETECTION_ZONE_HIGHLIGHT_MS);
+  }
+
+  for (const record of detectionZoneRecords) {
+    applyDetectionBaseState(record);
+  }
+
   const firewallCollider = componentRegistry.getComponent(firewallEntityId, 'Collider');
   const firewallSprite = componentRegistry.getComponent(firewallEntityId, 'Sprite');
   const firewallZone = componentRegistry.getComponent(firewallEntityId, 'InteractionZone');
@@ -480,18 +592,53 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
         return;
       }
       setFirewallState({ collider: firewallCollider, sprite: firewallSprite, zone: firewallZone }, true);
+      for (const record of detectionZoneRecords) {
+        record.scramblerActive = true;
+        cancelDetectionHighlight(record);
+        applyDetectionBaseState(record);
+      }
     })
   );
 
   cleanupHandlers.push(
     eventBus.on('firewall:scrambler_expired', () => {
       setFirewallState({ collider: firewallCollider, sprite: firewallSprite, zone: firewallZone }, false);
+      for (const record of detectionZoneRecords) {
+        record.scramblerActive = false;
+        cancelDetectionHighlight(record);
+        applyDetectionBaseState(record);
+      }
     })
   );
 
   cleanupHandlers.push(
     eventBus.on('firewall:scrambler_on_cooldown', () => {
       setFirewallState({ collider: firewallCollider, sprite: firewallSprite, zone: firewallZone }, false);
+      for (const record of detectionZoneRecords) {
+        record.scramblerActive = false;
+        cancelDetectionHighlight(record);
+        applyDetectionBaseState(record);
+      }
+    })
+  );
+
+  cleanupHandlers.push(
+    eventBus.on('area:entered', (payload = {}) => {
+      const record = detectionZoneMap.get(payload.areaId);
+      if (!record) {
+        return;
+      }
+      highlightDetectionZone(record);
+      const promptPayload = {
+        text: record.prompt,
+        source: 'memory_parlor_detection',
+      };
+      if (payload.position && typeof payload.position.x === 'number' && typeof payload.position.y === 'number') {
+        promptPayload.position = payload.position;
+      } else {
+        promptPayload.position = { x: record.x, y: record.y };
+      }
+      eventBus.emit('ui:show_prompt', promptPayload);
     })
   );
 
@@ -507,6 +654,12 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
       });
     })
   );
+
+  cleanupHandlers.push(() => {
+    for (const record of detectionZoneRecords) {
+      cancelDetectionHighlight(record);
+    }
+  });
 
   return {
     sceneName: 'memory_parlor_infiltration',

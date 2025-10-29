@@ -94,6 +94,16 @@ export const GameConfig = {
       detectionMultiplier: 0.35,
       suspicionDecayBonusPerSecond: 12,
       cooldownSeconds: 5
+    },
+    visuals: {
+      memoryParlor: {
+        dangerColor: '#ff3f7c',
+        safeColor: '#31f5c9',
+        baseAlpha: 0.22,
+        highlightAlpha: 0.45,
+        safeBaseAlpha: 0.28,
+        safeHighlightAlpha: 0.5
+      }
     }
   },
 
