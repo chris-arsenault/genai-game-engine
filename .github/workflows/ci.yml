@@ -38,7 +38,15 @@ jobs:
       - name: Run Playwright smoke suite
         env:
           PLAYWRIGHT_JUNIT_OUTPUT_NAME: playwright-results.xml
-        run: npx playwright test --reporter=line,junit
+          PLAYWRIGHT_HTML_REPORT: playwright-report
+        run: npx playwright test --reporter=line,junit,html --output=test-results
+
+      - name: Bundle Playwright HTML report
+        if: always()
+        run: |
+          if [ -d playwright-report ]; then
+            tar -czf playwright-report.tar.gz playwright-report
+          fi
 
       - name: Upload Playwright artifacts
         if: always()
@@ -49,4 +57,5 @@ jobs:
             playwright-results.xml
             test-results
             playwright-report
+            playwright-report.tar.gz
           if-no-files-found: ignore

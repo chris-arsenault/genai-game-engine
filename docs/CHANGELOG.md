@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Audio subsystem foundation with Web Audio `AudioManager`, pooled SFX playback, and music channel fade automation covered by dedicated unit suites (`src/engine/audio/AudioManager.js`, `src/engine/audio/{MusicChannel,SFXPool}.js`, `tests/engine/audio/*.test.js`).
+- Memory Parlor ambient audio controller reacts to scrambler windows by crossfading the sourced “Goodnightmare” loop, with configuration hooks and scene cleanup to gate narrative intensity (`src/game/audio/AmbientSceneAudioController.js`, `src/game/scenes/MemoryParlorScene.js`, `src/game/config/GameConfig.js`, `tests/game/audio/AmbientSceneAudioController.test.js`).
+- Integrated FreePD “Goodnightmare” track into the asset pipeline and manifest for Memory Parlor infiltration ambience (`assets/music/memory-parlor/goodnightmare.mp3`, `assets/music/requests.json`, `assets/manifest.example.json`).
 - Memory Parlor infiltration scene adds neon detection halos, ambient floor lighting, and dynamic guard prompts that react to scrambler events for stealth readability (`src/game/scenes/MemoryParlorScene.js`, `tests/game/scenes/MemoryParlorScene.readability.test.js`).
 - Debug overlay now surfaces WorldStateStore quest and story slices with summarized metadata for QA inspection, backed by reusable view-model helpers and unit coverage (`index.html`, `src/main.js`, `src/game/ui/helpers/worldStateDebugView.js`, `tests/game/ui/worldStateDebugView.test.js`).
 - GitHub Actions CI workflow runs Jest and Playwright smoke suites with Chromium installation, JUnit output, and artifact retention (`.github/workflows/ci.yml`).
@@ -59,6 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Expanded inventory coverage to include quantity delta reducers, SaveManager inventory autosave throttling, and end-to-end inventory persistence (`tests/game/state/inventorySlice.test.js`, `tests/game/managers/SaveManager.test.js`, `tests/game/Game.uiOverlays.test.js`).
 
 ### Changed
+- CI Playwright job now emits HTML reports and compressed trace artifacts for flake triage (`.github/workflows/ci.yml`).
 - Game reuses the active player entity when Memory Parlor escape completes, automatically returning to Act 1 on `obj_escape_parlor` while maintaining camera alignment (`src/game/Game.js`, `src/game/scenes/Act1Scene.js`).
 - InvestigationSystem now records externally emitted knowledge events so scene scripts that emit `knowledge:learned` stay in sync with the player's knowledge ledger (`src/game/systems/InvestigationSystem.js`).
 - InteractionZone now tracks trigger state explicitly and InvestigationSystem resets non-one-shot zones when the player exits, allowing Memory Parlor firewall checks to re-arm between scrambler attempts (`src/game/components/InteractionZone.js`, `src/game/systems/InvestigationSystem.js`).

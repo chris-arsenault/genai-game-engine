@@ -2182,6 +2182,7 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Downtown combat layer (2 min loop)
   - Layers must sync at loop points
 - **File**: `assets/music/requests.json`
+- **Status**: Memory Parlor ambient loop integrated (FreePD "Goodnightmare") and routed through AmbientSceneAudioController.
 
 #### AR-009: Environmental SFX (M7)
 - **Type**: Audio

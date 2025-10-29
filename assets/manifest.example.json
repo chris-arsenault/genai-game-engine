@@ -63,6 +63,13 @@
       "type": "audio",
       "group": "effects",
       "priority": "optional"
+    },
+    {
+      "id": "music-memory-parlor-ambient-001",
+      "url": "/music/memory-parlor/goodnightmare.mp3",
+      "type": "audio",
+      "group": "memory-parlor",
+      "priority": "district"
     }
   ],
   "groups": {
@@ -77,6 +84,10 @@
     "effects": {
       "description": "Optional visual and audio enhancements",
       "targetLoadTime": "background"
+    },
+    "memory-parlor": {
+      "description": "Memory Parlor specific ambient audio and visuals",
+      "targetLoadTime": "1000ms"
     }
   }
 }

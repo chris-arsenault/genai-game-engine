@@ -631,7 +631,10 @@ export class Game {
         this.entityManager,
         this.componentRegistry,
         this.eventBus,
-        options
+        {
+          ...options,
+          audioManager: this.audioManager,
+        }
       );
 
       this.activeScene = {

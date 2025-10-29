@@ -16,6 +16,7 @@ import { InteractionZone } from '../components/InteractionZone.js';
 import { createNPCEntity } from '../entities/NPCEntity.js';
 import { createEvidenceEntity } from '../entities/EvidenceEntity.js';
 import { GameConfig } from '../config/GameConfig.js';
+import { AmbientSceneAudioController } from '../audio/AmbientSceneAudioController.js';
 
 const ROOM_WIDTH = 960;
 const ROOM_HEIGHT = 600;
@@ -253,6 +254,40 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
 
   const sceneEntities = [];
   const cleanupHandlers = [];
+  let ambientAudioController = null;
+
+  if (options.audioManager) {
+    const config = GameConfig?.audio?.memoryParlorAmbient || {};
+    const ambientOptions = {
+      trackId: config.trackId ?? 'music-memory-parlor-ambient-001',
+      trackUrl: config.trackUrl ?? '/music/memory-parlor/goodnightmare.mp3',
+      baseVolume: config.baseVolume ?? 0.55,
+      scramblerBoost: config.scramblerBoost ?? 0.25,
+      fadeDuration: config.fadeDuration ?? 1.2,
+      scramblerFadeDuration: config.scramblerFadeDuration ?? 0.6,
+      loopStart: config.loopStart ?? 0,
+      loopEnd: config.loopEnd ?? null,
+      ...(options.ambientAudio || {}),
+    };
+
+    ambientAudioController = new AmbientSceneAudioController(
+      options.audioManager,
+      eventBus,
+      {
+        ...ambientOptions,
+        allowedAreas: ['memory_parlor_firewall', 'memory_parlor_interior'],
+      }
+    );
+
+    const initPromise = ambientAudioController.init();
+    if (initPromise && typeof initPromise.catch === 'function') {
+      initPromise.catch((error) => {
+        console.warn('[MemoryParlorScene] Ambient audio failed to initialize', error);
+      });
+    }
+
+    cleanupHandlers.push(() => ambientAudioController.dispose());
+  }
 
   const padFloorId = createRectEntity(entityManager, componentRegistry, {
     x: 0,
@@ -680,6 +715,7 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
       interiorZoneId,
       firewallEntityId,
       exitZoneId,
+      ambientAudioController,
     },
   };
 }

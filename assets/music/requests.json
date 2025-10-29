@@ -5,8 +5,8 @@
     "creator": "Kevin MacLeod",
     "source": "https://freepd.com/music/Goodnightmare.mp3",
     "license": "CC0 / Public Domain (FreePD)",
-    "status": "sourced-pending-integration",
+    "status": "integrated",
     "usage": "Memory Parlor ambient loop for stealth phase and detection sweeps.",
-    "notes": "4:00 loop friendly track; trim sustained outro for seamless looping when integrating with AudioManager."
+    "notes": "Integrated via AmbientSceneAudioController. Available at /music/memory-parlor/goodnightmare.mp3 with loop start 0s / loop end ~232s."
   }
 ]

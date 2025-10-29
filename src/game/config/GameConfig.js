@@ -149,6 +149,17 @@ export const GameConfig = {
     sfxVolume: 0.9,
     ambienceVolume: 0.5,
 
+    memoryParlorAmbient: {
+      trackId: 'music-memory-parlor-ambient-001',
+      trackUrl: '/music/memory-parlor/goodnightmare.mp3',
+      baseVolume: 0.55,
+      scramblerBoost: 0.25,
+      fadeDuration: 1.2,
+      scramblerFadeDuration: 0.6,
+      loopStart: 0,
+      loopEnd: 232 // Goodnightmare loop point (approx 3:52)
+    },
+
     // Adaptive music
     layerTransitionTime: 1.5, // seconds
     musicStates: {
