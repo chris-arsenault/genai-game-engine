@@ -12,6 +12,9 @@
  * - Error handling and recovery
  */
 
+import { factionSlice } from '../state/slices/factionSlice.js';
+import { tutorialSlice } from '../state/slices/tutorialSlice.js';
+
 export class SaveManager {
   constructor(eventBus, managers = {}) {
     this.eventBus = eventBus;
@@ -759,5 +762,3 @@ function deepEqual(a, b) {
     return false;
   }
 }
-import { factionSlice } from '../state/slices/factionSlice.js';
-import { tutorialSlice } from '../state/slices/tutorialSlice.js';

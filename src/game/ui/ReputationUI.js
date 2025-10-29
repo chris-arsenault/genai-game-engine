@@ -16,6 +16,7 @@
  * @class ReputationUI
  */
 import { emitOverlayVisibility } from './helpers/overlayEvents.js';
+import { factionSlice } from '../state/slices/factionSlice.js';
 
 export class ReputationUI {
   /**
@@ -34,6 +35,7 @@ export class ReputationUI {
 
     // EventBus for listening to reputation changes
     this.eventBus = options.eventBus || null;
+    this.store = options.store || null;
 
     // Position (anchored to left side by default)
     this.x = options.x || 20;
@@ -42,11 +44,12 @@ export class ReputationUI {
     // Scroll state
     this.scrollOffset = 0;
     this.maxScroll = 0;
-    this.factionItemHeight = 140; // Height per faction entry
+    this.factionItemHeight = 160; // Height per faction entry includes telemetry block
 
     // Visual config
     this.config = {
-      headerHeight: 40,
+      headerHeight: 60,
+      summaryHeight: 110,
       padding: 15,
       barWidth: 180,
       barHeight: 14,
@@ -54,6 +57,13 @@ export class ReputationUI {
       titleFontSize: 16,
       lineHeight: 20,
     };
+
+    this.cascadeTelemetry = {
+      lastCascadeEvent: null,
+      targetsByFaction: {},
+    };
+    this._cascadeTelemetryErrorLogged = false;
+    this._unsubscribeStore = null;
 
     // Attitude colors
     this.attitudeColors = {
@@ -66,6 +76,13 @@ export class ReputationUI {
 
     // Setup event listeners
     this.setupEventListeners();
+  }
+
+  /**
+   * Initialize store-driven telemetry subscriptions.
+   */
+  init() {
+    this._subscribeToStore();
   }
 
   /**
@@ -86,6 +103,86 @@ export class ReputationUI {
   }
 
   /**
+   * Subscribe to world state store for cascade telemetry.
+   * @private
+   */
+  _subscribeToStore() {
+    if (!this.store || typeof this.store.onUpdate !== 'function') {
+      this._resetCascadeTelemetry();
+      return;
+    }
+
+    if (typeof this._unsubscribeStore === 'function') {
+      this._unsubscribeStore();
+    }
+
+    this._unsubscribeStore = this.store.onUpdate(() => {
+      this._refreshCascadeTelemetry();
+    });
+    this._refreshCascadeTelemetry();
+  }
+
+  /**
+   * Refresh cascade telemetry from store selectors.
+   * @private
+   */
+  _refreshCascadeTelemetry() {
+    if (!this.store || typeof this.store.select !== 'function') {
+      this._resetCascadeTelemetry();
+      return;
+    }
+
+    try {
+      const summary = this.store.select(factionSlice.selectors.selectFactionCascadeSummary);
+      this._applyCascadeSummary(summary);
+    } catch (error) {
+      if (!this._cascadeTelemetryErrorLogged) {
+        console.warn('[ReputationUI] Failed to read faction cascade summary', error);
+        this._cascadeTelemetryErrorLogged = true;
+      }
+    }
+  }
+
+  /**
+   * Apply cascade summary to local telemetry cache.
+   * @param {Object|null} summary
+   * @private
+   */
+  _applyCascadeSummary(summary) {
+    if (!summary) {
+      this._resetCascadeTelemetry();
+      return;
+    }
+
+    const targets = Array.isArray(summary.cascadeTargets) ? summary.cascadeTargets : [];
+    const targetsByFaction = {};
+
+    for (const target of targets) {
+      if (!target || !target.factionId) {
+        continue;
+      }
+      targetsByFaction[target.factionId] = {
+        cascadeCount: target.cascadeCount ?? 0,
+        lastCascade: target.lastCascade ? { ...target.lastCascade } : null,
+        sources: Array.isArray(target.sources) ? target.sources.slice() : [],
+      };
+    }
+
+    this.cascadeTelemetry.lastCascadeEvent = summary.lastCascadeEvent ? { ...summary.lastCascadeEvent } : null;
+    this.cascadeTelemetry.targetsByFaction = targetsByFaction;
+    this._cascadeTelemetryErrorLogged = false;
+  }
+
+  /**
+   * Reset cascade telemetry cache.
+   * @private
+   */
+  _resetCascadeTelemetry() {
+    this.cascadeTelemetry.lastCascadeEvent = null;
+    this.cascadeTelemetry.targetsByFaction = {};
+  }
+
+  /**
    * Update faction standings data from FactionManager
    * @param {Object} standingsData - Map of faction IDs to {name, fame, infamy, attitude}
    */
@@ -95,7 +192,8 @@ export class ReputationUI {
     // Calculate max scroll
     const factionCount = Object.keys(this.standings).length;
     const contentHeight = factionCount * this.factionItemHeight;
-    const visibleHeight = this.height - this.config.headerHeight - this.config.padding * 2;
+    const summaryHeight = this.config.summaryHeight ?? 0;
+    const visibleHeight = this.height - this.config.headerHeight - summaryHeight - this.config.padding * 2;
     this.maxScroll = Math.max(0, contentHeight - visibleHeight);
   }
 
@@ -192,14 +290,18 @@ export class ReputationUI {
     ctx.textAlign = 'right';
     ctx.fillText('[R] Close', this.x + this.width - padding, this.y + headerHeight / 2);
 
+    const summaryHeight = this.renderCascadeSummary(ctx);
+    const scrollAreaY = this.y + headerHeight + summaryHeight;
+    const scrollAreaHeight = this.height - headerHeight - summaryHeight;
+
     // Setup clipping region for scrollable content
     ctx.save();
     ctx.beginPath();
-    ctx.rect(this.x, this.y + headerHeight, this.width, this.height - headerHeight);
+    ctx.rect(this.x, scrollAreaY, this.width, scrollAreaHeight);
     ctx.clip();
 
     // Draw faction standings
-    const startY = this.y + headerHeight + padding - this.scrollOffset;
+    const startY = scrollAreaY + padding - this.scrollOffset;
     let currentY = startY;
 
     const factionEntries = Object.entries(this.standings);
@@ -222,7 +324,10 @@ export class ReputationUI {
     // Draw scroll indicator if needed
     if (this.maxScroll > 0) {
       const scrollBarHeight = 40;
-      const scrollBarY = this.y + headerHeight + padding + (this.scrollOffset / this.maxScroll) * (this.height - headerHeight - padding * 2 - scrollBarHeight);
+      const scrollTrackHeight = scrollAreaHeight - padding * 2;
+      const scrollTrackStart = scrollAreaY + padding;
+      const scrollProgress = this.maxScroll > 0 ? this.scrollOffset / this.maxScroll : 0;
+      const scrollBarY = scrollTrackStart + scrollProgress * Math.max(0, scrollTrackHeight - scrollBarHeight);
       ctx.fillStyle = 'rgba(74, 144, 226, 0.5)';
       ctx.fillRect(this.x + this.width - 8, scrollBarY, 6, scrollBarHeight);
     }
@@ -232,6 +337,128 @@ export class ReputationUI {
     ctx.font = `${fontSize - 3}px Arial`;
     ctx.textAlign = 'center';
     ctx.fillText('Fame: Positive actions | Infamy: Hostile actions', this.x + this.width / 2, this.y + this.height - 8);
+  }
+
+  /**
+   * Render cascade telemetry summary beneath header.
+   * @param {CanvasRenderingContext2D} ctx
+   * @returns {number} Summary block height
+   * @private
+   */
+  renderCascadeSummary(ctx) {
+    const summaryHeight = this.config.summaryHeight ?? 0;
+    if (summaryHeight <= 0) {
+      return 0;
+    }
+
+    const baseY = this.y + this.config.headerHeight;
+    const lines = this.buildCascadeSummaryLines();
+
+    ctx.fillStyle = 'rgba(74, 144, 226, 0.12)';
+    ctx.fillRect(this.x, baseY, this.width, summaryHeight);
+
+    ctx.strokeStyle = 'rgba(74, 144, 226, 0.28)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(this.x, baseY + summaryHeight);
+    ctx.lineTo(this.x + this.width, baseY + summaryHeight);
+    ctx.stroke();
+
+    ctx.font = `${this.config.fontSize - 1}px Arial`;
+    ctx.fillStyle = '#9fb8d8';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+
+    let lineY = baseY + 8;
+    const maxLines = 6;
+    for (const line of lines.slice(0, maxLines)) {
+      ctx.fillText(this.truncateText(line, 72), this.x + this.config.padding, lineY);
+      lineY += this.config.lineHeight - 2;
+    }
+
+    return summaryHeight;
+  }
+
+  /**
+   * Build summary lines for cascade telemetry.
+   * @returns {string[]}
+   * @private
+   */
+  buildCascadeSummaryLines() {
+    const lines = [];
+    const lastCascade = this.cascadeTelemetry.lastCascadeEvent;
+
+    if (lastCascade) {
+      const sourceName = this.resolveFactionName(lastCascade.sourceFactionId);
+      const targetName = this.resolveFactionName(lastCascade.targetFactionId);
+      const attitude = lastCascade.newAttitude ? lastCascade.newAttitude.toUpperCase() : 'N/A';
+      lines.push(`Last: ${sourceName} → ${targetName} (${attitude})`);
+      lines.push(`When: ${this.formatRelativeTime(lastCascade.occurredAt)}`);
+    } else {
+      lines.push('Last: n/a');
+      lines.push('When: --');
+    }
+
+    const hotspots = this.getCascadeHotspots(3);
+    if (!hotspots.length) {
+      lines.push('Hotspots: none recorded');
+      return lines;
+    }
+
+    lines.push('Hotspots:');
+    hotspots.forEach((hotspot, index) => {
+      const hotspotName = this.resolveFactionName(hotspot.factionId);
+      const lastSeen = hotspot.lastCascade
+        ? this.formatRelativeTime(hotspot.lastCascade.occurredAt)
+        : 'n/a';
+      const sourceCount = hotspot.sourcesCount ?? 0;
+      const rank = index + 1;
+      lines.push(
+        `${rank}. ${hotspotName} — ${hotspot.cascadeCount} events, ${sourceCount} sources (last ${lastSeen})`
+      );
+    });
+
+    return lines;
+  }
+
+  /**
+   * Determine the faction with the highest cascade count.
+   * @returns {{factionId: string, cascadeCount: number}|null}
+   * @private
+   */
+  getTopCascadeTarget() {
+    return this.getCascadeHotspots(1)[0] ?? null;
+  }
+
+  /**
+   * Build a sorted list of cascade hotspots.
+   * @param {number} limit
+   * @returns {Array<{factionId: string, cascadeCount: number, lastCascade: Object|null, sourcesCount: number}>}
+   */
+  getCascadeHotspots(limit = 3) {
+    const targets = this.cascadeTelemetry.targetsByFaction || {};
+    const hotspots = Object.entries(targets)
+      .map(([factionId, data]) => ({
+        factionId,
+        cascadeCount: data?.cascadeCount ?? 0,
+        lastCascade: data?.lastCascade ? { ...data.lastCascade } : null,
+        sourcesCount: Array.isArray(data?.sources) ? data.sources.length : 0,
+      }))
+      .filter((entry) => entry.cascadeCount > 0)
+      .sort((a, b) => {
+        if (b.cascadeCount !== a.cascadeCount) {
+          return (b.cascadeCount ?? 0) - (a.cascadeCount ?? 0);
+        }
+        const aTime = a.lastCascade?.occurredAt ?? -Infinity;
+        const bTime = b.lastCascade?.occurredAt ?? -Infinity;
+        return (bTime ?? -Infinity) - (aTime ?? -Infinity);
+      });
+
+    if (!limit || limit < 0) {
+      return hotspots;
+    }
+
+    return hotspots.slice(0, limit);
   }
 
   /**
@@ -274,6 +501,32 @@ export class ReputationUI {
     ctx.textAlign = 'right';
     ctx.fillText(`${Math.round(fame)}/100`, x + barWidth + 50, fameY + barHeight / 2 + 1);
     ctx.fillText(`${Math.round(infamy)}/100`, x + barWidth + 50, infamyY + barHeight / 2 + 1);
+
+    // Draw cascade telemetry
+    const cascadeInfo = this.cascadeTelemetry.targetsByFaction[factionId] || null;
+    const cascadeCount = cascadeInfo?.cascadeCount ?? 0;
+    const cascadeSources = Array.isArray(cascadeInfo?.sources) ? cascadeInfo.sources.length : 0;
+    const cascadeLineY = infamyY + barHeight + 12;
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#9fb8d8';
+    ctx.fillText(
+      cascadeCount > 0
+        ? `Cascades: ${cascadeCount} · Sources: ${cascadeSources}`
+        : 'Cascades: none recorded',
+      x,
+      cascadeLineY
+    );
+
+    const lastCascade = cascadeInfo?.lastCascade ?? null;
+    ctx.fillStyle = '#7aa6d6';
+    ctx.fillText(
+      lastCascade
+        ? `Last: ${this.formatRelativeTime(lastCascade.occurredAt)} via ${this.resolveFactionName(lastCascade.sourceFactionId)}`
+        : 'Last: n/a',
+      x,
+      cascadeLineY + (lineHeight - 6)
+    );
 
     // Draw separator line
     ctx.strokeStyle = '#444444';
@@ -365,5 +618,77 @@ export class ReputationUI {
       this.scroll(event.deltaY * 0.5);
       event.preventDefault();
     }
+  }
+
+  /**
+   * Resolve a faction name from standings.
+   * @param {string|null|undefined} factionId
+   * @returns {string}
+   * @private
+   */
+  resolveFactionName(factionId) {
+    if (!factionId) {
+      return 'Unknown';
+    }
+    const record = this.standings[factionId];
+    return record?.name || factionId;
+  }
+
+  /**
+   * Format relative time for telemetry output.
+   * @param {number|null|undefined} timestamp
+   * @returns {string}
+   * @private
+   */
+  formatRelativeTime(timestamp) {
+    if (typeof timestamp !== 'number' || Number.isNaN(timestamp)) {
+      return 'timestamp unavailable';
+    }
+    const now = Date.now();
+    const diff = Math.max(0, now - timestamp);
+    if (diff < 1000) {
+      return 'just now';
+    }
+    if (diff < 60000) {
+      return `${(diff / 1000).toFixed(1)}s ago`;
+    }
+    if (diff < 3600000) {
+      return `${Math.round(diff / 60000)}m ago`;
+    }
+    if (diff < 86400000) {
+      return `${Math.round(diff / 3600000)}h ago`;
+    }
+    return `${Math.round(diff / 86400000)}d ago`;
+  }
+
+  /**
+   * Truncate text for UI output.
+   * @param {string} text
+   * @param {number} maxLength
+   * @returns {string}
+   * @private
+   */
+  truncateText(text, maxLength) {
+    if (typeof text !== 'string') {
+      return '';
+    }
+    if (text.length <= maxLength) {
+      return text;
+    }
+    if (maxLength <= 1) {
+      return text.slice(0, maxLength);
+    }
+    return `${text.slice(0, maxLength - 1)}…`;
+  }
+
+  /**
+   * Cleanup subscriptions.
+   */
+  cleanup() {
+    if (typeof this._unsubscribeStore === 'function') {
+      this._unsubscribeStore();
+      this._unsubscribeStore = null;
+    }
+    this._resetCascadeTelemetry();
   }
 }

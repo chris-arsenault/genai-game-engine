@@ -1,12 +1,13 @@
 # WorldStateStore Observability Extensions
 
-_Updated during Autonomous Sessions #62–63 (2025-10-30)._
+_Updated during Autonomous Sessions #62–64 (2025-10-30)._
 
 ## Overview
 - Expanded `src/game/state/slices/factionSlice.js` with cascade-aware telemetry so QA and narrative tools can trace attitude changes, cascade sources, and reset provenance directly through selectors.
 - Enhanced `src/game/state/slices/tutorialSlice.js` to capture prompt history snapshots, exposing a deterministic timeline of onboarding prompts for automated suites and debug overlays.
 - Refreshed `benchmarks/state-store-prototype.js` to exercise the new reducers/selectors and assert the dispatch mean stays under **0.25 ms**.
 - Session #63 surfaced cascade and tutorial selectors inside the debug HUD (`index.html`, `src/main.js`) and SaveManager inspector, with Playwright coverage.
+- Session #64 wires the same telemetry directly into player-facing HUD panels (`ReputationUI`, `TutorialOverlay`, `SaveInspectorOverlay`) so QA can validate cascade activity and tutorial progress in builds without devtools.
 
 ## Faction Cascade Telemetry
 - **State shape updates**
@@ -49,6 +50,22 @@ _Updated during Autonomous Sessions #62–63 (2025-10-30)._
 - **SaveManager inspector**: `SaveManager.getInspectorSummary()` returns cascade and tutorial telemetry (fallback-safe) for console inspection, with Jest coverage.
 - **End-to-end coverage**: `tests/e2e/debug-overlay-telemetry.spec.js` seeds cascade/tutorial events via `WorldStateStore.dispatch` and verifies HUD text plus console cleanliness.
 
+## HUD Telemetry Panels
+- **ReputationUI (`src/game/ui/ReputationUI.js`)**
+  - Subscribes to `WorldStateStore` updates via `factionSlice.selectors.selectFactionCascadeSummary`.
+  - Renders cascade summary lines and hotspot rankings beneath the faction header.
+  - Jest coverage in `tests/game/ui/ReputationUI.test.js` validates telemetry hydration and hotspot ordering.
+- **TutorialOverlay (`src/game/ui/TutorialOverlay.js`)**
+  - Leverages `buildTutorialOverlayView` to display latest tutorial snapshots and a trimmed timeline sidebar.
+  - Responds to store updates to keep prompts, highlights, and telemetry synchronized.
+  - Jest coverage in `tests/game/ui/TutorialOverlay.test.js` and `tests/game/ui/helpers/tutorialViewModel.test.js`.
+- **SaveInspectorOverlay (`src/game/ui/SaveInspectorOverlay.js`)**
+  - Reads `SaveManager.getInspectorSummary()` with fallback selectors so QA can open the HUD overlay (default `[O]`) and inspect cascade/tutorial metrics.
+  - Canvas render util draws summary metrics, cascade targets, and tutorial timeline.
+  - Jest coverage in `tests/game/ui/SaveInspectorOverlay.test.js`.
+- **End-to-end validation**
+  - Playwright smoke `tests/e2e/hud-telemetry.spec.js` dispatches cascade/tutorial events, ensures UI overlays surface telemetry, and falls back to explicit `show()` calls if key edge detection is swallowed in headless environments.
+
 ## Benchmark Refresh
 - Script: `node benchmarks/state-store-prototype.js`
   - Adds cascade/tutor events and queries `selectFactionCascadeSummary` + `selectPromptHistorySnapshots`.
@@ -62,7 +79,12 @@ npm test -- factionSlice
 npm test -- tutorialSlice
 npm test -- worldStateStore
 npm test -- SaveManager
+npm test -- ReputationUI
+npm test -- TutorialOverlay
+npm test -- SaveInspectorOverlay
+npm test -- tutorialViewModel
 npx playwright test tests/e2e/debug-overlay-telemetry.spec.js
+npx playwright test tests/e2e/hud-telemetry.spec.js
 node benchmarks/state-store-prototype.js
 ```
 

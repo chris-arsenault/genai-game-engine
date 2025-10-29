@@ -170,6 +170,7 @@ Implement Phase 0 of the hybrid Event-Sourced WorldStateStore (see `docs/plans/w
 
 _Progress 2025-10-30 (Session #61 instrumentation): WorldStateStore now captures blocked objectives, faction reputation resets, and inventory selection telemetry with updated slice selectors/tests to support PO-002 observability goals._
 _Progress 2025-10-30 (Session #62 instrumentation): Added cascade metadata + history to faction slice, tutorial prompt snapshot timelines, and refreshed `benchmarks/state-store-prototype.js` with dispatch-threshold reporting (≤0.25 ms)._
+_Progress 2025-10-30 (Session #64 implementation): Player-facing HUD overlays (Reputation, Tutorial, Save Inspector) now consume cascade/tutorial selectors with Jest + Playwright coverage ensuring QA can audit telemetry in builds without devtools._
 
 ---
 
@@ -198,6 +199,7 @@ _Progress 2025-10-28 (Session #22 implementation): Procedural performance tests 
 _Progress 2025-10-28 (Session #23 implementation): Added Playwright smoke validating dialogue overlay + transcript selectors via WorldStateStore and prototyped debug overlay readout; next up quest path coverage._
 _Progress 2025-10-28 (Session #24 implementation): Quest 001 Playwright scenario landed (branches into Case 002) and dialogue debug overlay now offers timestamped transcripts with pause/resume controls; tutorial automation + transcript retention tuning remain open._
 _Progress 2025-10-30 (Session #45 implementation): Debug overlay now surfaces quest/story slices from WorldStateStore alongside automated coverage, satisfying PO-003 observability follow-up._
+_Progress 2025-10-30 (Session #64 implementation): Tutorial and SaveInspector HUD overlays render WorldStateStore telemetry (snapshots, cascade summaries) with new Playwright smoke guarding regressions; export tooling + broader narrative beats remain next._
 
 **Acceptance Criteria**:
 - Quest log + tracker HUD read from selectors and stay in sync during quest progression playtest.

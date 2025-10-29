@@ -5,7 +5,7 @@ const isCI = Boolean(process.env.CI);
 const baseReporter = isCI ? 'line' : 'list';
 const junitOutput = process.env.PLAYWRIGHT_JUNIT_OUTPUT_NAME || 'playwright-results.xml';
 const htmlOutput = process.env.PLAYWRIGHT_HTML_REPORT || 'playwright-report';
-const htmlOpen = isCI ? 'never' : 'on-failure';
+const htmlOpen = 'never'; // isCI ? 'never' : 'on-failure';
 const outputDir = process.env.PLAYWRIGHT_OUTPUT_DIR || 'test-results';
 
 const DEV_COMMAND = 'npm run dev -- --host 127.0.0.1 --port 5173 --strictPort';

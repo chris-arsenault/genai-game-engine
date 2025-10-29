@@ -88,6 +88,17 @@ describe('TutorialOverlay (store integration)', () => {
         canSkip: true,
         highlight: { type: 'entity', entityTag: 'player' },
       },
+      promptHistorySnapshots: [
+        {
+          event: 'step_started',
+          timestamp: Date.now() - 500,
+          stepId: 'movement',
+          stepIndex: 0,
+          totalSteps: 3,
+          completedSteps: [],
+          promptHistory: [],
+        },
+      ],
     };
 
     store.setState({
@@ -98,6 +109,9 @@ describe('TutorialOverlay (store integration)', () => {
     expect(overlay.currentPrompt.title).toBe('First Steps');
     expect(overlay.currentPrompt.stepIndex).toBe(0);
     expect(overlay.highlightEntities).toContain('player');
+    expect(overlay.telemetry.latestSnapshot).not.toBeNull();
+    expect(Array.isArray(overlay.telemetry.timeline)).toBe(true);
+    expect(overlay.telemetry.timeline.length).toBeGreaterThan(0);
 
     store.setState({
       tutorial: {

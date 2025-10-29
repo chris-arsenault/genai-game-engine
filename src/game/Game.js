@@ -47,6 +47,7 @@ import { DeductionBoard } from './ui/DeductionBoard.js';
 import { InventoryOverlay } from './ui/InventoryOverlay.js';
 import { AudioFeedbackController } from './audio/AudioFeedbackController.js';
 import { SFXCatalogLoader } from './audio/SFXCatalogLoader.js';
+import { SaveInspectorOverlay } from './ui/SaveInspectorOverlay.js';
 
 // Managers
 import { FactionManager } from './managers/FactionManager.js';
@@ -169,6 +170,7 @@ export class Game {
     this.caseFileUI = null;
     this.deductionBoard = null;
     this.audioFeedback = null;
+    this.saveInspectorOverlay = null;
 
     // Forensic prompt plumbing
     this._forensicPromptQueue = [];
@@ -462,9 +464,13 @@ export class Game {
     // Create reputation UI
     this.reputationUI = new ReputationUI(300, 500, {
       eventBus: this.eventBus,
+      store: this.worldStateStore,
       x: 20,
       y: 80
     });
+    if (this.reputationUI.init) {
+      this.reputationUI.init();
+    }
 
     // Create disguise UI
     this.disguiseUI = new DisguiseUI(350, 450, {
@@ -558,6 +564,23 @@ export class Game {
       this.camera
     );
     this.movementIndicatorOverlay.init();
+
+    // Create SaveManager inspector overlay (bottom-right)
+    this.saveInspectorOverlay = new SaveInspectorOverlay(
+      this.engine.canvas,
+      this.eventBus,
+      {
+        saveManager: this.saveManager,
+        store: this.worldStateStore,
+        width: 360,
+        height: 240,
+        x: this.engine.canvas.width - 380,
+        y: this.engine.canvas.height - 280,
+      }
+    );
+    if (this.saveInspectorOverlay.init) {
+      this.saveInspectorOverlay.init();
+    }
 
     console.log('[Game] UI overlays initialized');
   }
@@ -921,6 +944,7 @@ export class Game {
       deductionBoard: 'Deduction Board',
       reputation: 'Reputation UI',
       tutorial: 'Tutorial Overlay',
+      saveInspector: 'Save Inspector',
     };
 
     this._offGameEventHandlers.push(this.eventBus.on('ui:overlay_visibility_changed', (data) => {
@@ -1673,6 +1697,9 @@ export class Game {
     if (this.interactionPromptOverlay) {
       this.interactionPromptOverlay.update(deltaTime);
     }
+    if (this.saveInspectorOverlay) {
+      this.saveInspectorOverlay.update(deltaTime);
+    }
 
     // Check for pause input
     if (this.inputState.wasJustPressed('pause')) {
@@ -1696,6 +1723,10 @@ export class Game {
 
     if (this.inventoryOverlay && this.inputState.wasJustPressed('inventory')) {
       this.inventoryOverlay.toggle('input:inventory');
+    }
+
+    if (this.saveInspectorOverlay && this.inputState.wasJustPressed('saveInspector')) {
+      this.saveInspectorOverlay.toggle('input:saveInspector');
     }
 
   }
@@ -2096,6 +2127,10 @@ export class Game {
       this.interactionPromptOverlay.render(ctx);
     }
 
+    if (this.saveInspectorOverlay) {
+      this.saveInspectorOverlay.render();
+    }
+
     // Render tutorial overlay (kept highest priority)
     if (this.tutorialOverlay) {
       this.tutorialOverlay.render(ctx);
@@ -2166,6 +2201,9 @@ export class Game {
     }
     if (this.questNotification && this.questNotification.cleanup) {
       this.questNotification.cleanup();
+    }
+    if (this.saveInspectorOverlay && this.saveInspectorOverlay.cleanup) {
+      this.saveInspectorOverlay.cleanup();
     }
     if (this.dialogueBox && this.dialogueBox.cleanup) {
       this.dialogueBox.cleanup();

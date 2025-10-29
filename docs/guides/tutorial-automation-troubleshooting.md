@@ -58,11 +58,14 @@ await page.evaluate(() => {
 | Theory validation stalls | Connections do not match tutorial theory graph | Iterate over `caseManager.getCase(activeCase.id).theoryGraph.connections` when building links |
 | Forensic prompt never appears | Evidence collected without forensic metadata or CaseManager inactive | Ensure the evidence definition includes `forensic` data and the tutorial case is set active before collection |
 | Forensic step does not advance | Prompt ignored or ability missing | Wait for the overlay text, press `KeyF`, and confirm `tutorial.context.forensicAnalysisComplete` increments |
+| Tutorial snapshots missing from HUD telemetry | Tutorial overlay not visible in HUD build or snapshot limit reset | Toggle `TutorialOverlay` via `window.game.tutorialOverlay.show('automation')`, then query `window.game.tutorialOverlay.telemetry` |
 
 ## Artifact Expectations
 - **Overlay instrumentation**: `ui:overlay_visibility_changed` logs the source (`input:caseFile`, `input:deductionBoard`, etc.) for debugging.
 - **Case telemetry**: `case:solved` and the newly emitted `case:completed` events should appear in the console when the theory validates.
 - **Tutorial context**: `window.game.worldStateStore.getState().tutorial` mirrors `TutorialSystem.context` and can be asserted to confirm prompt history. The `completedSteps` array now includes the closing `case_solved` entry once the quest resolves, matching the overlay history for post-run checks.
 - **Prompt snapshots**: Prefer querying `window.game.worldStateStore.select(tutorialSlice.selectors.selectPromptHistorySnapshots)` (or `selectLatestPromptSnapshot`) when validating automation. Each snapshot captures the step id, timestamp, and derived analytics so Playwright flows can assert ordering without parsing console logs. The debug HUD now mirrors this data in `#debug-tutorial-latest` and `#debug-tutorial-snapshots`; see `tests/e2e/debug-overlay-telemetry.spec.js` for an example that seeds events via `WorldStateStore.dispatch` and validates the rendered timeline.
+- **HUD telemetry overlays**: `window.game.reputationUI`, `window.game.tutorialOverlay`, and `window.game.saveInspectorOverlay` now expose cascade/tutorial telemetry in-canvas. The HUD Playwright smoke (`tests/e2e/hud-telemetry.spec.js`) dispatches events, toggles overlays via InputState, and falls back to direct `show()` calls if headless input is suppressed.
+- **Save inspector metrics**: Opening the Save Inspector HUD overlay (default `[O]`, or `window.game.saveInspectorOverlay.show('automation')`) displays cascade event counts, hotspot rankings, and tutorial timelines for QA capture without devtools. Telemetry derives from `SaveManager.getInspectorSummary()` with store-based fallback.
 
 Stay aligned with these hooks when extending the automation pack to avoid falling back to simulated emits. Update Playwright assertions to rely on runtime-driven state whenever possible.
