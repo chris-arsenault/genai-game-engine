@@ -99,3 +99,4 @@ jobs:
             playwright-report
             playwright-report.tar.gz
           if-no-files-found: ignore
+          retention-days: 14

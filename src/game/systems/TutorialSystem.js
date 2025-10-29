@@ -225,9 +225,25 @@ export class TutorialSystem extends System {
    * Complete the tutorial
    */
   completeTutorial() {
-    const finalStep = tutorialSteps[tutorialSteps.length - 1];
+    const finalIndex = tutorialSteps.length - 1;
+    const finalStep = tutorialSteps[finalIndex];
+    const completionTimestamp = Date.now();
+
     if (finalStep?.id && !this.completedSteps.has(finalStep.id)) {
+      const startedAt =
+        this.currentStep?.id === finalStep.id && this.stepStartTime
+          ? this.stepStartTime
+          : completionTimestamp;
+
       this.completedSteps.add(finalStep.id);
+
+      this.eventBus.emit('tutorial:step_completed', {
+        stepId: finalStep.id,
+        stepIndex: finalIndex,
+        totalSteps: tutorialSteps.length,
+        completedAt: completionTimestamp,
+        durationMs: completionTimestamp - startedAt,
+      });
     }
 
     this.enabled = false;
@@ -241,7 +257,7 @@ export class TutorialSystem extends System {
     this.eventBus.emit('tutorial:completed', {
       totalSteps: tutorialSteps.length,
       completedSteps: this.completedSteps.size,
-      completedAt: Date.now(),
+      completedAt: completionTimestamp,
     });
 
     console.log('[TutorialSystem] Tutorial completed!');

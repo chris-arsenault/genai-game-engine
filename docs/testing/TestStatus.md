@@ -355,6 +355,7 @@ tests/game/
 - Install browsers on runners before execution: `npx playwright install --with-deps`.
 - Use the default config (`npx playwright test`)—`playwright.config.js` now emits `line`, `junit`, and `html` reporters automatically, honours `PLAYWRIGHT_JUNIT_OUTPUT_NAME`, and keeps artifacts under `test-results/`.
 - Failure telemetry (screenshots, video, traces) is retained on every failure via config (`retain-on-failure`) and uploaded from `test-results/` + `playwright-report/`; adjust `PLAYWRIGHT_OUTPUT_DIR`/`PLAYWRIGHT_HTML_REPORT` if CI paths differ.
+- GitHub Actions uploads the HTML report, traces, and media under the `playwright-artifacts` bundle for 14 days (`retention-days: 14` in `.github/workflows/ci.yml`).
 - Set `BROWSER=chromium` (or override via `PLAYWRIGHT_BROWSER`) on CI agents—local dev uses `wslview`, but headless Chromium keeps pipelines deterministic.
 - Record suite duration and flake rate in build metrics; target <90s runtime for smoke pack and alert if retries trigger (`CI=1` enables single retry).
 

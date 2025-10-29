@@ -61,4 +61,25 @@ describe('Game forensic prompt formatting', () => {
 
     expect(message).toBe('Missing Tool: Fingerprint Kit & Skill: Forensic Skill III');
   });
+
+  it('builds forensic prompt text with humanized type and requirements', () => {
+    game.caseManager = {
+      getEvidenceDefinition: jest.fn(() => ({
+        title: 'Encoded Ledgers',
+      })),
+    };
+
+    const text = game._buildForensicPromptText({
+      evidenceId: 'evidence_encoded_ledgers',
+      forensicType: 'document',
+      requirements: {
+        tool: 'document_scanner',
+        requiredSkill: 'forensic_skill_1',
+        difficulty: 1,
+      },
+    });
+
+    expect(text).toContain('Press F to run forensic analysis (Document Analysis): Encoded Ledgers');
+    expect(text).toContain('Requires Tool: Document Scanner · Skill: Forensic Skill I · Difficulty: Routine (I)');
+  });
 });

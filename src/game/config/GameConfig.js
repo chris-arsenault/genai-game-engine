@@ -203,6 +203,14 @@ export const GameConfig = {
     },
   },
 
+  localization: {
+    forensic: {
+      toolLabels: {},
+      skillLabels: {},
+      typeLabels: {},
+    },
+  },
+
   debug: {
     showColliders: false,
     showSpatialHash: false,

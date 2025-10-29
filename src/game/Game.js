@@ -81,16 +81,21 @@ import { Collider } from './components/Collider.js';
 import { Sprite } from './components/Sprite.js';
 
 const ACT1_RETURN_SPAWN = { x: 220, y: 360 };
-const FORENSIC_TOOL_LABELS = Object.freeze({
+const DEFAULT_FORENSIC_TOOL_LABELS = Object.freeze({
   basic_magnifier: 'Basic Magnifier',
   fingerprint_kit: 'Fingerprint Kit',
   memory_analyzer: 'Memory Analyzer',
   document_scanner: 'Document Scanner',
 });
-const FORENSIC_SKILL_LABELS = Object.freeze({
+const DEFAULT_FORENSIC_SKILL_LABELS = Object.freeze({
   forensic_skill_1: 'Forensic Skill I',
   forensic_skill_2: 'Forensic Skill II',
   forensic_skill_3: 'Forensic Skill III',
+});
+const DEFAULT_FORENSIC_TYPE_LABELS = Object.freeze({
+  fingerprint: 'Fingerprint Analysis',
+  document: 'Document Analysis',
+  memory_trace: 'Memory Trace Analysis',
 });
 const FORENSIC_DIFFICULTY_DESCRIPTORS = Object.freeze({
   1: 'Routine',
@@ -168,6 +173,12 @@ export class Game {
     // Forensic prompt plumbing
     this._forensicPromptQueue = [];
     this._activeForensicPrompt = null;
+    const forensicLocalization = GameConfig.localization?.forensic ?? {};
+    this._forensicLabels = {
+      tools: { ...DEFAULT_FORENSIC_TOOL_LABELS, ...(forensicLocalization.toolLabels ?? {}) },
+      skills: { ...DEFAULT_FORENSIC_SKILL_LABELS, ...(forensicLocalization.skillLabels ?? {}) },
+      types: { ...DEFAULT_FORENSIC_TYPE_LABELS, ...(forensicLocalization.typeLabels ?? {}) },
+    };
 
     // Input handlers
     this._handleDialogueInput = null;
@@ -1324,7 +1335,13 @@ export class Game {
     const evidenceTitle = evidenceDefinition?.title || evidenceDefinition?.name || evidenceId || 'evidence';
 
     const requirementText = this._formatForensicRequirements(requirements);
-    const forensicLabel = forensicType ? ` (${forensicType})` : '';
+    let forensicLabel = '';
+    if (forensicType) {
+      const label = this._humanizeForensicType(forensicType);
+      if (label) {
+        forensicLabel = ` (${label})`;
+      }
+    }
 
     const lines = [
       `Press F to run forensic analysis${forensicLabel}: ${evidenceTitle}`
@@ -1350,16 +1367,47 @@ export class Game {
     }
 
     const parts = [];
-    const toolLabel = this._humanizeForensicTool(requirements.tool);
-    if (toolLabel) {
-      parts.push(`Tool: ${toolLabel}`);
+    const toolCandidates = new Set();
+    if (typeof requirements.tool === 'string') {
+      toolCandidates.add(requirements.tool);
+    }
+    if (typeof requirements.requiredTool === 'string') {
+      toolCandidates.add(requirements.requiredTool);
+    }
+    if (Array.isArray(requirements.tools)) {
+      for (const toolId of requirements.tools) {
+        if (typeof toolId === 'string') {
+          toolCandidates.add(toolId);
+        }
+      }
+    }
+    for (const toolId of toolCandidates) {
+      const toolLabel = this._humanizeForensicTool(toolId);
+      if (toolLabel) {
+        parts.push(`Tool: ${toolLabel}`);
+      }
     }
 
-    const skillLabel = this._humanizeForensicSkill(
-      requirements.requiredSkill ?? requirements.skill ?? null
-    );
-    if (skillLabel) {
-      parts.push(`Skill: ${skillLabel}`);
+    const skillCandidates = new Set();
+    const singleSkill =
+      requirements.requiredSkill ??
+      requirements.skill ??
+      null;
+    if (typeof singleSkill === 'string') {
+      skillCandidates.add(singleSkill);
+    }
+    if (Array.isArray(requirements.skills)) {
+      for (const skillId of requirements.skills) {
+        if (typeof skillId === 'string') {
+          skillCandidates.add(skillId);
+        }
+      }
+    }
+    for (const skillId of skillCandidates) {
+      const skillLabel = this._humanizeForensicSkill(skillId);
+      if (skillLabel) {
+        parts.push(`Skill: ${skillLabel}`);
+      }
     }
 
     const difficultyValue =
@@ -1388,14 +1436,37 @@ export class Game {
         return 'Evidence already analyzed.';
       case 'missing_requirements': {
         const missing = [];
-        if (payload.requiredTool) {
-          const label = this._humanizeForensicTool(payload.requiredTool);
+        const requiredTools = new Set();
+        if (typeof payload.requiredTool === 'string') {
+          requiredTools.add(payload.requiredTool);
+        }
+        if (Array.isArray(payload.requiredTools)) {
+          for (const toolId of payload.requiredTools) {
+            if (typeof toolId === 'string') {
+              requiredTools.add(toolId);
+            }
+          }
+        }
+        for (const toolId of requiredTools) {
+          const label = this._humanizeForensicTool(toolId);
           if (label) {
             missing.push(`Tool: ${label}`);
           }
         }
-        if (payload.requiredSkill) {
-          const label = this._humanizeForensicSkill(payload.requiredSkill);
+
+        const requiredSkills = new Set();
+        if (typeof payload.requiredSkill === 'string') {
+          requiredSkills.add(payload.requiredSkill);
+        }
+        if (Array.isArray(payload.requiredSkills)) {
+          for (const skillId of payload.requiredSkills) {
+            if (typeof skillId === 'string') {
+              requiredSkills.add(skillId);
+            }
+          }
+        }
+        for (const skillId of requiredSkills) {
+          const label = this._humanizeForensicSkill(skillId);
           if (label) {
             missing.push(`Skill: ${label}`);
           }
@@ -1415,14 +1486,18 @@ export class Game {
     if (typeof toolId !== 'string' || toolId.length === 0) {
       return '';
     }
-    return FORENSIC_TOOL_LABELS[toolId] ?? this._humanizeIdentifier(toolId);
+    const label = this._forensicLabels?.tools?.[toolId];
+    if (label) {
+      return label;
+    }
+    return this._humanizeIdentifier(toolId);
   }
 
   _humanizeForensicSkill(skillId) {
     if (typeof skillId !== 'string' || skillId.length === 0) {
       return '';
     }
-    const label = FORENSIC_SKILL_LABELS[skillId];
+    const label = this._forensicLabels?.skills?.[skillId];
     if (label) {
       return label;
     }
@@ -1435,6 +1510,17 @@ export class Game {
       }
     }
     return this._humanizeIdentifier(skillId);
+  }
+
+  _humanizeForensicType(typeId) {
+    if (typeof typeId !== 'string' || typeId.length === 0) {
+      return '';
+    }
+    const label = this._forensicLabels?.types?.[typeId];
+    if (label) {
+      return label;
+    }
+    return this._humanizeIdentifier(typeId);
   }
 
   _formatForensicDifficulty(value) {

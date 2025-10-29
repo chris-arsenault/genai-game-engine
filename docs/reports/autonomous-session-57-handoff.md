@@ -28,7 +28,7 @@
 ---
 
 ## Outstanding Work & Risks
-1. **Tool/skill label catalogue** — Current friendly labels live in `FORENSIC_TOOL_LABELS`/`FORENSIC_SKILL_LABELS`; migrate to data-driven definitions once the tool progression table lands to avoid drift.
+1. **Tool/skill label catalogue** — Current friendly labels live in the merged defaults exposed via `GameConfig.localization.forensic`; migrate to data-driven definitions once the tool progression table lands to avoid drift.
 2. **MCP backlog sync** — Unable to update canonical backlog/items because `mcp__game-mcp-server` timed out. Mirror changes when the service is responsive.
 
 ---

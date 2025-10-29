@@ -24,6 +24,7 @@ Always keep a focusable element on the game canvas before issuing `page.keyboard
   - `case:created`, `case:activated`, `case:objective_completed`, `case:objectives_complete`, `case:solved`, `evidence:collected`, `clue:derived`.
 - **DeductionSystem** now registers with the SystemManager (priority 29) and exposes `setDeductionBoard(board)`. The Playwright flow must open the board with the real keybinding so the tutorial receives `deduction_board:opened`.
 - **ForensicSystem** now pipes `forensic:available` into the interaction prompt overlay. Wait for the prompt (`Press F to run forensic analysis…`), press `KeyF`, and let the runtime call `initiateAnalysis` via the Forensic prompt handler. Requirement strings are humanised in the overlay (`Tool: Basic Magnifier · Skill: Forensic Skill II · Difficulty: Challenging (II)`), so update assertions to match the localized labels instead of raw ids.
+  - Need alternate copy? Override `GameConfig.localization.forensic.toolLabels/skillLabels/typeLabels` to inject build-specific strings without touching runtime code.
 
 ## Playwright Interaction Pattern
 ```ts

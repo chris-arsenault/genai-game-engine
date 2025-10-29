@@ -683,6 +683,35 @@ describe('TutorialSystem', () => {
       );
     });
 
+    it('backfills the final step before emitting tutorial:completed when missing', () => {
+      const finalIndex = tutorialSteps.length - 1;
+      tutorialSystem.currentStepIndex = finalIndex - 1;
+      tutorialSystem.currentStep = tutorialSteps[finalIndex - 1];
+      tutorialSystem.completedSteps.clear();
+
+      tutorialSystem.completeTutorial();
+
+      expect(tutorialSystem.completedSteps.has('case_solved')).toBe(true);
+      expect(mockEventBus.emit).toHaveBeenCalledWith(
+        'tutorial:step_completed',
+        expect.objectContaining({
+          stepId: 'case_solved',
+          stepIndex: finalIndex,
+          totalSteps: tutorialSteps.length,
+          completedAt: expect.any(Number),
+          durationMs: expect.any(Number),
+        })
+      );
+      expect(mockEventBus.emit).toHaveBeenCalledWith(
+        'tutorial:completed',
+        expect.objectContaining({
+          totalSteps: tutorialSteps.length,
+          completedSteps: expect.any(Number),
+          completedAt: expect.any(Number),
+        })
+      );
+    });
+
     it('should emit tutorial:skipped event with current step info', () => {
       tutorialSystem.skipTutorial();
 
