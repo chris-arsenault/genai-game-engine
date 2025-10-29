@@ -74,6 +74,21 @@ _Updated during Autonomous Sessions #62–64 (2025-10-30)._
   - Summary JSON now carries `dispatchThreshold` and `dispatchThresholdMet` for automated gating.
 - Recommended use: integrate into CI smoke to guard regressions on observability-heavy reducers.
 
+## Telemetry Export Monitoring
+- **Adapter instrumentation** (planned in `docs/plans/telemetry-export-integration-plan.md`)
+  - `TelemetryArtifactWriterAdapter` will record per-artifact write duration and aggregate totals. Capture metrics via structured logs under the `telemetry` category.
+  - Writers emit `telemetry:artifacts_written`/`telemetry:artifact_failed` events so performance dashboards (or CI logs) can track anomalies.
+- **Writer benchmark** (new): add `benchmarks/telemetry-export-writer.js` to exercise filesystem + CI publisher adapters with synthetic artifacts, logging mean/95th percentile durations. Target <10 ms per artifact on CI runners.
+- **Dispatch regression guardrail**
+  - After integrating adapters or transcript recorders, rerun `node benchmarks/state-store-prototype.js` and compare `dispatchMeanMs` deltas (budget: +0.01 ms max variance, guardrail still ≤0.25 ms).
+  - Record benchmark outputs in `benchmark-results/` for trend analysis; link the latest run inside session handoffs.
+- **CI verification**
+  - CI pipelines should run `npm run export-telemetry -- --formats=json,csv --artifactDir=$CI_ARTIFACTS` (Phase 2 task). Capture summary JSON and ensure artifact upload job validates file presence.
+  - On failure, parse adapter summary logs to pinpoint failing writer (filesystem vs CI publisher) and rerun locally with `DEBUG=telemetry npm run export-telemetry`.
+- **Playwright validation**
+  - `tests/e2e/cascade-mission-telemetry.spec.js` (and future tutorial transcript spec) attach telemetry artifacts to Playwright reports. Monitor report attachments to confirm writers remain wired in headless environments.
+  - Use `PLAYWRIGHT_TELEMETRY_DEBUG=1 npx playwright test ...` to surface helper diagnostics during local repro.
+
 ## Verification Commands
 ```bash
 npm test -- factionSlice
@@ -88,6 +103,8 @@ npx playwright test tests/e2e/debug-overlay-telemetry.spec.js
 npx playwright test tests/e2e/hud-telemetry.spec.js
 npx playwright test tests/e2e/cascade-mission-telemetry.spec.js
 node benchmarks/state-store-prototype.js
+node benchmarks/telemetry-export-writer.js # (after adapter landing)
+DEBUG=telemetry npm run export-telemetry -- --dryRun # validates writer wiring without disk writes
 ```
 
 All suites must stay green; benchmark should continue reporting `Dispatch latency … : PASS`.

@@ -172,6 +172,7 @@ _Progress 2025-10-30 (Session #61 instrumentation): WorldStateStore now captures
 _Progress 2025-10-30 (Session #62 instrumentation): Added cascade metadata + history to faction slice, tutorial prompt snapshot timelines, and refreshed `benchmarks/state-store-prototype.js` with dispatch-threshold reporting (≤0.25 ms)._
 _Progress 2025-10-30 (Session #64 implementation): Player-facing HUD overlays (Reputation, Tutorial, Save Inspector) now consume cascade/tutorial selectors with Jest + Playwright coverage ensuring QA can audit telemetry in builds without devtools._
 _Progress 2025-10-30 (Session #65 export tooling): SaveManager JSON/CSV export artifacts unlock QA/CI capture, cascade mission Playwright flow verifies telemetry, and benchmark dispatch latency holds at 0.0100 ms (<0.25 ms)._
+_Progress 2025-10-30 (Session #66 architecture): Authored telemetry export integration and tutorial transcript export plans (`docs/plans/telemetry-export-integration-plan.md`, `docs/plans/tutorial-transcript-export-plan.md`) plus monitoring guidance in `docs/tech/world-state-store.md`; backlog next steps aligned with the phased rollout._
 
 ---
 
