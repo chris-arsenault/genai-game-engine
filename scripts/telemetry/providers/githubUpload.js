@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-import { spawn } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
+import { spawn } from 'child_process';
+import { GitHubActionsArtifactFallback } from '../../../src/game/telemetry/GitHubActionsArtifactFallback.js';
 
 const DEFAULT_ARTIFACT_NAME = 'inspector-telemetry';
 const MAX_LOG_LENGTH = 2000;
@@ -122,6 +123,7 @@ export async function uploadWithGh(
     fsModule = fs,
     env = process.env,
     cwd = process.cwd(),
+    fallbackUploader = null,
   } = {}
 ) {
   const startedAt = Date.now();
@@ -139,6 +141,9 @@ export async function uploadWithGh(
     args: [],
     stdout: '',
     stderr: '',
+    transport: 'github_cli',
+    fallbackAttempted: false,
+    fallbackDetails: null,
   };
 
   if (!metadata) {
@@ -184,21 +189,30 @@ export async function uploadWithGh(
     };
   }
 
+  const artifactName =
+    env?.GITHUB_ARTIFACT_NAME ||
+    metadata?.context?.artifactName ||
+    metadata?.context?.prefix ||
+    DEFAULT_ARTIFACT_NAME;
+
   const ghAvailable = await commandExistsFn(commandName);
   if (!ghAvailable) {
     console.info('[telemetry-provider] GitHub CLI not found; skipping telemetry upload.');
+    if (fallbackUploader) {
+      const fallbackResult = await fallbackUploader.upload(existingPaths, {
+        artifactDir,
+        artifactName,
+        retentionDays: metadata?.context?.retentionDays ?? env?.GITHUB_ARTIFACT_RETENTION_DAYS ?? null,
+        context: metadata?.context ?? {},
+      });
+      return mapFallbackToProviderResult(baseResult, artifactName, existingPaths, fallbackResult);
+    }
     return {
       ...baseResult,
       files: existingPaths,
       skippedReason: 'gh_unavailable',
     };
   }
-
-  const artifactName =
-    env?.GITHUB_ARTIFACT_NAME ||
-    metadata?.context?.artifactName ||
-    metadata?.context?.prefix ||
-    DEFAULT_ARTIFACT_NAME;
 
   const retentionDays =
     metadata?.context?.retentionDays ??
@@ -241,6 +255,33 @@ export async function uploadWithGh(
       exitCode: result.exitCode,
       stderr: truncate(result.stderr),
     });
+    if (fallbackUploader) {
+      const fallbackResult = await fallbackUploader.upload(existingPaths, {
+        artifactDir,
+        artifactName,
+        retentionDays: metadata?.context?.retentionDays ?? env?.GITHUB_ARTIFACT_RETENTION_DAYS ?? null,
+        context: metadata?.context ?? {},
+      });
+      const mapped = mapFallbackToProviderResult(baseResult, artifactName, existingPaths, fallbackResult, {
+        exitCode: result.exitCode ?? 1,
+        stderr: truncate(result.stderr),
+        stdout: truncate(result.stdout),
+        command: commandName,
+        args,
+      });
+      if (mapped.status === 'uploaded' || mapped.status === 'partial') {
+        return mapped;
+      }
+      return {
+        ...mapped,
+        exitCode: result.exitCode ?? 1,
+        status: 'failed',
+        command: commandName,
+        args,
+        stdout: truncate(result.stdout),
+        stderr: truncate(result.stderr),
+      };
+    }
   }
 
   return {
@@ -277,6 +318,10 @@ export async function persistProviderResult(metadataPath, metadata, result, fsMo
     args: Array.isArray(result.args) ? result.args : [],
     stdout: result.stdout ?? '',
     stderr: result.stderr ?? '',
+    transport: result.transport ?? 'github_cli',
+    fallbackAttempted: Boolean(result.fallbackAttempted),
+    fallbackDetails: result.fallbackDetails ?? null,
+    previousResult: result.previousResult ?? null,
   };
 
   if (!Array.isArray(metadata.providerResults)) {
@@ -310,7 +355,14 @@ export async function main() {
     return;
   }
 
-  const result = await uploadWithGh(artifactDir, metadata);
+  const fallbackUploader = new GitHubActionsArtifactFallback({
+    logger: console,
+    env: process.env,
+  });
+
+  const result = await uploadWithGh(artifactDir, metadata, {
+    fallbackUploader,
+  });
   await persistProviderResult(metadataPath, metadata, result);
 
   if (result.exitCode !== 0 && result.status === 'failed') {
@@ -331,3 +383,69 @@ export {
   readMetadata,
   defaultRunCommand,
 };
+
+function mapFallbackToProviderResult(baseResult, artifactName, existingPaths, fallbackResult, primaryFailure = null) {
+  if (!fallbackResult) {
+    return {
+      ...baseResult,
+      artifactName,
+      files: existingPaths,
+      skippedReason: 'actions_api_unavailable',
+      fallbackAttempted: true,
+      fallbackDetails: null,
+      transport: 'actions_api',
+      previousResult: primaryFailure,
+    };
+  }
+
+  const files =
+    Array.isArray(fallbackResult.files) && fallbackResult.files.length > 0 ? fallbackResult.files : existingPaths;
+
+  const status = normalizeStatus(fallbackResult.status);
+  const exitCode =
+    typeof fallbackResult.exitCode === 'number'
+      ? fallbackResult.exitCode
+      : status === 'uploaded'
+        ? 0
+        : status === 'skipped'
+          ? 0
+          : 1;
+
+  return {
+    ...baseResult,
+    artifactName: fallbackResult.artifactName ?? artifactName,
+    files,
+    exitCode,
+    status,
+    skippedReason: status === 'uploaded' ? null : fallbackResult.skippedReason ?? baseResult.skippedReason,
+    durationMs: fallbackResult.durationMs ?? baseResult.durationMs,
+    command: fallbackResult.command ?? 'actions.artifact.upload',
+    args: Array.isArray(fallbackResult.args) ? fallbackResult.args : [],
+    stdout: fallbackResult.stdout ?? baseResult.stdout,
+    stderr: fallbackResult.stderr ?? baseResult.stderr,
+    transport: 'actions_api',
+    fallbackAttempted: true,
+    fallbackDetails: fallbackResult,
+    previousResult: primaryFailure,
+  };
+}
+
+function normalizeStatus(status) {
+  if (!status) {
+    return 'unknown';
+  }
+  const normalized = status.toLowerCase();
+  if (normalized === 'uploaded' || normalized === 'succeeded' || normalized === 'success') {
+    return 'uploaded';
+  }
+  if (normalized === 'failed') {
+    return 'failed';
+  }
+  if (normalized === 'partial') {
+    return 'partial';
+  }
+  if (normalized === 'skipped') {
+    return 'skipped';
+  }
+  return status;
+}

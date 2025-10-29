@@ -47,6 +47,50 @@ describe('githubUpload provider script', () => {
     expect(result.files).toContain(artifactPath);
   });
 
+  it('falls back to Actions API when provided and GitHub CLI is unavailable', async () => {
+    const artifactPath = path.join(tempDir, 'artifact.json');
+    await fs.writeFile(artifactPath, '{}', 'utf8');
+
+    const metadata = {
+      dryRun: false,
+      artifacts: [{ filepath: artifactPath }],
+      context: { prefix: 'ci-telemetry' },
+    };
+
+    const fallbackUploader = {
+      upload: jest.fn().mockResolvedValue({
+        provider: 'githubActionsApi',
+        status: 'uploaded',
+        exitCode: 0,
+        files: [artifactPath],
+        artifactName: 'ci-telemetry',
+        artifactDir: tempDir,
+        durationMs: 12,
+      }),
+    };
+
+    const result = await uploadWithGh(tempDir, metadata, {
+      commandExistsFn: async () => false,
+      env: {
+        GITHUB_ACTIONS: 'true',
+        ACTIONS_RUNTIME_URL: 'https://runtime',
+        ACTIONS_RUNTIME_TOKEN: 'token',
+      },
+      fallbackUploader,
+    });
+
+    expect(fallbackUploader.upload).toHaveBeenCalledWith(
+      [path.resolve(artifactPath)],
+      expect.objectContaining({
+        artifactDir: tempDir,
+        artifactName: 'ci-telemetry',
+      })
+    );
+    expect(result.status).toBe('uploaded');
+    expect(result.transport).toBe('actions_api');
+    expect(result.fallbackAttempted).toBe(true);
+  });
+
   it('fails when artifacts listed in metadata are missing on disk', async () => {
     const missingPath = path.join(tempDir, 'missing.json');
     const metadata = {
@@ -62,6 +106,57 @@ describe('githubUpload provider script', () => {
     expect(result.status).toBe('failed');
     expect(result.exitCode).toBe(1);
     expect(result.skippedReason).toBe('missing_artifacts');
+  });
+
+  it('attempts fallback when GitHub CLI command fails', async () => {
+    const artifactPath = path.join(tempDir, 'telemetry.json');
+    await fs.writeFile(artifactPath, '{"ok":true}', 'utf8');
+
+    const metadata = {
+      dryRun: false,
+      artifacts: [{ filepath: artifactPath }],
+      context: { prefix: 'ci-telemetry' },
+    };
+
+    const fallbackUploader = {
+      upload: jest.fn().mockResolvedValue({
+        provider: 'githubActionsApi',
+        status: 'uploaded',
+        exitCode: 0,
+        files: [artifactPath],
+        artifactDir: tempDir,
+        artifactName: 'ci-telemetry',
+        durationMs: 8,
+      }),
+    };
+
+    const runCommand = jest.fn().mockResolvedValue({
+      exitCode: 1,
+      stdout: '',
+      stderr: 'network failure',
+    });
+
+    const result = await uploadWithGh(tempDir, metadata, {
+      commandExistsFn: async () => true,
+      runCommand,
+      env: {
+        GITHUB_ACTIONS: 'true',
+        ACTIONS_RUNTIME_URL: 'https://runtime',
+        ACTIONS_RUNTIME_TOKEN: 'token',
+      },
+      fallbackUploader,
+    });
+
+    expect(runCommand).toHaveBeenCalled();
+    expect(fallbackUploader.upload).toHaveBeenCalled();
+    expect(result.status).toBe('uploaded');
+    expect(result.transport).toBe('actions_api');
+    expect(result.previousResult).toEqual(
+      expect.objectContaining({
+        exitCode: 1,
+        command: 'gh',
+      })
+    );
   });
 
   it('uploads artifacts when GitHub CLI succeeds', async () => {
@@ -120,6 +215,9 @@ describe('githubUpload provider script', () => {
       command: 'gh',
       args: ['artifact', 'upload'],
       skippedReason: null,
+      transport: 'github_cli',
+      fallbackAttempted: false,
+      fallbackDetails: null,
     };
 
     await persistProviderResult(metadataPath, metadata, result);
@@ -129,5 +227,6 @@ describe('githubUpload provider script', () => {
     expect(persisted.providerResults).toHaveLength(1);
     expect(persisted.providerResults[0].status).toBe('uploaded');
     expect(persisted.providerResults[0].artifactName).toBe('ci-telemetry');
+    expect(persisted.providerResults[0].transport).toBe('github_cli');
   });
 });

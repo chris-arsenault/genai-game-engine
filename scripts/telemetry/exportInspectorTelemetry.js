@@ -6,6 +6,7 @@ import { WorldStateStore } from '../../src/game/state/WorldStateStore.js';
 import { SaveManager } from '../../src/game/managers/SaveManager.js';
 import { FileSystemTelemetryWriter } from '../../src/game/telemetry/FileSystemTelemetryWriter.js';
 import { CiArtifactPublisher } from '../../src/game/telemetry/CiArtifactPublisher.js';
+import { GitHubActionsArtifactFallback } from '../../src/game/telemetry/GitHubActionsArtifactFallback.js';
 
 /**
  * Parse CLI arguments into a simple key/value map.
@@ -262,6 +263,18 @@ export async function runTelemetryExport(options = {}) {
 
   const ciCommands = await resolveCiCommands(options, env, logger);
 
+  const fallbackUploaders =
+    Array.isArray(options.fallbackUploaders) && options.fallbackUploaders.length > 0
+      ? options.fallbackUploaders
+      : thisMayUseGitHubActions(env)
+        ? [
+            new GitHubActionsArtifactFallback({
+              logger,
+              env,
+            }),
+          ]
+        : [];
+
   const ciPublisher =
     options.ciPublisher ??
     new CiArtifactPublisher({
@@ -272,6 +285,7 @@ export async function runTelemetryExport(options = {}) {
       eventBus,
       logger,
       commandRunner: options.commandRunner,
+      fallbackUploaders,
     });
 
   const publishContext = {
@@ -347,4 +361,11 @@ if (
   !process.env.JEST_WORKER_ID
 ) {
   main();
+}
+
+function thisMayUseGitHubActions(env) {
+  if (!env) {
+    return false;
+  }
+  return Boolean(env.GITHUB_ACTIONS === 'true' || env.ACTIONS_RUNTIME_URL || env.RUNNER_NAME);
 }

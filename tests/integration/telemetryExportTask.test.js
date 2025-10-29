@@ -243,4 +243,55 @@ describe('telemetry export CLI', () => {
       }),
     ]);
   });
+
+  test('invokes fallback uploader when publish command is missing', async () => {
+    const artifactDir = path.join(tempDir, 'artifacts-fallback');
+    const metadataPath = path.join(tempDir, 'ci', 'fallback-manifest.json');
+    const { eventBus, worldStateStore } = createSeededWorldStateStore();
+    const missingError = Object.assign(new Error('spawn gh ENOENT'), { code: 'ENOENT' });
+    const commandRunner = jest.fn().mockRejectedValue(missingError);
+    const fallbackUploader = {
+      upload: jest.fn().mockResolvedValue({
+        provider: 'githubActionsApi',
+        status: 'uploaded',
+        exitCode: 0,
+        command: 'actions.artifact.upload',
+        files: [],
+        artifactDir,
+        artifactName: 'fallback-telemetry',
+      }),
+    };
+
+    const result = await runTelemetryExport({
+      artifactDir,
+      metadataPath,
+      prefix: 'fallback',
+      env: {
+        CI: 'true',
+        TELEMETRY_CI_COMMANDS: JSON.stringify([{ command: 'gh', args: ['artifact', 'upload'] }]),
+      },
+      eventBus,
+      worldStateStore,
+      commandRunner,
+      fallbackUploaders: [fallbackUploader],
+    });
+
+    expect(fallbackUploader.upload).toHaveBeenCalled();
+    expect(result.publishResult.commandResults).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          provider: 'githubActionsApi',
+          status: 'uploaded',
+        }),
+      ])
+    );
+    expect(result.publishResult.metadata.providerResults).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          provider: 'githubActionsApi',
+          status: 'uploaded',
+        }),
+      ])
+    );
+  });
 });

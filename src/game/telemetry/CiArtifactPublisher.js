@@ -30,6 +30,7 @@ export class CiArtifactPublisher {
     logger = console,
     eventBus = null,
     fsModule = fs,
+    fallbackUploaders = [],
   } = {}) {
     this.commandRunner = commandRunner;
     this.metadataPath = metadataPath;
@@ -39,6 +40,7 @@ export class CiArtifactPublisher {
     this.fs = fsModule;
     this.commands = Array.isArray(commands) ? commands.map(normalizeCommand) : [];
     this.dryRun = typeof dryRun === 'boolean' ? dryRun : !Boolean(this.env?.CI);
+    this.fallbackUploaders = Array.isArray(fallbackUploaders) ? fallbackUploaders : [];
   }
 
   /**
@@ -73,6 +75,7 @@ export class CiArtifactPublisher {
       context,
     };
 
+    let metadataDirty = false;
     try {
       await this.#ensureDirectory(path.dirname(resolvedMetadataPath));
       await this.fs.writeFile(resolvedMetadataPath, JSON.stringify(metadata, null, 2), { encoding: 'utf8' });
@@ -94,6 +97,7 @@ export class CiArtifactPublisher {
       }
 
       const commandResults = [];
+      let fallbackInvoked = false;
       for (const entry of this.commands) {
         try {
           const result = await this.commandRunner(entry.command, entry.args, {
@@ -137,7 +141,7 @@ export class CiArtifactPublisher {
               command: entry.command,
               message,
             });
-            commandResults.push({
+            const skipResult = {
               command: entry.command,
               args: [...entry.args],
               exitCode: 127,
@@ -148,7 +152,20 @@ export class CiArtifactPublisher {
               errorMessage: message,
               errorCode: typeof error === 'object' && error?.code ? error.code : null,
               durationMs: 0,
-            });
+            };
+            commandResults.push(skipResult);
+
+            if (!fallbackInvoked && this.fallbackUploaders.length > 0) {
+              fallbackInvoked = true;
+              const fallbackResults = await this.#runFallbackUploaders(resolvedPaths, {
+                metadata,
+                context,
+              });
+              if (fallbackResults.length > 0) {
+                commandResults.push(...fallbackResults);
+                metadataDirty = this.#appendFallbackResults(metadata, fallbackResults) || metadataDirty;
+              }
+            }
             continue;
           }
 
@@ -160,6 +177,10 @@ export class CiArtifactPublisher {
         ...basePayload,
         commandResults,
       });
+
+      if (metadataDirty) {
+        await this.fs.writeFile(resolvedMetadataPath, JSON.stringify(metadata, null, 2), { encoding: 'utf8' });
+      }
 
       return {
         metadataPath: resolvedMetadataPath,
@@ -180,6 +201,130 @@ export class CiArtifactPublisher {
 
   async #ensureDirectory(dir) {
     await this.fs.mkdir(dir, { recursive: true });
+  }
+
+  async #runFallbackUploaders(artifactPaths, { metadata, context } = {}) {
+    const results = [];
+    for (const uploader of this.fallbackUploaders) {
+      if (!uploader || typeof uploader.upload !== 'function') {
+        continue;
+      }
+      try {
+        const rawResult = await uploader.upload(artifactPaths, {
+          artifactDir: context?.artifactDir ?? metadata?.context?.artifactDir ?? null,
+          artifactName: context?.artifactName ?? context?.prefix ?? metadata?.context?.artifactName ?? null,
+          retentionDays: context?.retentionDays ?? metadata?.context?.retentionDays ?? null,
+          context,
+        });
+        if (rawResult) {
+          results.push(this.#normalizeFallbackResult(rawResult));
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger?.error?.('[CiArtifactPublisher] Fallback uploader failed', {
+          uploader: uploader?.constructor?.name ?? 'unknown',
+          message,
+        });
+        results.push({
+          command: uploader?.commandLabel ?? 'fallback',
+          args: [],
+          exitCode: 1,
+          stdout: '',
+          stderr: '',
+          status: 'failed',
+          skippedReason: null,
+          errorMessage: message,
+          errorCode: error?.code ?? null,
+          provider: uploader?.provider ?? 'fallback',
+        });
+      }
+    }
+    return results;
+  }
+
+  #appendFallbackResults(metadata, fallbackResults) {
+    if (!metadata || !Array.isArray(fallbackResults) || fallbackResults.length === 0) {
+      return false;
+    }
+
+    if (!Array.isArray(metadata.providerResults)) {
+      metadata.providerResults = [];
+    }
+
+    const timestamp = new Date().toISOString();
+    for (const result of fallbackResults) {
+      metadata.providerResults.push({
+        provider: result.provider ?? 'fallback',
+        attemptedAt: result.attemptedAt ?? timestamp,
+        status: result.status ?? 'unknown',
+        exitCode: result.exitCode ?? 0,
+        durationMs: result.durationMs ?? 0,
+        artifactName: result.artifactName ?? null,
+        artifactDir: result.artifactDir ?? null,
+        fileCount: Array.isArray(result.files) ? result.files.length : 0,
+        files: Array.isArray(result.files) ? result.files : [],
+        skippedReason: result.skippedReason ?? null,
+        command: result.command ?? null,
+        args: Array.isArray(result.args) ? result.args : [],
+        stdout: result.stdout ?? '',
+        stderr: result.stderr ?? '',
+      });
+    }
+
+    return true;
+  }
+
+  #normalizeFallbackResult(raw) {
+    if (!raw || typeof raw !== 'object') {
+      return {
+        command: 'fallback',
+        args: [],
+        exitCode: 0,
+        stdout: '',
+        stderr: '',
+        status: 'skipped',
+        skippedReason: 'fallback_no_result',
+      };
+    }
+
+    const normalized = {
+      command:
+        typeof raw.command === 'string'
+          ? raw.command
+          : raw.provider
+            ? `${raw.provider}:fallback`
+            : 'fallback',
+      args: Array.isArray(raw.args) ? [...raw.args] : [],
+      exitCode: typeof raw.exitCode === 'number' ? raw.exitCode : null,
+      stdout: typeof raw.stdout === 'string' ? raw.stdout : '',
+      stderr: typeof raw.stderr === 'string' ? raw.stderr : '',
+      status: typeof raw.status === 'string' ? raw.status : null,
+      skippedReason: raw.skippedReason ?? null,
+      errorMessage: raw.errorMessage ?? null,
+      errorCode: raw.errorCode ?? null,
+    };
+
+    if (normalized.exitCode === null) {
+      if (normalized.status === 'uploaded' || normalized.status === 'succeeded') {
+        normalized.exitCode = 0;
+      } else if (normalized.status === 'failed') {
+        normalized.exitCode = 1;
+      } else {
+        normalized.exitCode = 0;
+      }
+    }
+
+    if (!normalized.status) {
+      normalized.status = normalized.exitCode === 0 ? 'succeeded' : 'failed';
+    }
+
+    for (const [key, value] of Object.entries(raw)) {
+      if (!(key in normalized)) {
+        normalized[key] = value;
+      }
+    }
+
+    return normalized;
   }
 
   #normalizeArtifactPaths(paths) {

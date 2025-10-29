@@ -209,6 +209,7 @@ _Progress 2025-10-28 (Session #23 implementation): Added Playwright smoke valida
 _Progress 2025-10-28 (Session #24 implementation): Quest 001 Playwright scenario landed (branches into Case 002) and dialogue debug overlay now offers timestamped transcripts with pause/resume controls; tutorial automation + transcript retention tuning remain open._
 _Progress 2025-10-30 (Session #45 implementation): Debug overlay now surfaces quest/story slices from WorldStateStore alongside automated coverage, satisfying PO-003 observability follow-up._
 _Progress 2025-10-30 (Session #64 implementation): Tutorial and SaveInspector HUD overlays render WorldStateStore telemetry (snapshots, cascade summaries) with new Playwright smoke guarding regressions; export tooling + broader narrative beats remain next._
+_Progress 2025-10-31 (Session #74 implementation): Added GitHub Actions artifact fallback across CiArtifactPublisher and the GitHub upload provider, expanded unit/integration suites, and re-ran observability guardrails (dispatch mean 0.0108 ms, writer mean 0.82 ms) to confirm telemetry resilience._
 
 **Acceptance Criteria**:
 - Quest log + tracker HUD read from selectors and stay in sync during quest progression playtest.

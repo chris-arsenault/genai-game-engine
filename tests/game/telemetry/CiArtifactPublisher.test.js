@@ -187,4 +187,76 @@ describe('CiArtifactPublisher', () => {
     );
     expect(logger.error).not.toHaveBeenCalled();
   });
+
+  test('invokes fallback uploaders when command is missing', async () => {
+    const metadataPath = path.join(tempDir, 'ci-metadata.json');
+    const missingError = Object.assign(new Error('spawn gh ENOENT'), { code: 'ENOENT' });
+    const commandRunner = jest.fn().mockRejectedValue(missingError);
+    const fallbackUploader = {
+      upload: jest.fn().mockResolvedValue({
+        provider: 'githubActionsApi',
+        command: 'actions.artifact.upload',
+        exitCode: 0,
+        status: 'uploaded',
+        files: [artifactPath],
+        artifactDir,
+        artifactName: 'ci-telemetry',
+        durationMs: 10,
+      }),
+    };
+
+    const publisher = new CiArtifactPublisher({
+      metadataPath,
+      dryRun: false,
+      commands: [{ command: 'gh', args: ['artifact', 'upload'] }],
+      commandRunner,
+      env: { CI: 'true' },
+      logger,
+      fallbackUploaders: [fallbackUploader],
+    });
+
+    const result = await publisher.publish([artifactPath], {
+      runId: 'ci',
+      artifactDir,
+      prefix: 'ci-telemetry',
+    });
+
+    expect(fallbackUploader.upload).toHaveBeenCalledWith(
+      [path.resolve(artifactPath)],
+      expect.objectContaining({
+        artifactDir,
+        artifactName: 'ci-telemetry',
+      })
+    );
+
+    expect(result.commandResults).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          provider: 'githubActionsApi',
+          status: 'uploaded',
+          exitCode: 0,
+        }),
+      ])
+    );
+
+    expect(result.metadata.providerResults).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          provider: 'githubActionsApi',
+          status: 'uploaded',
+        }),
+      ])
+    );
+
+    const manifest = JSON.parse(await fs.readFile(metadataPath, 'utf8'));
+    expect(manifest.providerResults).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          provider: 'githubActionsApi',
+          status: 'uploaded',
+          fileCount: 1,
+        }),
+      ])
+    );
+  });
 });
