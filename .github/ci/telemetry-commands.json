@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "command": "node",
+    "args": ["scripts/telemetry/providers/githubUpload.js"],
+    "env": {
+      "TELEMETRY_ARTIFACT_DIR": "telemetry-artifacts",
+      "CI_ARTIFACT_METADATA": "telemetry-artifacts/ci-artifacts.json"
+    }
+  }
+]

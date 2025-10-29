@@ -11,9 +11,30 @@
  */
 
 import { getFaction } from '../data/factions/index.js';
+import {
+  serializeTranscriptToCsv,
+  serializeTranscriptToMarkdown,
+} from '../tutorial/serializers/tutorialTranscriptSerializer.js';
 
 const DEFAULT_PREFIX = 'save-inspector';
 const DEFAULT_FORMATS = ['json', 'csv'];
+
+const FORMAT_ALIASES = new Map([
+  ['json', 'json'],
+  ['csv', 'csv'],
+  ['cascade', 'csv'],
+  ['tutorial-csv', 'csv'],
+  ['transcript-csv', 'transcript-csv'],
+  ['transcript:csv', 'transcript-csv'],
+  ['transcript_csv', 'transcript-csv'],
+  ['transcript', 'transcript-csv'],
+  ['transcript-md', 'transcript-md'],
+  ['transcript_markdown', 'transcript-md'],
+  ['transcript:markdown', 'transcript-md'],
+  ['transcript-markdown', 'transcript-md'],
+  ['markdown', 'transcript-md'],
+  ['md', 'transcript-md'],
+]);
 
 function normalizeFormats(formats) {
   if (!formats) {
@@ -24,8 +45,9 @@ function normalizeFormats(formats) {
   for (const entry of normalized) {
     if (!entry) continue;
     const value = String(entry).toLowerCase();
-    if (value === 'json' || value === 'csv') {
-      unique.add(value);
+    const mapped = FORMAT_ALIASES.get(value);
+    if (mapped) {
+      unique.add(mapped);
     }
   }
   return unique.size ? Array.from(unique) : [...DEFAULT_FORMATS];
@@ -243,6 +265,26 @@ export function createInspectorExportArtifacts(summary, options = {}) {
       filename: `${prefix}-tutorial-snapshots-${timestampFragment}.csv`,
       mimeType: 'text/csv',
       content: `${buildTutorialCsv(sanitizedSummary)}\n`,
+    });
+  }
+
+  if (formats.includes('transcript-csv')) {
+    artifacts.push({
+      type: 'transcript-csv',
+      section: 'tutorial-transcript',
+      filename: `${prefix}-tutorial-transcript-${timestampFragment}.csv`,
+      mimeType: 'text/csv',
+      content: `${serializeTranscriptToCsv(sanitizedSummary.tutorial.transcript)}\n`,
+    });
+  }
+
+  if (formats.includes('transcript-md')) {
+    artifacts.push({
+      type: 'transcript-md',
+      section: 'tutorial-transcript',
+      filename: `${prefix}-tutorial-transcript-${timestampFragment}.md`,
+      mimeType: 'text/markdown',
+      content: `${serializeTranscriptToMarkdown(sanitizedSummary.tutorial.transcript)}\n`,
     });
   }
 

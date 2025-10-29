@@ -87,6 +87,7 @@ _Updated during Autonomous Sessions #62–64 (2025-10-30)._
   - Record benchmark outputs in `benchmark-results/` for trend analysis; link the latest run inside session handoffs.
 - **CI verification**
   - GitHub Actions (`.github/workflows/ci.yml`) now runs `npm run export-telemetry` after Playwright, setting `TELEMETRY_EXPORT_DIR=telemetry-artifacts` and piping a JSON context payload generated in-line. Artifact uploads are handled by the dedicated "Upload inspector telemetry artifacts" step, keeping manifests alongside JSON/CSV outputs.
+  - `.github/ci/telemetry-commands.json` wires in `node scripts/telemetry/providers/githubUpload.js`, which attempts a GitHub CLI artifact upload when available and logs a no-op when running locally or without `gh`.
   - On failure, parse adapter summary logs to pinpoint failing writer (filesystem vs CI publisher) and rerun locally with `DEBUG=telemetry npm run export-telemetry`.
 - **Playwright validation**
   - `tests/e2e/utils/telemetryArtifacts.js` exposes `captureTelemetryArtifacts(page, testInfo, options)` which mirrors the filesystem writer pipeline, writes artifacts to the test output directory, and attaches JSON/CSV files plus summary blobs to Playwright reports. Failure handlers in tutorial/debug specs attach error notes if the export falters.
@@ -100,11 +101,11 @@ _Updated during Autonomous Sessions #62–64 (2025-10-30)._
   - Jest coverage in `tests/game/tutorial/TutorialTranscriptRecorder.test.js` verifies event capture, retention limits, and update throttling.
 - **Transcript serialization helpers (`src/game/tutorial/serializers/tutorialTranscriptSerializer.js`)**
   - `buildTutorialTranscript()` normalizes recorder entries for export pipelines and SaveManager summaries.
-  - `serializeTranscriptToCsv()` and `serializeTranscriptToMarkdown()` prep upcoming transcript artifacts (CSV/Markdown) for QA review.
+  - `serializeTranscriptToCsv()` and `serializeTranscriptToMarkdown()` power the transcript CSV/Markdown artifacts now emitted by the exporter/CLI.
   - Jest coverage in `tests/game/tutorial/tutorialTranscriptSerializer.test.js` ensures formatting and limit handling stay stable.
 - **SaveManager summary integration**
-  - `SaveManager.getInspectorSummary()` now includes `tutorial.transcript` arrays derived from the recorder, enabling JSON artifact consumers to inspect prompt/action timelines even before CSV/Markdown exports ship.
-  - Upcoming work: extend `createInspectorExportArtifacts()` to generate transcript-specific artifacts and expose format toggles through Playwright/CLI pathways.
+  - `SaveManager.getInspectorSummary()` includes `tutorial.transcript` arrays derived from the recorder, feeding JSON summaries alongside CSV/Markdown artifacts consumed by the CLI and Playwright helper.
+  - Next steps: wire the recorder into runtime bootstrap so tutorial flows automatically populate transcripts outside of targeted automation runs.
 
 ## Verification Commands
 ```bash

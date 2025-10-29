@@ -458,7 +458,7 @@ export class SaveManager {
    * Optionally invokes a writer callback for each artifact produced.
    * @param {Object} options
    * @param {Function} [options.writer] - Receives artifact descriptors `{ filename, content, mimeType, type }`
-   * @param {string|string[]} [options.formats] - 'json', 'csv', or both
+   * @param {string|string[]} [options.formats] - 'json', 'csv', 'transcript-csv', 'transcript-md'
    * @param {string} [options.prefix] - File prefix override
    * @returns {{summary: Object, artifacts: Array}}
    */

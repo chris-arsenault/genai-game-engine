@@ -86,7 +86,7 @@ describe('inspectorTelemetryExporter', () => {
 
     const { artifacts, summary: sanitized } = createInspectorExportArtifacts(summary, {
       prefix: 'qa-export',
-      formats: ['json', 'csv'],
+      formats: ['json', 'csv', 'transcript-csv', 'transcript-md'],
     });
 
     expect(sanitized.generatedAt).toBe(summary.generatedAt);
@@ -97,7 +97,7 @@ describe('inspectorTelemetryExporter', () => {
       expect.objectContaining({ promptId: 'intro', sequence: 0 })
     );
 
-    expect(artifacts).toHaveLength(3);
+    expect(artifacts).toHaveLength(5);
 
     const jsonArtifact = artifacts.find((artifact) => artifact.type === 'json');
     expect(jsonArtifact).toBeDefined();
@@ -121,6 +121,22 @@ describe('inspectorTelemetryExporter', () => {
     expect(tutorialCsv.filename).toBe('qa-export-tutorial-snapshots-20251030T170500Z.csv');
     expect(tutorialCsv.content).toContain('tutorial_completed');
     expect(tutorialCsv.content).toContain('tutorial_complete_prompt');
+
+    const transcriptCsv = artifacts.find(
+      (artifact) => artifact.type === 'transcript-csv' && artifact.section === 'tutorial-transcript'
+    );
+    expect(transcriptCsv).toBeDefined();
+    expect(transcriptCsv.filename).toBe('qa-export-tutorial-transcript-20251030T170500Z.csv');
+    expect(transcriptCsv.content).toContain('tutorial_step_started');
+    expect(transcriptCsv.content).toContain('metadata');
+
+    const transcriptMd = artifacts.find(
+      (artifact) => artifact.type === 'transcript-md' && artifact.section === 'tutorial-transcript'
+    );
+    expect(transcriptMd).toBeDefined();
+    expect(transcriptMd.filename).toBe('qa-export-tutorial-transcript-20251030T170500Z.md');
+    expect(transcriptMd.content).toContain('| Event | Prompt |');
+    expect(transcriptMd.content).toContain('tutorial_step_started');
   });
 
   test('falls back to defaults when summary unavailable', () => {

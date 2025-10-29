@@ -280,7 +280,7 @@ test.afterEach(async ({ page }, testInfo) => {
     return;
   }
   try {
-    await captureTelemetryArtifacts(page, testInfo, { formats: ['json', 'csv'] });
+    await captureTelemetryArtifacts(page, testInfo);
   } catch (error) {
     if (typeof testInfo.attach === 'function') {
       const message = error instanceof Error ? `${error.message}\n${error.stack ?? ''}` : String(error);
@@ -325,7 +325,7 @@ test.afterEach(async ({ page }, testInfo) => {
 });
 
 test.describe('Tutorial overlay', () => {
-  test('progresses tutorial prompts and syncs store state', async ({ page }) => {
+  test('progresses tutorial prompts and syncs store state', async ({ page }, testInfo) => {
     const consoleErrors = collectConsoleErrors(page);
 
     await prepareTutorial(page);
@@ -379,6 +379,34 @@ test.describe('Tutorial overlay', () => {
     expect(history.length).toBeLessThanOrEqual(result.tutorialState.promptHistoryLimit);
     expect(history.length).toBeGreaterThan(0);
     expect(history[history.length - 1]?.stepId).toBe('case_solved');
+
+    const telemetryCapture = await captureTelemetryArtifacts(page, testInfo, {
+      includeTranscript: true,
+      attachSummary: false,
+      attachArtifacts: false,
+      prefix: 'tutorial-transcript-validation',
+    });
+
+    const transcriptSummary = telemetryCapture.summary.tutorial?.transcript ?? [];
+    expect(Array.isArray(transcriptSummary)).toBe(true);
+    expect(transcriptSummary.length).toBeGreaterThanOrEqual(0);
+    if (transcriptSummary.length > 0) {
+      expect(transcriptSummary[0]).toEqual(
+        expect.objectContaining({
+          sequence: 0,
+          event: expect.stringMatching(/tutorial_/),
+          promptId: expect.any(String),
+        })
+      );
+    } else {
+      expect(telemetryCapture.summary.tutorial?.metrics?.transcriptCount ?? 0).toBe(0);
+    }
+
+    const transcriptCsvArtifact = telemetryCapture.artifacts.find(
+      (artifact) => artifact.type === 'transcript-csv'
+    );
+    expect(transcriptCsvArtifact).toBeDefined();
+    expect(transcriptCsvArtifact?.content).toContain('sequence');
 
     expect(consoleErrors).toEqual([]);
   });

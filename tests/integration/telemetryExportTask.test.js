@@ -90,6 +90,7 @@ describe('telemetry export CLI', () => {
       artifactDir,
       metadataPath,
       prefix: 'integration',
+      formats: ['json', 'csv', 'transcript-csv', 'transcript-md'],
       dryRun: true,
       env: { CI: '' },
       eventBus,
@@ -98,7 +99,7 @@ describe('telemetry export CLI', () => {
     });
 
     expect(result.exportResult.summary.source).toBe('worldStateStore');
-    expect(result.exportResult.artifacts).toHaveLength(3);
+    expect(result.exportResult.artifacts).toHaveLength(5);
 
     const expectedFiles = result.exportResult.artifacts.map((artifact) =>
       path.join(artifactDir, artifact.filename)
@@ -111,7 +112,7 @@ describe('telemetry export CLI', () => {
 
     const metadata = JSON.parse(await fs.readFile(metadataPath, 'utf8'));
     expect(metadata.dryRun).toBe(true);
-    expect(metadata.artifacts).toHaveLength(3);
+    expect(metadata.artifacts).toHaveLength(5);
     expect(metadata.context).toEqual(
       expect.objectContaining({
         missionId: 'cascade',

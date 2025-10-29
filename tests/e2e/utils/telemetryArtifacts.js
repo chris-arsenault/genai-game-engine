@@ -26,6 +26,8 @@ function slugify(value) {
  * @param {string|string[]} [options.formats]
  * @param {string} [options.artifactDir]
  * @param {boolean} [options.attachSummary=true]
+ * @param {boolean} [options.attachArtifacts=true]
+ * @param {boolean} [options.includeTranscript=true]
  * @returns {Promise<{ summary: Object, artifacts: Array, artifactDir: string, artifactPaths: string[] }>}
  */
 export async function captureTelemetryArtifacts(page, testInfo, options = {}) {
@@ -40,11 +42,19 @@ export async function captureTelemetryArtifacts(page, testInfo, options = {}) {
   const artifactDir = path.resolve(outputRoot);
   await fs.mkdir(artifactDir, { recursive: true });
 
-  const formats = Array.isArray(options.formats)
-    ? options.formats
-    : typeof options.formats === 'string'
-    ? options.formats.split(',').map((entry) => entry.trim()).filter(Boolean)
-    : undefined;
+  let formats;
+  if (Array.isArray(options.formats)) {
+    formats = options.formats;
+  } else if (typeof options.formats === 'string') {
+    formats = options.formats
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+  } else if (options.includeTranscript === false) {
+    formats = undefined;
+  } else {
+    formats = ['json', 'csv', 'transcript-csv', 'transcript-md'];
+  }
 
   const exportPayload = await page.evaluate(
     async ({ prefixValue, formatsValue }) => {
@@ -87,12 +97,14 @@ export async function captureTelemetryArtifacts(page, testInfo, options = {}) {
       });
     }
 
-    for (const artifact of exportPayload.artifacts) {
-      const filepath = path.join(artifactDir, artifact.filename);
-      await testInfo.attach(artifact.filename, {
-        path: filepath,
-        contentType: artifact.mimeType,
-      });
+    if (options.attachArtifacts !== false) {
+      for (const artifact of exportPayload.artifacts) {
+        const filepath = path.join(artifactDir, artifact.filename);
+        await testInfo.attach(artifact.filename, {
+          path: filepath,
+          contentType: artifact.mimeType,
+        });
+      }
     }
   }
 
@@ -103,4 +115,3 @@ export async function captureTelemetryArtifacts(page, testInfo, options = {}) {
     artifactPaths: exportPayload.artifacts.map((artifact) => path.join(artifactDir, artifact.filename)),
   };
 }
-

@@ -5,9 +5,10 @@
 1. **Load the latest handoff immediately.** Call `mcp__game-mcp-server__fetch_handoff` before planning anything. If no handoff exists, bootstrap the project (Phase 0).
 2. **Parse and plan.** Extract the TODO list, risks, and outstanding asset sourcing needs from the handoff. Refresh the Codex plan tool so every active task is tracked.
 3. **Review Git Diff** Review `git diff --stat` to determine if any work has been completed for this session prior to cycle run.
-4. **Execute with updates.** Carry out the work item-by-item, updating the plan, logging verification commands, and noting new follow-ups as you go.
-5. **Document outcomes and new needs.** Update docs, backlog, and media sourcing notes as deliverables land. Record any MCP updates (research, patterns, lore, test strategies).
-6. **Publish the next handoff.** Produce `docs/reports/autonomous-session-[N]-handoff.md`, then persist the same content with `mcp__game-mcp-server__store_handoff` (`content`, `updated_by`, `tags`). Do not exit the session until both the file and MCP entry exist.
+4. **Backlog Refinement** Every 10 cycles (session number ends in 1) drop current TODO items and inspect current backlog to redefine current priorities
+5. **Execute with updates.** Carry out the work item-by-item, updating the plan, logging verification commands, and noting new follow-ups as you go.
+6. **Document outcomes and new needs.** Update docs, backlog, and media sourcing notes as deliverables land. Record any MCP updates (research, patterns, lore, test strategies).
+7. **Publish the next handoff.** Produce `docs/reports/autonomous-session-[N]-handoff.md`, then persist the same content with `mcp__game-mcp-server__store_handoff` (`content`, `updated_by`, `tags`). Do not exit the session until both the file and MCP entry exist.
 
 **Non-negotiable:** The handoff fetch and store bookend every autonomous run. Skipping either step breaks continuity.
 
