@@ -42,6 +42,7 @@ import { MovementIndicatorOverlay } from './ui/MovementIndicatorOverlay.js';
 import { QuestLogUI } from './ui/QuestLogUI.js';
 import { InventoryOverlay } from './ui/InventoryOverlay.js';
 import { AudioFeedbackController } from './audio/AudioFeedbackController.js';
+import { SFXCatalogLoader } from './audio/SFXCatalogLoader.js';
 
 // Managers
 import { FactionManager } from './managers/FactionManager.js';
@@ -91,6 +92,8 @@ export class Game {
     this.audioManager = typeof engine.getAudioManager === 'function'
       ? engine.getAudioManager()
       : engine.audioManager || null;
+    this.sfxCatalogLoader = null;
+    this._sfxCatalogSummary = null;
 
     // Game state
     this.inputState = new InputState(engine.eventBus);
@@ -173,7 +176,7 @@ export class Game {
     // Initialize UI overlays
     this.initializeUIOverlays();
     // Initialize audio integrations that respond to UI/gameplay feedback
-    this.initializeAudioIntegrations();
+    await this.initializeAudioIntegrations();
 
     if (typeof this.engine.setFrameHooks === 'function') {
       this._detachFrameHooks = this.engine.setFrameHooks({
@@ -473,7 +476,7 @@ export class Game {
   /**
    * Initialize audio feedback hooks for player prompts and interactions.
    */
-  initializeAudioIntegrations() {
+  async initializeAudioIntegrations() {
     if (this.audioFeedback || !this.eventBus) {
       return;
     }
@@ -481,6 +484,19 @@ export class Game {
     if (!this.audioManager || typeof this.audioManager.playSFX !== 'function') {
       console.log('[Game] Audio manager unavailable; feedback SFX stubs skipped');
       return;
+    }
+
+    if (!this.sfxCatalogLoader) {
+      this.sfxCatalogLoader = new SFXCatalogLoader(this.audioManager, {});
+    }
+
+    try {
+      this._sfxCatalogSummary = await this.sfxCatalogLoader.load();
+      if (this._sfxCatalogSummary.failed > 0) {
+        console.warn('[Game] SFX catalog preload had failures:', this._sfxCatalogSummary);
+      }
+    } catch (error) {
+      console.warn('[Game] Failed to load SFX catalog:', error);
     }
 
     this.audioFeedback = new AudioFeedbackController(this.eventBus, this.audioManager, {

@@ -342,6 +342,37 @@ export class AudioManager {
   }
 
   /**
+   * Retrieve cached buffer metadata.
+   * @param {string} id
+   * @returns {AudioBuffer|null}
+   */
+  getBuffer(id) {
+    if (!this._buffers.has(id)) {
+      return null;
+    }
+    return this._buffers.get(id).buffer;
+  }
+
+  /**
+   * Create a gain node connected to a specific bus.
+   * @param {'master'|'music'|'sfx'|'ambient'} bus
+   * @returns {GainNode|null}
+   */
+  createBusGain(bus = 'music') {
+    if (!this._initialized || !this.audioContext || typeof this.audioContext.createGain !== 'function') {
+      return null;
+    }
+    const destination = this._getGainNode(bus);
+    if (!destination) {
+      return null;
+    }
+    const gainNode = this.audioContext.createGain();
+    gainNode.gain.value = 0;
+    gainNode.connect(destination);
+    return gainNode;
+  }
+
+  /**
    * Release resources.
    */
   dispose() {

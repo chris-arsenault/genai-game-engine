@@ -302,6 +302,35 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Failure artifacts (video, trace) retained for 7 days.
   - Pipeline gate enforces zero retries before surfacing failures to engineers.
 
+### Session #47 Backlog Updates
+
+#### AUDIO-305: Adaptive Music Layer Foundation
+- **Priority**: P1
+- **Tags**: `audio`, `engine`, `narrative`
+- **Effort**: 4 hours
+- **Status**: ✅ Completed — AdaptiveMusicLayerController introduced, AmbientSceneAudioController rewired to drive stateful mixes reacting to scrambler events, and coverage added.
+- **Summary**: Establish multi-layer music infrastructure (ambient/alert/combat) tied to narrative event hooks so Memory Parlor stealth sequences can swell intelligently.
+- **Follow-up**: Capture combat intensity triggers from `DisguiseSystem` once combat arcs land; retune base/tension mix when bespoke stems are sourced.
+
+#### AUDIO-306: SFX Catalog Bootstrap
+- **Priority**: P1
+- **Tags**: `audio`, `asset`, `engine`
+- **Effort**: 3 hours
+- **Status**: ✅ Completed — Catalog populated with CC0 Kenney UI cues, loader preloads buffers through AudioManager, and Game initialization now ensures SFX are ready for AudioFeedbackController.
+- **Summary**: Provide declarative manifest for UI/gameplay cues with licensing metadata and automate loading so SFX hooks stop logging stubs.
+- **Follow-up**: Expand catalog with investigation/combat cues once sourced; integrate AssetManager manifest entries for streaming-tier prioritization.
+
+#### AUDIO-307: Adaptive Mix Tuning & Asset Expansion
+- **Priority**: P2
+- **Tags**: `audio`, `narrative`, `asset`
+- **Effort**: 3 hours
+- **Status**: ⏳ Pending
+- **Summary**: Source bespoke tension/combat stems, wire combat/disguise event transitions, and profile mix stability under rapid scrambler toggles.
+- **Acceptance Criteria**:
+  - Dedicated tension/combat stems registered with loop metadata.
+  - Combat events invoke adaptive state transitions with Playwright coverage.
+  - Fades validated to avoid gain spikes; telemetry logged for overlays.
+
 ---
 
 ### Session #44 Testing & Stability

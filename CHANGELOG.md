@@ -9,14 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Adaptive music layering stack (`AdaptiveMusicLayerController`) powering Memory Parlor scrambler transitions with ambient/alert/combat mixes.
+- Declarative SFX catalog bootstrap with CC0 Kenney UI cues and automated preload via `SFXCatalogLoader`.
+
 ### Changed
 - Migrated gameplay systems, managers, and UI overlays to use `EventBus.on`/`off` with stored unsubscribe handles, eliminating deprecated API warnings and ensuring clean teardown during `Game.cleanup`.
+- AmbientSceneAudioController now orchestrates adaptive states instead of direct bus fades, with graceful fallback when Web Audio is unavailable.
+- Game initialization preloads SFX catalog entries so AudioFeedbackController plays real cues instead of logging stubs.
+- CI pipeline writes a Playwright job summary linking to HTML reports and trace bundles for faster triage.
 
 ### Fixed
 - Resolved EventBus deprecation logs by providing a backward-compatible `subscribe` shim while aligning all runtime code with the modern API.
 - Ensured `QuestManager`, `SaveManager`, and tutorial/UI layers unregister their listeners on cleanup to prevent duplicate event handling in long sessions.
 
 ### Testing
+- Added unit coverage for adaptive music layering controller, catalog loader, and refreshed ambient controller integration.
 - Added EventBus regression coverage for the deprecated `subscribe` shim and new QuestManager cleanup behavior.
 - Updated quest/story manager tests to exercise the new event lifecycle and validated UI overlay toggle stability.
 

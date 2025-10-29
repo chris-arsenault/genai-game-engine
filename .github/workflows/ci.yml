@@ -48,6 +48,46 @@ jobs:
             tar -czf playwright-report.tar.gz playwright-report
           fi
 
+      - name: Publish Playwright job summary
+        if: always()
+        run: |
+          node <<'EOF'
+          const fs = require('fs');
+          const path = 'playwright-report/data/report.json';
+          const summaryFile = process.env.GITHUB_STEP_SUMMARY;
+          if (!summaryFile) {
+            process.exit(0);
+          }
+          const lines = [];
+          lines.push('## Playwright Smoke Summary');
+          if (fs.existsSync(path)) {
+            try {
+              const data = JSON.parse(fs.readFileSync(path, 'utf8'));
+              const stats = data?.stats || {};
+              const total = stats.total ?? 'unknown';
+              const expected = stats.expected ?? 0;
+              const unexpected = stats.unexpected ?? 0;
+              const skipped = stats.skipped ?? 0;
+              lines.push('');
+              lines.push(`- **Total tests**: ${total}`);
+              lines.push(`- **Passed**: ${expected}`);
+              lines.push(`- **Failed**: ${unexpected}`);
+              lines.push(`- **Skipped**: ${skipped}`);
+            } catch (error) {
+              lines.push('');
+              lines.push(`⚠️ Failed to parse Playwright report: ${error.message}`);
+            }
+          } else {
+            lines.push('');
+            lines.push('⚠️ Playwright report not generated.');
+          }
+          lines.push('');
+          lines.push('Artifacts:');
+          lines.push('- HTML report: `playwright-report/index.html` (see artifact **playwright-artifacts**)');
+          lines.push('- Trace bundle: `test-results/` (download from artifact **playwright-artifacts**)');
+          fs.appendFileSync(summaryFile, lines.join('\\n') + '\\n');
+          EOF
+
       - name: Upload Playwright artifacts
         if: always()
         uses: actions/upload-artifact@v4

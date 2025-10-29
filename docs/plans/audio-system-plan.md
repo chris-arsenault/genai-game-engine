@@ -177,6 +177,16 @@ World state overlay
 - Document audio system usage + debug overlay integration.
 - Update backlog, architecture decisions, and session handoff.
 
+### Phase 4: Adaptive Music Layering & Catalog (Est. 4 hours)
+- Implement `AdaptiveMusicLayerController` for layered ambient/alert/combat mixes (see `docs/plans/adaptive-music-plan.md` for detailed design).
+- Refactor `AmbientSceneAudioController` to delegate state transitions and telemetry to adaptive controller.
+- Bootstrap SFX catalog (`assets/sfx/catalog.json`) and loader to prewarm Kenney UI cues via `SFXCatalogLoader`.
+- Update Game initialization to await catalog preload before wiring `AudioFeedbackController`.
+- Success Criteria:
+  - Scrambler events trigger adaptive state changes with unit coverage.
+  - CC0 UI cues loaded and playable through AudioManager (no fallback logging).
+  - CI publishes Playwright summary referencing HTML report/trace artifacts.
+
 ## File Changes
 
 ### New Files

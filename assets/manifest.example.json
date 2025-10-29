@@ -70,6 +70,27 @@
       "type": "audio",
       "group": "memory-parlor",
       "priority": "district"
+    },
+    {
+      "id": "sfx-ui-movement-pulse",
+      "url": "/sfx/ui/ui-movement-pulse.ogg",
+      "type": "audio",
+      "group": "critical",
+      "priority": "critical"
+    },
+    {
+      "id": "sfx-ui-prompt-chime",
+      "url": "/sfx/ui/ui-prompt-chime.ogg",
+      "type": "audio",
+      "group": "critical",
+      "priority": "critical"
+    },
+    {
+      "id": "sfx-evidence-collect",
+      "url": "/sfx/ui/evidence-collect.ogg",
+      "type": "audio",
+      "group": "critical",
+      "priority": "critical"
     }
   ],
   "groups": {
