@@ -87,7 +87,8 @@ _Updated during Autonomous Sessions #62–64 (2025-10-30)._
   - Record benchmark outputs in `benchmark-results/` for trend analysis; link the latest run inside session handoffs.
 - **CI verification**
   - GitHub Actions (`.github/workflows/ci.yml`) now runs `npm run export-telemetry` after Playwright, setting `TELEMETRY_EXPORT_DIR=telemetry-artifacts` and piping a JSON context payload generated in-line. Artifact uploads are handled by the dedicated "Upload inspector telemetry artifacts" step, keeping manifests alongside JSON/CSV outputs.
-  - `.github/ci/telemetry-commands.json` wires in `node scripts/telemetry/providers/githubUpload.js`, which attempts a GitHub CLI artifact upload when available and logs a no-op when running locally or without `gh`.
+  - `.github/ci/telemetry-commands.json` wires in `node scripts/telemetry/providers/githubUpload.js`, which now executes a real `gh artifact upload` when the CLI is present, captures stdout/stderr/exit codes, and persists provider results back to `ci-artifacts.json`. Dry runs and missing CLI scenarios still bail out gracefully with explicit skip reasons.
+  - Provider coverage lives in `tests/integration/githubUploadProvider.test.js`, which exercises dry-run skips, CLI-missing paths, failure handling for absent files, and happy-path uploads with captured metrics.
   - On failure, parse adapter summary logs to pinpoint failing writer (filesystem vs CI publisher) and rerun locally with `DEBUG=telemetry npm run export-telemetry`.
 - **Playwright validation**
   - `tests/e2e/utils/telemetryArtifacts.js` exposes `captureTelemetryArtifacts(page, testInfo, options)` which mirrors the filesystem writer pipeline, writes artifacts to the test output directory, and attaches JSON/CSV files plus summary blobs to Playwright reports. Failure handlers in tutorial/debug specs attach error notes if the export falters.
@@ -105,7 +106,11 @@ _Updated during Autonomous Sessions #62–64 (2025-10-30)._
   - Jest coverage in `tests/game/tutorial/tutorialTranscriptSerializer.test.js` ensures formatting and limit handling stay stable.
 - **SaveManager summary integration**
   - `SaveManager.getInspectorSummary()` includes `tutorial.transcript` arrays derived from the recorder, feeding JSON summaries alongside CSV/Markdown artifacts consumed by the CLI and Playwright helper.
-  - Next steps: wire the recorder into runtime bootstrap so tutorial flows automatically populate transcripts outside of targeted automation runs.
+- **Runtime bootstrap wiring**
+  - `Game.initializeGameSystems()` now instantiates `TutorialTranscriptRecorder`, passes it to `SaveManager`, and calls `start()` so every runtime session—including Playwright automation—captures transcripts without manual bootstrapping. Cleanup stops the recorder to release event listeners.
+  - Regression coverage: `tests/game/Game.tutorialTranscriptRecorder.test.js` validates SaveManager wiring, transcript population after tutorial events, and cleanup unsubscribes.
+- **Automation validation**
+  - `tests/e2e/tutorial-overlay.spec.js` asserts that transcript summaries and CSV/Markdown artifacts include `tutorial_started`, `tutorial_step_completed`, and `tutorial_completed` events, preventing regressions where recorder wiring silently fails in headless runs.
 
 ## Verification Commands
 ```bash

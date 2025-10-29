@@ -177,6 +177,7 @@ _Progress 2025-10-30 (Session #67 implementation): Delivered TelemetryArtifactWr
 _Progress 2025-10-31 (Session #68 CLI integration): Introduced `npm run export-telemetry` with `CiArtifactPublisher` metadata manifests, Jest + integration coverage, and a Playwright telemetry helper that mirrors filesystem writer outputs for cascade mission automation._
 _Progress 2025-10-31 (Session #69 CI + transcript kickoff): GitHub Actions now runs the telemetry export CLI with configurable command sources and dedicated artifact uploads, telemetry helper coverage spans tutorial/debug suites, and TutorialTranscriptRecorder + serializer scaffolding feeds SaveManager summaries with fresh Jest suites._
 _Progress 2025-11-01 (Session #70 transcript exports): Exporter now emits tutorial transcript CSV/Markdown artifacts consumed by CLI/Playwright, CI stage runs with provider command hooks (GitHub upload stub), and tutorial automation assertions cover transcript availability while docs/backlog capture the new pipeline._
+_Progress 2025-11-01 (Session #71 runtime wiring): Game bootstrap auto-starts TutorialTranscriptRecorder for runtime sessions, GitHub upload provider executes real CLI uploads while persisting metrics into `ci-artifacts.json`, and new Jest/Playwright/integration suites guard transcript content and provider behaviour._
 
 ---
 

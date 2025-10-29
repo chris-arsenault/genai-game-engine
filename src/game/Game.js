@@ -21,6 +21,7 @@ import { QuestSystem } from './systems/QuestSystem.js';
 import { FirewallScramblerSystem } from './systems/FirewallScramblerSystem.js';
 import { ForensicSystem } from './systems/ForensicSystem.js';
 import { DeductionSystem } from './systems/DeductionSystem.js';
+import { TutorialTranscriptRecorder } from './tutorial/TutorialTranscriptRecorder.js';
 
 // State
 import { WorldStateStore } from './state/WorldStateStore.js';
@@ -137,6 +138,7 @@ export class Game {
     this.caseManager = null;
     this.saveManager = null;
     this.worldStateStore = null;
+    this.tutorialTranscriptRecorder = null;
 
     // Game systems (game-specific, not engine)
     this.gameSystems = {
@@ -286,6 +288,10 @@ export class Game {
     registerAct1Quests(this.questManager);
     console.log('[Game] Act 1 quests registered');
 
+    // Initialize TutorialTranscriptRecorder prior to SaveManager wiring
+    this.tutorialTranscriptRecorder = new TutorialTranscriptRecorder(this.eventBus);
+    console.log('[Game] TutorialTranscriptRecorder initialized');
+
     // Initialize SaveManager (after all other managers)
     this.saveManager = new SaveManager(this.eventBus, {
       storyFlagManager: this.storyFlagManager,
@@ -293,9 +299,14 @@ export class Game {
       factionManager: this.factionManager,
       tutorialSystem: null, // Will be set after tutorial system is created
       worldStateStore: this.worldStateStore,
+      tutorialTranscriptRecorder: this.tutorialTranscriptRecorder,
     });
     this.saveManager.init();
     console.log('[Game] SaveManager initialized');
+
+    // Begin capturing tutorial transcript events for runtime sessions
+    this.tutorialTranscriptRecorder.start();
+    console.log('[Game] TutorialTranscriptRecorder started');
 
     // Create investigation system (needed by other systems)
     this.gameSystems.investigation = new InvestigationSystem(
@@ -2221,6 +2232,11 @@ export class Game {
     // Cleanup SaveManager (performs final autosave)
     if (this.saveManager && this.saveManager.cleanup) {
       this.saveManager.cleanup();
+    }
+
+    if (this.tutorialTranscriptRecorder) {
+      this.tutorialTranscriptRecorder.stop();
+      this.tutorialTranscriptRecorder = null;
     }
 
     if (this._offGameEventHandlers.length) {

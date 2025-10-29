@@ -389,24 +389,35 @@ test.describe('Tutorial overlay', () => {
 
     const transcriptSummary = telemetryCapture.summary.tutorial?.transcript ?? [];
     expect(Array.isArray(transcriptSummary)).toBe(true);
-    expect(transcriptSummary.length).toBeGreaterThanOrEqual(0);
-    if (transcriptSummary.length > 0) {
-      expect(transcriptSummary[0]).toEqual(
-        expect.objectContaining({
-          sequence: 0,
-          event: expect.stringMatching(/tutorial_/),
-          promptId: expect.any(String),
-        })
-      );
-    } else {
-      expect(telemetryCapture.summary.tutorial?.metrics?.transcriptCount ?? 0).toBe(0);
-    }
+    expect(transcriptSummary.length).toBeGreaterThan(0);
+
+    const events = transcriptSummary.map((entry) => entry.event);
+    expect(events).toContain('tutorial_started');
+    expect(events).toContain('tutorial_completed');
+
+    const completedEntries = events.filter((event) => event === 'tutorial_step_completed');
+    expect(completedEntries.length).toBeGreaterThan(0);
+
+    const finalEntry = transcriptSummary[transcriptSummary.length - 1];
+    expect(finalEntry).toEqual(
+      expect.objectContaining({
+        event: 'tutorial_completed',
+        action: 'completed',
+      })
+    );
 
     const transcriptCsvArtifact = telemetryCapture.artifacts.find(
       (artifact) => artifact.type === 'transcript-csv'
     );
     expect(transcriptCsvArtifact).toBeDefined();
-    expect(transcriptCsvArtifact?.content).toContain('sequence');
+    expect(transcriptCsvArtifact?.content).toContain('tutorial_completed');
+    expect(transcriptCsvArtifact?.content).toContain('tutorial_step_completed');
+
+    const transcriptMarkdownArtifact = telemetryCapture.artifacts.find(
+      (artifact) => artifact.type === 'transcript-md'
+    );
+    expect(transcriptMarkdownArtifact).toBeDefined();
+    expect(transcriptMarkdownArtifact?.content).toContain('tutorial_completed');
 
     expect(consoleErrors).toEqual([]);
   });
