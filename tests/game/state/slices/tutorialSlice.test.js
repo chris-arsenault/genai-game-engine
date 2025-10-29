@@ -45,6 +45,8 @@ describe('tutorialSlice', () => {
     expect(state.completedSteps).toContain('movement');
     expect(state.completedTimeline.movement).toBe(250);
     expect(state.stepDurations.movement).toBe(100);
+    expect(state.promptHistorySnapshots).toHaveLength(1);
+    expect(state.promptHistorySnapshots[0].event).toBe('step_completed');
 
     state = reduce(state, {
       type: 'TUTORIAL_COMPLETED',
@@ -54,6 +56,9 @@ describe('tutorialSlice', () => {
     });
     expect(state.completed).toBe(true);
     expect(state.enabled).toBe(false);
+    expect(state.promptHistorySnapshots).toHaveLength(2);
+    const latestSnapshot = tutorialSlice.selectors.selectLatestPromptSnapshot({ tutorial: state });
+    expect(latestSnapshot.event).toBe('tutorial_completed');
   });
 
   test('hydrates snapshot payload', () => {
@@ -71,7 +76,7 @@ describe('tutorialSlice', () => {
             stepId: 'investigate',
             stepIndex: 1,
             totalSteps: 4,
-          },
+        },
           promptHistory: [
             {
               title: 'Movement',
@@ -80,6 +85,15 @@ describe('tutorialSlice', () => {
               totalSteps: 4,
             },
           ],
+          promptHistorySnapshots: [
+            {
+              event: 'step_completed',
+              timestamp: 200,
+              stepId: 'movement',
+              completedSteps: ['movement'],
+            },
+          ],
+          promptHistorySnapshotLimit: 8,
         },
       },
     });
@@ -88,5 +102,57 @@ describe('tutorialSlice', () => {
     expect(hydrated.completedSteps).toContain('investigate');
     expect(hydrated.promptHistory).toHaveLength(1);
     expect(hydrated.currentPrompt.stepId).toBe('investigate');
+    expect(hydrated.promptHistorySnapshots).toHaveLength(1);
+    expect(hydrated.promptHistorySnapshotLimit).toBe(8);
+  });
+
+  test('enforces snapshot history limits', () => {
+    const customState = tutorialSlice.getInitialState();
+    customState.promptHistorySnapshotLimit = 2;
+
+    const stepStarted = {
+      type: 'TUTORIAL_STEP_STARTED',
+      domain: 'tutorial',
+      payload: { stepId: 'alpha', stepIndex: 0, totalSteps: 3 },
+      timestamp: 10,
+    };
+
+    let state = reduce(customState, {
+      type: 'TUTORIAL_STARTED',
+      domain: 'tutorial',
+      payload: { totalSteps: 3 },
+      timestamp: 0,
+    });
+
+    state = reduce(state, stepStarted);
+    state = reduce(state, {
+      type: 'TUTORIAL_STEP_COMPLETED',
+      domain: 'tutorial',
+      payload: { stepId: 'alpha', stepIndex: 0 },
+      timestamp: 50,
+    });
+    state = reduce(state, {
+      type: 'TUTORIAL_STEP_STARTED',
+      domain: 'tutorial',
+      payload: { stepId: 'beta', stepIndex: 1, totalSteps: 3 },
+      timestamp: 60,
+    });
+    state = reduce(state, {
+      type: 'TUTORIAL_STEP_COMPLETED',
+      domain: 'tutorial',
+      payload: { stepId: 'beta', stepIndex: 1 },
+      timestamp: 90,
+    });
+    state = reduce(state, {
+      type: 'TUTORIAL_COMPLETED',
+      domain: 'tutorial',
+      payload: { totalSteps: 3 },
+      timestamp: 120,
+    });
+
+    expect(state.promptHistorySnapshots).toHaveLength(2);
+    const snapshots = tutorialSlice.selectors.selectPromptHistorySnapshots({ tutorial: state });
+    expect(snapshots[0].event).toBe('step_completed');
+    expect(snapshots[1].event).toBe('tutorial_completed');
   });
 });

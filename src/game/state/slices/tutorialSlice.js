@@ -1,9 +1,11 @@
 import { createSelector } from '../utils/memoize.js';
 
 const DEFAULT_PROMPT_HISTORY_LIMIT = 5;
+const DEFAULT_PROMPT_SNAPSHOT_LIMIT = 10;
 
 const sliceRuntimeConfig = {
   promptHistoryLimit: DEFAULT_PROMPT_HISTORY_LIMIT,
+  promptHistorySnapshotLimit: DEFAULT_PROMPT_SNAPSHOT_LIMIT,
 };
 
 function clonePrompt(prompt) {
@@ -18,6 +20,32 @@ function clonePrompt(prompt) {
     position: prompt.position ? { ...prompt.position } : null,
     canSkip: Boolean(prompt.canSkip),
     startedAt: prompt.startedAt ?? null,
+  };
+}
+
+function clonePromptSnapshot(snapshot) {
+  if (!snapshot) return null;
+  return {
+    event: snapshot.event ?? null,
+    timestamp: snapshot.timestamp ?? null,
+    stepId: snapshot.stepId ?? null,
+    stepIndex: snapshot.stepIndex ?? null,
+    totalSteps: snapshot.totalSteps ?? null,
+    completedSteps: Array.isArray(snapshot.completedSteps) ? [...snapshot.completedSteps] : [],
+    currentPrompt: snapshot.currentPrompt ? clonePrompt(snapshot.currentPrompt) : null,
+    promptHistory: Array.isArray(snapshot.promptHistory) ? snapshot.promptHistory.map(clonePrompt) : [],
+    analytics: snapshot.analytics
+      ? {
+          completedTimeline: snapshot.analytics.completedTimeline
+            ? { ...snapshot.analytics.completedTimeline }
+            : {},
+          stepDurations: snapshot.analytics.stepDurations ? { ...snapshot.analytics.stepDurations } : {},
+        }
+      : {
+          completedTimeline: {},
+          stepDurations: {},
+        },
+    metadata: snapshot.metadata ? { ...snapshot.metadata } : {},
   };
 }
 
@@ -38,6 +66,10 @@ function cloneState(state) {
     currentPrompt: clonePrompt(state.currentPrompt),
     promptHistory: Array.isArray(state.promptHistory) ? state.promptHistory.map(clonePrompt) : [],
     promptHistoryLimit: state.promptHistoryLimit,
+    promptHistorySnapshots: Array.isArray(state.promptHistorySnapshots)
+      ? state.promptHistorySnapshots.map(clonePromptSnapshot)
+      : [],
+    promptHistorySnapshotLimit: state.promptHistorySnapshotLimit,
   };
 }
 
@@ -58,6 +90,8 @@ function createInitialState() {
     currentPrompt: null,
     promptHistory: [],
     promptHistoryLimit: sliceRuntimeConfig.promptHistoryLimit,
+    promptHistorySnapshots: [],
+    promptHistorySnapshotLimit: sliceRuntimeConfig.promptHistorySnapshotLimit,
   };
 }
 
@@ -71,12 +105,47 @@ function recordPromptHistory(state, prompt) {
   state.promptHistory = history;
 }
 
+function recordPromptSnapshot(state, event, timestamp, metadata = {}) {
+  const history = Array.isArray(state.promptHistorySnapshots) ? [...state.promptHistorySnapshots] : [];
+  const snapshot = {
+    event,
+    timestamp,
+    stepId: state.currentStep ?? null,
+    stepIndex: state.currentStepIndex ?? null,
+    totalSteps: state.totalSteps ?? null,
+    completedSteps: Array.isArray(state.completedSteps) ? [...state.completedSteps] : [],
+    currentPrompt: state.currentPrompt ? clonePrompt(state.currentPrompt) : null,
+    promptHistory: Array.isArray(state.promptHistory) ? state.promptHistory.map(clonePrompt) : [],
+    analytics: {
+      completedTimeline: state.completedTimeline ? { ...state.completedTimeline } : {},
+      stepDurations: state.stepDurations ? { ...state.stepDurations } : {},
+    },
+    metadata: { ...metadata },
+  };
+
+  history.push(snapshot);
+  const limit = state.promptHistorySnapshotLimit;
+  const overflow = history.length - limit;
+  if (overflow > 0) {
+    history.splice(0, overflow);
+  }
+
+  state.promptHistorySnapshots = history;
+}
+
 export const tutorialSlice = {
   key: 'tutorial',
 
-  configure({ promptHistoryLimit } = {}) {
+  configure({ promptHistoryLimit, promptHistorySnapshotLimit } = {}) {
     if (typeof promptHistoryLimit === 'number' && Number.isFinite(promptHistoryLimit) && promptHistoryLimit > 0) {
       sliceRuntimeConfig.promptHistoryLimit = Math.floor(promptHistoryLimit);
+    }
+    if (
+      typeof promptHistorySnapshotLimit === 'number' &&
+      Number.isFinite(promptHistorySnapshotLimit) &&
+      promptHistorySnapshotLimit > 0
+    ) {
+      sliceRuntimeConfig.promptHistorySnapshotLimit = Math.floor(promptHistorySnapshotLimit);
     }
   },
 
@@ -118,6 +187,13 @@ export const tutorialSlice = {
         : [];
       hydrated.promptHistoryLimit =
         typeof snapshot.promptHistoryLimit === 'number' ? snapshot.promptHistoryLimit : hydrated.promptHistoryLimit;
+      hydrated.promptHistorySnapshots = Array.isArray(snapshot.promptHistorySnapshots)
+        ? snapshot.promptHistorySnapshots.map(clonePromptSnapshot)
+        : [];
+      hydrated.promptHistorySnapshotLimit =
+        typeof snapshot.promptHistorySnapshotLimit === 'number'
+          ? snapshot.promptHistorySnapshotLimit
+          : hydrated.promptHistorySnapshotLimit;
       return hydrated;
     }
 
@@ -136,6 +212,7 @@ export const tutorialSlice = {
         next.stepStartedAt = null;
         next.currentPrompt = null;
         next.promptHistory = [];
+        next.promptHistorySnapshots = [];
         hasChange = true;
         break;
       }
@@ -180,6 +257,10 @@ export const tutorialSlice = {
           }
           hasChange = true;
         }
+        recordPromptSnapshot(next, 'step_completed', timestamp, {
+          stepId: payload.stepId ?? next.currentStep,
+          completedAt: timestamp,
+        });
         break;
       }
 
@@ -190,6 +271,11 @@ export const tutorialSlice = {
         next.currentStepIndex = -1;
         next.currentPrompt = null;
         next.stepStartedAt = null;
+        recordPromptSnapshot(next, 'tutorial_completed', timestamp, {
+          completedSteps: Array.isArray(payload.completedSteps)
+            ? [...payload.completedSteps]
+            : [...next.completedSteps],
+        });
         hasChange = true;
         break;
       }
@@ -201,6 +287,9 @@ export const tutorialSlice = {
         next.currentStepIndex = -1;
         next.currentPrompt = null;
         next.stepStartedAt = null;
+        recordPromptSnapshot(next, 'tutorial_skipped', timestamp, {
+          reason: payload.reason ?? 'skipped',
+        });
         hasChange = true;
         break;
       }
@@ -234,6 +323,10 @@ export const tutorialSlice = {
       currentPrompt: state.currentPrompt ? clonePrompt(state.currentPrompt) : null,
       promptHistory: Array.isArray(state.promptHistory) ? state.promptHistory.map(clonePrompt) : [],
       promptHistoryLimit: state.promptHistoryLimit,
+      promptHistorySnapshots: Array.isArray(state.promptHistorySnapshots)
+        ? state.promptHistorySnapshots.map(clonePromptSnapshot)
+        : [],
+      promptHistorySnapshotLimit: state.promptHistorySnapshotLimit,
     };
   },
 
@@ -263,6 +356,19 @@ export const tutorialSlice = {
     selectPromptHistory: createSelector(
       (state) => state.tutorial.promptHistory,
       (history) => history.map(clonePrompt)
+    ),
+    selectPromptHistorySnapshots: createSelector(
+      (state) => state.tutorial.promptHistorySnapshots,
+      (snapshots) => snapshots.map(clonePromptSnapshot)
+    ),
+    selectLatestPromptSnapshot: createSelector(
+      (state) => state.tutorial.promptHistorySnapshots,
+      (snapshots) => {
+        if (!snapshots.length) {
+          return null;
+        }
+        return clonePromptSnapshot(snapshots[snapshots.length - 1]);
+      }
     ),
     selectTutorialAnalytics: createSelector(
       (state) => state.tutorial,

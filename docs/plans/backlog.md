@@ -169,6 +169,7 @@ Implement Phase 0 of the hybrid Event-Sourced WorldStateStore (see `docs/plans/w
 - Benchmark `node benchmarks/state-store-prototype.js` updated to consume real reducers.
 
 _Progress 2025-10-30 (Session #61 instrumentation): WorldStateStore now captures blocked objectives, faction reputation resets, and inventory selection telemetry with updated slice selectors/tests to support PO-002 observability goals._
+_Progress 2025-10-30 (Session #62 instrumentation): Added cascade metadata + history to faction slice, tutorial prompt snapshot timelines, and refreshed `benchmarks/state-store-prototype.js` with dispatch-threshold reporting (≤0.25 ms)._
 
 ---
 

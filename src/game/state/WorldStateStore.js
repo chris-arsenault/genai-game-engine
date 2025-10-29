@@ -50,6 +50,7 @@ export class WorldStateStore {
       dialogueHistoryLimit: config.dialogueHistoryLimit ?? DEFAULT_DIALOGUE_HISTORY_LIMIT,
       dialogueTranscriptEnabled: config.dialogueTranscriptEnabled ?? true,
       tutorialPromptHistoryLimit: config.tutorialPromptHistoryLimit ?? 5,
+      tutorialPromptSnapshotLimit: config.tutorialPromptSnapshotLimit ?? 10,
     };
 
     if (typeof dialogueSlice.configure === 'function') {
@@ -62,6 +63,7 @@ export class WorldStateStore {
     if (typeof tutorialSlice.configure === 'function') {
       tutorialSlice.configure({
         promptHistoryLimit: this.config.tutorialPromptHistoryLimit,
+        promptHistorySnapshotLimit: this.config.tutorialPromptSnapshotLimit,
       });
     }
 
@@ -296,6 +298,7 @@ export class WorldStateStore {
             oldAttitude: payload.oldAttitude,
             cascade: payload.cascade,
             source: payload.source,
+            sourceFactionName: payload.sourceFactionName,
           },
         });
       }),

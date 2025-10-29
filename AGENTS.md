@@ -7,9 +7,18 @@
 3. **Execute with updates.** Carry out the work item-by-item, updating the plan, logging verification commands, and noting new follow-ups as you go.
 4. **Document outcomes and new needs.** Update docs, backlog, and media sourcing notes as deliverables land. Record any MCP updates (research, patterns, lore, test strategies).
 5. **Publish the next handoff.** Produce `docs/reports/autonomous-session-[N]-handoff.md`, then persist the same content with `mcp__game-mcp-server__store_handoff` (`content`, `updated_by`, `tags`). Do not exit the session until both the file and MCP entry exist.
-6. **Verify session duration before closing.** Use timestamps (recorded at handoff fetch and before final response) to ensure active work meets the minimum runtime. If elapsed time is short (<4 hours) and conversation context is <40% consumed, continue working the prioritized backlog or document a clear blocker before ending the loop.
+6. **Verify session duration before closing.** 
 
 **Non-negotiable:** The handoff fetch and store bookend every autonomous run. Skipping either step breaks continuity.
+
+## Backlog Operations
+1. **Discover**: Query the MCP backlog (`search_backlog_semantic`, `search_backlog_by_tag`, or `get_top_backlog_items`) before starting work to avoid duplicating tasks and to understand current priorities.
+2. **Create**: When new work emerges, capture it with `create_backlog_item`, supplying summary, acceptance criteria, dependencies, priority, sprint, and tags that match the conventions in `docs/plans/backlog.md`.
+3. **Update**: Track progress through `update_backlog_item`, adjusting `status`, `next_steps`, `completed_work`, and `notes` as sessions advance; include links to docs, PRs, or assets in the `notes`.
+4. **Synchronize**: After MCP updates, refresh `docs/plans/backlog.md` (or other surfaced roadmaps) so markdown mirrors the MCP source; never treat the markdown as authoritative.
+5. **Review**: During planning, pull aggregated views from the MCP backlog to drive sprint goals, then record decisions or reprioritizations back into the MCP items immediately.
+
+**Non-negotiable:** The backlog must be updated for every change made and for every new work item identified.
 
 ## Global Workflow Standards
 - Maintain an up-to-date plan whenever a task spans multiple steps.
@@ -34,13 +43,6 @@
 ### Verification & Reporting
 - Run `npm test` after meaningful implementation changes; add targeted suites (Playwright, profiling) when relevant.
 - If a verification step cannot be run, note the gap and propose how to validate once unblocked.
-
-## Backlog Operations
-1. **Discover**: Query the MCP backlog (`search_backlog_semantic`, `search_backlog_by_tag`, or `get_top_backlog_items`) before starting work to avoid duplicating tasks and to understand current priorities.
-2. **Create**: When new work emerges, capture it with `create_backlog_item`, supplying summary, acceptance criteria, dependencies, priority, sprint, and tags that match the conventions in `docs/plans/backlog.md`.
-3. **Update**: Track progress through `update_backlog_item`, adjusting `status`, `next_steps`, `completed_work`, and `notes` as sessions advance; include links to docs, PRs, or assets in the `notes`.
-4. **Synchronize**: After MCP updates, refresh `docs/plans/backlog.md` (or other surfaced roadmaps) so markdown mirrors the MCP source; never treat the markdown as authoritative.
-5. **Review**: During planning, pull aggregated views from the MCP backlog to drive sprint goals, then record decisions or reprioritizations back into the MCP items immediately.
 
 ## Project Context
 ### Overview

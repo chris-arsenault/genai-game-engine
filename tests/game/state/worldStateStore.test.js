@@ -110,6 +110,9 @@ describe('WorldStateStore', () => {
     const tutorial = store.select(tutorialSlice.selectors.selectTutorialProgress);
     expect(tutorial.enabled).toBe(true);
     expect(tutorial.completedSteps).toContain('movement');
+    const tutorialSnapshots = store.select(tutorialSlice.selectors.selectPromptHistorySnapshots);
+    expect(tutorialSnapshots).toHaveLength(1);
+    expect(tutorialSnapshots[0].event).toBe('step_completed');
 
     const dialogue = store.select(dialogueSlice.selectors.selectDialogueTranscript, 'npc_alpha');
     expect(dialogue).toHaveLength(2);
@@ -198,6 +201,22 @@ describe('WorldStateStore', () => {
     expect(selectionInfo.index).toBe(0);
     expect(selectionInfo.source).toBe('inventoryOverlay');
 
+    eventBus.emit('faction:attitude_changed', {
+      factionId: 'faction_delta',
+      factionName: 'Faction Delta',
+      oldAttitude: 'neutral',
+      newAttitude: 'friendly',
+      cascade: true,
+      source: 'faction_alpha',
+      sourceFactionName: 'Faction Alpha',
+    });
+
+    const lastChange = store.select(factionSlice.selectors.selectFactionLastAttitudeChange, 'faction_delta');
+    expect(lastChange.sourceFactionId).toBe('faction_alpha');
+
+    const cascadeSummary = store.select(factionSlice.selectors.selectFactionCascadeSummary);
+    expect(cascadeSummary.lastCascadeEvent.targetFactionId).toBe('faction_delta');
+
     eventBus.emit('faction:reputation_reset', {
       reason: 'QA reset',
       initiatedBy: 'dev_console',
@@ -209,5 +228,6 @@ describe('WorldStateStore', () => {
     const lastReset = store.select(factionSlice.selectors.selectFactionLastReset);
     expect(lastReset.reason).toBe('QA reset');
     expect(lastReset.initiatedBy).toBe('dev_console');
+    expect(store.select(factionSlice.selectors.selectFactionCascadeSummary).lastCascadeEvent).toBeNull();
   });
 });

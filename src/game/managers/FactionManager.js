@@ -95,6 +95,7 @@ export class FactionManager {
         factionName: faction.name,
         oldAttitude,
         newAttitude,
+        sourceFactionName: null,
       });
 
       console.log(`[FactionManager] ${faction.name} attitude changed: ${oldAttitude} → ${newAttitude}`);
@@ -158,6 +159,7 @@ export class FactionManager {
             newAttitude,
             cascade: true,
             source: sourceFactionId,
+            sourceFactionName: sourceFaction?.name ?? null,
           });
         }
       }
@@ -203,6 +205,7 @@ export class FactionManager {
             newAttitude,
             cascade: true,
             source: sourceFactionId,
+            sourceFactionName: sourceFaction?.name ?? null,
           });
         }
       }
