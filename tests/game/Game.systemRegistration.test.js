@@ -112,6 +112,7 @@ describe('Game.initializeGameSystems', () => {
       'knowledgeProgression',
       'dialogue',
       'cameraFollow',
+      'trigger',
       'render',
     ];
 

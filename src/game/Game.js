@@ -48,6 +48,8 @@ import { DeductionBoard } from './ui/DeductionBoard.js';
 import { InventoryOverlay } from './ui/InventoryOverlay.js';
 import { AudioFeedbackController } from './audio/AudioFeedbackController.js';
 import { SFXCatalogLoader } from './audio/SFXCatalogLoader.js';
+import { AdaptiveMoodEmitter } from './audio/AdaptiveMoodEmitter.js';
+import { SuspicionMoodMapper } from './audio/SuspicionMoodMapper.js';
 import { SaveInspectorOverlay } from './ui/SaveInspectorOverlay.js';
 
 // Managers
@@ -130,6 +132,8 @@ export class Game {
     this._adaptiveMusicReady = false;
     this._adaptiveMoodHandlers = [];
     this._activeAmbientController = null;
+    this.suspicionMoodMapper = null;
+    this.adaptiveMoodEmitter = null;
 
     // Game state
     this.inputState = new InputState(engine.eventBus);
@@ -651,6 +655,25 @@ export class Game {
     console.log('[Game] Audio feedback controller initialized');
 
     this._ensureAdaptiveMoodHandlers();
+
+    if (!this.suspicionMoodMapper) {
+      this.suspicionMoodMapper = new SuspicionMoodMapper({
+        defaultMood: GameConfig?.audio?.memoryParlorAmbient?.defaultAdaptiveState ?? 'ambient',
+        thresholds: {
+          stealth: 8,
+          alert: 25,
+          combat: 60,
+          calm: 5,
+        },
+      });
+    }
+
+    if (!this.adaptiveMoodEmitter) {
+      this.adaptiveMoodEmitter = new AdaptiveMoodEmitter(this.eventBus, {
+        defaultSource: 'gameplay',
+        moodMapper: this.suspicionMoodMapper,
+      });
+    }
   }
 
   /**
@@ -2188,6 +2211,25 @@ export class Game {
   }
 
   /**
+   * Retrieve gameplay adaptive mood emitter diagnostics.
+   * @returns {{ emitter: object|null, thresholds: object|null }}
+   */
+  getAdaptiveMoodEmitterStats() {
+    const emitterState =
+      this.adaptiveMoodEmitter && typeof this.adaptiveMoodEmitter.getState === 'function'
+        ? this.adaptiveMoodEmitter.getState()
+        : null;
+    const thresholds =
+      this.suspicionMoodMapper && typeof this.suspicionMoodMapper.getThresholds === 'function'
+        ? this.suspicionMoodMapper.getThresholds()
+        : null;
+    return {
+      emitter: emitterState,
+      thresholds,
+    };
+  }
+
+  /**
    * Expose SFX catalog entries for debug tooling and designer previews.
    * @returns {Array<object>} Array of SFX descriptors
    */
@@ -2442,6 +2484,11 @@ export class Game {
     this.audioTelemetry = { currentState: null, history: [] };
     this._cleanupAdaptiveMoodHandlers();
     this._registerAdaptiveMusic(null, { reason: 'cleanup' });
+    if (this.adaptiveMoodEmitter) {
+      this.adaptiveMoodEmitter.dispose();
+      this.adaptiveMoodEmitter = null;
+    }
+    this.suspicionMoodMapper = null;
 
     // Reset input state
     this.inputState.reset();

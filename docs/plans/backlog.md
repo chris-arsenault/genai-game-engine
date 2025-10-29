@@ -402,37 +402,40 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Priority**: P0
 - **Tags**: `audio`, `gameplay`, `stealth`
 - **Effort**: 3 hours
-- **Status**: 🟡 Pending — Captures gameplay integration required for adaptive music orchestration delivered in Session #77.
+- **Status**: 🟡 In Progress — Session #79 delivered mapper/emitter scaffolding and Game initialization hooks; gameplay bridge wiring still outstanding.
 - **Summary**: Wire DisguiseSystem, Firewall Scrambler, and combat suspicion events into the adaptive music EventBus so stealth/combat transitions trigger without manual injections.
+- **Progress (Session #79)**: Added `SuspicionMoodMapper`, `AdaptiveMoodEmitter`, and Jest suites; `Game.initializeAudioIntegrations()` now instantiates the emitter for telemetry-ready mood requests.
 - **Acceptance Criteria**:
   - DisguiseSystem emits adaptive mood events when disguises equip, suspicion crosses thresholds, and combat triggers resolve.
   - Firewall scrambler windows emit stealth boosts with timed mood reverts aligned to scrambler lifetimes.
   - Automated tests cover end-to-end mood propagation from gameplay emitters through `Game` adaptive handlers.
-- **References**: `docs/plans/adaptive-audio-emitter-plan.md`, MCP backlog item `AUDIO-613`.
+- **References**: `docs/plans/adaptive-audio-emitter-plan.md`, `src/game/audio/SuspicionMoodMapper.js`, `src/game/audio/AdaptiveMoodEmitter.js`, MCP backlog item `AUDIO-613`.
 
 #### QUEST-442: Act 1 Trigger Schema Migration
 - **Priority**: P1
 - **Tags**: `quest`, `physics`, `narrative`
 - **Effort**: 5 hours
-- **Status**: 🟡 Pending — Tracks remaining Act 1 trigger migrations flagged in Session #77.
+- **Status**: 🟡 In Progress — Phase 1 toolkit/registry landed in Session #79; scene migrations and QuestSystem cleanup still pending.
 - **Summary**: Transition Act 1 crime scene and vendor interactions to the standardized Trigger component schema with structured quest metadata.
+- **Progress (Session #79)**: Authored `TriggerMigrationToolkit`, `QuestTriggerRegistry`, and Jest coverage to convert legacy InteractionZones and track outstanding migrations.
 - **Acceptance Criteria**:
   - Migrated triggers emit `area:entered`/`area:exited` with quest metadata aligned to the schema.
   - QuestSystem progression and resets validated via updated regression tests.
   - Designer-facing docs updated with Act 1 trigger examples.
-- **References**: `docs/plans/quest-trigger-migration-plan.md`, MCP backlog item `QUEST-442`.
+- **References**: `docs/plans/quest-trigger-migration-plan.md`, `src/game/quests/TriggerMigrationToolkit.js`, `src/game/quests/QuestTriggerRegistry.js`, MCP backlog item `QUEST-442`.
 
 #### PROC-221: Tilemap Rotation Fidelity
 - **Priority**: P1
 - **Tags**: `procedural`, `rendering`, `engine`
 - **Effort**: 5 hours
-- **Status**: 🟡 Pending — Follow-up to Session #77 rotated room placement work.
+- **Status**: 🟡 In Progress — Session #79 introduced rotation math utilities; generator integration and seam painting remain.
 - **Summary**: Rotate room tilemaps or select orientation variants so procedural districts render correctly when rooms are rotated; ensure corridor seams host proper door tiles.
+- **Progress (Session #79)**: Implemented `TileRotationMatrix` with coordinate transforms and Jest coverage to power upcoming tilemap transformer work.
 - **Acceptance Criteria**:
   - Rotated rooms display correct tile orientation without misaligned seams.
   - Corridor seam painter places door tiles matching rotation.
   - Regression tests validate rotated tilemaps across templates.
-- **References**: `docs/plans/tilemap-rotation-fidelity-plan.md`, MCP backlog item `PROC-221`.
+- **References**: `docs/plans/tilemap-rotation-fidelity-plan.md`, `src/engine/procedural/TileRotationMatrix.js`, MCP backlog item `PROC-221`.
 
 ---
 
