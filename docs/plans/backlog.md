@@ -396,6 +396,44 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Tests validate rotated rooms and corridors under deterministic seeds.
 - **References**: `src/game/procedural/DistrictGenerator.js`, `tests/game/procedural/DistrictGenerator.test.js`, `docs/guides/procedural-generation-integration.md` (Rotation Support).
 
+### Session #78 Backlog Updates
+
+#### AUDIO-613: Gameplay Adaptive Mood Emitters
+- **Priority**: P0
+- **Tags**: `audio`, `gameplay`, `stealth`
+- **Effort**: 3 hours
+- **Status**: 🟡 Pending — Captures gameplay integration required for adaptive music orchestration delivered in Session #77.
+- **Summary**: Wire DisguiseSystem, Firewall Scrambler, and combat suspicion events into the adaptive music EventBus so stealth/combat transitions trigger without manual injections.
+- **Acceptance Criteria**:
+  - DisguiseSystem emits adaptive mood events when disguises equip, suspicion crosses thresholds, and combat triggers resolve.
+  - Firewall scrambler windows emit stealth boosts with timed mood reverts aligned to scrambler lifetimes.
+  - Automated tests cover end-to-end mood propagation from gameplay emitters through `Game` adaptive handlers.
+- **References**: `docs/plans/adaptive-audio-emitter-plan.md`, MCP backlog item `AUDIO-613`.
+
+#### QUEST-442: Act 1 Trigger Schema Migration
+- **Priority**: P1
+- **Tags**: `quest`, `physics`, `narrative`
+- **Effort**: 5 hours
+- **Status**: 🟡 Pending — Tracks remaining Act 1 trigger migrations flagged in Session #77.
+- **Summary**: Transition Act 1 crime scene and vendor interactions to the standardized Trigger component schema with structured quest metadata.
+- **Acceptance Criteria**:
+  - Migrated triggers emit `area:entered`/`area:exited` with quest metadata aligned to the schema.
+  - QuestSystem progression and resets validated via updated regression tests.
+  - Designer-facing docs updated with Act 1 trigger examples.
+- **References**: `docs/plans/quest-trigger-migration-plan.md`, MCP backlog item `QUEST-442`.
+
+#### PROC-221: Tilemap Rotation Fidelity
+- **Priority**: P1
+- **Tags**: `procedural`, `rendering`, `engine`
+- **Effort**: 5 hours
+- **Status**: 🟡 Pending — Follow-up to Session #77 rotated room placement work.
+- **Summary**: Rotate room tilemaps or select orientation variants so procedural districts render correctly when rooms are rotated; ensure corridor seams host proper door tiles.
+- **Acceptance Criteria**:
+  - Rotated rooms display correct tile orientation without misaligned seams.
+  - Corridor seam painter places door tiles matching rotation.
+  - Regression tests validate rotated tilemaps across templates.
+- **References**: `docs/plans/tilemap-rotation-fidelity-plan.md`, MCP backlog item `PROC-221`.
+
 ---
 
 ### Session #44 Testing & Stability
