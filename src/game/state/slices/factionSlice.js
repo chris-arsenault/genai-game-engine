@@ -3,12 +3,18 @@ import { createSelector } from '../utils/memoize.js';
 const initialFactionState = {
   byId: {},
   lastActionAt: null,
+  lastResetAt: null,
+  lastResetReason: null,
+  lastResetInitiatedBy: null,
 };
 
 function cloneState(state) {
   return {
     byId: { ...state.byId },
     lastActionAt: state.lastActionAt,
+    lastResetAt: state.lastResetAt ?? null,
+    lastResetReason: state.lastResetReason ?? null,
+    lastResetInitiatedBy: state.lastResetInitiatedBy ?? null,
   };
 }
 
@@ -77,7 +83,21 @@ export const factionSlice = {
         return cloneState({
           byId: payload.factions.byId ?? {},
           lastActionAt: payload.factions.lastActionAt ?? null,
+          lastResetAt: payload.factions.lastResetAt ?? null,
+          lastResetReason: payload.factions.lastResetReason ?? null,
+          lastResetInitiatedBy: payload.factions.lastResetInitiatedBy ?? null,
         });
+      }
+
+      case 'FACTION_REPUTATION_RESET': {
+        const timestamp = action.timestamp ?? Date.now();
+        return {
+          byId: {},
+          lastActionAt: timestamp,
+          lastResetAt: timestamp,
+          lastResetReason: payload.reason ?? null,
+          lastResetInitiatedBy: payload.initiatedBy ?? null,
+        };
       }
 
       default:
@@ -95,6 +115,10 @@ export const factionSlice = {
   serialize(state) {
     return {
       byId: state.byId,
+      lastActionAt: state.lastActionAt ?? null,
+      lastResetAt: state.lastResetAt ?? null,
+      lastResetReason: state.lastResetReason ?? null,
+      lastResetInitiatedBy: state.lastResetInitiatedBy ?? null,
     };
   },
 
@@ -118,6 +142,14 @@ export const factionSlice = {
         const record = byId[factionId];
         return record ? record.attitude : 'neutral';
       }
+    ),
+    selectFactionLastReset: createSelector(
+      (state) => state.faction,
+      (factionState) => ({
+        at: factionState.lastResetAt ?? null,
+        reason: factionState.lastResetReason ?? null,
+        initiatedBy: factionState.lastResetInitiatedBy ?? null,
+      })
     ),
   },
 };

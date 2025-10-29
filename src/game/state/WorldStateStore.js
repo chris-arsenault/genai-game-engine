@@ -175,6 +175,26 @@ export class WorldStateStore {
         });
       }),
 
+      this.eventBus.on('objective:blocked', (payload = {}) => {
+        this.dispatch({
+          type: 'OBJECTIVE_BLOCKED',
+          domain: 'quest',
+          payload: {
+            questId: payload.questId,
+            questTitle: payload.questTitle,
+            questType: payload.questType,
+            objectiveId: payload.objectiveId,
+            objectiveDescription: payload.objectiveDescription,
+            blockedMessage: payload.blockedMessage,
+            reason: payload.reason,
+            requirement: payload.requirement,
+            requirements: payload.requirements,
+            eventType: payload.eventType,
+            eventData: payload.eventData,
+          },
+        });
+      }),
+
       this.eventBus.on('story:flag:changed', (payload) => {
         this.dispatch({
           type: 'STORY_FLAG_SET',
@@ -237,6 +257,18 @@ export class WorldStateStore {
         });
       }),
 
+      this.eventBus.on('inventory:selection_changed', (payload = {}) => {
+        this.dispatch({
+          type: 'INVENTORY_SELECTION_CHANGED',
+          domain: 'inventory',
+          payload: {
+            itemId: typeof payload.itemId === 'string' ? payload.itemId : null,
+            index: Number.isInteger(payload.index) ? payload.index : null,
+            source: payload.source ?? 'inventoryOverlay',
+          },
+        });
+      }),
+
       this.eventBus.on('reputation:changed', (payload) => {
         this.dispatch({
           type: 'FACTION_REPUTATION_CHANGED',
@@ -264,6 +296,17 @@ export class WorldStateStore {
             oldAttitude: payload.oldAttitude,
             cascade: payload.cascade,
             source: payload.source,
+          },
+        });
+      }),
+
+      this.eventBus.on('faction:reputation_reset', (payload = {}) => {
+        this.dispatch({
+          type: 'FACTION_REPUTATION_RESET',
+          domain: 'faction',
+          payload: {
+            reason: payload.reason,
+            initiatedBy: payload.initiatedBy,
           },
         });
       }),

@@ -67,6 +67,10 @@ function mergeObjectiveRecord(existing, definition) {
     merged.status = 'pending';
   }
 
+  if (typeof merged.blocked === 'undefined') {
+    merged.blocked = existing?.blocked ?? null;
+  }
+
   return merged;
 }
 
@@ -156,6 +160,9 @@ function ensureQuestRecord(state, payload) {
     completedAt: null,
     failedAt: null,
     objectives: {},
+    blockedObjectives: {},
+    lastBlockedAt: null,
+    lastBlocked: null,
     metadata: payload.metadata ?? {},
     objectivesOrder: [],
     description: payload.description ?? null,
@@ -268,6 +275,9 @@ export const questSlice = {
         objective.status = objective.status === 'completed' ? 'completed' : 'in_progress';
         objective.progress = payload.progress ?? objective.progress ?? 0;
         objective.target = payload.target ?? objective.target;
+        if (objective.blocked) {
+          delete objective.blocked;
+        }
 
         if (objective.progress >= objective.target) {
           objective.status = 'completed';
@@ -279,6 +289,9 @@ export const questSlice = {
         }
         if (!quest.objectivesOrder.includes(payload.objectiveId)) {
           quest.objectivesOrder.push(payload.objectiveId);
+        }
+        if (quest.blockedObjectives) {
+          delete quest.blockedObjectives[payload.objectiveId];
         }
         hasChange = true;
         break;
@@ -296,6 +309,7 @@ export const questSlice = {
         const objective = { ...baseObjective };
         objective.status = 'completed';
         objective.progress = payload.target ?? objective.progress ?? 1;
+        delete objective.blocked;
         quest.objectives[payload.objectiveId] = objective;
         if (!quest.objectivesOrder) {
           quest.objectivesOrder = [];
@@ -303,6 +317,76 @@ export const questSlice = {
         if (!quest.objectivesOrder.includes(payload.objectiveId)) {
           quest.objectivesOrder.push(payload.objectiveId);
         }
+        if (quest.blockedObjectives) {
+          delete quest.blockedObjectives[payload.objectiveId];
+        }
+        hasChange = true;
+        break;
+      }
+
+      case 'OBJECTIVE_BLOCKED': {
+        if (!payload.questId || !payload.objectiveId) break;
+        const quest = ensureQuestRecord(next, payload);
+        const existingObjective = quest.objectives[payload.objectiveId];
+        const baseObjective = mergeObjectiveRecord(existingObjective, {
+          id: payload.objectiveId,
+          title: payload.objectiveTitle ?? payload.objectiveDescription ?? existingObjective?.title ?? payload.objectiveId,
+          description: payload.objectiveDescription ?? existingObjective?.description ?? '',
+        });
+
+        const recordedAt = action.timestamp ?? Date.now();
+        const objective = { ...baseObjective };
+        objective.status = 'blocked';
+        objective.blocked = {
+          reason: payload.reason ?? null,
+          requirement: payload.requirement ?? null,
+          requirements: Array.isArray(payload.requirements)
+            ? [...payload.requirements]
+            : payload.requirements ?? null,
+          message: payload.blockedMessage ?? null,
+          eventType: payload.eventType ?? null,
+          eventData: payload.eventData && typeof payload.eventData === 'object'
+            ? { ...payload.eventData }
+            : null,
+          recordedAt,
+        };
+
+        quest.objectives[payload.objectiveId] = objective;
+        if (!quest.objectivesOrder) {
+          quest.objectivesOrder = [];
+        }
+        if (!quest.objectivesOrder.includes(payload.objectiveId)) {
+          quest.objectivesOrder.push(payload.objectiveId);
+        }
+
+        if (!quest.blockedObjectives) {
+          quest.blockedObjectives = {};
+        }
+
+        quest.blockedObjectives[payload.objectiveId] = {
+          objectiveId: payload.objectiveId,
+          questId: payload.questId,
+          questTitle: payload.questTitle ?? quest.title ?? payload.questId,
+          questType: payload.questType ?? quest.type ?? null,
+          reason: payload.reason ?? null,
+          requirement: payload.requirement ?? null,
+          requirements: Array.isArray(payload.requirements)
+            ? [...payload.requirements]
+            : payload.requirements ?? null,
+          message: payload.blockedMessage ?? null,
+          eventType: payload.eventType ?? null,
+          recordedAt,
+        };
+
+        quest.lastBlockedAt = recordedAt;
+        quest.lastBlocked = {
+          objectiveId: payload.objectiveId,
+          questId: payload.questId,
+          reason: payload.reason ?? null,
+          requirement: payload.requirement ?? null,
+          message: payload.blockedMessage ?? null,
+          recordedAt,
+        };
         hasChange = true;
         break;
       }
@@ -381,11 +465,65 @@ export const questSlice = {
           title: quest.title,
           type: quest.type,
           status: quest.status,
-           description: quest.description ?? '',
+          description: quest.description ?? '',
           pendingObjectives,
           completedObjectives: objectives.filter((obj) => obj.status === 'completed'),
         };
       }).filter(Boolean)
+    ),
+    selectQuestLastBlocked: createSelector(
+      (state) => state.quest,
+      (state, questId) => questId,
+      (questState, questId) => {
+        const quest = questState.byId[questId];
+        return quest?.lastBlocked ?? null;
+      }
+    ),
+    selectQuestBlockedObjectives: createSelector(
+      (state) => state.quest,
+      (state, questId) => questId,
+      (questState, questId) => {
+        const quest = questState.byId[questId];
+        if (!quest || !quest.blockedObjectives) {
+          return [];
+        }
+        return Object.values(quest.blockedObjectives).map((entry) => {
+          const objective = quest.objectives?.[entry.objectiveId] ?? null;
+          return {
+            ...entry,
+            objectiveTitle: objective?.title ?? entry.objectiveId,
+            status: objective?.status ?? 'blocked',
+          };
+        });
+      }
+    ),
+    selectBlockedObjectives: createSelector(
+      (state) => state.quest,
+      (questState) => {
+        const results = [];
+        for (const quest of Object.values(questState.byId)) {
+          if (!quest || !quest.blockedObjectives) continue;
+          for (const entry of Object.values(quest.blockedObjectives)) {
+            const objective = quest.objectives?.[entry.objectiveId] ?? null;
+            results.push({
+              questId: quest.id,
+              questTitle: quest.title ?? entry.questTitle ?? quest.id,
+              objectiveId: entry.objectiveId,
+              objectiveTitle: objective?.title ?? entry.objectiveId,
+              reason: entry.reason ?? null,
+              requirement: entry.requirement ?? null,
+              message: entry.message ?? null,
+              recordedAt: entry.recordedAt ?? quest.lastBlockedAt ?? null,
+              status: objective?.status ?? 'blocked',
+            });
+          }
+        }
+        return results.sort((a, b) => {
+          const aTime = a.recordedAt ?? 0;
+          const bTime = b.recordedAt ?? 0;
+          return bTime - aTime;
+        });
+      }
     ),
   },
 };

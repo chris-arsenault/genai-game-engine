@@ -2,6 +2,10 @@ const emptyState = Object.freeze({
   items: [],
   equipped: {},
   lastUpdatedAt: null,
+  selectedItemId: null,
+  selectedIndex: null,
+  lastSelectionAt: null,
+  selectionSource: null,
 });
 
 function cloneState(state = emptyState) {
@@ -9,6 +13,10 @@ function cloneState(state = emptyState) {
     items: Array.isArray(state.items) ? state.items.map(item => ({ ...item })) : [],
     equipped: state.equipped ? { ...state.equipped } : {},
     lastUpdatedAt: state.lastUpdatedAt ?? null,
+    selectedItemId: state.selectedItemId ?? null,
+    selectedIndex: Number.isInteger(state.selectedIndex) ? state.selectedIndex : null,
+    lastSelectionAt: state.lastSelectionAt ?? null,
+    selectionSource: state.selectionSource ?? null,
   };
 }
 
@@ -169,6 +177,10 @@ function normalizeSnapshot(snapshot = {}) {
   }
 
   next.lastUpdatedAt = snapshot.lastUpdatedAt ?? Date.now();
+  next.selectedItemId = typeof snapshot.selectedItemId === 'string' ? snapshot.selectedItemId : null;
+  next.selectedIndex = Number.isInteger(snapshot.selectedIndex) ? snapshot.selectedIndex : null;
+  next.lastSelectionAt = snapshot.lastSelectionAt ?? null;
+  next.selectionSource = snapshot.selectionSource ?? null;
   return next;
 }
 
@@ -238,6 +250,25 @@ export const inventorySlice = {
         return draft;
       }
 
+      case 'INVENTORY_SELECTION_CHANGED': {
+        const selection = action.payload || {};
+        const nextSelectedId = typeof selection.itemId === 'string' ? selection.itemId : null;
+        const nextSelectedIndex = Number.isInteger(selection.index) ? selection.index : null;
+        if (
+          state.selectedItemId === nextSelectedId &&
+          state.selectedIndex === nextSelectedIndex &&
+          state.selectionSource === (selection.source ?? null)
+        ) {
+          return state;
+        }
+        const draft = cloneState(state);
+        draft.selectedItemId = nextSelectedId;
+        draft.selectedIndex = nextSelectedIndex;
+        draft.lastSelectionAt = timestamp;
+        draft.selectionSource = selection.source ?? null;
+        return draft;
+      }
+
       default:
         return state;
     }
@@ -248,15 +279,45 @@ export const inventorySlice = {
       items: Array.isArray(state.items) ? state.items.map((item) => ({ ...item })) : [],
       equipped: state.equipped ? { ...state.equipped } : {},
       lastUpdatedAt: state.lastUpdatedAt ?? null,
+      selectedItemId: state.selectedItemId ?? null,
+      selectedIndex: Number.isInteger(state.selectedIndex) ? state.selectedIndex : null,
+      lastSelectionAt: state.lastSelectionAt ?? null,
+      selectionSource: state.selectionSource ?? null,
     };
   },
 
   selectors: {
+    _resolve(state) {
+      if (state && typeof state === 'object') {
+        if (Array.isArray(state.items) || state.selectedItemId !== undefined || state.equipped !== undefined) {
+          return state;
+        }
+        if (state.inventory) {
+          return state.inventory;
+        }
+      }
+      return emptyState;
+    },
     getItems(state) {
-      return Array.isArray(state.items) ? state.items : [];
+      const slice = inventorySlice.selectors._resolve(state);
+      return Array.isArray(slice.items) ? slice.items : [];
     },
     getEquipped(state) {
-      return state.equipped ? { ...state.equipped } : {};
+      const slice = inventorySlice.selectors._resolve(state);
+      return slice.equipped ? { ...slice.equipped } : {};
+    },
+    getSelectedItemId(state) {
+      const slice = inventorySlice.selectors._resolve(state);
+      return typeof slice.selectedItemId === 'string' ? slice.selectedItemId : null;
+    },
+    getSelectionInfo(state) {
+      const slice = inventorySlice.selectors._resolve(state);
+      return {
+        itemId: typeof slice.selectedItemId === 'string' ? slice.selectedItemId : null,
+        index: Number.isInteger(slice.selectedIndex) ? slice.selectedIndex : null,
+        lastSelectionAt: slice.lastSelectionAt ?? null,
+        source: slice.selectionSource ?? null,
+      };
     },
   },
 };
