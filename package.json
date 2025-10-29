@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "test": "jest",
     "export-telemetry": "node scripts/telemetry/exportInspectorTelemetry.js",
+    "telemetry:fallback-report": "node scripts/telemetry/analyzeFallbackUsage.js",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:e2e": "./run_playwright.sh test",

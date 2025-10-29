@@ -53,6 +53,18 @@ describe('CiArtifactPublisher', () => {
         filename: 'summary.json',
       })
     );
+    expect(manifest.fallbackSummary).toEqual({
+      attempted: false,
+      attempts: 0,
+      succeeded: 0,
+      failed: 0,
+      partial: 0,
+      skipped: 0,
+      lastAttemptedAt: null,
+      providers: {},
+    });
+
+    expect(result.metadata.fallbackSummary).toEqual(manifest.fallbackSummary);
   });
 
   test('executes configured commands when not in dry-run', async () => {
@@ -248,6 +260,17 @@ describe('CiArtifactPublisher', () => {
       ])
     );
 
+    expect(result.metadata.fallbackSummary).toEqual(
+      expect.objectContaining({
+        attempted: true,
+        attempts: 1,
+        succeeded: 1,
+        failed: 0,
+        partial: 0,
+        skipped: 0,
+      })
+    );
+
     const manifest = JSON.parse(await fs.readFile(metadataPath, 'utf8'));
     expect(manifest.providerResults).toEqual(
       expect.arrayContaining([
@@ -257,6 +280,29 @@ describe('CiArtifactPublisher', () => {
           fileCount: 1,
         }),
       ])
+    );
+    expect(manifest.fallbackSummary).toEqual(
+      expect.objectContaining({
+        attempted: true,
+        attempts: 1,
+        succeeded: 1,
+        failed: 0,
+        partial: 0,
+        skipped: 0,
+        lastAttemptedAt: expect.any(String),
+      })
+    );
+    expect(manifest.fallbackSummary.providers).toEqual(
+      expect.objectContaining({
+        githubActionsApi: expect.objectContaining({
+          attempts: 1,
+          succeeded: 1,
+          failed: 0,
+          partial: 0,
+          skipped: 0,
+          lastAttemptedAt: expect.any(String),
+        }),
+      })
     );
   });
 });

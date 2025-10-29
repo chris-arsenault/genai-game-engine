@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adaptive audio telemetry feed in the debug overlay showing recent state transitions.
 - Combat/disguise adaptive routing including stealth mix support and Playwright coverage of in-game triggers.
 - Debug overlay SFX catalog search box and tag chips for rapid filtering during audio design sessions.
+- Telemetry fallback monitoring: `CiArtifactPublisher` now records per-provider fallbackSummary metrics and `npm run telemetry:fallback-report` aggregates repeated fallback usage for CI operators.
 
 ### Changed
 - Migrated gameplay systems, managers, and UI overlays to use `EventBus.on`/`off` with stored unsubscribe handles, eliminating deprecated API warnings and ensuring clean teardown during `Game.cleanup`.
@@ -39,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Introduced telemetry stress harness for adaptive state churn plus Playwright coverage of SFX overlay filtering and mix transitions.
 - Relaxed high-variance performance thresholds in jsdom-based suites while documenting expected real-browser budgets.
 - Added `TutorialScene` integration test ensuring evidence detection integrates with the investigation system (`tests/game/scenes/TutorialScene.test.js`).
+- Added coverage for telemetry fallbackSummary metrics and analyzer utilities (`tests/game/telemetry/CiArtifactPublisher.test.js`, `tests/scripts/telemetry/analyzeFallbackUsage.test.js`).
 
 ## [0.1.0] - 2025-10-26
 

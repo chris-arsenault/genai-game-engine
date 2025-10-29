@@ -73,6 +73,7 @@ export class CiArtifactPublisher {
         filename: path.basename(filepath),
       })),
       context,
+      fallbackSummary: this.#createFallbackSummary(),
     };
 
     let metadataDirty = false;
@@ -209,6 +210,7 @@ export class CiArtifactPublisher {
       if (!uploader || typeof uploader.upload !== 'function') {
         continue;
       }
+      const attemptTimestamp = new Date().toISOString();
       try {
         const rawResult = await uploader.upload(artifactPaths, {
           artifactDir: context?.artifactDir ?? metadata?.context?.artifactDir ?? null,
@@ -217,7 +219,14 @@ export class CiArtifactPublisher {
           context,
         });
         if (rawResult) {
-          results.push(this.#normalizeFallbackResult(rawResult));
+          const normalized = this.#normalizeFallbackResult(rawResult);
+          normalized.attemptedAt = normalized.attemptedAt ?? attemptTimestamp;
+          normalized.provider =
+            typeof normalized.provider === 'string' && normalized.provider.length > 0
+              ? normalized.provider
+              : uploader?.provider ?? uploader?.constructor?.name ?? 'fallback';
+          normalized.isFallback = true;
+          results.push(normalized);
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
@@ -235,7 +244,9 @@ export class CiArtifactPublisher {
           skippedReason: null,
           errorMessage: message,
           errorCode: error?.code ?? null,
-          provider: uploader?.provider ?? 'fallback',
+          provider: uploader?.provider ?? uploader?.constructor?.name ?? 'fallback',
+          attemptedAt: attemptTimestamp,
+          isFallback: true,
         });
       }
     }
@@ -268,6 +279,10 @@ export class CiArtifactPublisher {
         args: Array.isArray(result.args) ? result.args : [],
         stdout: result.stdout ?? '',
         stderr: result.stderr ?? '',
+      });
+      this.#updateFallbackSummary(metadata, {
+        ...result,
+        attemptedAt: result.attemptedAt ?? timestamp,
       });
     }
 
@@ -324,6 +339,12 @@ export class CiArtifactPublisher {
       }
     }
 
+    if (typeof normalized.provider !== 'string' || normalized.provider.length === 0) {
+      normalized.provider = raw?.provider ?? 'fallback';
+    }
+
+    normalized.isFallback = true;
+
     return normalized;
   }
 
@@ -377,6 +398,121 @@ export class CiArtifactPublisher {
 
     const normalized = message.toLowerCase();
     return normalized.includes('enoent') || normalized.includes('not found') || normalized.includes('is not recognized');
+  }
+
+  #createFallbackSummary() {
+    return {
+      attempted: false,
+      attempts: 0,
+      succeeded: 0,
+      failed: 0,
+      partial: 0,
+      skipped: 0,
+      lastAttemptedAt: null,
+      providers: {},
+    };
+  }
+
+  #updateFallbackSummary(metadata, result) {
+    if (!metadata) {
+      return false;
+    }
+
+    if (!metadata.fallbackSummary) {
+      metadata.fallbackSummary = this.#createFallbackSummary();
+    }
+
+    const summary = metadata.fallbackSummary;
+    summary.attempted = true;
+    summary.attempts += 1;
+    if (result.attemptedAt) {
+      summary.lastAttemptedAt = result.attemptedAt;
+    }
+
+    const status = typeof result.status === 'string' ? result.status.toLowerCase() : '';
+    const exitCode = typeof result.exitCode === 'number' ? result.exitCode : null;
+    const providerKey =
+      typeof result.provider === 'string' && result.provider.length > 0 ? result.provider : 'fallback';
+
+    switch (status) {
+      case 'uploaded':
+      case 'succeeded':
+        summary.succeeded += 1;
+        break;
+      case 'partial':
+        summary.partial += 1;
+        break;
+      case 'skipped':
+        summary.skipped += 1;
+        break;
+      case 'failed':
+      case 'error':
+      case 'timeout':
+      case 'cancelled':
+        summary.failed += 1;
+        break;
+      default:
+        if (exitCode === 0) {
+          summary.succeeded += 1;
+        } else if (exitCode === 127) {
+          summary.skipped += 1;
+        } else {
+          summary.failed += 1;
+        }
+        break;
+    }
+
+    if (!summary.providers[providerKey]) {
+      summary.providers[providerKey] = {
+        attempts: 0,
+        succeeded: 0,
+        failed: 0,
+        partial: 0,
+        skipped: 0,
+        lastStatus: null,
+        lastAttemptedAt: null,
+      };
+    }
+
+    const providerSummary = summary.providers[providerKey];
+    providerSummary.attempts += 1;
+    providerSummary.lastStatus = status || (exitCode === 0 ? 'succeeded' : 'failed');
+    if (result.attemptedAt) {
+      providerSummary.lastAttemptedAt = result.attemptedAt;
+    } else if (!providerSummary.lastAttemptedAt && summary.lastAttemptedAt) {
+      providerSummary.lastAttemptedAt = summary.lastAttemptedAt;
+    }
+
+    switch (status) {
+      case 'uploaded':
+      case 'succeeded':
+        providerSummary.succeeded += 1;
+        break;
+      case 'partial':
+        providerSummary.partial += 1;
+        break;
+      case 'skipped':
+        providerSummary.skipped += 1;
+        break;
+      case 'failed':
+      case 'error':
+      case 'timeout':
+      case 'cancelled':
+        providerSummary.failed += 1;
+        break;
+      default:
+        if (exitCode === 0) {
+          providerSummary.succeeded += 1;
+        } else if (exitCode === 127) {
+          providerSummary.skipped += 1;
+        } else {
+          providerSummary.failed += 1;
+        }
+        break;
+    }
+
+    summary.providers[providerKey] = providerSummary;
+    return true;
   }
 }
 
