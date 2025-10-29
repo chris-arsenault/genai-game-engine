@@ -40,10 +40,10 @@ describe('TutorialSystem', () => {
     global.localStorage = localStorageMock;
 
     // Mock EventBus
+    const onMock = jest.fn(() => jest.fn());
     mockEventBus = {
       emit: jest.fn(),
-      subscribe: jest.fn(),
-      on: jest.fn(),
+      on: onMock,
       off: jest.fn(),
     };
 
@@ -117,14 +117,14 @@ describe('TutorialSystem', () => {
       tutorialSystem.init();
 
       // Verify key event subscriptions
-      expect(mockEventBus.subscribe).toHaveBeenCalledWith('player:moved', expect.any(Function));
-      expect(mockEventBus.subscribe).toHaveBeenCalledWith('evidence:detected', expect.any(Function));
-      expect(mockEventBus.subscribe).toHaveBeenCalledWith('evidence:collected', expect.any(Function));
-      expect(mockEventBus.subscribe).toHaveBeenCalledWith('clue:derived', expect.any(Function));
-      expect(mockEventBus.subscribe).toHaveBeenCalledWith('ability:activated', expect.any(Function));
-      expect(mockEventBus.subscribe).toHaveBeenCalledWith('case_file:opened', expect.any(Function));
-      expect(mockEventBus.subscribe).toHaveBeenCalledWith('deduction_board:opened', expect.any(Function));
-      expect(mockEventBus.subscribe).toHaveBeenCalledWith('input:escape', expect.any(Function));
+      expect(mockEventBus.on).toHaveBeenCalledWith('player:moved', expect.any(Function));
+      expect(mockEventBus.on).toHaveBeenCalledWith('evidence:detected', expect.any(Function));
+      expect(mockEventBus.on).toHaveBeenCalledWith('evidence:collected', expect.any(Function));
+      expect(mockEventBus.on).toHaveBeenCalledWith('clue:derived', expect.any(Function));
+      expect(mockEventBus.on).toHaveBeenCalledWith('ability:activated', expect.any(Function));
+      expect(mockEventBus.on).toHaveBeenCalledWith('case_file:opened', expect.any(Function));
+      expect(mockEventBus.on).toHaveBeenCalledWith('deduction_board:opened', expect.any(Function));
+      expect(mockEventBus.on).toHaveBeenCalledWith('input:escape', expect.any(Function));
     });
   });
 
@@ -359,7 +359,7 @@ describe('TutorialSystem', () => {
     });
 
     it('should track player movement', () => {
-      const callback = mockEventBus.subscribe.mock.calls.find(
+      const callback = mockEventBus.on.mock.calls.find(
         call => call[0] === 'player:moved'
       )[1];
 
@@ -369,7 +369,7 @@ describe('TutorialSystem', () => {
     });
 
     it('should track evidence detected count', () => {
-      const callback = mockEventBus.subscribe.mock.calls.find(
+      const callback = mockEventBus.on.mock.calls.find(
         call => call[0] === 'evidence:detected'
       )[1];
 
@@ -380,7 +380,7 @@ describe('TutorialSystem', () => {
     });
 
     it('should track evidence collected count', () => {
-      const callback = mockEventBus.subscribe.mock.calls.find(
+      const callback = mockEventBus.on.mock.calls.find(
         call => call[0] === 'evidence:collected'
       )[1];
 
@@ -392,7 +392,7 @@ describe('TutorialSystem', () => {
     });
 
     it('should track clues derived count', () => {
-      const callback = mockEventBus.subscribe.mock.calls.find(
+      const callback = mockEventBus.on.mock.calls.find(
         call => call[0] === 'clue:derived'
       )[1];
 
@@ -402,7 +402,7 @@ describe('TutorialSystem', () => {
     });
 
     it('should track detective vision activation', () => {
-      const callback = mockEventBus.subscribe.mock.calls.find(
+      const callback = mockEventBus.on.mock.calls.find(
         call => call[0] === 'ability:activated'
       )[1];
 
@@ -412,7 +412,7 @@ describe('TutorialSystem', () => {
     });
 
     it('should not track other ability activations', () => {
-      const callback = mockEventBus.subscribe.mock.calls.find(
+      const callback = mockEventBus.on.mock.calls.find(
         call => call[0] === 'ability:activated'
       )[1];
 
@@ -422,7 +422,7 @@ describe('TutorialSystem', () => {
     });
 
     it('should track case file opened', () => {
-      const callback = mockEventBus.subscribe.mock.calls.find(
+      const callback = mockEventBus.on.mock.calls.find(
         call => call[0] === 'case_file:opened'
       )[1];
 
@@ -432,7 +432,7 @@ describe('TutorialSystem', () => {
     });
 
     it('should track deduction board opened', () => {
-      const callback = mockEventBus.subscribe.mock.calls.find(
+      const callback = mockEventBus.on.mock.calls.find(
         call => call[0] === 'deduction_board:opened'
       )[1];
 
@@ -442,7 +442,7 @@ describe('TutorialSystem', () => {
     });
 
     it('should track deduction connections created count', () => {
-      const callback = mockEventBus.subscribe.mock.calls.find(
+      const callback = mockEventBus.on.mock.calls.find(
         call => call[0] === 'deduction_board:connection_created'
       )[1];
 
@@ -453,7 +453,7 @@ describe('TutorialSystem', () => {
     });
 
     it('should track forensic analysis complete count', () => {
-      const callback = mockEventBus.subscribe.mock.calls.find(
+      const callback = mockEventBus.on.mock.calls.find(
         call => call[0] === 'forensic:complete'
       )[1];
 
@@ -463,7 +463,7 @@ describe('TutorialSystem', () => {
     });
 
     it('should track theory validation', () => {
-      const callback = mockEventBus.subscribe.mock.calls.find(
+      const callback = mockEventBus.on.mock.calls.find(
         call => call[0] === 'case:theory_validated'
       )[1];
 
@@ -473,7 +473,7 @@ describe('TutorialSystem', () => {
     });
 
     it('should track case solved', () => {
-      const callback = mockEventBus.subscribe.mock.calls.find(
+      const callback = mockEventBus.on.mock.calls.find(
         call => call[0] === 'case:completed'
       )[1];
 
@@ -490,7 +490,7 @@ describe('TutorialSystem', () => {
     });
 
     it('should skip tutorial when ESC pressed on skippable step', () => {
-      const callback = mockEventBus.subscribe.mock.calls.find(
+      const callback = mockEventBus.on.mock.calls.find(
         call => call[0] === 'input:escape'
       )[1];
 
@@ -535,7 +535,7 @@ describe('TutorialSystem', () => {
       tutorialSystem.currentStepIndex = tutorialSteps.findIndex(s => !s.canSkip);
       tutorialSystem.currentStep = tutorialSteps[tutorialSystem.currentStepIndex];
 
-      const callback = mockEventBus.subscribe.mock.calls.find(
+      const callback = mockEventBus.on.mock.calls.find(
         call => call[0] === 'input:escape'
       )[1];
 

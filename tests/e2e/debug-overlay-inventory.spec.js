@@ -44,6 +44,23 @@ test.describe('Debug overlay inventory listing', () => {
       if (!window.game) {
         throw new Error('Game instance not initialized');
       }
+      window.game.eventBus.emit('inventory:item_added', {
+        id: 'evidence_playwright_probe',
+        name: 'Playwright Probe Evidence',
+        type: 'Evidence',
+        quantity: 1,
+        tags: ['evidence', 'source:playwright'],
+        metadata: { seededBy: 'debug-overlay-inventory.spec' }
+      });
+      if (typeof window.game.update === 'function') {
+        window.game.update(0.016);
+      }
+    });
+
+    await page.evaluate(() => {
+      if (!window.game) {
+        throw new Error('Game instance not initialized');
+      }
       window.game.inputState.handleKeyDown({ code: 'KeyI', preventDefault() {} });
       window.game.update(0.016);
       window.game.inputState.handleKeyUp({ code: 'KeyI' });
@@ -62,7 +79,7 @@ test.describe('Debug overlay inventory listing', () => {
     const updatedInventory = updatedEntries.find((entry) => entry.text.startsWith('Inventory:'));
     expect(updatedInventory).toBeDefined();
     expect(updatedInventory.visible).toBe('true');
-    expect(updatedInventory.text).toContain('items');
+    expect(updatedInventory.text).toMatch(/item/i);
     expect(updatedInventory.text).toContain('evidence');
     expect(consoleErrors).toEqual([]);
   });

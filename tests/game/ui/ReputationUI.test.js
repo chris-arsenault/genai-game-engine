@@ -127,13 +127,19 @@ describe('ReputationUI', () => {
     test('toggle() should emit ui:reputation_opened event when opening', () => {
       const emitSpy = jest.spyOn(eventBus, 'emit');
       reputationUI.toggle();
-      expect(emitSpy).toHaveBeenCalledWith('ui:reputation_opened', {});
+      expect(emitSpy).toHaveBeenCalledWith('ui:reputation_opened', {
+        overlayId: 'reputation',
+        source: 'toggle',
+      });
     });
 
     test('show() should emit ui:reputation_opened event', () => {
       const emitSpy = jest.spyOn(eventBus, 'emit');
       reputationUI.show();
-      expect(emitSpy).toHaveBeenCalledWith('ui:reputation_opened', {});
+      expect(emitSpy).toHaveBeenCalledWith('ui:reputation_opened', {
+        overlayId: 'reputation',
+        source: 'show',
+      });
     });
   });
 

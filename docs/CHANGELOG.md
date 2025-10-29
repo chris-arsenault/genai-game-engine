@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Playwright return-flow scenario validates the Memory Parlor escape transition, quest completion rewards, and Captain Reese follow-up dialogue in Act 1 (`tests/e2e/memory-parlor-return-dialogue.spec.js`).
 - Memory Parlor infiltration scene now includes stealth cover geometry, intel evidence pickups (with knowledge emission for the client registry), and an exit trigger that routes the player back to the Neon District (`src/game/scenes/MemoryParlorScene.js`).
 - Memory Parlor infiltration scene loads via the new `loadMemoryParlorScene()` transition, introducing dedicated firewall trigger volumes, barrier visuals that react to scrambler events, and interior NPC set dressing to exercise stealth beats (`src/game/scenes/MemoryParlorScene.js`, `src/game/Game.js`).
 - Playwright infiltration coverage validates scrambler gating, firewall cooldown messaging, and disguise modifiers during the Memory Parlor objective (`tests/e2e/memory-parlor-infiltration.spec.js`).
@@ -31,6 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Engine exposes `setFrameHooks` so game coordinators can wire per-frame update and overlay rendering without duplicating requestAnimationFrame plumbing (`src/engine/Engine.js`).
 
 ### Fixed
+- Restored Jest’s browser emulation by polyfilling `TransformStream`, Canvas gradient APIs, and excluding Playwright specs from Jest execution (`tests/setup.js`, `package.json`).
+- Updated TutorialSystem and Reputation UI tests to align with the EventBus `.on` API and overlay metadata emitted during visibility toggles (`tests/game/systems/TutorialSystem.test.js`, `tests/game/ui/ReputationUI.test.js`).
+- Relaxed engine integration frame-time assertions to account for the faster jsdom requestAnimationFrame cadence shipped with Node 20 (`tests/engine/integration-full.test.js`).
+- Seeded evidence items in the debug overlay Playwright smoke so modern overlay copy (“1 item · 1 evidence”) continues to satisfy expectations (`tests/e2e/debug-overlay-inventory.spec.js`).
 - Dialogue consequence `events` arrays now emit declarative EventBus payloads, ensuring knowledge/lead updates fire when vendor purchases resolve (`src/game/systems/DialogueSystem.js`).
 - Input edge detection now treats pause, disguise, and quest toggles as single actions per key press so UI overlays and dialogue prompts remain visible during manual QA (`src/game/config/Controls.js`, `src/game/Game.js`).
 - KnowledgeProgressionSystem now queries gates via `componentRegistry` for both scheduled and event-driven checks, preventing missed gate unlocks when knowledge events fire (`src/game/systems/KnowledgeProgressionSystem.js`).

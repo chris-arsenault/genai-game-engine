@@ -13,6 +13,16 @@ if (typeof performance === 'undefined') {
 // Mock HTMLCanvasElement.getContext for rendering tests
 HTMLCanvasElement.prototype.getContext = function(contextType) {
   if (contextType === '2d') {
+    const gradientFactory = () => {
+      const colorStops = [];
+      return {
+        addColorStop: jest.fn((offset, color) => {
+          colorStops.push({ offset, color });
+        }),
+        _colorStops: colorStops
+      };
+    };
+
     return {
       fillStyle: '',
       strokeStyle: '',
@@ -38,11 +48,47 @@ HTMLCanvasElement.prototype.getContext = function(contextType) {
       getImageData: jest.fn(),
       putImageData: jest.fn(),
       createImageData: jest.fn(),
+      createLinearGradient: jest.fn(() => gradientFactory()),
+      createRadialGradient: jest.fn(() => gradientFactory()),
+      createPattern: jest.fn(),
       measureText: jest.fn(() => ({ width: 0 })),
     };
   }
   return null;
 };
+
+// Provide TransformStream polyfill for Playwright/Jest interop
+if (typeof global.TransformStream === 'undefined') {
+  try {
+    // eslint-disable-next-line global-require
+    const { TransformStream } = require('stream/web');
+    if (TransformStream) {
+      global.TransformStream = TransformStream;
+    }
+  } catch (error) {
+    // Fallback noop TransformStream to keep tests running in older Node versions
+    class NoopTransformStream {
+      constructor() {
+        this.readable = {
+          getReader: () => ({
+            read: async () => ({ done: true, value: undefined }),
+            releaseLock: () => {},
+          }),
+        };
+        this.writable = {
+          getWriter: () => ({
+            write: async () => {},
+            close: async () => {},
+            releaseLock: () => {},
+          }),
+        };
+      }
+    }
+
+    global.TransformStream = NoopTransformStream;
+    console.warn('[tests/setup] TransformStream polyfill fallback applied (Noop implementation).');
+  }
+}
 
 // Mock console methods to reduce test noise (optional)
 // Uncomment if you want to suppress console output during tests

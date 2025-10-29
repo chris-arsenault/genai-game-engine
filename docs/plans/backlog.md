@@ -302,6 +302,28 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 
 ---
 
+### Session #44 Testing & Stability
+
+#### INFRA-221: Reconcile Jest with Playwright & Canvas dependencies
+- **Priority**: P0
+- **Tags**: `test`, `infrastructure`, `engine`
+- **Effort**: 3 hours
+- **Status**: ✅ Completed — Added `TransformStream` and Canvas gradient polyfills to the Jest setup file, relaxed jsdom frame-time assertions, and taught Jest to skip Playwright specs so `npm test` returns signal-bearing results.
+- **Notes**: `tests/setup.js`, `tests/engine/integration-full.test.js`, and `package.json` updated; full suite green as of Session #44.
+
+#### QA-318: Memory Parlor Return Dialogue Smoke
+- **Priority**: P1
+- **Tags**: `test`, `narrative`, `quest`
+- **Effort**: 4 hours
+- **Status**: ✅ Completed — New Playwright scenario drives the Memory Parlor infiltration to completion, validates quest rewards, and confirms Captain Reese follow-up dialogue on the Act 1 return path (`tests/e2e/memory-parlor-return-dialogue.spec.js`).
+- **Notes**: Coverage now exercises knowledge ledger sync, quest completion, and persistent player entity reuse on quest return.
+
+#### QA-319: Debug Overlay Inventory Evidence Seeding
+- **Priority**: P2
+- **Tags**: `test`, `ui`, `debug`
+- **Effort**: 1 hour
+- **Status**: ✅ Completed — Playwright debug overlay smoke seeds evidence metadata so the overlay copy (“1 item · 1 evidence”) remains assertable after inventory schema updates (`tests/e2e/debug-overlay-inventory.spec.js`).
+
 ### Session #27 Core Gameplay Focus
 
 #### CORE-301: Act 1 Scene Visual Bring-Up
