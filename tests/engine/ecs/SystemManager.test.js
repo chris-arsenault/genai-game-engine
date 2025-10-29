@@ -21,6 +21,7 @@ class MockSystem {
     this.lastEntities = [];
     this.componentRegistry = null;
     this.eventBus = null;
+    this.events = null;
   }
 
   init() {
@@ -84,6 +85,17 @@ describe('SystemManager', () => {
 
       expect(system.componentRegistry).toBe(componentRegistry);
       expect(system.eventBus).toBe(eventBus);
+    });
+
+    it('should provide legacy events alias that matches injected event bus', () => {
+      const system = new MockSystem();
+
+      expect(system.events).toBeNull();
+
+      systemManager.registerSystem(system, 'LegacyAliasSystem');
+
+      expect(system.eventBus).toBe(eventBus);
+      expect(system.events).toBe(eventBus);
     });
 
     it('should throw when registering duplicate system name', () => {

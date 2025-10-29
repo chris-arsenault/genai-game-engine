@@ -12,20 +12,21 @@
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
 | **Pass Rate** | 100% | 95%+ | ✅ EXCELLENT |
-| **Tests Passing** | 1,959 / 1,959 | - | ✅ |
+| **Tests Passing** | 1,962 / 1,962 | - | ✅ |
 | **Tests Failing** | 0 | 0 | ✅ |
 | **Test Suites Passing** | 89 / 89 | - | ✅ |
 | **Test Suites Failing** | 0 | 0 | ✅ |
 | **Engine Coverage** | 82% | 80%+ | ✅ |
 | **Game Coverage** | 68% | 60%+ | ✅ |
-| **Total Test Time** | 28.6s | <60s | ✅ |
+| **Total Test Time** | 27.8s | <60s | ✅ |
 
 ---
 
 ## Sprint 8 Additions
 
-- Extended `tests/engine/ecs/SystemManager.test.js` to cover numeric/option registration overrides and deferred initialization.
-- Added `tests/game/Game.systemRegistration.test.js` to verify gameplay systems register with named handles and receive shared engine dependencies.
+- Expanded `tests/engine/ecs/SystemManager.test.js` to cover numeric/option registration overrides, deferred initialization, and the legacy `events` alias wiring.
+- Hardened `tests/game/Game.systemRegistration.test.js` to assert gameplay systems receive the shared EventBus via both `eventBus` and `events` handles.
+- Added explicit alias coverage for SaveManager (`tests/game/managers/SaveManager.test.js`), TutorialOverlay (`tests/game/ui/TutorialOverlay.test.js`), and InventoryOverlay (`tests/game/ui/InventoryOverlay.vendorSummary.test.js`).
 
 ---
 

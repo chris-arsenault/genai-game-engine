@@ -22,7 +22,8 @@ import {
 
 export class QuestManager {
   constructor(eventBus, factionManager, storyFlagManager) {
-    this.events = eventBus;
+    this.eventBus = eventBus;
+    this.events = eventBus; // Legacy alias maintained for compatibility
     this.factionManager = factionManager;
     this.storyFlags = storyFlagManager;
 
@@ -45,15 +46,15 @@ export class QuestManager {
   init() {
     // Subscribe to game events for objective tracking
     this._offEventHandlers = [
-      this.events.on('evidence:collected', (data) => this.onEvidenceCollected(data)),
-      this.events.on('case:solved', (data) => this.onCaseSolved(data)),
-      this.events.on('theory:validated', (data) => this.onTheoryValidated(data)),
-      this.events.on('dialogue:completed', (data) => this.onDialogueCompleted(data)),
-      this.events.on('npc:interviewed', (data) => this.onNPCInterviewed(data)),
-      this.events.on('ability:unlocked', (data) => this.onAbilityUnlocked(data)),
-      this.events.on('area:entered', (data) => this.onAreaEntered(data)),
-      this.events.on('faction:reputation:changed', (data) => this.onReputationChanged(data)),
-      this.events.on('knowledge:learned', (data) => this.onKnowledgeLearned(data))
+      this.eventBus.on('evidence:collected', (data) => this.onEvidenceCollected(data)),
+      this.eventBus.on('case:solved', (data) => this.onCaseSolved(data)),
+      this.eventBus.on('theory:validated', (data) => this.onTheoryValidated(data)),
+      this.eventBus.on('dialogue:completed', (data) => this.onDialogueCompleted(data)),
+      this.eventBus.on('npc:interviewed', (data) => this.onNPCInterviewed(data)),
+      this.eventBus.on('ability:unlocked', (data) => this.onAbilityUnlocked(data)),
+      this.eventBus.on('area:entered', (data) => this.onAreaEntered(data)),
+      this.eventBus.on('faction:reputation:changed', (data) => this.onReputationChanged(data)),
+      this.eventBus.on('knowledge:learned', (data) => this.onKnowledgeLearned(data))
     ];
 
     console.log('[QuestManager] Initialized');
@@ -84,7 +85,7 @@ export class QuestManager {
 
     console.log(`[QuestManager] Registered quest: ${questData.title} (${questData.id})`);
 
-    this.events.emit('quest:registered', {
+    this.eventBus.emit('quest:registered', {
       questId: questData.id,
       title: questData.title,
       type: questData.type,
@@ -231,7 +232,7 @@ export class QuestManager {
     this.activeQuests.set(questId, quest);
 
     // Emit event
-    this.events.emit('quest:started', {
+    this.eventBus.emit('quest:started', {
       questId,
       title: quest.title,
       type: quest.type
@@ -256,7 +257,7 @@ export class QuestManager {
         if (!triggerResult.matched) continue;
 
         if (triggerResult.blocked) {
-          this.events.emit('objective:blocked', {
+          this.eventBus.emit('objective:blocked', {
             questId,
             questTitle: quest.title,
             questType: quest.type,
@@ -380,7 +381,7 @@ export class QuestManager {
     state.progress++;
 
     // Emit progress event
-    this.events.emit('objective:progress', {
+    this.eventBus.emit('objective:progress', {
       questId,
       objectiveId,
       progress: state.progress,
@@ -391,7 +392,7 @@ export class QuestManager {
     if (state.progress >= state.target) {
       state.status = 'completed';
 
-      this.events.emit('objective:completed', {
+      this.eventBus.emit('objective:completed', {
         questId,
         objectiveId
       });
@@ -447,7 +448,7 @@ export class QuestManager {
     }
 
     // Emit completion event
-    this.events.emit('quest:completed', {
+    this.eventBus.emit('quest:completed', {
       questId,
       title: quest.title,
       type: quest.type,
@@ -475,7 +476,7 @@ export class QuestManager {
 
     // Ability unlock
     if (rewards.abilityUnlock) {
-      this.events.emit('ability:unlocked', { abilityId: rewards.abilityUnlock });
+      this.eventBus.emit('ability:unlocked', { abilityId: rewards.abilityUnlock });
       this.storyFlags.setFlag(`ability_${rewards.abilityUnlock}`);
       console.log(`[QuestManager] Ability unlocked: ${rewards.abilityUnlock}`);
     }
@@ -503,7 +504,7 @@ export class QuestManager {
     if (Number.isFinite(rewards.credits) && rewards.credits !== 0) {
       const creditsAmount = Math.trunc(rewards.credits);
       console.log(`[QuestManager] Credits granted: ${creditsAmount}`);
-      this.events.emit('credits:earned', {
+      this.eventBus.emit('credits:earned', {
         amount: creditsAmount,
         questId,
       });
@@ -519,7 +520,7 @@ export class QuestManager {
       });
 
       if (currencyPayload) {
-        this.events.emit('inventory:item_updated', currencyPayload);
+        this.eventBus.emit('inventory:item_updated', currencyPayload);
       }
     }
 
@@ -533,7 +534,7 @@ export class QuestManager {
         });
 
         if (inventoryPayload) {
-          this.events.emit('inventory:item_added', inventoryPayload);
+          this.eventBus.emit('inventory:item_added', inventoryPayload);
           console.log(`[QuestManager] Item granted: ${inventoryPayload.id}`);
         }
       }
@@ -602,7 +603,7 @@ export class QuestManager {
     this.activeQuests.delete(questId);
     this.failedQuests.add(questId);
 
-    this.events.emit('quest:failed', {
+    this.eventBus.emit('quest:failed', {
       questId,
       title: quest.title,
       reason

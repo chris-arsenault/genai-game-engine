@@ -123,6 +123,7 @@ describe('Game.initializeGameSystems', () => {
       const system = engineStub.systemManager.getSystem(key);
       expect(system).toBe(game.gameSystems[key]);
       expect(system.eventBus).toBe(engineStub.eventBus);
+      expect(system.events).toBe(engineStub.eventBus);
     }
 
     const tutorialSystem = engineStub.systemManager.getSystem('tutorial');

@@ -25,8 +25,8 @@ function clamp01(value) {
 
 export class DisguiseSystem extends System {
   constructor(componentRegistry, eventBus, factionManager) {
-    super(componentRegistry);
-    this.events = eventBus;
+    super(componentRegistry, eventBus);
+    this.events = this.eventBus; // Legacy alias maintained for compatibility
     this.factionManager = factionManager;
 
     // Configuration
@@ -67,17 +67,17 @@ export class DisguiseSystem extends System {
     console.log('[DisguiseSystem] Initializing...');
 
     // Listen for suspicious actions
-    this.events.on('player:running', () => this.onSuspiciousAction('running', 10));
-    this.events.on('player:combat', () => this.onSuspiciousAction('combat', 30));
-    this.events.on('player:trespassing', () => this.onSuspiciousAction('trespassing', 20));
-    this.events.on('player:picking_lock', () => this.onSuspiciousAction('lockpicking', 25));
+    this.eventBus.on('player:running', () => this.onSuspiciousAction('running', 10));
+    this.eventBus.on('player:combat', () => this.onSuspiciousAction('combat', 30));
+    this.eventBus.on('player:trespassing', () => this.onSuspiciousAction('trespassing', 20));
+    this.eventBus.on('player:picking_lock', () => this.onSuspiciousAction('lockpicking', 25));
 
     // Listen for disguise equip/unequip
-    this.events.on('disguise:equipped', (data) => this.onDisguiseEquipped(data));
-    this.events.on('disguise:removed', (data) => this.onDisguiseUnequipped(data));
-    this.events.on('disguise:unequipped', (data) => this.onDisguiseUnequipped(data));
+    this.eventBus.on('disguise:equipped', (data) => this.onDisguiseEquipped(data));
+    this.eventBus.on('disguise:removed', (data) => this.onDisguiseUnequipped(data));
+    this.eventBus.on('disguise:unequipped', (data) => this.onDisguiseUnequipped(data));
 
-    this.events.on('firewall:scrambler_activated', (payload = {}) => {
+    this.eventBus.on('firewall:scrambler_activated', (payload = {}) => {
       this.scramblerEffect.active = true;
       const detectionMultiplier = clamp01(
         Number(payload.detectionMultiplier) ||
@@ -93,7 +93,7 @@ export class DisguiseSystem extends System {
       );
     });
 
-    this.events.on('firewall:scrambler_expired', () => {
+    this.eventBus.on('firewall:scrambler_expired', () => {
       this.scramblerEffect.active = false;
       this.scramblerEffect.detectionMultiplier = 1;
       this.scramblerEffect.suspicionDecayBonusPerSecond = 0;
@@ -249,7 +249,7 @@ export class DisguiseSystem extends System {
     });
 
     // Emit detection event
-    this.events.emit('disguise:suspicion_raised', {
+    this.eventBus.emit('disguise:suspicion_raised', {
       npcId: npc.npcId,
       npcName: npc.name,
       disguiseFaction: disguise.factionId,
@@ -263,7 +263,7 @@ export class DisguiseSystem extends System {
     // If suspicion is high, NPC becomes hostile
     if (disguise.suspicionLevel >= 60) {
       npc.setAttitude('hostile');
-      this.events.emit('npc:became_suspicious', {
+      this.eventBus.emit('npc:became_suspicious', {
         npcId: npc.npcId,
         npcName: npc.name
       });
@@ -292,13 +292,13 @@ export class DisguiseSystem extends System {
     );
 
     // Emit event
-    this.events.emit('disguise:blown', {
+    this.eventBus.emit('disguise:blown', {
       factionId: disguise.factionId,
       infamyGained: 20
     });
     this._combatEngaged = true;
     this._combatResolveAt = Date.now() + this.config.combatResolutionDelayMs;
-    this.events.emit('combat:initiated', {
+    this.eventBus.emit('combat:initiated', {
       factionId: disguise.factionId,
       reason: 'disguise_blown'
     });
@@ -327,7 +327,7 @@ export class DisguiseSystem extends System {
       // Alert NPCs within alert radius
     if (distance <= 200) {
       npc.setAttitude('hostile');
-      this.events.emit('npc:alerted', {
+      this.eventBus.emit('npc:alerted', {
         npcId: npc.npcId,
         reason: 'disguise_blown'
       });
@@ -356,7 +356,7 @@ export class DisguiseSystem extends System {
     if (disguise && disguise.equipped) {
       disguise.addSuspicion(suspicionAmount);
 
-      this.events.emit('disguise:suspicious_action', {
+      this.eventBus.emit('disguise:suspicious_action', {
         actionType,
         suspicionAdded: suspicionAmount,
         totalSuspicion: disguise.suspicionLevel
@@ -433,7 +433,7 @@ export class DisguiseSystem extends System {
     if (!equipped) {
       if (this._alertActive) {
         this._alertActive = false;
-        this.events.emit('disguise:suspicion_cleared', {
+        this.eventBus.emit('disguise:suspicion_cleared', {
           factionId,
           suspicionLevel: 0,
           reason,
@@ -450,7 +450,7 @@ export class DisguiseSystem extends System {
 
     if (!this._alertActive && suspicionLevel >= alertThreshold) {
       this._alertActive = true;
-      this.events.emit('disguise:alert_started', {
+      this.eventBus.emit('disguise:alert_started', {
         factionId,
         suspicionLevel,
         reason,
@@ -459,7 +459,7 @@ export class DisguiseSystem extends System {
 
     if (this._alertActive && suspicionLevel <= calmThreshold) {
       this._alertActive = false;
-      this.events.emit('disguise:suspicion_cleared', {
+      this.eventBus.emit('disguise:suspicion_cleared', {
         factionId,
         suspicionLevel,
         reason,
@@ -490,7 +490,7 @@ export class DisguiseSystem extends System {
     }
     this._combatEngaged = false;
     this._combatResolveAt = 0;
-    this.events.emit('combat:resolved', {
+    this.eventBus.emit('combat:resolved', {
       reason,
       factionId,
     });

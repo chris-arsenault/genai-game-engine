@@ -34,7 +34,7 @@ export class FirewallScramblerSystem extends System {
   constructor(componentRegistry, eventBus, storyFlagManager = null) {
     super(componentRegistry, eventBus);
 
-    this.events = eventBus;
+    this.events = this.eventBus; // Legacy alias maintained for compatibility
     this.storyFlags = storyFlagManager;
     this.priority = 21;
 
@@ -64,30 +64,30 @@ export class FirewallScramblerSystem extends System {
 
   init() {
     this._subscriptions.push(
-      this.events.on('knowledge:learned', this.handleKnowledgeLearned)
+      this.eventBus.on('knowledge:learned', this.handleKnowledgeLearned)
     );
     this._subscriptions.push(
-      this.events.on('inventory:item_added', this.handleInventoryAdded)
+      this.eventBus.on('inventory:item_added', this.handleInventoryAdded)
     );
     this._subscriptions.push(
-      this.events.on('inventory:item_updated', this.handleInventoryUpdated)
+      this.eventBus.on('inventory:item_updated', this.handleInventoryUpdated)
     );
     this._subscriptions.push(
-      this.events.on('inventory:item_removed', this.handleInventoryRemoved)
+      this.eventBus.on('inventory:item_removed', this.handleInventoryRemoved)
     );
     this._subscriptions.push(
-      this.events.on('area:entered', this.handleAreaEntered, null, 20)
+      this.eventBus.on('area:entered', this.handleAreaEntered, null, 20)
     );
     this._subscriptions.push(
-      this.events.on('firewall:scrambler:activate', this.handleManualActivation)
+      this.eventBus.on('firewall:scrambler:activate', this.handleManualActivation)
     );
     this._subscriptions.push(
-      this.events.on('objective:blocked', (payload = {}) => {
+      this.eventBus.on('objective:blocked', (payload = {}) => {
         if (
           payload.requirement === this.config.knowledgeId ||
           payload.requirement === 'cipher_scrambler_active'
         ) {
-          this.events.emit('firewall:scrambler_unavailable', {
+          this.eventBus.emit('firewall:scrambler_unavailable', {
             areaId: payload.eventData?.areaId || null,
             reason: payload.reason || 'scrambler_blocked',
             chargesRemaining: this.state.charges,
@@ -202,7 +202,7 @@ export class FirewallScramblerSystem extends System {
     const { areaId = null, source = 'unknown', force = false, allowWithoutArea = false } = options;
 
     if (!this.state.hasAccess && !force) {
-      this.events.emit('firewall:scrambler_unavailable', {
+      this.eventBus.emit('firewall:scrambler_unavailable', {
         areaId,
         reason: 'no_access',
         chargesRemaining: this.state.charges,
@@ -211,7 +211,7 @@ export class FirewallScramblerSystem extends System {
     }
 
     if (this.state.active) {
-      this.events.emit('firewall:scrambler_active', {
+      this.eventBus.emit('firewall:scrambler_active', {
         areaId,
         remainingSeconds: this.state.timer,
         chargesRemaining: this.state.charges,
@@ -220,7 +220,7 @@ export class FirewallScramblerSystem extends System {
     }
 
     if (this.state.cooldown > 0 && !force) {
-      this.events.emit('firewall:scrambler_on_cooldown', {
+      this.eventBus.emit('firewall:scrambler_on_cooldown', {
         areaId,
         cooldownSeconds: this.state.cooldown,
       });
@@ -228,7 +228,7 @@ export class FirewallScramblerSystem extends System {
     }
 
     if (this.state.charges <= 0 && !force) {
-      this.events.emit('firewall:scrambler_unavailable', {
+      this.eventBus.emit('firewall:scrambler_unavailable', {
         areaId,
         reason: 'no_charges',
         chargesRemaining: this.state.charges,
@@ -277,7 +277,7 @@ export class FirewallScramblerSystem extends System {
       });
     }
 
-    this.events.emit('firewall:scrambler_activated', {
+    this.eventBus.emit('firewall:scrambler_activated', {
       source,
       areaId,
       durationSeconds,
@@ -312,7 +312,7 @@ export class FirewallScramblerSystem extends System {
       });
     }
 
-    this.events.emit('firewall:scrambler_expired', {
+    this.eventBus.emit('firewall:scrambler_expired', {
       reason,
       source: this.state.lastActivationSource,
       cooldownSeconds: this.state.cooldown,
@@ -324,7 +324,7 @@ export class FirewallScramblerSystem extends System {
       return;
     }
 
-    this.events.emit('inventory:item_updated', {
+    this.eventBus.emit('inventory:item_updated', {
       id: this.config.itemId,
       quantityDelta: -1,
       metadata: {

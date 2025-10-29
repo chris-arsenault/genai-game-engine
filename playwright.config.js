@@ -25,7 +25,7 @@ export default defineConfig({
   outputDir,
   use: {
     baseURL: `http://localhost:${DEV_SERVER_PORT}`,
-    headless: !process.env.PLAYWRIGHT_HEADED,
+    headless: true,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     trace: 'retain-on-failure',

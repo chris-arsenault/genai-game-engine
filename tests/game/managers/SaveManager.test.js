@@ -75,6 +75,7 @@ describe('SaveManager', () => {
     });
 
     test('should initialize with eventBus', () => {
+      expect(saveManager.eventBus).toBe(eventBus);
       expect(saveManager.events).toBe(eventBus);
     });
 

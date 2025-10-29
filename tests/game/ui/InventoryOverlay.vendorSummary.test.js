@@ -1,11 +1,11 @@
 import { InventoryOverlay } from '../../../src/game/ui/InventoryOverlay.js';
 
-function createOverlay() {
+function createOverlay(eventBusOverride = null) {
   const canvas = document.createElement('canvas');
   canvas.width = 800;
   canvas.height = 600;
   canvas.getContext = jest.fn(() => ({}));
-  const eventBus = { on: jest.fn() };
+  const eventBus = eventBusOverride ?? { on: jest.fn(), emit: jest.fn() };
   return new InventoryOverlay(canvas, eventBus);
 }
 
@@ -58,5 +58,13 @@ describe('InventoryOverlay vendor metadata presentation', () => {
     );
 
     expect(label.startsWith('[VN]')).toBe(true);
+  });
+
+  it('exposes eventBus property and legacy events alias', () => {
+    const mockEventBus = { on: jest.fn(), emit: jest.fn() };
+    const overlay = createOverlay(mockEventBus);
+
+    expect(overlay.eventBus).toBe(mockEventBus);
+    expect(overlay.events).toBe(mockEventBus);
   });
 });

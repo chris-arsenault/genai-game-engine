@@ -14,7 +14,8 @@
 
 export class SaveManager {
   constructor(eventBus, managers = {}) {
-    this.events = eventBus;
+    this.eventBus = eventBus;
+    this.events = eventBus; // Legacy alias maintained for compatibility
 
     // Manager references
     this.storyFlagManager = managers.storyFlagManager;
@@ -70,13 +71,13 @@ export class SaveManager {
    */
   subscribeToAutosaveEvents() {
     // Autosave on quest completion
-    this._offQuestCompleted = this.events.on('quest:completed', (data) => {
+    this._offQuestCompleted = this.eventBus.on('quest:completed', (data) => {
       console.log(`[SaveManager] Quest completed (${data.questId}), autosaving...`);
       this.saveGame('autosave');
     });
 
     // Autosave on major objectives only (optional - can be configured)
-    this._offObjectiveCompleted = this.events.on('objective:completed', (data) => {
+    this._offObjectiveCompleted = this.eventBus.on('objective:completed', (data) => {
       // Only autosave on major objectives (not every single objective)
       // You can add logic here to determine "major" objectives
       if (this.isMajorObjective(data.objectiveId)) {
@@ -86,13 +87,13 @@ export class SaveManager {
     });
 
     // Autosave when entering new areas
-    this._offAreaEntered = this.events.on('area:entered', (data) => {
+    this._offAreaEntered = this.eventBus.on('area:entered', (data) => {
       console.log(`[SaveManager] Entered area (${data.areaId}), autosaving...`);
       this.saveGame('autosave');
     });
 
     // Autosave when case is completed
-    this._offCaseCompleted = this.events.on('case:completed', (data) => {
+    this._offCaseCompleted = this.eventBus.on('case:completed', (data) => {
       console.log(`[SaveManager] Case completed (${data.caseId}), autosaving...`);
       this.saveGame('autosave');
     });
@@ -112,9 +113,9 @@ export class SaveManager {
       this.saveGame('autosave');
     };
 
-    this._offInventoryAdded = this.events.on('inventory:item_added', inventoryAutosave);
-    this._offInventoryUpdated = this.events.on('inventory:item_updated', inventoryAutosave);
-    this._offInventoryRemoved = this.events.on('inventory:item_removed', inventoryAutosave);
+    this._offInventoryAdded = this.eventBus.on('inventory:item_added', inventoryAutosave);
+    this._offInventoryUpdated = this.eventBus.on('inventory:item_updated', inventoryAutosave);
+    this._offInventoryRemoved = this.eventBus.on('inventory:item_removed', inventoryAutosave);
   }
 
   /**
@@ -180,7 +181,7 @@ export class SaveManager {
       this.updateSaveMetadata(slot, saveData);
 
       // Emit success event
-      this.events.emit('game:saved', {
+      this.eventBus.emit('game:saved', {
         slot,
         timestamp: saveData.timestamp,
         playtime: saveData.playtime,
@@ -191,7 +192,7 @@ export class SaveManager {
       return true;
     } catch (error) {
       console.error('[SaveManager] Failed to save game:', error);
-      this.events.emit('game:save_failed', {
+      this.eventBus.emit('game:save_failed', {
         slot,
         error: error.message,
       });
@@ -242,7 +243,7 @@ export class SaveManager {
       this.gameStartTime = Date.now() - saveData.playtime;
 
       // Emit success event
-      this.events.emit('game:loaded', {
+      this.eventBus.emit('game:loaded', {
         slot,
         timestamp: saveData.timestamp,
         playtime: saveData.playtime,
@@ -252,7 +253,7 @@ export class SaveManager {
       return true;
     } catch (error) {
       console.error('[SaveManager] Failed to load game:', error);
-      this.events.emit('game:load_failed', {
+      this.eventBus.emit('game:load_failed', {
         slot,
         error: error.message,
       });

@@ -2111,6 +2111,14 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Benefit**: Reduce event overhead by ~30%
 - **When**: If profiling shows event dispatch as hotspot
 
+#### TD-015: Standardize EventBus Access (Completed)
+- **Priority**: P1
+- **Effort**: 2 hours
+- **Status**: Completed (Session #60 – 2025-10-30)
+- **Description**: Refactored gameplay managers, systems, and overlays still referencing the legacy `this.events` handle so they consume the injected `eventBus`, issued a compatibility alias, and updated SystemManager to enforce the pattern automatically.
+- **Benefit**: Prevents duplicate event bus instances, reduces bootstrap bugs, and ensures future systems inherit the shared bus contract.
+- **Verification**: `npm test -- SystemManager`, `npm test -- Game.systemRegistration`, `npm test -- SaveManager`, `npm test -- TutorialOverlay`, `npm test -- InventoryOverlay`, `npm test`
+
 ---
 
 ## Asset Request Tracker

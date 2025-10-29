@@ -112,3 +112,21 @@ describe('TutorialOverlay (store integration)', () => {
     expect(store.getListenerCount()).toBe(0);
   });
 });
+
+describe('TutorialOverlay event bus wiring', () => {
+  it('exposes eventBus property and maintains legacy events alias', () => {
+    const canvas = createMockCanvas();
+    const eventBus = new EventBus();
+    const onSpy = jest.spyOn(eventBus, 'on');
+
+    const overlay = new TutorialOverlay(canvas, eventBus, {});
+    overlay.init();
+
+    expect(overlay.eventBus).toBe(eventBus);
+    expect(overlay.events).toBe(eventBus);
+    expect(onSpy).toHaveBeenCalledWith('tutorial:started', expect.any(Function));
+
+    overlay.cleanup();
+    onSpy.mockRestore();
+  });
+});

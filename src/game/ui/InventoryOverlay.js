@@ -29,7 +29,8 @@ export class InventoryOverlay {
 
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
-    this.events = eventBus;
+    this.eventBus = eventBus;
+    this.events = eventBus; // Legacy alias maintained for compatibility
     this.store = options.store ?? null;
 
     this.visible = false;
@@ -107,13 +108,13 @@ export class InventoryOverlay {
       this.applyInventoryState(initialState?.inventory);
     }
 
-    if (this.events) {
-      this._offMoveUp = this.events.on('input:moveUp:pressed', () => {
+    if (this.eventBus) {
+      this._offMoveUp = this.eventBus.on('input:moveUp:pressed', () => {
         if (this.visible) {
           this.changeSelection(-1);
         }
       });
-      this._offMoveDown = this.events.on('input:moveDown:pressed', () => {
+      this._offMoveDown = this.eventBus.on('input:moveDown:pressed', () => {
         if (this.visible) {
           this.changeSelection(1);
         }
@@ -187,7 +188,7 @@ export class InventoryOverlay {
     }
     this.visible = true;
     this.targetAlpha = 1;
-    emitOverlayVisibility(this.events, 'inventory', true, {
+    emitOverlayVisibility(this.eventBus, 'inventory', true, {
       source,
       count: this.items.length,
     });
@@ -202,7 +203,7 @@ export class InventoryOverlay {
     this.targetAlpha = 0;
 
     if (wasVisible) {
-      emitOverlayVisibility(this.events, 'inventory', false, {
+      emitOverlayVisibility(this.eventBus, 'inventory', false, {
         source,
       });
     }
@@ -228,8 +229,8 @@ export class InventoryOverlay {
       return;
     }
     this.selectedIndex = nextIndex;
-    if (this.events) {
-      this.events.emit('inventory:selection_changed', {
+    if (this.eventBus) {
+      this.eventBus.emit('inventory:selection_changed', {
         itemId: this.items[this.selectedIndex].id,
         index: this.selectedIndex,
       });

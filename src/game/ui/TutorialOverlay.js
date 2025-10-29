@@ -13,7 +13,8 @@ export class TutorialOverlay {
   constructor(canvas, eventBus, config = {}) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
-    this.events = eventBus;
+    this.eventBus = eventBus;
+    this.events = eventBus; // Legacy alias maintained for compatibility
     const { store = null } = config;
     this.store = store;
     const styleOverrides = config.styleOverrides ?? {};
@@ -93,24 +94,24 @@ export class TutorialOverlay {
     }
 
     // Subscribe to tutorial events
-    this._offHandlers.push(this.events.on('tutorial:started', () => {
+    this._offHandlers.push(this.eventBus.on('tutorial:started', () => {
       this.show();
     }));
 
-    this._offHandlers.push(this.events.on('tutorial:step_started', (data) => {
+    this._offHandlers.push(this.eventBus.on('tutorial:step_started', (data) => {
       this.showPrompt(data);
     }));
 
-    this._offHandlers.push(this.events.on('tutorial:step_completed', () => {
+    this._offHandlers.push(this.eventBus.on('tutorial:step_completed', () => {
       // Brief fade before next step
       this.targetAlpha = 0.5;
     }));
 
-    this._offHandlers.push(this.events.on('tutorial:completed', () => {
+    this._offHandlers.push(this.eventBus.on('tutorial:completed', () => {
       this.hide();
     }));
 
-    this._offHandlers.push(this.events.on('tutorial:skipped', () => {
+    this._offHandlers.push(this.eventBus.on('tutorial:skipped', () => {
       this.hide();
     }));
   }
@@ -140,7 +141,7 @@ export class TutorialOverlay {
     this.targetAlpha = 1;
 
     if (!wasVisible) {
-      emitOverlayVisibility(this.events, 'tutorial', true, { source });
+      emitOverlayVisibility(this.eventBus, 'tutorial', true, { source });
     }
   }
 
@@ -160,7 +161,7 @@ export class TutorialOverlay {
     this.highlightEntities = [];
 
     if (wasVisible) {
-      emitOverlayVisibility(this.events, 'tutorial', false, { source });
+      emitOverlayVisibility(this.eventBus, 'tutorial', false, { source });
     }
   }
 

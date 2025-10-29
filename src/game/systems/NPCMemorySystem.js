@@ -18,8 +18,8 @@ import { System } from '../../engine/ecs/System.js';
 
 export class NPCMemorySystem extends System {
   constructor(componentRegistry, eventBus, factionManager) {
-    super(componentRegistry);
-    this.events = eventBus;
+    super(componentRegistry, eventBus);
+    this.events = this.eventBus; // Legacy alias maintained for compatibility
     this.factionManager = factionManager;
 
     // Configuration
@@ -41,17 +41,17 @@ export class NPCMemorySystem extends System {
     console.log('[NPCMemorySystem] Initializing...');
 
     // Listen for crimes
-    this.events.on('crime:committed', (data) => {
+    this.eventBus.on('crime:committed', (data) => {
       this.onCrimeCommitted(data);
     });
 
     // Listen for player actions
-    this.events.on('player:helped_npc', (data) => {
+    this.eventBus.on('player:helped_npc', (data) => {
       this.onPlayerHelpedNPC(data);
     });
 
     // Listen for dialogue completion
-    this.events.on('dialogue:completed', (data) => {
+    this.eventBus.on('dialogue:completed', (data) => {
       this.onDialogueCompleted(data);
     });
 
@@ -131,7 +131,7 @@ export class NPCMemorySystem extends System {
     }
 
     // Emit recognition event
-    this.events.emit('npc:recognized_player', {
+    this.eventBus.emit('npc:recognized_player', {
       npcId: npc.npcId,
       npcName: npc.name,
       npcFaction: npc.faction,
@@ -177,7 +177,7 @@ export class NPCMemorySystem extends System {
         this.scheduleCrimeReport(npc, crimeType, severity);
 
         // Emit witness event
-        this.events.emit('npc:witnessed_crime', {
+        this.eventBus.emit('npc:witnessed_crime', {
           npcId: npc.npcId,
           npcName: npc.name,
           crimeType,
@@ -238,7 +238,7 @@ export class NPCMemorySystem extends System {
     );
 
     // Emit report event
-    this.events.emit('crime:reported', {
+    this.eventBus.emit('crime:reported', {
       faction: npcFaction,
       crimeType,
       severity,

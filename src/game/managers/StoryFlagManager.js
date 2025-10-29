@@ -15,7 +15,8 @@
 
 export class StoryFlagManager {
   constructor(eventBus) {
-    this.events = eventBus;
+    this.eventBus = eventBus;
+    this.events = eventBus; // Legacy alias maintained for compatibility
     this.flags = new Map(); // flagId -> { value, timestamp, metadata }
   }
 
@@ -43,7 +44,7 @@ export class StoryFlagManager {
 
     // Emit event if value changed
     if (previousValue !== value) {
-      this.events.emit('story:flag:changed', {
+      this.eventBus.emit('story:flag:changed', {
         flagId,
         previousValue,
         newValue: value,
@@ -91,7 +92,7 @@ export class StoryFlagManager {
   unsetFlag(flagId) {
     if (this.flags.has(flagId)) {
       this.flags.delete(flagId);
-      this.events.emit('story:flag:removed', { flagId });
+      this.eventBus.emit('story:flag:removed', { flagId });
       console.log(`[StoryFlagManager] Flag removed: ${flagId}`);
     }
   }

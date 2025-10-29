@@ -102,6 +102,7 @@ export class SystemManager {
     // Inject dependencies
     system.componentRegistry = this.componentRegistry;
     system.eventBus = this.eventBus;
+    system.events = this.eventBus; // Legacy alias maintained until all systems migrate
 
     if (typeof options.priority === 'number') {
       if (typeof system.setPriority === 'function') {

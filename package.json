@@ -4,7 +4,7 @@
   "description": "A 2D Detective Metroidvania built with vanilla JavaScript and Canvas API",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --open=false",
     "build": "vite build",
     "preview": "vite preview",
     "test": "jest",
