@@ -29,6 +29,8 @@ export class RoomInstance {
     this.x = config.x;
     this.y = config.y;
     this.rotation = config.rotation || 0;
+    this.width = typeof config.width === 'number' ? config.width : null;
+    this.height = typeof config.height === 'number' ? config.height : null;
 
     /** @type {Map<string, string>} Door ID -> connected room ID */
     this.doors = new Map();
@@ -62,12 +64,26 @@ export class RoomInstance {
    * @param {number} localY - Local Y coordinate
    * @returns {{x: number, y: number}} World coordinates
    */
-  localToWorld(localX, localY) {
-    // TODO: Apply rotation transformation
-    // For now, simple translation
+  localToWorld(localX, localY, options = {}) {
+    const width = resolveDimension(options.width, this.width);
+    const height = resolveDimension(options.height, this.height);
+    const rotation = normalizeRotation(this.rotation);
+
+    if (width === null || height === null) {
+      return {
+        x: this.x + localX,
+        y: this.y + localY
+      };
+    }
+
+    const metadata = getRotationMetadata(width, height, rotation);
+    const raw = rotatePoint(localX, localY, rotation);
+    const adjustedX = raw.x - metadata.minX;
+    const adjustedY = raw.y - metadata.minY;
+
     return {
-      x: this.x + localX,
-      y: this.y + localY
+      x: this.x + adjustedX,
+      y: this.y + adjustedY
     };
   }
 
@@ -78,12 +94,28 @@ export class RoomInstance {
    * @param {number} worldY - World Y coordinate
    * @returns {{x: number, y: number}} Local coordinates
    */
-  worldToLocal(worldX, worldY) {
-    // TODO: Apply rotation transformation
-    // For now, simple translation
+  worldToLocal(worldX, worldY, options = {}) {
+    const width = resolveDimension(options.width, this.width);
+    const height = resolveDimension(options.height, this.height);
+    const rotation = normalizeRotation(this.rotation);
+
+    if (width === null || height === null) {
+      return {
+        x: worldX - this.x,
+        y: worldY - this.y
+      };
+    }
+
+    const metadata = getRotationMetadata(width, height, rotation);
+    const dx = worldX - this.x;
+    const dy = worldY - this.y;
+    const rawX = dx + metadata.minX;
+    const rawY = dy + metadata.minY;
+    const original = rotatePoint(rawX, rawY, (360 - rotation) % 360);
+
     return {
-      x: worldX - this.x,
-      y: worldY - this.y
+      x: original.x,
+      y: original.y
     };
   }
 
@@ -96,12 +128,16 @@ export class RoomInstance {
    * @returns {{x: number, y: number, width: number, height: number}} Bounding box
    */
   getBounds(width, height) {
-    // TODO: Account for rotation changing bounds
+    const resolvedWidth = resolveDimension(width, this.width) ?? 0;
+    const resolvedHeight = resolveDimension(height, this.height) ?? 0;
+    const rotation = normalizeRotation(this.rotation);
+    const metadata = getRotationMetadata(resolvedWidth, resolvedHeight, rotation);
+
     return {
       x: this.x,
       y: this.y,
-      width: width,
-      height: height
+      width: metadata.width,
+      height: metadata.height
     };
   }
 
@@ -115,10 +151,23 @@ export class RoomInstance {
    * @returns {boolean} True if point is inside room
    */
   containsPoint(worldX, worldY, width, height) {
-    return worldX >= this.x &&
-           worldX < this.x + width &&
-           worldY >= this.y &&
-           worldY < this.y + height;
+    const resolvedWidth = resolveDimension(width, this.width);
+    const resolvedHeight = resolveDimension(height, this.height);
+    if (resolvedWidth == null || resolvedHeight == null) {
+      return false;
+    }
+
+    const local = this.worldToLocal(worldX, worldY, {
+      width: resolvedWidth,
+      height: resolvedHeight
+    });
+
+    return (
+      local.x >= 0 &&
+      local.x < resolvedWidth &&
+      local.y >= 0 &&
+      local.y < resolvedHeight
+    );
   }
 
   /**
@@ -227,6 +276,8 @@ export class RoomInstance {
       x: this.x,
       y: this.y,
       rotation: this.rotation,
+      width: this.width,
+      height: this.height,
       doors: Array.from(this.doors.entries()),
       connections: Array.from(this.connections.entries()),
       entities: this.entities,
@@ -246,7 +297,9 @@ export class RoomInstance {
       templateId: data.templateId,
       x: data.x,
       y: data.y,
-      rotation: data.rotation
+      rotation: data.rotation,
+      width: data.width,
+      height: data.height
     });
 
     // Restore doors and connections
@@ -263,4 +316,73 @@ export class RoomInstance {
 
     return instance;
   }
+}
+
+function resolveDimension(value, fallback) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof fallback === 'number' && Number.isFinite(fallback)) {
+    return fallback;
+  }
+  return null;
+}
+
+function normalizeRotation(rotation) {
+  const normalized = ((rotation % 360) + 360) % 360;
+  if (normalized === 0 || normalized === 90 || normalized === 180 || normalized === 270) {
+    return normalized;
+  }
+  return normalized;
+}
+
+function rotatePoint(x, y, rotation) {
+  const normalized = normalizeRotation(rotation);
+  switch (normalized) {
+    case 0:
+      return { x, y };
+    case 90:
+      return { x: y, y: -x };
+    case 180:
+      return { x: -x, y: -y };
+    case 270:
+      return { x: -y, y: x };
+    default: {
+      const rad = (normalized * Math.PI) / 180;
+      return {
+        x: x * Math.cos(rad) - y * Math.sin(rad),
+        y: x * Math.sin(rad) + y * Math.cos(rad)
+      };
+    }
+  }
+}
+
+function getRotationMetadata(width, height, rotation) {
+  if (!Number.isFinite(width) || !Number.isFinite(height)) {
+    return {
+      minX: 0,
+      minY: 0,
+      width: width || 0,
+      height: height || 0
+    };
+  }
+
+  const corners = [
+    rotatePoint(0, 0, rotation),
+    rotatePoint(width, 0, rotation),
+    rotatePoint(0, height, rotation),
+    rotatePoint(width, height, rotation)
+  ];
+
+  const minX = Math.min(...corners.map((p) => p.x));
+  const maxX = Math.max(...corners.map((p) => p.x));
+  const minY = Math.min(...corners.map((p) => p.y));
+  const maxY = Math.max(...corners.map((p) => p.y));
+
+  return {
+    minX,
+    minY,
+    width: maxX - minX,
+    height: maxY - minY
+  };
 }

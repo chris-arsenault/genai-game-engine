@@ -314,7 +314,7 @@ describe('RoomInstance', () => {
     let instance;
 
     beforeEach(() => {
-      instance = new RoomInstance(validConfig);
+      instance = new RoomInstance({ ...validConfig, width: 10, height: 8 });
       instance.connectTo('door1', 'room_002', 'door2');
       instance.addEntity({ id: 'entity_001', type: 'npc' });
       instance.setState('visited', true);
@@ -328,6 +328,8 @@ describe('RoomInstance', () => {
       expect(data.x).toBe(100);
       expect(data.y).toBe(200);
       expect(data.rotation).toBe(0);
+      expect(data.width).toBe(10);
+      expect(data.height).toBe(8);
       expect(data.doors).toBeDefined();
       expect(data.connections).toBeDefined();
       expect(data.entities).toBeDefined();
@@ -343,6 +345,8 @@ describe('RoomInstance', () => {
       expect(newInstance.x).toBe(instance.x);
       expect(newInstance.y).toBe(instance.y);
       expect(newInstance.rotation).toBe(instance.rotation);
+      expect(newInstance.width).toBe(instance.width);
+      expect(newInstance.height).toBe(instance.height);
     });
 
     it('should preserve doors and connections', () => {
@@ -378,6 +382,43 @@ describe('RoomInstance', () => {
       const data2 = newInstance.serialize();
 
       expect(data2).toEqual(data);
+    });
+  });
+
+  describe('rotation handling', () => {
+    it('handles 90-degree rotation for coordinate conversions', () => {
+      const rotatedConfig = { ...validConfig, rotation: 90, width: 10, height: 6 };
+      const instance = new RoomInstance(rotatedConfig);
+      const worldPos = instance.localToWorld(0, 0);
+      expect(worldPos).toEqual({ x: rotatedConfig.x, y: rotatedConfig.y + 10 });
+
+      const back = instance.worldToLocal(worldPos.x, worldPos.y);
+      expect(back.x).toBeCloseTo(0);
+      expect(back.y).toBeCloseTo(0);
+    });
+
+    it('swaps bounds dimensions when rotated', () => {
+      const rotatedConfig = { ...validConfig, rotation: 90, width: 12, height: 4 };
+      const instance = new RoomInstance(rotatedConfig);
+      const bounds = instance.getBounds(12, 4);
+
+      expect(bounds).toEqual({
+        x: rotatedConfig.x,
+        y: rotatedConfig.y,
+        width: 4,
+        height: 12
+      });
+    });
+
+    it('checks containment after rotation', () => {
+      const rotatedConfig = { ...validConfig, rotation: 180, width: 8, height: 6 };
+      const instance = new RoomInstance(rotatedConfig);
+
+      const insideWorld = instance.localToWorld(4, 3);
+      expect(instance.containsPoint(insideWorld.x, insideWorld.y, 8, 6)).toBe(true);
+
+      const outsideWorld = instance.localToWorld(9, 3);
+      expect(instance.containsPoint(outsideWorld.x, outsideWorld.y, 8, 6)).toBe(false);
     });
   });
 });

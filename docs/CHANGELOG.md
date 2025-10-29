@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- AdaptiveMusic high-level coordinator wraps AdaptiveMusicLayerController so narrative systems can schedule mood transitions (including timed reverts) with dedicated unit coverage (`src/engine/audio/AdaptiveMusic.js`, `tests/engine/audio/AdaptiveMusic.test.js`).
+- TriggerSystem now tracks entities inside trigger volumes, supports ID/tag/component filters, and emits balanced enter/exit events backed by a new Trigger component and Jest suite (`src/engine/physics/TriggerSystem.js`, `src/engine/physics/Trigger.js`, `tests/engine/physics/TriggerSystem.test.js`).
+- RoomInstance coordinate helpers are rotation-aware for 90° increments, ensuring procedural layouts can place rotated rooms accurately with serialization support (`src/engine/procedural/RoomInstance.js`, `tests/engine/procedural/RoomInstance.test.js`).
 - Adaptive audio infiltration benchmarking and Playwright coverage measure the full disguise → combat → ambient transition path, ensuring telemetry stays wired to real gameplay events (`benchmark.js`, `tests/e2e/adaptive-audio-transitions.spec.js`, `tests/e2e/tutorial-overlay.spec.js`).
 - Tutorial automation now drives evidence collection, clue derivation, and detective vision steps via Playwright, with `InvestigationSystem` emitting `ability:activated` telemetry for detective vision (`tests/e2e/tutorial-overlay.spec.js`, `src/game/systems/InvestigationSystem.js`).
 - Tutorial Playwright pack now covers case file prompts, forensic analysis completion, and deduction board resolution via event-driven helpers, completing the onboarding flow automation (`tests/e2e/tutorial-overlay.spec.js`).

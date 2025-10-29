@@ -180,6 +180,7 @@ World state overlay
 ### Phase 4: Adaptive Music Layering & Catalog (Est. 4 hours)
 - Implement `AdaptiveMusicLayerController` for layered ambient/alert/combat mixes (see `docs/plans/adaptive-music-plan.md` for detailed design).
 - Refactor `AmbientSceneAudioController` to delegate state transitions and telemetry to adaptive controller.
+- Introduce a high-level `AdaptiveMusic` wrapper that schedules mood transitions (including timed reverts) on top of the controller API, with unit coverage.
 - Bootstrap SFX catalog (`assets/sfx/catalog.json`) and loader to prewarm Kenney UI cues via `SFXCatalogLoader`.
 - Update Game initialization to await catalog preload before wiring `AudioFeedbackController`.
 - Success Criteria:

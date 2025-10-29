@@ -285,6 +285,7 @@ interface GraphEdge {
 - Mark interaction points (evidence spawn, NPC positions)
 - Support multiple variants per room type
 - Lightweight serialization
+- Provide rotation-aware `localToWorld`/`worldToLocal` conversions for 90° increments (covered by Jest).
 
 **Dependencies**: None (data structure)
 
