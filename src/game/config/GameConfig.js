@@ -157,17 +157,45 @@ export const GameConfig = {
       fadeDuration: 1.2,
       scramblerFadeDuration: 0.6,
       loopStart: 0,
-      loopEnd: 232 // Goodnightmare loop point (approx 3:52)
+      loopEnd: 232, // Goodnightmare loop point (approx 3:52)
+      tensionTrackId: 'music-memory-parlor-tension-001',
+      tensionTrackUrl: '/music/memory-parlor/goodnightmare-tension.wav',
+      tensionBaseVolume: 0.82,
+      tensionLoopStart: 0,
+      tensionLoopEnd: null,
+      combatTrackId: 'music-memory-parlor-combat-001',
+      combatTrackUrl: '/music/memory-parlor/goodnightmare-combat.wav',
+      combatBaseVolume: 0.95,
+      combatLoopStart: 0,
+      combatLoopEnd: null,
+      defaultAdaptiveState: 'ambient',
+      states: {
+        ambient: {
+          ambient_base: 0.95,
+          tension_layer: 0,
+          combat_layer: 0,
+        },
+        alert: {
+          ambient_base: 0.55,
+          tension_layer: 0.9,
+          combat_layer: 0.15,
+        },
+        combat: {
+          ambient_base: 0.35,
+          tension_layer: 0.75,
+          combat_layer: 1,
+        },
+      },
     },
 
     // Adaptive music
     layerTransitionTime: 1.5, // seconds
     musicStates: {
-      exploration: { ambient: 1.0, tension: 0.0, combat: 0.0 },
-      investigation: { ambient: 0.6, tension: 0.4, combat: 0.0 },
-      stealth: { ambient: 0.3, tension: 0.7, combat: 0.0 },
-      combat: { ambient: 0.2, tension: 0.3, combat: 1.0 }
-    }
+      exploration: { ambient_base: 0.95, tension_layer: 0.0, combat_layer: 0.0 },
+      stealth: { ambient_base: 0.65, tension_layer: 0.4, combat_layer: 0.0 },
+      alert: { ambient_base: 0.55, tension_layer: 0.9, combat_layer: 0.15 },
+      combat: { ambient_base: 0.35, tension_layer: 0.75, combat_layer: 1.0 }
+    },
   },
 
   debug: {

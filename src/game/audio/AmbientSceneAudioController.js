@@ -17,23 +17,32 @@ export class AmbientSceneAudioController {
     this.eventBus = eventBus || null;
 
     this.trackId = options.trackId ?? 'music-memory-parlor-ambient-001';
-    this.trackUrl =
-      options.trackUrl ?? '/music/memory-parlor/goodnightmare.mp3';
+    this.trackUrl = options.trackUrl ?? '/music/memory-parlor/goodnightmare.mp3';
     this.loopStart = options.loopStart ?? 0;
     this.loopEnd = options.loopEnd ?? null;
     this.baseVolume = options.baseVolume ?? 0.55;
     this.scramblerBoost = options.scramblerBoost ?? 0.25;
     this.fadeDuration = options.fadeDuration ?? 1.2;
     this.scramblerFadeDuration = options.scramblerFadeDuration ?? 0.6;
-    this.allowedAreas = new Set(options.allowedAreas ?? [
-      'memory_parlor_firewall',
-      'memory_parlor_interior',
-    ]);
+    this.allowedAreas = new Set(
+      options.allowedAreas ?? ['memory_parlor_firewall', 'memory_parlor_interior']
+    );
+
+    this.tensionTrackId = options.tensionTrackId ?? 'music-memory-parlor-tension-001';
+    this.tensionTrackUrl =
+      options.tensionTrackUrl ?? '/music/memory-parlor/goodnightmare-tension.wav';
+    this.tensionBaseVolume = options.tensionBaseVolume ?? 0.82;
+    this.tensionLoopStart = options.tensionLoopStart ?? 0;
+    this.tensionLoopEnd = options.tensionLoopEnd ?? null;
+
+    this.combatTrackId = options.combatTrackId ?? 'music-memory-parlor-combat-001';
+    this.combatTrackUrl =
+      options.combatTrackUrl ?? '/music/memory-parlor/goodnightmare-combat.wav';
+    this.combatBaseVolume = options.combatBaseVolume ?? 0.95;
+    this.combatLoopStart = options.combatLoopStart ?? 0;
+    this.combatLoopEnd = options.combatLoopEnd ?? null;
 
     this.defaultAdaptiveState = options.defaultAdaptiveState ?? 'ambient';
-    const tensionTrackId = options.tensionTrackId || this.trackId;
-    const combatTrackId = options.combatTrackId || this.trackId;
-
     this.layers =
       options.layers ??
       [
@@ -47,19 +56,19 @@ export class AmbientSceneAudioController {
         },
         {
           id: 'tension_layer',
-          trackId: tensionTrackId,
-          trackUrl: options.tensionTrackUrl ?? (options.tensionTrackId ? '/music/memory-parlor/goodnightmare-tension.mp3' : null),
-          baseVolume: options.tensionBaseVolume ?? 0.85,
-          loopStart: options.tensionLoopStart ?? 0,
-          loopEnd: options.tensionLoopEnd ?? null,
+          trackId: this.tensionTrackId,
+          trackUrl: this.tensionTrackUrl,
+          baseVolume: this.tensionBaseVolume,
+          loopStart: this.tensionLoopStart,
+          loopEnd: this.tensionLoopEnd,
         },
         {
           id: 'combat_layer',
-          trackId: combatTrackId,
-          trackUrl: options.combatTrackUrl ?? (options.combatTrackId ? '/music/memory-parlor/goodnightmare-combat.mp3' : null),
-          baseVolume: options.combatBaseVolume ?? 0.95,
-          loopStart: options.combatLoopStart ?? 0,
-          loopEnd: options.combatLoopEnd ?? null,
+          trackId: this.combatTrackId,
+          trackUrl: this.combatTrackUrl,
+          baseVolume: this.combatBaseVolume,
+          loopStart: this.combatLoopStart,
+          loopEnd: this.combatLoopEnd,
         },
       ];
 
@@ -67,18 +76,18 @@ export class AmbientSceneAudioController {
       options.states ??
       {
         ambient: {
-          ambient_base: 1,
+          ambient_base: 0.95,
           tension_layer: 0,
           combat_layer: 0,
         },
         alert: {
-          ambient_base: 0.75,
-          tension_layer: 1,
-          combat_layer: 0,
+          ambient_base: 0.55,
+          tension_layer: 0.9,
+          combat_layer: 0.15,
         },
         combat: {
-          ambient_base: 0.5,
-          tension_layer: 0.65,
+          ambient_base: 0.35,
+          tension_layer: 0.75,
           combat_layer: 1,
         },
       };

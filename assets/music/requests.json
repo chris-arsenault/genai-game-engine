@@ -8,5 +8,25 @@
     "status": "integrated",
     "usage": "Memory Parlor ambient loop for stealth phase and detection sweeps.",
     "notes": "Integrated via AmbientSceneAudioController. Available at /music/memory-parlor/goodnightmare.mp3 with loop start 0s / loop end ~232s."
+  },
+  {
+    "id": "music-memory-parlor-tension-001",
+    "title": "Goodnightmare – Procedural Tension Stem",
+    "creator": "Codex Audio Lab",
+    "source": "Generated in-session via procedural sine/noise synthesis",
+    "license": "CC0 / Original work (self-authored)",
+    "status": "integrated",
+    "usage": "Adaptive music tension layer engaged during firewall scrambler alerts.",
+    "notes": "Generated with Node PCM synthesis (48s loop) blending detuned sine layers and filtered noise. Stored at /music/memory-parlor/goodnightmare-tension.wav."
+  },
+  {
+    "id": "music-memory-parlor-combat-001",
+    "title": "Goodnightmare – Procedural Combat Stem",
+    "creator": "Codex Audio Lab",
+    "source": "Generated in-session via procedural sine/noise synthesis",
+    "license": "CC0 / Original work (self-authored)",
+    "status": "integrated",
+    "usage": "Adaptive music combat layer for scrambler escalation and direct confrontations.",
+    "notes": "Generated with Node PCM synthesis (48s loop) combining percussive sine pulses and modulated harmonics. Stored at /music/memory-parlor/goodnightmare-combat.wav."
   }
 ]

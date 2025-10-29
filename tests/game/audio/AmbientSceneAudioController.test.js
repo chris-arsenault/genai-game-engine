@@ -69,6 +69,32 @@ describe('AmbientSceneAudioController', () => {
 
     expect(createAdaptiveController).toHaveBeenCalled();
     expect(adaptiveController.init).toHaveBeenCalled();
+    const [, adaptiveOptions] = createAdaptiveController.mock.calls[0];
+    expect(adaptiveOptions.layers).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'ambient_base',
+          trackId: 'music-memory-parlor-ambient-001',
+        }),
+        expect.objectContaining({
+          id: 'tension_layer',
+          trackId: 'music-memory-parlor-tension-001',
+          trackUrl: '/music/memory-parlor/goodnightmare-tension.wav',
+        }),
+        expect.objectContaining({
+          id: 'combat_layer',
+          trackId: 'music-memory-parlor-combat-001',
+          trackUrl: '/music/memory-parlor/goodnightmare-combat.wav',
+        }),
+      ])
+    );
+    expect(adaptiveOptions.states.alert).toEqual(
+      expect.objectContaining({
+        ambient_base: expect.any(Number),
+        tension_layer: expect.any(Number),
+        combat_layer: expect.any(Number),
+      })
+    );
     expect(audioManager.playMusic).not.toHaveBeenCalled();
   });
 

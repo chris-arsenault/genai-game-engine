@@ -94,6 +94,8 @@ export class Game {
       : engine.audioManager || null;
     this.sfxCatalogLoader = null;
     this._sfxCatalogSummary = null;
+    this.audioTelemetry = { currentState: null, history: [] };
+    this._audioTelemetryUnbind = null;
 
     // Game state
     this.inputState = new InputState(engine.eventBus);
@@ -504,6 +506,14 @@ export class Game {
       promptCooldown: 0.45
     });
     this.audioFeedback.init();
+    if (!this._audioTelemetryUnbind && typeof this.eventBus?.on === 'function') {
+      const unbind = this.eventBus.on('audio:adaptive:state_changed', (payload) =>
+        this._handleAdaptiveStateChanged(payload)
+      );
+      if (typeof unbind === 'function') {
+        this._audioTelemetryUnbind = unbind;
+      }
+    }
     console.log('[Game] Audio feedback controller initialized');
   }
 
@@ -1322,6 +1332,104 @@ export class Game {
     return overlays;
   }
 
+  _handleAdaptiveStateChanged(payload = {}) {
+    if (!this.audioTelemetry) {
+      this.audioTelemetry = { currentState: null, history: [] };
+    }
+    const entry = {
+      from: payload?.from ?? null,
+      to: payload?.to ?? null,
+      timestamp: typeof payload?.timestamp === 'number' ? payload.timestamp : Date.now(),
+    };
+    this.audioTelemetry.currentState = entry.to;
+    const history = Array.isArray(this.audioTelemetry.history)
+      ? this.audioTelemetry.history.slice()
+      : [];
+    history.push(entry);
+    while (history.length > 8) {
+      history.shift();
+    }
+    this.audioTelemetry.history = history;
+  }
+
+  /**
+   * Retrieve adaptive music telemetry snapshot for debug overlay.
+   * @returns {{currentState: string|null, history: Array}}
+   */
+  getAdaptiveAudioTelemetry() {
+    if (!this.audioTelemetry) {
+      return { currentState: null, history: [] };
+    }
+    return {
+      currentState: this.audioTelemetry.currentState ?? null,
+      history: Array.isArray(this.audioTelemetry.history)
+        ? this.audioTelemetry.history.slice()
+        : [],
+    };
+  }
+
+  /**
+   * Expose SFX catalog entries for debug tooling and designer previews.
+   * @returns {Array<object>} Array of SFX descriptors
+   */
+  getSfxCatalogEntries() {
+    if (!this.sfxCatalogLoader || typeof this.sfxCatalogLoader.getCatalog !== 'function') {
+      return [];
+    }
+    let catalog;
+    try {
+      catalog = this.sfxCatalogLoader.getCatalog();
+    } catch (error) {
+      console.warn('[Game] Failed to read SFX catalog', error);
+      return [];
+    }
+    if (!catalog || !Array.isArray(catalog.items)) {
+      return [];
+    }
+    return catalog.items.map((item) => ({
+      id: item.id,
+      file: item.file,
+      description: item.description || '',
+      tags: Array.isArray(item.tags) ? item.tags.slice() : [],
+      baseVolume: typeof item.baseVolume === 'number' ? item.baseVolume : null,
+    }));
+  }
+
+  /**
+   * Request immediate SFX playback for preview/debug purposes.
+   * @param {string} soundId
+   * @param {object} [options]
+   * @returns {boolean} True if playback requested
+   */
+  previewSfx(soundId, options = {}) {
+    if (!soundId || !this.eventBus) {
+      return false;
+    }
+    const entry =
+      typeof this.sfxCatalogLoader?.getEntry === 'function'
+        ? this.sfxCatalogLoader.getEntry(soundId)
+        : null;
+    const volume =
+      typeof options.volume === 'number'
+        ? options.volume
+        : typeof entry?.baseVolume === 'number'
+          ? entry.baseVolume
+          : 1;
+
+    try {
+      this.eventBus.emit('audio:sfx:play', {
+        id: soundId,
+        volume,
+        source: options.source ?? 'debug_preview',
+        tags: entry?.tags ?? [],
+      });
+      return true;
+    } catch (error) {
+      console.warn('[Game] Failed to emit SFX preview request', error);
+      return false;
+    }
+  }
+
   /**
    * Render game overlays (called after main render)
    * @param {CanvasRenderingContext2D} ctx - Canvas context
@@ -1468,6 +1576,16 @@ export class Game {
         system.cleanup();
       }
     });
+
+    if (typeof this._audioTelemetryUnbind === 'function') {
+      try {
+        this._audioTelemetryUnbind();
+      } catch (error) {
+        console.warn('[Game] Failed to remove audio telemetry listener', error);
+      }
+      this._audioTelemetryUnbind = null;
+    }
+    this.audioTelemetry = { currentState: null, history: [] };
 
     // Reset input state
     this.inputState.reset();

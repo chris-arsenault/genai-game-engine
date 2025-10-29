@@ -185,6 +185,7 @@ World state overlay
 - Success Criteria:
   - Scrambler events trigger adaptive state changes with unit coverage.
   - CC0 UI cues loaded and playable through AudioManager (no fallback logging).
+  - Debug overlay surfaces adaptive telemetry + SFX preview buttons for designers.
   - CI publishes Playwright summary referencing HTML report/trace artifacts.
 
 ## File Changes
@@ -197,13 +198,19 @@ World state overlay
 - `tests/engine/audio/MusicChannel.test.js` – Fade + state coverage.
 - `tests/engine/audio/SFXPool.test.js` – Pooling behavior tests.
 - `tests/game/audio/AmbientSceneAudioController.test.js` – Event-driven ambient coverage.
+- `tests/game/audio/GameAudioTelemetry.test.js` – Adaptive telemetry + debug hooks coverage.
 - `assets/music/memory-parlor/goodnightmare.mp3` – Ambient loop (FreePD CC0).
+- `assets/music/memory-parlor/goodnightmare-tension.wav` – Procedural tension stem (CC0 self-authored).
+- `assets/music/memory-parlor/goodnightmare-combat.wav` – Procedural combat stem (CC0 self-authored).
+- `assets/sfx/investigation/` – Procedural investigative cues (clue ping, trace loop, negative hit).
 
 ### Modified Files
 - `src/engine/audio/AudioManager.js` – Full implementation and new API surface.
-- `src/game/Game.js` – Pass audio options to scene loader & expose ambient controller lifecycle.
+- `src/game/Game.js` – Pass audio options to scene loader, expose ambient controller lifecycle, surface telemetry & SFX previews.
 - `src/game/scenes/MemoryParlorScene.js` – Wire AmbientSceneAudioController.
 - `assets/manifest.example.json` (and manifest if present) – Register ambient asset.
+- `index.html` / `src/main.js` – Debug overlay wiring for adaptive telemetry and SFX preview UI.
+- `assets/sfx/catalog.json` – Expanded catalog metadata (UI + investigation cues).
 - `.github/workflows/ci.yml` – Add HTML reporter artifact publishing.
 - `docs/CHANGELOG.md`, `docs/plans/backlog.md` – Reflect audio/CI updates.
 - `docs/guides/audio-overview.md` (new or updated) – Document system for devs.

@@ -2,7 +2,7 @@
 
 ## Context
 - **Research consulted**: `docs/plans/audio-system-plan.md` (Phase 3 adaptive layering goals), Session #46 handoff outstanding items (adaptive layering + SFX catalog), existing ambient controller implementation (`src/game/audio/AmbientSceneAudioController.js`).
-- **Current system state**: `AudioManager` supports single-track music playback via `MusicChannel`; ambient controller orchestrates Memory Parlor loop with volume boosts. No infrastructure exists for multi-layered music or declarative SFX catalogs driven through `AssetManager`.
+- **Current system state**: `AudioManager` supports multi-track adaptive playback through `AdaptiveMusicLayerController`; Memory Parlor now layers ambient/tension/combat stems (procedurally generated) with telemetry. SFX catalog loader is live with UI + investigative cues, and debug overlay exposes live mix telemetry plus SFX preview controls.
 - **Problem being solved**: Deliver adaptive music that blends ambient, tension, and combat layers with seamless crossfades tied to narrative/gameplay states, while staging an extensible SFX catalog pipeline that AssetManager can preload. This unlocks dynamic scoring for stealth/combat transitions and prepares UI/gameplay audio feedback.
 
 ## Architecture Overview
@@ -74,15 +74,32 @@ class AdaptiveMusicLayer {
 ### Component 3: `AmbientSceneAudioController` (updated)
 - **Purpose**: Route Memory Parlor scrambler events into adaptive states instead of directly manipulating master music volume.
 - **Responsibilities**:
-  - Configure adaptive controller with layer/state mapping (ambient baseline, scrambler alert boost, combat escalation hook).
+  - Configure adaptive controller with layer/state mapping (ambient baseline, scrambler alert boost, combat escalation hook) backed by bespoke tension/combat stems.
   - Forward `firewall:scrambler_*` events to `AdaptiveMusicLayerController.setState` (`alert` during scrambler active, fallback to `ambient` on cooldown/expiry).
   - Expose hooks for future combat events (`security:combat_engaged`).
-  - Default configuration reuses the ambient stem for secondary layers until bespoke stems are sourced, avoiding asset gaps.
+  - Default configuration now loads procedural stems (`goodnightmare-tension.wav`, `goodnightmare-combat.wav`) while retaining ambient fallback if assets fail.
 - **Dependencies**:
   - `AdaptiveMusicLayerController` (new dependency).
   - Existing EventBus + scrambler event schema.
 - **Interface changes**: Additional options `states`, `layers`, `adaptiveControllerOptions`.
 - **Testing**: Updated unit suite verifying state transitions and fallback behavior.
+
+### Component 4: Debug Audio Telemetry & Preview Tools
+- **Purpose**: Surface adaptive mix state and SFX catalog metadata to narrative/audio designers for rapid iteration.
+- **Responsibilities**:
+  - Capture `audio:adaptive:state_changed` events via `Game.getAdaptiveAudioTelemetry()` and render live history in the debug overlay.
+  - Expose catalog metadata through `Game.getSfxCatalogEntries()` and allow designers to trigger previews with `Game.previewSfx(soundId)`.
+  - Provide clear licensing/source annotations (CC0 procedural stems + UI cues) for audit.
+- **Dependencies**:
+  - `Game` coordinator (event bus access, catalog loader residency).
+  - Debug overlay DOM in `index.html`/`main.js`.
+- **Interface**:
+```javascript
+game.getAdaptiveAudioTelemetry(); // { currentState, history[] }
+game.getSfxCatalogEntries();      // [{ id, file, tags, description, baseVolume }]
+game.previewSfx('investigation_clue_ping');
+```
+- **Testing**: Jest coverage in `tests/game/ui/GameAudioTelemetry.test.js` (telemetry) and `tests/game/Game.uiOverlays.test.js` (SFX preview hook).
 
 ### Component 4: `SFXCatalog` configuration
 - **Purpose**: Provide declarative SFX asset definitions consumed by `AssetManager` and `AudioManager`.

@@ -72,6 +72,20 @@
       "priority": "district"
     },
     {
+      "id": "music-memory-parlor-tension-001",
+      "url": "/music/memory-parlor/goodnightmare-tension.wav",
+      "type": "audio",
+      "group": "memory-parlor",
+      "priority": "district"
+    },
+    {
+      "id": "music-memory-parlor-combat-001",
+      "url": "/music/memory-parlor/goodnightmare-combat.wav",
+      "type": "audio",
+      "group": "memory-parlor",
+      "priority": "district"
+    },
+    {
       "id": "sfx-ui-movement-pulse",
       "url": "/sfx/ui/ui-movement-pulse.ogg",
       "type": "audio",

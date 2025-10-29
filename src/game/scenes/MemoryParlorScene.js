@@ -267,6 +267,20 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
       scramblerFadeDuration: config.scramblerFadeDuration ?? 0.6,
       loopStart: config.loopStart ?? 0,
       loopEnd: config.loopEnd ?? null,
+      tensionTrackId: config.tensionTrackId ?? 'music-memory-parlor-tension-001',
+      tensionTrackUrl:
+        config.tensionTrackUrl ?? '/music/memory-parlor/goodnightmare-tension.wav',
+      tensionBaseVolume: config.tensionBaseVolume ?? 0.82,
+      tensionLoopStart: config.tensionLoopStart ?? 0,
+      tensionLoopEnd: config.tensionLoopEnd ?? null,
+      combatTrackId: config.combatTrackId ?? 'music-memory-parlor-combat-001',
+      combatTrackUrl:
+        config.combatTrackUrl ?? '/music/memory-parlor/goodnightmare-combat.wav',
+      combatBaseVolume: config.combatBaseVolume ?? 0.95,
+      combatLoopStart: config.combatLoopStart ?? 0,
+      combatLoopEnd: config.combatLoopEnd ?? null,
+      defaultAdaptiveState: config.defaultAdaptiveState ?? 'ambient',
+      states: config.states,
       ...(options.ambientAudio || {}),
     };
 

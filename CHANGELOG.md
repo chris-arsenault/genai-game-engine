@@ -12,11 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Adaptive music layering stack (`AdaptiveMusicLayerController`) powering Memory Parlor scrambler transitions with ambient/alert/combat mixes.
 - Declarative SFX catalog bootstrap with CC0 Kenney UI cues and automated preload via `SFXCatalogLoader`.
+- Procedural tension/combat stems for Memory Parlor infiltration (`goodnightmare-tension.wav`, `goodnightmare-combat.wav`) with manifest wiring and loop metadata.
+- Investigation-focused SFX cues plus debug overlay preview controls so designers can audition catalog entries in-browser.
+- Adaptive audio telemetry feed in the debug overlay showing recent state transitions.
 
 ### Changed
 - Migrated gameplay systems, managers, and UI overlays to use `EventBus.on`/`off` with stored unsubscribe handles, eliminating deprecated API warnings and ensuring clean teardown during `Game.cleanup`.
 - AmbientSceneAudioController now orchestrates adaptive states instead of direct bus fades, with graceful fallback when Web Audio is unavailable.
 - Game initialization preloads SFX catalog entries so AudioFeedbackController plays real cues instead of logging stubs.
+- Game debug overlay now surfaces adaptive mix state history and SFX preview buttons for rapid iteration.
 - CI pipeline writes a Playwright job summary linking to HTML reports and trace bundles for faster triage.
 
 ### Fixed
@@ -25,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Testing
 - Added unit coverage for adaptive music layering controller, catalog loader, and refreshed ambient controller integration.
+- Added coverage for Game audio telemetry stream + SFX preview controls (`tests/game/audio/GameAudioTelemetry.test.js`, extended `Game.uiOverlays.test.js`).
 - Added EventBus regression coverage for the deprecated `subscribe` shim and new QuestManager cleanup behavior.
 - Updated quest/story manager tests to exercise the new event lifecycle and validated UI overlay toggle stability.
 

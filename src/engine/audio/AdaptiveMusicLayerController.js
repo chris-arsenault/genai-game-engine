@@ -150,7 +150,7 @@ export class AdaptiveMusicLayerController {
 
     this._initialized = true;
     // Apply default state immediately (no fade to avoid silence gap on init).
-    this._applyState(this.defaultState, { fadeDuration: 0, force: true, suppressTelemetry: true });
+    this._applyState(this.defaultState, { fadeDuration: 0, force: true, suppressTelemetry: false });
     return true;
   }
 

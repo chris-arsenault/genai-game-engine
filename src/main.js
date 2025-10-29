@@ -59,6 +59,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   const debugWorldMeta = document.getElementById('debug-world-meta');
   const debugQuestList = document.getElementById('debug-quests-list');
   const debugStoryList = document.getElementById('debug-story-list');
+  const debugAudioState = document.getElementById('debug-audio-state');
+  const debugAudioHistory = document.getElementById('debug-audio-history');
+  const debugSfxList = document.getElementById('debug-sfx-list');
 
   const formatClock = (timestamp) => {
     if (!timestamp || Number.isNaN(timestamp)) {
@@ -147,6 +150,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   let lastOverlaySignature = null;
   let debugTranscriptNeedsScroll = true;
   let lastWorldStateSignature = null;
+  let lastSfxSignature = null;
+  let lastAudioHistorySignature = null;
   let worldStateStoreErrorLogged = false;
 
   if (debugDialogueControls) {
@@ -358,6 +363,123 @@ window.addEventListener('DOMContentLoaded', async () => {
             ].join(' · ');
           }
           lastWorldStateSignature = signature;
+        }
+      }
+    }
+
+    if (debugAudioState && window.game?.getAdaptiveAudioTelemetry) {
+      let telemetry = null;
+      try {
+        telemetry = window.game.getAdaptiveAudioTelemetry();
+      } catch (error) {
+        console.warn('[DebugOverlay] Failed to read adaptive audio telemetry', error);
+        telemetry = null;
+      }
+
+      const currentState = telemetry?.currentState ?? 'n/a';
+      debugAudioState.textContent = `State: ${currentState ?? 'n/a'}`;
+      const historySource = Array.isArray(telemetry?.history) ? telemetry.history : [];
+      const trimmed = historySource.slice(-6).reverse();
+
+      const signature = trimmed
+        .map(
+          (entry) =>
+            `${entry?.from ?? ''}->${entry?.to ?? ''}@${typeof entry?.timestamp === 'number' ? entry.timestamp : 0}`
+        )
+        .join('|');
+
+      if (signature !== lastAudioHistorySignature) {
+        lastAudioHistorySignature = signature;
+        debugAudioHistory.innerHTML = '';
+
+        if (!trimmed.length) {
+          const row = document.createElement('div');
+          row.className = 'debug-sfx-empty';
+          row.textContent = 'No transitions recorded';
+          debugAudioHistory.appendChild(row);
+        } else {
+          for (const entry of trimmed) {
+            const row = document.createElement('div');
+            row.className = 'debug-audio-history-entry';
+            const label = document.createElement('span');
+            label.textContent = `${entry?.from ?? '∅'} → ${entry?.to ?? '∅'}`;
+            const time = document.createElement('span');
+            const ts = typeof entry?.timestamp === 'number' ? entry.timestamp : null;
+            time.textContent = ts ? formatRelativeTime(ts, now) : '';
+            row.appendChild(label);
+            row.appendChild(time);
+            debugAudioHistory.appendChild(row);
+          }
+        }
+      }
+    }
+
+    if (debugSfxList && window.game?.getSfxCatalogEntries) {
+      let sfxEntries = [];
+      try {
+        sfxEntries = window.game.getSfxCatalogEntries() || [];
+      } catch (error) {
+        console.warn('[DebugOverlay] Failed to read SFX catalog entries', error);
+        sfxEntries = [];
+      }
+
+      const signature = sfxEntries
+        .map((entry) => `${entry.id}:${Array.isArray(entry.tags) ? entry.tags.join(',') : ''}`)
+        .join('|');
+
+      if (signature !== lastSfxSignature) {
+        lastSfxSignature = signature;
+        debugSfxList.innerHTML = '';
+
+        if (!Array.isArray(sfxEntries) || sfxEntries.length === 0) {
+          const row = document.createElement('div');
+          row.className = 'debug-sfx-empty';
+          row.textContent = 'Catalog not loaded';
+          debugSfxList.appendChild(row);
+        } else {
+          for (const entry of sfxEntries) {
+            const row = document.createElement('div');
+            row.className = 'debug-sfx-row';
+
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.textContent = '▶';
+            button.title = `Preview ${entry.id}`;
+            button.addEventListener('click', () => {
+              try {
+                window.game?.previewSfx?.(entry.id);
+              } catch (error) {
+                console.warn('[DebugOverlay] Failed to preview SFX', entry.id, error);
+              }
+            });
+
+            const details = document.createElement('div');
+            details.className = 'debug-sfx-details';
+
+            const titleRow = document.createElement('div');
+            const volumeSuffix =
+              typeof entry.baseVolume === 'number' ? ` · v${entry.baseVolume.toFixed(2)}` : '';
+            titleRow.textContent = `${entry.id}${volumeSuffix}`;
+
+            const descRow = document.createElement('div');
+            descRow.textContent = entry.description || entry.file || '';
+
+            const tagsRow = document.createElement('div');
+            tagsRow.className = 'debug-sfx-tags';
+            if (Array.isArray(entry.tags) && entry.tags.length > 0) {
+              tagsRow.textContent = entry.tags.join(', ');
+            } else {
+              tagsRow.textContent = 'no tags';
+            }
+
+            details.appendChild(titleRow);
+            details.appendChild(descRow);
+            details.appendChild(tagsRow);
+
+            row.appendChild(button);
+            row.appendChild(details);
+            debugSfxList.appendChild(row);
+          }
         }
       }
     }

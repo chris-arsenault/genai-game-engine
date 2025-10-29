@@ -300,4 +300,44 @@ describe('Game UI overlays', () => {
       })
     );
   });
+
+  it('exposes SFX catalog entries and previews via event bus', () => {
+    game.sfxCatalogLoader = {
+      getCatalog: () => ({
+        items: [
+          {
+            id: 'investigation_clue_ping',
+            file: '/sfx/investigation/investigation-clue-ping.wav',
+            description: 'Clue ping',
+            tags: ['investigation'],
+            baseVolume: 0.75,
+          },
+        ],
+      }),
+      getEntry: jest.fn(() => ({
+        id: 'investigation_clue_ping',
+        baseVolume: 0.75,
+        tags: ['investigation'],
+      })),
+    };
+
+    const entries = game.getSfxCatalogEntries();
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toEqual(
+      expect.objectContaining({
+        id: 'investigation_clue_ping',
+        file: '/sfx/investigation/investigation-clue-ping.wav',
+      })
+    );
+
+    const previewResult = game.previewSfx('investigation_clue_ping');
+    expect(previewResult).toBe(true);
+    expect(eventBus.emit).toHaveBeenCalledWith(
+      'audio:sfx:play',
+      expect.objectContaining({
+        id: 'investigation_clue_ping',
+        source: 'debug_preview',
+      })
+    );
+  });
 });
