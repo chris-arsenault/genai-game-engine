@@ -18,6 +18,8 @@
 - Summarize verification work (tests, lint, Playwright, profiling) and outstanding follow-ups in your final response.
 - Stay within your assigned scope; coordinate cross-agent dependencies in the shared plan before touching unrelated assets.
 - Treat MCP integrations as first-class: query before creating; store results immediately after producing them.
+- Use the MCP backlog as the operational source of truth: create new tasks with `mcp__game-mcp-server__create_backlog_item`, keep status/notes current via `mcp__game-mcp-server__update_backlog_item`, and retrieve work queues with `mcp__game-mcp-server__search_backlog_semantic`, `mcp__game-mcp-server__search_backlog_by_tag`, or `mcp__game-mcp-server__get_top_backlog_items` before sprint planning or daily execution.
+- Mirror changes from the MCP backlog back to `docs/plans/backlog.md` only after the MCP items are updated so the markdown file remains a read-friendly reflection of the canonical MCP records.
 - Ignore artifacts stored under `archive/` unless explicitly asked to reference historical materials; do not modify archived files during active tasks.
 
 ### Command & Editing Practices
@@ -32,6 +34,13 @@
 ### Verification & Reporting
 - Run `npm test` after meaningful implementation changes; add targeted suites (Playwright, profiling) when relevant.
 - If a verification step cannot be run, note the gap and propose how to validate once unblocked.
+
+## Backlog Operations
+1. **Discover**: Query the MCP backlog (`search_backlog_semantic`, `search_backlog_by_tag`, or `get_top_backlog_items`) before starting work to avoid duplicating tasks and to understand current priorities.
+2. **Create**: When new work emerges, capture it with `create_backlog_item`, supplying summary, acceptance criteria, dependencies, priority, sprint, and tags that match the conventions in `docs/plans/backlog.md`.
+3. **Update**: Track progress through `update_backlog_item`, adjusting `status`, `next_steps`, `completed_work`, and `notes` as sessions advance; include links to docs, PRs, or assets in the `notes`.
+4. **Synchronize**: After MCP updates, refresh `docs/plans/backlog.md` (or other surfaced roadmaps) so markdown mirrors the MCP source; never treat the markdown as authoritative.
+5. **Review**: During planning, pull aggregated views from the MCP backlog to drive sprint goals, then record decisions or reprioritizations back into the MCP items immediately.
 
 ## Project Context
 ### Overview
