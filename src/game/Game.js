@@ -149,6 +149,10 @@ export class Game {
     this.deductionBoard = null;
     this.audioFeedback = null;
 
+    // Forensic prompt plumbing
+    this._forensicPromptQueue = [];
+    this._activeForensicPrompt = null;
+
     // Input handlers
     this._handleDialogueInput = null;
 
@@ -524,6 +528,7 @@ export class Game {
       this.camera
     );
     this.interactionPromptOverlay.init();
+    this._bindForensicPromptHandlers();
 
     // Create player movement indicator overlay
     this.movementIndicatorOverlay = new MovementIndicatorOverlay(
@@ -1093,6 +1098,9 @@ export class Game {
     this._offGameEventHandlers.push(this.eventBus.on('player:moved', () => {
       // Could add footstep sounds here
     }));
+
+    // Rebind forensic prompt listeners after resetting event subscriptions
+    this._bindForensicPromptHandlers();
   }
 
   /**
@@ -1115,6 +1123,328 @@ export class Game {
     } else {
       this.caseFileUI.loadCase(null);
     }
+  }
+
+  /**
+   * Wire forensic analysis prompts into the general interaction overlay.
+   * @private
+   */
+  _bindForensicPromptHandlers() {
+    if (!this.eventBus) {
+      return;
+    }
+
+    this._clearForensicPromptState({ hidePrompt: true });
+
+    const offAvailable = this.eventBus.on('forensic:available', (payload) => {
+      this._handleForensicAvailable(payload);
+    });
+    if (typeof offAvailable === 'function') {
+      this._offGameEventHandlers.push(offAvailable);
+    }
+
+    const offQueued = this.eventBus.on('forensic:queued', (payload) => {
+      this._handleForensicQueueAdvance(payload);
+    });
+    if (typeof offQueued === 'function') {
+      this._offGameEventHandlers.push(offQueued);
+    }
+
+    const offStarted = this.eventBus.on('forensic:started', (payload) => {
+      this._handleForensicQueueAdvance(payload);
+    });
+    if (typeof offStarted === 'function') {
+      this._offGameEventHandlers.push(offStarted);
+    }
+
+    const offComplete = this.eventBus.on('forensic:complete', (payload) => {
+      this._handleForensicCompletion(payload);
+    });
+    if (typeof offComplete === 'function') {
+      this._offGameEventHandlers.push(offComplete);
+    }
+
+    const offCancelled = this.eventBus.on('forensic:cancelled', () => {
+      this._clearForensicPromptState({ hidePrompt: true });
+    });
+    if (typeof offCancelled === 'function') {
+      this._offGameEventHandlers.push(offCancelled);
+    }
+
+    const offFailed = this.eventBus.on('forensic:failed', (payload) => {
+      this._handleForensicFailure(payload);
+    });
+    if (typeof offFailed === 'function') {
+      this._offGameEventHandlers.push(offFailed);
+    }
+
+    const offInput = this.eventBus.on('input:forensicAnalysis:pressed', () => {
+      this._handleForensicInput();
+    });
+    if (typeof offInput === 'function') {
+      this._offGameEventHandlers.push(offInput);
+    }
+
+    const offCaseSolved = this.eventBus.on('case:solved', () => {
+      this._clearForensicPromptState({ hidePrompt: true });
+    });
+    if (typeof offCaseSolved === 'function') {
+      this._offGameEventHandlers.push(offCaseSolved);
+    }
+  }
+
+  _handleForensicAvailable(payload) {
+    if (!payload || typeof payload.evidenceId !== 'string') {
+      return;
+    }
+
+    const promptData = {
+      ...payload,
+      timestamp: Date.now(),
+      lastError: null
+    };
+
+    this._forensicPromptQueue.push(promptData);
+
+    if (!this._activeForensicPrompt) {
+      this._activateNextForensicPrompt();
+    }
+  }
+
+  _handleForensicQueueAdvance(payload) {
+    if (!payload || typeof payload.evidenceId !== 'string') {
+      return;
+    }
+
+    if (
+      this._activeForensicPrompt &&
+      this._activeForensicPrompt.evidenceId === payload.evidenceId
+    ) {
+      this._activeForensicPrompt = null;
+      this._activateNextForensicPrompt();
+      return;
+    }
+
+    this._removeQueuedForensicPrompt(payload.evidenceId);
+  }
+
+  _handleForensicCompletion(payload) {
+    if (payload && typeof payload.evidenceId === 'string') {
+      if (
+        this._activeForensicPrompt &&
+        this._activeForensicPrompt.evidenceId === payload.evidenceId
+      ) {
+        this._activeForensicPrompt = null;
+      }
+      this._removeQueuedForensicPrompt(payload.evidenceId);
+    }
+    this._activateNextForensicPrompt();
+  }
+
+  _handleForensicFailure(payload) {
+    if (
+      !payload ||
+      typeof payload.evidenceId !== 'string' ||
+      !this._activeForensicPrompt ||
+      this._activeForensicPrompt.evidenceId !== payload.evidenceId
+    ) {
+      return;
+    }
+
+    this._activeForensicPrompt.lastError = payload;
+    this._renderActiveForensicPrompt();
+  }
+
+  _handleForensicInput() {
+    if (!this._activeForensicPrompt) {
+      return;
+    }
+
+    const evidenceId = this._activeForensicPrompt.evidenceId;
+    const started = this._beginForensicAnalysis(evidenceId);
+
+    if (!started) {
+      this._activeForensicPrompt.lastError = { reason: 'start_failed' };
+      this._renderActiveForensicPrompt();
+    }
+  }
+
+  _activateNextForensicPrompt() {
+    if (!Array.isArray(this._forensicPromptQueue) || this._forensicPromptQueue.length === 0) {
+      this._activeForensicPrompt = null;
+      this._hideForensicPrompt();
+      return;
+    }
+
+    this._activeForensicPrompt = this._forensicPromptQueue.shift();
+    this._renderActiveForensicPrompt();
+  }
+
+  _renderActiveForensicPrompt() {
+    if (!this._activeForensicPrompt) {
+      this._hideForensicPrompt();
+      return;
+    }
+
+    const text = this._buildForensicPromptText(this._activeForensicPrompt);
+    const promptPayload = {
+      text,
+      source: 'forensic_prompt'
+    };
+
+    const worldPosition = this._getEvidenceWorldPosition(this._activeForensicPrompt.evidenceId);
+    if (worldPosition) {
+      promptPayload.position = worldPosition;
+    }
+
+    this.eventBus.emit('ui:show_prompt', promptPayload);
+  }
+
+  _buildForensicPromptText(promptData) {
+    const evidenceId = promptData?.evidenceId;
+    const requirements = promptData?.requirements || null;
+    const forensicType = promptData?.forensicType || null;
+    const evidenceDefinition = this.caseManager?.getEvidenceDefinition?.(evidenceId) || null;
+    const evidenceTitle = evidenceDefinition?.title || evidenceDefinition?.name || evidenceId || 'evidence';
+
+    const requirementText = this._formatForensicRequirements(requirements);
+    const forensicLabel = forensicType ? ` (${forensicType})` : '';
+
+    const lines = [
+      `Press F to run forensic analysis${forensicLabel}: ${evidenceTitle}`
+    ];
+
+    if (requirementText) {
+      lines.push(`Requires ${requirementText}`);
+    }
+
+    if (promptData?.lastError) {
+      const failureText = this._formatForensicFailureMessage(promptData.lastError);
+      if (failureText) {
+        lines.push(`⚠ ${failureText}`);
+      }
+    }
+
+    return lines.join('\n');
+  }
+
+  _formatForensicRequirements(requirements) {
+    if (!requirements || typeof requirements !== 'object') {
+      return '';
+    }
+
+    const parts = [];
+    if (requirements.tool) {
+      parts.push(`tool ${requirements.tool}`);
+    }
+    if (requirements.requiredSkill) {
+      parts.push(`skill ${requirements.requiredSkill}`);
+    }
+    if (requirements.minimumDifficulty) {
+      parts.push(`difficulty ${requirements.minimumDifficulty}`);
+    }
+    return parts.join(', ');
+  }
+
+  _formatForensicFailureMessage(payload) {
+    if (!payload || typeof payload.reason !== 'string') {
+      return '';
+    }
+
+    switch (payload.reason) {
+      case 'not_collected':
+        return 'Collect the evidence before analyzing.';
+      case 'already_analyzed':
+        return 'Evidence already analyzed.';
+      case 'missing_requirements': {
+        const missing = [];
+        if (payload.requiredTool) {
+          missing.push(`tool ${payload.requiredTool}`);
+        }
+        if (payload.requiredSkill) {
+          missing.push(`skill ${payload.requiredSkill}`);
+        }
+        return missing.length > 0
+          ? `Missing ${missing.join(' & ')}`
+          : 'Missing forensic requirements.';
+      }
+      case 'start_failed':
+        return 'Unable to start forensic analysis right now.';
+      default:
+        return 'Forensic analysis unavailable.';
+    }
+  }
+
+  _hideForensicPrompt() {
+    this.eventBus.emit('ui:hide_prompt', { source: 'forensic_prompt' });
+  }
+
+  _getEvidenceWorldPosition(evidenceId) {
+    const entityId = this._findEvidenceEntityId(evidenceId);
+    if (entityId == null) {
+      return null;
+    }
+    const transform = this.componentRegistry.getComponent(entityId, 'Transform');
+    if (!transform) {
+      return null;
+    }
+    return { x: transform.x, y: transform.y };
+  }
+
+  _removeQueuedForensicPrompt(evidenceId) {
+    if (!Array.isArray(this._forensicPromptQueue) || this._forensicPromptQueue.length === 0) {
+      return;
+    }
+
+    this._forensicPromptQueue = this._forensicPromptQueue.filter(
+      (prompt) => prompt?.evidenceId !== evidenceId
+    );
+  }
+
+  _clearForensicPromptState(options = {}) {
+    if (!Array.isArray(this._forensicPromptQueue)) {
+      this._forensicPromptQueue = [];
+    } else {
+      this._forensicPromptQueue.length = 0;
+    }
+    this._activeForensicPrompt = null;
+    if (options.hidePrompt) {
+      this._hideForensicPrompt();
+    }
+  }
+
+  _beginForensicAnalysis(evidenceId) {
+    if (!this.gameSystems?.forensic || typeof evidenceId !== 'string') {
+      return false;
+    }
+
+    const entityId = this._findEvidenceEntityId(evidenceId);
+    if (entityId == null) {
+      console.warn('[Game] Unable to start forensic analysis, entity not found', evidenceId);
+      return false;
+    }
+
+    return this.gameSystems.forensic.initiateAnalysis(entityId, evidenceId);
+  }
+
+  _findEvidenceEntityId(evidenceId) {
+    if (!this.componentRegistry || typeof this.componentRegistry.queryEntities !== 'function') {
+      return null;
+    }
+
+    const evidenceEntities = this.componentRegistry.queryEntities('Evidence');
+    if (!Array.isArray(evidenceEntities)) {
+      return null;
+    }
+
+    for (const entityId of evidenceEntities) {
+      const evidenceComponent = this.componentRegistry.getComponent(entityId, 'Evidence');
+      if (evidenceComponent && evidenceComponent.id === evidenceId) {
+        return entityId;
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -1627,6 +1957,8 @@ export class Game {
       this._detachFrameHooks();
       this._detachFrameHooks = null;
     }
+
+    this._clearForensicPromptState({ hidePrompt: true });
 
     // Cleanup UI overlays
     if (this.tutorialOverlay && this.tutorialOverlay.cleanup) {

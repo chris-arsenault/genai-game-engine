@@ -6,7 +6,7 @@
 ## Document Overview
 
 **Version**: 1.1
-**Last Updated**: 2025-10-29
+**Last Updated**: 2025-10-30
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 
@@ -258,6 +258,32 @@ _Progress 2025-10-30 (Session #53 implementation): Extended Playwright coverage 
 _Progress 2025-10-30 (Session #54 implementation): Added Playwright flows for case file prompts, forensic analysis completion, and deduction board resolution using event-driven helpers in `tests/e2e/tutorial-overlay.spec.js`._
 _Progress 2025-10-30 (Session #55 implementation): CaseManager + DeductionSystem wired into runtime, Playwright scenarios now rely on live inputs, and troubleshooting guidance published (`docs/guides/tutorial-automation-troubleshooting.md`)._
 - **Status**: ✅ Completed – documentation, runtime wiring, and automation coverage delivered Session #55.
+
+#### UX-182: Forensic Analysis Prompt Overlay
+- **Priority**: P1
+- **Tags**: `ux`, `forensic`, `tutorial`
+- **Effort**: 3 hours
+- **Dependencies**: QA-201 runtime wiring
+- **Description**: Surface forensic analysis availability through the interaction overlay so both players and automation press `KeyF` to begin analysis.
+- **Acceptance Criteria**:
+  - Interaction prompt shows forensic instructions when `forensic:available` fires.
+  - `KeyF` input triggers `ForensicSystem.initiateAnalysis` via the new handler.
+  - Tutorial counters increment through the forensic step without direct system calls.
+_Progress 2025-10-30 (Session #56 implementation): Added forensic prompt queueing in `Game`, helper methods to locate evidence entities, and Playwright coverage that waits for the prompt before pressing `KeyF`._
+- **Status**: ✅ Completed — Session #56 delivered prompt overlay + automation updates.
+
+#### QA-274: Tutorial Scene Runtime Alignment
+- **Priority**: P1
+- **Tags**: `tutorial`, `automation`, `scene`
+- **Effort**: 3 hours
+- **Dependencies**: QA-201 tutorial automation
+- **Description**: Refactor `TutorialScene` to reuse the Act 1 scene loader so tutorial automation uses the same entity layout, evidence definitions, and forensic metadata as the live runtime.
+- **Acceptance Criteria**:
+  - TutorialScene bootstrap spawns the same evidence set as Act1Scene.
+  - TutorialScene unload clears spawned entities without leaking components.
+  - Playwright helpers collect evidence by id and unblock forensic prompts.
+_Progress 2025-10-30 (Session #56 implementation): `TutorialScene.load()` now calls `loadAct1Scene`, caches entity ids, and updates automation helpers to target evidence by id before forensic analysis._
+- **Status**: ✅ Completed — Session #56 parity confirmed via Playwright tutorial suite.
 
 #### QA-202: SaveManager LocalStorage Regression
 - **Priority**: P1

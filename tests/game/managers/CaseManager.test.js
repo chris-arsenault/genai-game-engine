@@ -77,6 +77,27 @@ describe('CaseManager', () => {
     });
   });
 
+  describe('getEvidenceDefinition', () => {
+    it('returns evidence definition when registered', () => {
+      caseManager.registerCase({
+        id: 'case_lookup',
+        title: 'Lookup Case',
+        evidence: [
+          { id: 'ev_lookup', title: 'Evidence Lookup' }
+        ],
+        clues: [],
+      });
+
+      const definition = caseManager.getEvidenceDefinition('ev_lookup');
+      expect(definition).toBeDefined();
+      expect(definition.title).toBe('Evidence Lookup');
+    });
+
+    it('returns null for unknown evidence id', () => {
+      const missing = caseManager.getEvidenceDefinition('ev_missing');
+      expect(missing).toBeNull();
+    });
+  });
   describe('registerCase', () => {
     const baseCaseData = {
       id: 'case_register',

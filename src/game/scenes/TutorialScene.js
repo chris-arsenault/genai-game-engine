@@ -17,8 +17,7 @@ import {
   currencyDeltaToInventoryUpdate,
   questRewardToInventoryItem,
 } from '../state/inventory/inventoryEvents.js';
-import { createEvidenceEntity } from '../entities/EvidenceEntity.js';
-import { createPlayerEntity } from '../entities/PlayerEntity.js';
+import { loadAct1Scene } from './Act1Scene.js';
 
 export class TutorialScene {
   /**
@@ -37,6 +36,8 @@ export class TutorialScene {
     this.caseActive = false;
     this.evidenceEntities = new Map();
     this.playerEntityId = null;
+    this.sceneEntities = new Set();
+    this._sceneCleanup = null;
     this._eventHandlers = [];
 
     // Scene dimensions
@@ -55,6 +56,8 @@ export class TutorialScene {
 
     console.log('[TutorialScene] Loading tutorial scene...');
 
+    this._cleanupSceneEntities();
+
     // Register evidence and clues in databases
     this._registerEvidenceAndClues();
 
@@ -67,11 +70,23 @@ export class TutorialScene {
     this.caseManager.setActiveCase(tutorialCase.id);
     this.caseActive = true;
 
-    // Spawn evidence entities in scene
-    this._spawnEvidenceEntities();
+    const sceneData = await loadAct1Scene(
+      this.entityManager,
+      this.componentRegistry,
+      this.eventBus,
+      { reusePlayerId: null }
+    );
 
-    // Create player entity if not exists
-    this._createPlayer();
+    this.sceneEntities = new Set(
+      Array.isArray(sceneData.sceneEntities) ? sceneData.sceneEntities : []
+    );
+    this._sceneCleanup = typeof sceneData.cleanup === 'function' ? sceneData.cleanup : null;
+    this.playerEntityId = sceneData.playerId ?? null;
+    if (this.playerEntityId != null) {
+      this.sceneEntities.add(this.playerEntityId);
+    }
+
+    this._cacheEvidenceEntities();
 
     this._registerSceneEventHandlers();
 
@@ -93,15 +108,8 @@ export class TutorialScene {
 
     this._teardownSceneEventHandlers();
 
-    // Clean up evidence entities
-    for (const entityId of this.evidenceEntities.values()) {
-      if (this.componentRegistry?.removeAllComponents) {
-        this.componentRegistry.removeAllComponents(entityId);
-      }
-      if (typeof this.entityManager.destroyEntity === 'function') {
-        this.entityManager.destroyEntity(entityId);
-      }
-    }
+    this._cleanupSceneEntities();
+
     this.evidenceEntities.clear();
 
     this.playerEntityId = null;
@@ -182,6 +190,75 @@ export class TutorialScene {
   }
 
   /**
+   * Destroy any existing scene entities and invoke cleanup handlers.
+   * @private
+   */
+  _cleanupSceneEntities() {
+    if (typeof this._sceneCleanup === 'function') {
+      try {
+        this._sceneCleanup();
+      } catch (error) {
+        console.warn('[TutorialScene] Scene cleanup handler failed', error);
+      }
+    }
+    this._sceneCleanup = null;
+
+    if (!(this.sceneEntities instanceof Set)) {
+      this.sceneEntities = new Set();
+    }
+
+    const hasEntityFn = typeof this.entityManager?.hasEntity === 'function'
+      ? this.entityManager.hasEntity.bind(this.entityManager)
+      : null;
+
+    for (const entityId of this.sceneEntities) {
+      if (entityId == null) {
+        continue;
+      }
+      if (this.componentRegistry?.removeAllComponents) {
+        this.componentRegistry.removeAllComponents(entityId);
+      }
+      if (typeof this.entityManager.destroyEntity === 'function') {
+        if (!hasEntityFn || hasEntityFn(entityId)) {
+          this.entityManager.destroyEntity(entityId);
+        }
+      }
+    }
+
+    this.sceneEntities.clear();
+  }
+
+  /**
+   * Build evidence entity lookup from the current scene.
+   * @private
+   */
+  _cacheEvidenceEntities() {
+    this.evidenceEntities.clear();
+
+    const candidateEntities = [];
+
+    if (this.sceneEntities instanceof Set) {
+      for (const entityId of this.sceneEntities) {
+        candidateEntities.push(entityId);
+      }
+    }
+
+    if (candidateEntities.length === 0 && typeof this.componentRegistry?.queryEntities === 'function') {
+      const evidenceEntities = this.componentRegistry.queryEntities('Evidence');
+      if (Array.isArray(evidenceEntities)) {
+        candidateEntities.push(...evidenceEntities);
+      }
+    }
+
+    for (const entityId of candidateEntities) {
+      const evidence = this.componentRegistry.getComponent(entityId, 'Evidence');
+      if (evidence && typeof evidence.id === 'string') {
+        this.evidenceEntities.set(evidence.id, entityId);
+      }
+    }
+  }
+
+  /**
    * Handle evidence collected event for tutorial visuals.
    * @param {Object} data
    * @private
@@ -198,60 +275,6 @@ export class TutorialScene {
       sprite.color = '#555555';
       sprite.alpha = 0.65;
     }
-  }
-
-  /**
-   * Spawn evidence entities in the scene
-   * @private
-   */
-  _spawnEvidenceEntities() {
-    for (const evidence of tutorialEvidence) {
-      const { position = { x: 0, y: 0 } } = evidence;
-      const requiresAbility = Array.isArray(evidence.requires)
-        ? evidence.requires[0] ?? null
-        : evidence.requires ?? null;
-
-      const entityId = createEvidenceEntity(this.entityManager, this.componentRegistry, {
-        x: position.x,
-        y: position.y,
-        id: evidence.id,
-        type: evidence.type,
-        category: evidence.category,
-        title: evidence.title,
-        description: evidence.description,
-        caseId: tutorialCase.id,
-        hidden: Boolean(evidence.hidden),
-        requires: requiresAbility,
-        derivedClues: evidence.derivedClues || [],
-        prompt: evidence.interactionPrompt || null,
-        forensic: evidence.forensic || null,
-      });
-
-      this.evidenceEntities.set(evidence.id, entityId);
-    }
-
-    console.log(`[TutorialScene] Spawned ${this.evidenceEntities.size} evidence entities`);
-  }
-
-  /**
-   * Create player entity
-   * @private
-   */
-  _createPlayer() {
-    // Check if player already exists
-    const getByTag = this.entityManager.getEntitiesByTag?.bind(this.entityManager);
-    const existingPlayers = typeof getByTag === 'function' ? getByTag('player') : [];
-    if (existingPlayers && existingPlayers.length > 0) {
-      this.playerEntityId = existingPlayers[0];
-      console.log('[TutorialScene] Player already exists');
-      return this.playerEntityId;
-    }
-
-    const playerEntityId = createPlayerEntity(this.entityManager, this.componentRegistry, 100, 300);
-    this.playerEntityId = playerEntityId;
-
-    console.log('[TutorialScene] Player entity created');
-    return playerEntityId;
   }
 
   /**

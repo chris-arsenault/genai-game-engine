@@ -206,6 +206,18 @@ export class CaseManager {
   }
 
   /**
+   * Retrieve evidence definition by id.
+   * @param {string} evidenceId
+   * @returns {Object|null}
+   */
+  getEvidenceDefinition(evidenceId) {
+    if (typeof evidenceId !== 'string' || evidenceId.length === 0) {
+      return null;
+    }
+    return this.evidenceDatabase.get(evidenceId) || null;
+  }
+
+  /**
    * Add evidence to case when collected
    * @param {Object} data - Evidence collection event data
    */

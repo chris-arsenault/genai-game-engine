@@ -23,13 +23,17 @@ Always keep a focusable element on the game canvas before issuing `page.keyboard
 - **CaseFileUI** is created in `initializeUIOverlays()` and refreshed automatically on:
   - `case:created`, `case:activated`, `case:objective_completed`, `case:objectives_complete`, `case:solved`, `evidence:collected`, `clue:derived`.
 - **DeductionSystem** now registers with the SystemManager (priority 29) and exposes `setDeductionBoard(board)`. The Playwright flow must open the board with the real keybinding so the tutorial receives `deduction_board:opened`.
-- **ForensicSystem** still exposes `initiateAnalysis` for automation, but expect `forensic:available`, `forensic:queued`, `forensic:complete` to increment tutorial counters. Ensure evidence is collected before starting analysis.
+- **ForensicSystem** now pipes `forensic:available` into the interaction prompt overlay. Wait for the prompt (`Press F to run forensic analysis…`), press `KeyF`, and let the runtime call `initiateAnalysis` via the Forensic prompt handler. Reserve the direct method for diagnostics when the UI path breaks.
 
 ## Playwright Interaction Pattern
 ```ts
 await prepareTutorial(page); // resets flags + waits for init
 await page.keyboard.press('Tab'); // open Case File
 await page.waitForFunction(() => window.game.caseFileUI.visible === true);
+
+await page.waitForFunction(() => Boolean(window.game._activeForensicPrompt));
+await page.keyboard.press('KeyF');
+await page.waitForFunction(() => window.game.worldStateStore.getState().tutorial.context.forensicAnalysisComplete > 0);
 
 await page.keyboard.press('KeyB'); // open Deduction Board
 await page.waitForFunction(() => window.game.deductionBoard.visible === true);
@@ -51,7 +55,8 @@ await page.evaluate(() => {
 | `case_file` step never completes | Case File never opened through InputState | Use `keyboard.press('Tab')` and wait for `caseFileUI.visible === true` |
 | Deduction step stays on intro | Board not opened via KeyB or CaseManager inactive | Verify `setActiveCase` succeeded and press `KeyB` after forensic step |
 | Theory validation stalls | Connections do not match tutorial theory graph | Iterate over `caseManager.getCase(activeCase.id).theoryGraph.connections` when building links |
-| Forensic step does not advance | Evidence not collected or ability missing | Collect at least three evidence entities before calling `completeForensicAnalysis` |
+| Forensic prompt never appears | Evidence collected without forensic metadata or CaseManager inactive | Ensure the evidence definition includes `forensic` data and the tutorial case is set active before collection |
+| Forensic step does not advance | Prompt ignored or ability missing | Wait for the overlay text, press `KeyF`, and confirm `tutorial.context.forensicAnalysisComplete` increments |
 
 ## Artifact Expectations
 - **Overlay instrumentation**: `ui:overlay_visibility_changed` logs the source (`input:caseFile`, `input:deductionBoard`, etc.) for debugging.
