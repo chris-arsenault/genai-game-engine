@@ -373,6 +373,58 @@ export class SaveManager {
     }
   }
 
+  /**
+   * Provide aggregated telemetry for SaveManager inspector tooling.
+   * @returns {Object}
+   */
+  getInspectorSummary() {
+    const generatedAt = Date.now();
+    if (!this.worldStateStore || typeof this.worldStateStore.select !== 'function') {
+      return {
+        generatedAt,
+        source: 'unavailable',
+        factions: {
+          lastCascadeEvent: null,
+          cascadeTargets: [],
+        },
+        tutorial: {
+          latestSnapshot: null,
+          snapshots: [],
+        },
+      };
+    }
+
+    let cascadeSummary = {
+      lastCascadeEvent: null,
+      cascadeTargets: [],
+    };
+    let tutorialSnapshots = [];
+    let latestSnapshot = null;
+
+    try {
+      cascadeSummary = this.worldStateStore.select(factionSlice.selectors.selectFactionCascadeSummary);
+    } catch (error) {
+      console.warn('[SaveManager] Failed to gather faction cascade summary for inspector', error);
+    }
+
+    try {
+      tutorialSnapshots = this.worldStateStore.select(tutorialSlice.selectors.selectPromptHistorySnapshots);
+      latestSnapshot = this.worldStateStore.select(tutorialSlice.selectors.selectLatestPromptSnapshot);
+    } catch (error) {
+      console.warn('[SaveManager] Failed to gather tutorial snapshots for inspector', error);
+    }
+
+    return {
+      generatedAt,
+      source: 'worldStateStore',
+      factions: cascadeSummary ?? { lastCascadeEvent: null, cascadeTargets: [] },
+      tutorial: {
+        latestSnapshot: latestSnapshot ?? null,
+        snapshots: Array.isArray(tutorialSnapshots) ? tutorialSnapshots : [],
+      },
+    };
+  }
+
   // ==================== Data Collection Methods ====================
 
   /**
@@ -707,3 +759,5 @@ function deepEqual(a, b) {
     return false;
   }
 }
+import { factionSlice } from '../state/slices/factionSlice.js';
+import { tutorialSlice } from '../state/slices/tutorialSlice.js';

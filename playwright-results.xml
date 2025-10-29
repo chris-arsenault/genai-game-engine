@@ -1,53 +1,6 @@
-<testsuites id="" name="" tests="7" failures="0" skipped="0" errors="0" time="4.164954">
-<testsuite name="tutorial-overlay.spec.js" timestamp="2025-10-29T15:20:02.343Z" hostname="" tests="7" failures="0" skipped="0" time="3.179" errors="0">
-<testcase name="Tutorial overlay › progresses tutorial prompts and syncs store state" classname="tutorial-overlay.spec.js" time="0.488">
-<system-out>
-<![CDATA[
-[[ATTACHMENT|test-results/tutorial-overlay-Tutorial--2837a-ompts-and-syncs-store-state/video.webm]]
-]]>
-</system-out>
-</testcase>
-<testcase name="Tutorial overlay › advances evidence detection step via proximity" classname="tutorial-overlay.spec.js" time="0.9">
-<system-out>
-<![CDATA[
-[[ATTACHMENT|test-results/tutorial-overlay-Tutorial--ba6c8-etection-step-via-proximity/video.webm]]
-]]>
-</system-out>
-</testcase>
-<testcase name="Tutorial overlay › collects evidence and updates tutorial state" classname="tutorial-overlay.spec.js" time="0.324">
-<system-out>
-<![CDATA[
-[[ATTACHMENT|test-results/tutorial-overlay-Tutorial--4f6c0--and-updates-tutorial-state/video.webm]]
-]]>
-</system-out>
-</testcase>
-<testcase name="Tutorial overlay › activates detective vision and advances tutorial" classname="tutorial-overlay.spec.js" time="0.299">
-<system-out>
-<![CDATA[
-[[ATTACHMENT|test-results/tutorial-overlay-Tutorial--f13d3-ision-and-advances-tutorial/video.webm]]
-]]>
-</system-out>
-</testcase>
-<testcase name="Tutorial overlay › completes case file step once overlay opens" classname="tutorial-overlay.spec.js" time="0.326">
-<system-out>
-<![CDATA[
-[[ATTACHMENT|test-results/tutorial-overlay-Tutorial--fea38-ile-step-once-overlay-opens/video.webm]]
-]]>
-</system-out>
-</testcase>
-<testcase name="Tutorial overlay › completes forensic analysis step via emitted events" classname="tutorial-overlay.spec.js" time="0.411">
-<system-out>
-<![CDATA[
-[[ATTACHMENT|test-results/tutorial-overlay-Tutorial--ab6ed-sis-step-via-emitted-events/video.webm]]
-]]>
-</system-out>
-</testcase>
-<testcase name="Tutorial overlay › completes deduction board flow through case resolution" classname="tutorial-overlay.spec.js" time="0.431">
-<system-out>
-<![CDATA[
-[[ATTACHMENT|test-results/tutorial-overlay-Tutorial--4b20b-low-through-case-resolution/video.webm]]
-]]>
-</system-out>
+<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="2.461601">
+<testsuite name="debug-overlay-telemetry.spec.js" timestamp="2025-10-29T16:50:14.207Z" hostname="" tests="1" failures="0" skipped="0" time="1.384" errors="0">
+<testcase name="Debug overlay telemetry › renders cascade and tutorial snapshot data surfaced by selectors" classname="debug-overlay-telemetry.spec.js" time="1.384">
 </testcase>
 </testsuite>
 </testsuites>

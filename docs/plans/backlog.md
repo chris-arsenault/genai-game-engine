@@ -472,6 +472,24 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 
 ---
 
+### Session #63 Cascade & Tutorial Telemetry
+
+#### DEBUG-248: Cascade & Tutorial Telemetry Surfaces
+- **Priority**: P1
+- **Tags**: `debug`, `telemetry`, `faction`, `tutorial`
+- **Effort**: 2 hours
+- **Dependencies**: Session #62 WorldStateStore observability
+- **Status**: ✅ Completed — Session #63 surfaced cascade and tutorial selectors through the debug overlay and SaveManager inspector with automated coverage.
+- **Description**: Expose faction cascade summaries and tutorial prompt snapshots directly in the developer HUD and inspector tooling so QA can validate new telemetry without digging through devtools.
+- **Acceptance Criteria**:
+  - Debug overlay renders cascade summaries sourced from `WorldStateStore` selectors.
+  - Debug overlay lists latest tutorial snapshot metadata and timeline entries.
+  - `SaveManager.getInspectorSummary()` returns cascade and tutorial telemetry for console inspection.
+  - Playwright smoke verifies cascade and tutorial telemetry render in the overlay.
+  - Benchmark dispatch latency remains under the 0.25 ms guardrail.
+
+---
+
 ### Session #36 Inventory Overlay Integration
 
 #### UI-412: Neon noir overlay theme harmonisation

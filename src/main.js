@@ -8,6 +8,8 @@ import {
   buildQuestDebugSummary,
   buildStoryDebugSummary,
 } from './game/ui/helpers/worldStateDebugView.js';
+import { factionSlice } from './game/state/slices/factionSlice.js';
+import { tutorialSlice } from './game/state/slices/tutorialSlice.js';
 
 // Wait for DOM to load
 window.addEventListener('DOMContentLoaded', async () => {
@@ -59,6 +61,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   const debugWorldMeta = document.getElementById('debug-world-meta');
   const debugQuestList = document.getElementById('debug-quests-list');
   const debugStoryList = document.getElementById('debug-story-list');
+  const debugFactionCascadeList = document.getElementById('debug-faction-cascades');
+  const debugFactionCascadeMeta = document.getElementById('debug-faction-cascade-meta');
+  const debugTutorialLatest = document.getElementById('debug-tutorial-latest');
+  const debugTutorialSnapshots = document.getElementById('debug-tutorial-snapshots');
   const debugAudioState = document.getElementById('debug-audio-state');
   const debugAudioHistory = document.getElementById('debug-audio-history');
   const debugSfxList = document.getElementById('debug-sfx-list');
@@ -152,12 +158,16 @@ window.addEventListener('DOMContentLoaded', async () => {
   let lastOverlaySignature = null;
   let debugTranscriptNeedsScroll = true;
   let lastWorldStateSignature = null;
+  let lastCascadeSignature = null;
+  let lastTutorialSnapshotSignature = null;
   let lastSfxSignature = null;
   let lastSfxTagSignature = null;
   let sfxFilterText = '';
   let sfxTagFilter = null;
   let lastAudioHistorySignature = null;
   let worldStateStoreErrorLogged = false;
+  let factionCascadeSelectorErrorLogged = false;
+  let tutorialSelectorErrorLogged = false;
 
   if (debugDialogueControls) {
     debugDialogueControls.textContent = 'Controls: F3 toggle overlay · F4 pause/resume transcript';
@@ -202,6 +212,23 @@ window.addEventListener('DOMContentLoaded', async () => {
       row.textContent = entry.text;
       container.appendChild(row);
     }
+  }
+
+  function formatFactionName(factionId) {
+    if (!factionId) {
+      return 'unknown';
+    }
+    try {
+      if (window.game && typeof window.game.getFactionName === 'function') {
+        const name = window.game.getFactionName(factionId);
+        if (typeof name === 'string' && name.trim().length) {
+          return name;
+        }
+      }
+    } catch (error) {
+      console.warn('[DebugOverlay] Failed to resolve faction name', factionId, error);
+    }
+    return factionId;
   }
 
   function updateSfxTagFilters(tagsArray, { force = false } = {}) {
@@ -411,6 +438,172 @@ window.addEventListener('DOMContentLoaded', async () => {
           }
           lastWorldStateSignature = signature;
         }
+      }
+    }
+
+    if (debugFactionCascadeList && window.worldStateStore) {
+      let cascadeSummary = null;
+      try {
+        cascadeSummary = window.worldStateStore.select(factionSlice.selectors.selectFactionCascadeSummary);
+      } catch (error) {
+        if (!factionCascadeSelectorErrorLogged) {
+          console.warn('[DebugOverlay] Failed to read faction cascade summary', error);
+          factionCascadeSelectorErrorLogged = true;
+        }
+      }
+
+      const cascadeTargets = Array.isArray(cascadeSummary?.cascadeTargets)
+        ? cascadeSummary.cascadeTargets.map((target) => ({
+            factionId: target.factionId,
+            cascadeCount: target.cascadeCount ?? 0,
+            lastCascade: target.lastCascade ? { ...target.lastCascade } : null,
+            sources: Array.isArray(target.sources) ? [...target.sources] : [],
+          }))
+        : [];
+
+      cascadeTargets.sort((a, b) => {
+        const timeA = Number.isFinite(a.lastCascade?.occurredAt) ? a.lastCascade.occurredAt : 0;
+        const timeB = Number.isFinite(b.lastCascade?.occurredAt) ? b.lastCascade.occurredAt : 0;
+        if (timeA === timeB) {
+          return (b.cascadeCount ?? 0) - (a.cascadeCount ?? 0);
+        }
+        return timeB - timeA;
+      });
+
+      const cascadeSignature = JSON.stringify({
+        last: cascadeSummary?.lastCascadeEvent?.occurredAt ?? null,
+        targets: cascadeTargets.map((target) => ({
+          id: target.factionId,
+          count: target.cascadeCount ?? 0,
+          last: target.lastCascade?.occurredAt ?? null,
+          sources: target.sources.slice().sort(),
+        })),
+      });
+
+      if (cascadeSignature !== lastCascadeSignature) {
+        const topTargets = cascadeTargets.slice(0, 5);
+        const cascadeEntries = topTargets.map((target) => {
+          const displayName = formatFactionName(target.factionId);
+          const sourceNames = target.sources.map((sourceId) => formatFactionName(sourceId));
+          const lastCascade = target.lastCascade;
+          const lastFrom = lastCascade?.sourceFactionName ?? (lastCascade?.sourceFactionId ? formatFactionName(lastCascade.sourceFactionId) : null);
+          const lastOccurred = Number.isFinite(lastCascade?.occurredAt)
+            ? formatRelativeTime(lastCascade.occurredAt, now)
+            : null;
+          const parts = [`${displayName}: cascades ${target.cascadeCount ?? 0}`];
+          if (lastFrom) {
+            parts.push(`last from ${lastFrom}${lastOccurred ? ` (${lastOccurred})` : ''}`);
+          } else if (lastOccurred) {
+            parts.push(`last ${lastOccurred}`);
+          }
+          if (sourceNames.length) {
+            parts.push(`sources ${sourceNames.join(', ')}`);
+          }
+          return {
+            text: parts.join(' · '),
+            tone: 'cascade',
+          };
+        });
+
+        renderWorldList(debugFactionCascadeList, cascadeEntries, 'No cascade data');
+
+        if (debugFactionCascadeMeta) {
+          const lastCascadeEvent = cascadeSummary?.lastCascadeEvent ?? null;
+          if (lastCascadeEvent && Number.isFinite(lastCascadeEvent.occurredAt)) {
+            const sourceName =
+              lastCascadeEvent.sourceFactionName ??
+              (lastCascadeEvent.sourceFactionId ? formatFactionName(lastCascadeEvent.sourceFactionId) : 'unknown');
+            const targetName =
+              lastCascadeEvent.targetFactionName ??
+              (lastCascadeEvent.targetFactionId ? formatFactionName(lastCascadeEvent.targetFactionId) : 'unknown');
+            const attitude = lastCascadeEvent.newAttitude ?? 'unknown';
+            const relative = formatRelativeTime(lastCascadeEvent.occurredAt, now);
+            debugFactionCascadeMeta.textContent = `Last cascade: ${sourceName} → ${targetName} (${attitude}) · ${relative}`;
+          } else {
+            debugFactionCascadeMeta.textContent = 'Last cascade: n/a';
+          }
+        }
+
+        lastCascadeSignature = cascadeSignature;
+      }
+    }
+
+    if ((debugTutorialSnapshots || debugTutorialLatest) && window.worldStateStore) {
+      let tutorialSnapshots = [];
+      let latestSnapshot = null;
+      try {
+        tutorialSnapshots = window.worldStateStore.select(tutorialSlice.selectors.selectPromptHistorySnapshots);
+        latestSnapshot = window.worldStateStore.select(tutorialSlice.selectors.selectLatestPromptSnapshot);
+      } catch (error) {
+        if (!tutorialSelectorErrorLogged) {
+          console.warn('[DebugOverlay] Failed to read tutorial snapshot timeline', error);
+          tutorialSelectorErrorLogged = true;
+        }
+      }
+
+      const snapshotSignature = [
+        latestSnapshot?.timestamp ?? 'none',
+        ...tutorialSnapshots.map((snapshot) => [
+          snapshot.timestamp ?? '0',
+          snapshot.event ?? 'event',
+          snapshot.stepId ?? 'step',
+        ].join(':')),
+      ].join('|');
+
+      if (snapshotSignature !== lastTutorialSnapshotSignature) {
+        if (debugTutorialSnapshots) {
+          const recentSnapshots = tutorialSnapshots.slice(-6).reverse();
+          const entries = recentSnapshots.map((snapshot) => {
+            const eventLabel = snapshot.event ?? 'event';
+            const hasIndex = Number.isFinite(snapshot.stepIndex) && snapshot.stepIndex >= 0;
+            const totalSteps = Number.isFinite(snapshot.totalSteps) ? snapshot.totalSteps : null;
+            const stepLabel = hasIndex
+              ? `Step ${snapshot.stepIndex + 1}${totalSteps ? `/${totalSteps}` : ''}`
+              : snapshot.stepId
+              ? `Step ${snapshot.stepId}`
+              : 'Step ?';
+            const completedCount = Array.isArray(snapshot.completedSteps) ? snapshot.completedSteps.length : 0;
+            const historyCount = Array.isArray(snapshot.promptHistory) ? snapshot.promptHistory.length : 0;
+            const timeLabel = Number.isFinite(snapshot.timestamp)
+              ? formatRelativeTime(snapshot.timestamp, now)
+              : 'time n/a';
+            const parts = [
+              `[${eventLabel}]`,
+              stepLabel,
+              `completed ${completedCount}`,
+              `history ${historyCount}`,
+              timeLabel,
+            ];
+
+            return {
+              text: parts.join(' · '),
+              tone: eventLabel,
+            };
+          });
+
+          renderWorldList(debugTutorialSnapshots, entries, 'No tutorial snapshots');
+        }
+
+        if (debugTutorialLatest) {
+          if (latestSnapshot) {
+            const eventLabel = latestSnapshot.event ?? 'event';
+            const hasIndex = Number.isFinite(latestSnapshot.stepIndex) && latestSnapshot.stepIndex >= 0;
+            const totalSteps = Number.isFinite(latestSnapshot.totalSteps) ? latestSnapshot.totalSteps : null;
+            const stepLabel = hasIndex
+              ? `step ${latestSnapshot.stepIndex + 1}${totalSteps ? `/${totalSteps}` : ''}`
+              : latestSnapshot.stepId
+              ? `step ${latestSnapshot.stepId}`
+              : 'step n/a';
+            const timeLabel = Number.isFinite(latestSnapshot.timestamp)
+              ? formatRelativeTime(latestSnapshot.timestamp, now)
+              : 'time n/a';
+            debugTutorialLatest.textContent = `Latest snapshot: ${eventLabel} · ${stepLabel} · ${timeLabel}`;
+          } else {
+            debugTutorialLatest.textContent = 'Latest snapshot: n/a';
+          }
+        }
+
+        lastTutorialSnapshotSignature = snapshotSignature;
       }
     }
 

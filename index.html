@@ -138,7 +138,7 @@
       max-width: 320px;
     }
 
-    #debug-world-meta {
+    .debug-meta {
       font-size: 11px;
       margin-bottom: 4px;
       color: #9be7ff;
@@ -193,6 +193,13 @@
     }
 
     #debug-audio {
+      margin-top: 8px;
+      border-top: 1px solid rgba(0, 255, 255, 0.35);
+      padding-top: 6px;
+      max-width: 320px;
+    }
+
+    #debug-tutorial {
       margin-top: 8px;
       border-top: 1px solid rgba(0, 255, 255, 0.35);
       padding-top: 6px;
@@ -431,6 +438,21 @@
           <div id="debug-story-list" class="debug-world-list">
             <div class="debug-world-row empty">No story flags</div>
           </div>
+        </div>
+        <div class="debug-world-section">
+          <div class="debug-subtitle">Faction Cascades</div>
+          <div id="debug-faction-cascades" class="debug-world-list">
+            <div class="debug-world-row empty">No cascade data</div>
+          </div>
+          <div id="debug-faction-cascade-meta" class="debug-meta">Last cascade: n/a</div>
+        </div>
+      </div>
+      <div id="debug-tutorial">
+        <div class="debug-title">Tutorial</div>
+        <div id="debug-tutorial-latest" class="debug-meta">Latest snapshot: n/a</div>
+        <div class="debug-subtitle">Snapshot Timeline</div>
+        <div id="debug-tutorial-snapshots" class="debug-world-list">
+          <div class="debug-world-row empty">No tutorial snapshots</div>
         </div>
       </div>
       <div id="debug-audio">

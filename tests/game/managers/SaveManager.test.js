@@ -1,5 +1,7 @@
 import { SaveManager } from '../../../src/game/managers/SaveManager.js';
 import { EventBus } from '../../../src/engine/events/EventBus.js';
+import { factionSlice } from '../../../src/game/state/slices/factionSlice.js';
+import { tutorialSlice } from '../../../src/game/state/slices/tutorialSlice.js';
 
 describe('SaveManager', () => {
   let saveManager;
@@ -1201,6 +1203,98 @@ describe('SaveManager', () => {
       expect(consoleSpy).toHaveBeenCalledWith('[SaveManager] Autosave disabled');
 
       consoleSpy.mockRestore();
+    });
+  });
+
+  // ==================== INSPECTOR SUMMARY TESTS ====================
+
+  describe('Inspector Summary', () => {
+    test('should return unavailable summary when worldStateStore missing', () => {
+      saveManager.worldStateStore = null;
+
+      const summary = saveManager.getInspectorSummary();
+
+      expect(summary.source).toBe('unavailable');
+      expect(summary.factions).toEqual({
+        lastCascadeEvent: null,
+        cascadeTargets: [],
+      });
+      expect(summary.tutorial).toEqual({
+        latestSnapshot: null,
+        snapshots: [],
+      });
+      expect(summary.generatedAt).toEqual(expect.any(Number));
+    });
+
+    test('should surface selectors when worldStateStore available', () => {
+      const cascadeSummary = {
+        lastCascadeEvent: {
+          sourceFactionId: 'cipher_collective',
+          targetFactionId: 'wraith_network',
+          occurredAt: 123456,
+          newAttitude: 'neutral',
+        },
+        cascadeTargets: [
+          {
+            factionId: 'wraith_network',
+            cascadeCount: 3,
+            lastCascade: {
+              sourceFactionId: 'cipher_collective',
+              occurredAt: 123456,
+              newAttitude: 'neutral',
+            },
+            sources: ['cipher_collective'],
+          },
+        ],
+      };
+
+      const tutorialSnapshots = [
+        {
+          event: 'step_completed',
+          timestamp: 111,
+          stepId: 'open_case_file',
+          stepIndex: 1,
+          totalSteps: 5,
+          completedSteps: ['intro'],
+          promptHistory: [],
+        },
+      ];
+
+      const latestSnapshot = {
+        event: 'tutorial_completed',
+        timestamp: 222,
+        stepId: 'finish',
+        stepIndex: 4,
+        totalSteps: 5,
+        completedSteps: ['intro', 'open_case_file'],
+        promptHistory: [],
+      };
+
+      const store = {
+        select: jest.fn((selector) => {
+          if (selector === factionSlice.selectors.selectFactionCascadeSummary) {
+            return cascadeSummary;
+          }
+          if (selector === tutorialSlice.selectors.selectPromptHistorySnapshots) {
+            return tutorialSnapshots;
+          }
+          if (selector === tutorialSlice.selectors.selectLatestPromptSnapshot) {
+            return latestSnapshot;
+          }
+          return null;
+        }),
+      };
+
+      mockManagers.worldStateStore = store;
+      saveManager = new SaveManager(eventBus, mockManagers);
+
+      const summary = saveManager.getInspectorSummary();
+
+      expect(summary.source).toBe('worldStateStore');
+      expect(summary.factions).toEqual(cascadeSummary);
+      expect(summary.tutorial.snapshots).toEqual(tutorialSnapshots);
+      expect(summary.tutorial.latestSnapshot).toEqual(latestSnapshot);
+      expect(store.select).toHaveBeenCalledTimes(3);
     });
   });
 
