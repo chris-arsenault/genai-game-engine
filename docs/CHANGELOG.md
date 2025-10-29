@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Optional Act 1 Black Market Broker vendor introduces purchase and trade branches that award memory parlor intel and emit knowledge events for optional quest tracking (`src/game/data/dialogues/Act1Dialogues.js`, `src/game/scenes/Act1Scene.js`, `src/game/data/quests/act1Quests.js`).
+- InventoryOverlay surfaces vendor acquisition metadata (vendor name, cost breakdown, timestamp) and highlights vendor-sourced loot for QA traceability (`src/game/ui/InventoryOverlay.js`, `src/game/Game.js`).
+- DialogueSystem integrates WorldStateStore story flags into dialogue context and adds currency-aware conditions for inventory gating (`src/game/systems/DialogueSystem.js`, `src/game/data/DialogueTree.js`).
 - Vendor economy helper emits normalized `economy:purchase:completed` payloads so vendor trades and bribes feed the inventory autosave pipeline (`src/game/economy/vendorEvents.js`, `src/game/Game.js`).
 - Street Vendor bribe now grants a persistent intel item tagged with vendor metadata for narrative follow-up (`src/game/data/dialogues/Act1Dialogues.js`, `src/game/systems/DialogueSystem.js`).
 - WorldStateStore now tracks an `inventory` slice driven by EventBus `inventory:*` actions, powering the new InventoryOverlay and SaveManager snapshots (`src/game/state/WorldStateStore.js`, `src/game/state/slices/inventorySlice.js`).
@@ -23,11 +26,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Engine exposes `setFrameHooks` so game coordinators can wire per-frame update and overlay rendering without duplicating requestAnimationFrame plumbing (`src/engine/Engine.js`).
 
 ### Fixed
+- Dialogue consequence `events` arrays now emit declarative EventBus payloads, ensuring knowledge/lead updates fire when vendor purchases resolve (`src/game/systems/DialogueSystem.js`).
 - Input edge detection now treats pause, disguise, and quest toggles as single actions per key press so UI overlays and dialogue prompts remain visible during manual QA (`src/game/config/Controls.js`, `src/game/Game.js`).
 - KnowledgeProgressionSystem now queries gates via `componentRegistry` for both scheduled and event-driven checks, preventing missed gate unlocks when knowledge events fire (`src/game/systems/KnowledgeProgressionSystem.js`).
 - Game registers engine frame hooks to drive `update()` and `renderOverlays()` each frame, ensuring HUD layers display in runtime builds instead of only in tests (`src/game/Game.js`).
 
 ### Testing
+- Added coverage for black market vendor dialogue data, vendor metadata rendering in InventoryOverlay, and currency-aware dialogue gating (`tests/game/data/Act1Dialogues.blackMarketVendor.test.js`, `tests/game/ui/InventoryOverlay.vendorSummary.test.js`, `tests/game/systems/DialogueSystem.test.js`).
 - Added coverage for vendor purchase emission, Game inventory integration, and dialogue inventory gating (`tests/game/economy/vendorEvents.test.js`, `tests/game/Game.vendorPurchases.test.js`, `tests/game/systems/DialogueSystem.test.js`).
 - Added unit coverage for WorldStateStore inventory reducers, inventory overlay navigation, and Playwright smoke ensuring debug overlay entries reflect inventory state (`tests/game/state/inventorySlice.test.js`, `tests/game/Game.uiOverlays.test.js`, `tests/e2e/debug-overlay-inventory.spec.js`).
 - Added unit coverage for AudioFeedbackController throttling and SFX dispatch (`tests/game/audio/AudioFeedbackController.test.js`).

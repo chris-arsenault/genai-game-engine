@@ -73,6 +73,15 @@ export const QUEST_001_HOLLOW_CASE = {
       optional: false
     },
     {
+      id: 'obj_consult_black_market_broker',
+      description: 'Secure transit intel from the black market broker',
+      trigger: {
+        event: 'knowledge:learned',
+        knowledgeId: 'black_market_transit_routes'
+      },
+      optional: true
+    },
+    {
       id: 'obj_unlock_detective_vision',
       description: 'Learn to use Detective Vision',
       trigger: {

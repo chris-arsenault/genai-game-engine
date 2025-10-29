@@ -25,6 +25,9 @@ describe('DialogueSystem', () => {
         inventory: {
           items: [],
         },
+        story: {
+          flags: {},
+        },
       })),
     };
 
@@ -512,11 +515,59 @@ describe('DialogueSystem', () => {
       freshSystem.startDialogue('npc_4', 'custom_test');
       freshSystem.advanceDialogue();
 
-      const customEvent = freshEvents.find(e => e.eventType === 'custom:event');
-      expect(customEvent).toBeDefined();
-      expect(customEvent.data.value).toBe(42);
-    });
+    const customEvent = freshEvents.find(e => e.eventType === 'custom:event');
+    expect(customEvent).toBeDefined();
+    expect(customEvent.data.value).toBe(42);
   });
+
+  it('emits declarative events configured in consequences', () => {
+    const consequenceEvents = [];
+    const consequenceBus = {
+      emit: jest.fn((eventType, data) => {
+        consequenceEvents.push({ eventType, data });
+      }),
+      on: jest.fn(),
+    };
+
+    mockWorldStateStore.getState.mockReturnValue({
+      inventory: { items: [] },
+      story: { flags: {} },
+    });
+
+    const consequenceSystem = new DialogueSystem(
+      mockComponentRegistry,
+      consequenceBus,
+      mockCaseManager,
+      mockFactionSystem,
+      mockWorldStateStore
+    );
+    consequenceSystem.init();
+    consequenceSystem.activeDialogue = {
+      npcId: 'npc_consequence',
+      dialogueId: 'consequence_dialogue',
+      currentNode: 'result_node',
+    };
+    consequenceSystem.lastChoice = { choiceId: 'choice_1' };
+
+    consequenceSystem.applyConsequences({
+      events: ['knowledge:learned', 'lead:unlocked'],
+      data: { knowledgeId: 'black_market_transit_routes' },
+    });
+
+    const knowledgeEvent = consequenceEvents.find((event) => event.eventType === 'knowledge:learned');
+    expect(knowledgeEvent).toBeDefined();
+    expect(knowledgeEvent.data).toMatchObject({
+      knowledgeId: 'black_market_transit_routes',
+      npcId: 'npc_consequence',
+      dialogueId: 'consequence_dialogue',
+      choiceId: 'choice_1',
+    });
+
+    const leadEvent = consequenceEvents.find((event) => event.eventType === 'lead:unlocked');
+    expect(leadEvent).toBeDefined();
+    expect(leadEvent.data.dialogueId).toBe('consequence_dialogue');
+  });
+});
 
   describe('Dialogue Context', () => {
     beforeEach(() => {
@@ -559,56 +610,69 @@ describe('DialogueSystem', () => {
             speaker: 'Vendor',
             text: 'What do you need?',
             choices: [
-              {
-                text: 'Offer 50 credits',
-                nextNode: null,
-                conditions: [{ type: 'hasItem', item: 'credits', amount: 50 }],
-              },
-              {
-                text: 'Offer 100 credits',
-                nextNode: null,
-                conditions: [{ type: 'hasItem', item: 'credits', amount: 100 }],
-              },
-            ],
-          },
-        },
-      });
-
-      mockWorldStateStore.getState.mockReturnValue({
-        inventory: {
-          items: [
-            { id: 'credits', quantity: 75, tags: ['currency'] },
+            {
+              text: 'Offer 50 credits',
+              nextNode: null,
+              conditions: [{ type: 'hasItem', item: 'credits', amount: 50 }],
+            },
+            {
+              text: 'Offer 100 credits',
+              nextNode: null,
+              conditions: [{ type: 'hasItem', item: 'credits', amount: 100 }],
+            },
+            {
+              text: 'Trade 40 credits (currency check)',
+              nextNode: null,
+              conditions: [{ type: 'hasCurrency', currency: 'credits', amount: 40 }],
+            },
           ],
         },
-      });
-
-      system.registerDialogueTree(inventoryTree);
-      system.startDialogue('vendor_npc', 'inventory_test');
+      },
     });
 
-    it('exposes choices that meet hasItem requirement', () => {
-      const { tree, context } = system.activeDialogue;
-      const choices = tree.getAvailableChoices('start', context);
-
-      expect(choices).toHaveLength(1);
-      expect(choices[0].text).toBe('Offer 50 credits');
+    mockWorldStateStore.getState.mockReturnValue({
+      inventory: {
+        items: [
+          { id: 'credits', quantity: 75, tags: ['currency'] },
+        ],
+      },
+      story: {
+        flags: {},
+      },
     });
 
-    it('updates availability when inventory changes', () => {
-      mockWorldStateStore.getState.mockReturnValue({
-        inventory: {
-          items: [
-            { id: 'credits', quantity: 10, tags: ['currency'] },
-          ],
-        },
-      });
+    system.registerDialogueTree(inventoryTree);
+    system.startDialogue('vendor_npc', 'inventory_test');
+  });
 
-      system.activeDialogue.context = system.buildDialogueContext('vendor_npc');
+  it('exposes choices that meet hasItem requirement', () => {
+    const { tree, context } = system.activeDialogue;
+    const choices = tree.getAvailableChoices('start', context);
 
-      const { tree, context } = system.activeDialogue;
-      const choices = tree.getAvailableChoices('start', context);
-      expect(choices).toHaveLength(0);
+    expect(choices).toHaveLength(2);
+    expect(choices[0].text).toBe('Offer 50 credits');
+    expect(choices[1].text).toBe('Trade 40 credits (currency check)');
+  });
+
+  it('updates availability when inventory changes', () => {
+    mockWorldStateStore.getState.mockReturnValue({
+      inventory: {
+        items: [
+          { id: 'credits', quantity: 10, tags: ['currency'] },
+        ],
+      },
+      story: {
+        flags: {},
+      },
     });
+
+    system.activeDialogue.context = system.buildDialogueContext('vendor_npc');
+
+    const { tree, context } = system.activeDialogue;
+    const choices = tree.getAvailableChoices('start', context);
+    expect(choices).toHaveLength(0);
+  });
+
   });
 
   describe('Ending Dialogue', () => {

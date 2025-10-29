@@ -206,6 +206,21 @@ export class DialogueTree {
       case 'notHasItem':
         return !this.checkInventoryQuantity(context, condition.item || condition.itemId, condition.amount);
 
+      case 'hasCurrency':
+      case 'hasCredits':
+        return this.checkCurrencyAmount(
+          context,
+          condition.currency || condition.item || condition.itemId || 'credits',
+          condition.amount
+        );
+
+      case 'notHasCurrency':
+        return !this.checkCurrencyAmount(
+          context,
+          condition.currency || condition.item || condition.itemId || 'credits',
+          condition.amount
+        );
+
       case 'hasItemWithTag':
         return this.checkInventoryTag(context, condition.tag, condition.amount);
 
@@ -249,6 +264,28 @@ export class DialogueTree {
     }
 
     return false;
+  }
+
+  checkCurrencyAmount(context, currencyId, amount = 1) {
+    if (!currencyId) {
+      return false;
+    }
+
+    const required = Number.isFinite(amount) ? Math.max(1, Math.trunc(amount)) : 1;
+    const normalizedId = String(currencyId).trim();
+    if (!normalizedId) {
+      return false;
+    }
+
+    const currencies = context.inventory?.currencies || {};
+    const quantities = context.inventory?.quantities || {};
+    const value = Number.isFinite(currencies[normalizedId])
+      ? Math.trunc(currencies[normalizedId])
+      : Number.isFinite(quantities[normalizedId])
+        ? Math.trunc(quantities[normalizedId])
+        : 0;
+
+    return value >= required;
   }
 
   /**

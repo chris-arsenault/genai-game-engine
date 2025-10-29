@@ -653,14 +653,46 @@ export class Game {
           }
 
           inventoryPayload.tags = mergedTags;
+          const transactionTimestamp = Number.isFinite(data.timestamp)
+            ? Math.trunc(data.timestamp)
+            : Date.now();
+          let transactionCost = null;
+          if (data.cost && typeof data.cost === 'object') {
+            transactionCost = {};
+            if (Number.isFinite(data.cost.credits) && data.cost.credits !== 0) {
+              transactionCost.credits = Math.trunc(data.cost.credits);
+            }
+            if (data.cost.currencies && typeof data.cost.currencies === 'object') {
+              const currencies = {};
+              for (const [currencyId, value] of Object.entries(data.cost.currencies)) {
+                if (Number.isFinite(value) && value !== 0) {
+                  currencies[currencyId] = Math.trunc(value);
+                }
+              }
+              if (Object.keys(currencies).length) {
+                transactionCost.currencies = currencies;
+              }
+            }
+            if (!Object.keys(transactionCost).length) {
+              transactionCost = null;
+            }
+          }
+          const transactionContext = data.context && typeof data.context === 'object'
+            ? { ...data.context }
+            : {};
+
           inventoryPayload.metadata = {
             ...(inventoryPayload.metadata || {}),
             vendorId,
             vendorName,
             vendorFaction,
             transactionId: data.transactionId ?? null,
+            transactionTimestamp,
+            transactionCost,
+            transactionContext,
             source: 'vendor_purchase',
           };
+          inventoryPayload.lastSeenAt = transactionTimestamp;
 
           this.eventBus.emit('inventory:item_added', inventoryPayload);
           console.log(`[Vendor] Purchase completed: ${vendorName} sold ${inventoryPayload.id}`);

@@ -137,7 +137,20 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus) 
   sceneEntities.push(witnessId);
   console.log(`[Act1Scene] Witness NPC created: ${witnessId}`);
 
-  // 5. Create Captain Reese NPC (for objective 9)
+  // 5. Create black market broker NPC (optional memory parlor lead)
+  const brokerId = createNPCEntity(entityManager, componentRegistry, {
+    x: 720,
+    y: 360,
+    id: 'black_market_broker',
+    name: 'Black Market Broker',
+    faction: 'criminals',
+    hasDialogue: true,
+    dialogueId: 'black_market_broker'
+  });
+  sceneEntities.push(brokerId);
+  console.log(`[Act1Scene] Black market broker NPC created: ${brokerId}`);
+
+  // 6. Create Captain Reese NPC (for objective 9)
   // Position at precinct entrance
   const captainId = createNPCEntity(entityManager, componentRegistry, {
     x: 200,
@@ -151,7 +164,7 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus) 
   sceneEntities.push(captainId);
   console.log(`[Act1Scene] Captain Reese NPC created: ${captainId}`);
 
-  // 6. Create boundary walls
+  // 7. Create boundary walls
   const boundaries = [
     { x: 0, y: 0, width: 800, height: 20 }, // Top
     { x: 0, y: 580, width: 800, height: 20 }, // Bottom
@@ -172,7 +185,7 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus) 
   }
   console.log('[Act1Scene] Boundary walls created');
 
-  // 7. Set up Detective Vision tutorial trigger
+  // 8. Set up Detective Vision tutorial trigger
   // After collecting 3 evidence, unlock Detective Vision (objective 5)
   let evidenceCollectedCount = 0;
   const requiredEvidenceForVision = 3;

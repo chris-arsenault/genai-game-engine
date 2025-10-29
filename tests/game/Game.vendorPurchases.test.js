@@ -75,6 +75,13 @@ describe('Game vendor purchase pipeline', () => {
     expect(creditsEntry.quantity).toBe(50);
     expect(intelEntry).toBeDefined();
     expect(intelEntry.metadata.vendorId).toBe('black_market_vendor');
+    expect(intelEntry.metadata).toMatchObject({
+      vendorName: 'Black Market Broker',
+      vendorFaction: 'smugglers',
+      source: 'vendor_purchase',
+    });
+    expect(intelEntry.metadata.transactionCost).toMatchObject({ credits: 70 });
+    expect(intelEntry.metadata.transactionTimestamp).toBeGreaterThan(0);
     expect(intelEntry.tags).toEqual(expect.arrayContaining(['vendor:black_market_vendor']));
   });
 });

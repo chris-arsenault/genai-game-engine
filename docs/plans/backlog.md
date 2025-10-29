@@ -459,6 +459,19 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Inventory overlay and debug HUD update immediately when purchases complete; SaveManager captures vendor metadata in snapshots.
   - Jest coverage asserts event emission and inventory updates for at least one vendor scenario.
 
+#### INV-304: Establish black market vendor branch and UI telemetry
+- **Priority**: P1
+- **Tags**: `inventory`, `vendor`, `dialogue`, `narrative`, `ui`
+- **Effort**: 4 hours
+- **Dependencies**: INV-303, DIA-208
+- **Status**: ✅ Completed — Session #39 added the Black Market Broker dialogue tree, vendor purchase metadata surfaced in InventoryOverlay, and follow-on tests for dialogue consequence events.
+- **Description**: Introduce an Act 1 black market vendor that trades memory parlor intel, ensure dialogue gating draws from live inventory currency, and surface vendor acquisition metadata inside the inventory UI for QA traceability.
+- **Acceptance Criteria**:
+  - New dialogue tree exposes purchase and trade branches using normalized `vendorTransaction` consequences plus knowledge events.
+  - Act 1 scene spawns the broker NPC with interaction prompts and quest objective hooks for optional leads.
+  - Inventory overlay highlights vendor-sourced items with vendor, cost, and timestamp details; Jest coverage verifies output.
+  - DialogueSystem supports declarative consequence events and currency-aware conditions (`hasCurrency`, `notHasCurrency`).
+
 #### DIA-208: Support inventory-aware dialogue conditions
 - **Priority**: P1
 - **Tags**: `dialogue`, `inventory`
@@ -482,6 +495,18 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Playwright test loads the game, opens the debug overlay, and confirms inventory rows list item counts.
   - Toggling inventory overlay flips the debug overlay `data-visible` flag.
   - Test asserts no console errors while exercising the scene.
+
+#### PERF-214: Restore profiling harness entry point
+- **Priority**: P1
+- **Tags**: `perf`, `tooling`
+- **Effort**: 1 hour
+- **Dependencies**: None
+- **Status**: 🚧 Pending — Session #39 attempted `npm run profile` but `src/benchmark.js` is missing, blocking throughput profiling for vendor autosave changes.
+- **Description**: Recreate or relink the Node profiling entry point so `npm run profile` executes without module errors and captures frame timing under economy flows.
+- **Acceptance Criteria**:
+  - `npm run profile` runs without module-not-found failures on CI and local machines.
+  - Profiling script loads representative scenes (vendor transactions + dialogue gating) and outputs V8 log for inspection.
+  - Documentation updated with usage instructions and expected output location.
 
 ---
 
