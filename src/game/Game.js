@@ -50,6 +50,7 @@ import { AudioFeedbackController } from './audio/AudioFeedbackController.js';
 import { SFXCatalogLoader } from './audio/SFXCatalogLoader.js';
 import { AdaptiveMoodEmitter } from './audio/AdaptiveMoodEmitter.js';
 import { SuspicionMoodMapper } from './audio/SuspicionMoodMapper.js';
+import { GameplayAdaptiveAudioBridge } from './audio/GameplayAdaptiveAudioBridge.js';
 import { SaveInspectorOverlay } from './ui/SaveInspectorOverlay.js';
 
 // Managers
@@ -134,6 +135,7 @@ export class Game {
     this._activeAmbientController = null;
     this.suspicionMoodMapper = null;
     this.adaptiveMoodEmitter = null;
+    this.gameplayAdaptiveAudioBridge = null;
 
     // Game state
     this.inputState = new InputState(engine.eventBus);
@@ -673,6 +675,30 @@ export class Game {
         defaultSource: 'gameplay',
         moodMapper: this.suspicionMoodMapper,
       });
+    }
+
+    const audioConfig = GameConfig?.audio ?? {};
+    const bridgeEnabled = audioConfig.enableGameplayEmitters !== false;
+    const bridgeOptions = {
+      componentRegistry: this.componentRegistry,
+      updateIntervalMs: audioConfig.gameplayMoodBridge?.updateIntervalMs,
+      moodHintDurationMs: audioConfig.gameplayMoodBridge?.moodHintDurationMs,
+      enabled: bridgeEnabled,
+    };
+    if (!this.gameplayAdaptiveAudioBridge && bridgeEnabled) {
+      this.gameplayAdaptiveAudioBridge = new GameplayAdaptiveAudioBridge(
+        this.eventBus,
+        this.adaptiveMoodEmitter,
+        bridgeOptions
+      );
+      this.gameplayAdaptiveAudioBridge.attach();
+    } else if (this.gameplayAdaptiveAudioBridge) {
+      this.gameplayAdaptiveAudioBridge.componentRegistry = this.componentRegistry;
+      this.gameplayAdaptiveAudioBridge.setMoodEmitter(this.adaptiveMoodEmitter);
+      this.gameplayAdaptiveAudioBridge.enabled = bridgeEnabled;
+      if (bridgeEnabled) {
+        this.gameplayAdaptiveAudioBridge.attach();
+      }
     }
   }
 
@@ -1713,6 +1739,10 @@ export class Game {
     // Game systems are updated by SystemManager automatically
     // This method is for game-level logic only
 
+    if (this.gameplayAdaptiveAudioBridge) {
+      this.gameplayAdaptiveAudioBridge.update(deltaTime);
+    }
+
     this._updateAdaptiveMusic(deltaTime);
 
     // Update interval-based autosave
@@ -2487,6 +2517,10 @@ export class Game {
     if (this.adaptiveMoodEmitter) {
       this.adaptiveMoodEmitter.dispose();
       this.adaptiveMoodEmitter = null;
+    }
+    if (this.gameplayAdaptiveAudioBridge) {
+      this.gameplayAdaptiveAudioBridge.dispose();
+      this.gameplayAdaptiveAudioBridge = null;
     }
     this.suspicionMoodMapper = null;
 

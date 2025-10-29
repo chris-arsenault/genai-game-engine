@@ -7,6 +7,7 @@
 import { SeededRandom } from '../../engine/procedural/SeededRandom.js';
 import { LayoutGraph } from '../../engine/procedural/LayoutGraph.js';
 import { RoomInstance } from '../../engine/procedural/RoomInstance.js';
+import { TileRotationMatrix } from '../../engine/procedural/TileRotationMatrix.js';
 import TileMap, { TileType } from './TileMap.js';
 import { BSPGenerator } from './BSPGenerator.js';
 
@@ -724,10 +725,26 @@ export class DistrictGenerator {
       const data = roomData.get(room.id);
       if (!data || !data.tilemap) continue;
 
-      for (let y = 0; y < data.height; y++) {
-        for (let x = 0; x < data.width; x++) {
+      const templateWidth = data.tilemap.width;
+      const templateHeight = data.tilemap.height;
+      const rotation = TileRotationMatrix.normalizeRotation(room.rotation ?? data.rotation ?? 0);
+
+      for (let y = 0; y < templateHeight; y++) {
+        for (let x = 0; x < templateWidth; x++) {
           const tile = data.tilemap.getTile(x, y);
-          tilemap.setTile(room.x + x, room.y + y, tile);
+          const rotated = TileRotationMatrix.rotateTileCoords(
+            x,
+            y,
+            templateWidth,
+            templateHeight,
+            rotation
+          );
+          const worldX = room.x + rotated.x;
+          const worldY = room.y + rotated.y;
+
+          if (worldX >= 0 && worldX < tilemap.width && worldY >= 0 && worldY < tilemap.height) {
+            tilemap.setTile(worldX, worldY, tile);
+          }
         }
       }
     }

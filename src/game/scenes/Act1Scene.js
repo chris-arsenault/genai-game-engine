@@ -15,16 +15,36 @@ import { createPlayerEntity } from '../entities/PlayerEntity.js';
 import { createEvidenceEntity } from '../entities/EvidenceEntity.js';
 import { createNPCEntity } from '../entities/NPCEntity.js';
 import { Transform } from '../components/Transform.js';
-import { InteractionZone } from '../components/InteractionZone.js';
 import { Collider } from '../components/Collider.js';
 import { Sprite } from '../components/Sprite.js';
 import { tutorialCase, tutorialEvidence } from '../data/cases/tutorialCase.js';
-import { Trigger } from '../../engine/physics/Trigger.js';
+import { QUEST_001_HOLLOW_CASE } from '../data/quests/act1Quests.js';
+import { TriggerMigrationToolkit } from '../quests/TriggerMigrationToolkit.js';
+import { QuestTriggerRegistry } from '../quests/QuestTriggerRegistry.js';
 
 const SCENE_CENTER_X = 400;
 const SCENE_CENTER_Y = 300;
 const CRIME_SCENE_WIDTH = 560;
 const CRIME_SCENE_HEIGHT = 360;
+const CRIME_SCENE_TRIGGER_ID = 'crime_scene_entry';
+
+const existingCrimeSceneDefinition = QuestTriggerRegistry.getTriggerDefinition(CRIME_SCENE_TRIGGER_ID);
+if (!existingCrimeSceneDefinition) {
+  QuestTriggerRegistry.registerDefinition({
+    id: CRIME_SCENE_TRIGGER_ID,
+    questId: QUEST_001_HOLLOW_CASE.id,
+    objectiveId: 'obj_arrive_scene',
+    areaId: 'crime_scene_alley',
+    radius: 150,
+    once: true,
+    prompt: 'Crime Scene Perimeter',
+    triggerType: 'crime_scene',
+    metadata: {
+      moodHint: 'investigation_peak',
+      narrativeBeat: 'act1_arrival_scene',
+    },
+  });
+}
 
 /**
  * Load Act 1 scene
@@ -221,37 +241,8 @@ function createCrimeSceneArea(entityManager, componentRegistry, eventBus) {
   const transform = new Transform(SCENE_CENTER_X, SCENE_CENTER_Y - 40, 0, 1, 1);
   componentRegistry.addComponent(entityId, 'Transform', transform);
 
-  // Add InteractionZone component (automatic trigger, no input required)
-  const interactionZone = new InteractionZone({
-    id: 'crime_scene_alley',
-    type: 'trigger',
-    radius: 150, // 300x300 area (radius = 150)
-    requiresInput: false, // Automatic trigger
-    prompt: 'Crime Scene',
-    active: true,
-    oneShot: true, // Only trigger once
-    data: {
-      areaId: 'crime_scene_alley'
-    }
-  });
-  interactionZone.type = 'InteractionZone';
-  componentRegistry.addComponent(entityId, interactionZone);
-
-  const triggerComponent = new Trigger({
-    id: 'crime_scene_alley',
-    radius: interactionZone.radius,
-    once: interactionZone.oneShot,
-    eventOnEnter: 'area:entered',
-    eventOnExit: 'area:exited',
-    targetTags: ['player'],
-    requiredComponents: ['Transform'],
-    data: {
-      areaId: 'crime_scene_alley',
-      triggerType: 'crime_scene',
-      questTrigger: true,
-    },
-  });
-  componentRegistry.addComponent(entityId, 'Trigger', triggerComponent);
+  const triggerToolkit = new TriggerMigrationToolkit(componentRegistry, eventBus);
+  triggerToolkit.createQuestTrigger(entityId, CRIME_SCENE_TRIGGER_ID);
 
   // Add trigger collider
   const collider = new Collider({
@@ -364,6 +355,8 @@ function createCrimeSceneVisuals(entityManager, componentRegistry) {
 
   return entities;
 }
+
+export { createCrimeSceneArea };
 
 function createGroundDecal(entityManager, componentRegistry) {
   const entityId = entityManager.createEntity('crime_scene_ground');

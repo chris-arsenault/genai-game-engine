@@ -1,6 +1,6 @@
 # Trigger Authoring Guide
 
-**Updated**: 2025-10-30 (Session 77)  
+**Updated**: 2025-10-30 (Session 80)  
 **Scope**: Engine `TriggerSystem` + gameplay authoring workflow
 
 ---
@@ -49,6 +49,12 @@ Restricted areas, quest gates, and scene transitions now rely on the engine-leve
 
 ## Authoring Patterns
 
+### Quest Trigger Registry & Migration Toolkit
+- Register quest trigger metadata centrally via `QuestTriggerRegistry` so definitions stay in sync with quest data (`questId`, `objectiveId`, prompts, optional metadata such as `moodHint` for adaptive audio).
+- Use `TriggerMigrationToolkit` (see `src/game/quests/TriggerMigrationToolkit.js`) to attach standardized `Trigger` components to scene entities; the toolkit records migration status and ensures payload shape consistency.
+- Definitions can include `metadata.moodHint` to influence adaptive audio bridges; hints expire automatically after a configurable duration.
+- Unit coverage lives in `tests/game/quests/TriggerMigrationToolkit.test.js`; scene-level migrations are captured in `tests/game/scenes/Act1Scene.triggers.test.js`.
+
 ### Memory Parlor Restricted Areas
 - `InteractionZone` retains prompt text and highlight visuals.
 - A paired `Trigger` component emits structured enter/exit payloads consumed by UI highlights and the Firewall Scrambler system.
@@ -69,9 +75,10 @@ componentRegistry.addComponent(entityId, 'Trigger', new Trigger({
 ```
 
 ### Quest Triggers
-- `QuestSystem.createQuestTrigger()` now attaches a `Trigger` with `questTrigger` metadata and subscribes to `area:entered`/`area:exited`.
+- Prefer `TriggerMigrationToolkit.createQuestTrigger()` for Act 1+ content; it pulls definitions from `QuestTriggerRegistry`, adds consistent metadata, and marks migrations complete for reporting.
+- `QuestSystem.createQuestTrigger()` remains available for bespoke cases but should be phased out as legacy `InteractionZone` flows migrate.
 - One-shot quest triggers remove themselves after firing; reusable triggers reset `quest.triggered` on exit events.
-- The new Jest suite (`tests/game/systems/QuestSystem.trigger.test.js`) validates event wiring and entity cleanup.
+- Jest suites (`tests/game/systems/QuestSystem.trigger.test.js`, `tests/game/scenes/Act1Scene.triggers.test.js`) validate event wiring, outstanding migration tracking, and metadata propagation.
 
 ### Scene Transitions and Exits
 - Exit zones (e.g., Memory Parlor escape route) mark `triggerType: 'scene_exit'` and set `questTrigger: true` so quest objectives progress automatically before the scene swap.
@@ -106,4 +113,4 @@ componentRegistry.addComponent(entityId, 'Trigger', new Trigger({
 - Engine implementation: `src/engine/physics/TriggerSystem.js`, `src/engine/physics/Trigger.js`
 - Game integration: `src/game/Game.js`, `src/game/scenes/MemoryParlorScene.js`, `src/game/scenes/Act1Scene.js`
 - Quest wiring: `src/game/systems/QuestSystem.js`
-- Tests: `tests/game/systems/QuestSystem.trigger.test.js`
+- Tests: `tests/game/systems/QuestSystem.trigger.test.js`, `tests/game/scenes/Act1Scene.triggers.test.js`

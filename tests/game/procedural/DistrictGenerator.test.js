@@ -4,7 +4,8 @@
 
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import { DistrictGenerator, RoomTypes, DistrictTypes } from '../../../src/game/procedural/DistrictGenerator.js';
-import { TileType } from '../../../src/game/procedural/TileMap.js';
+import TileMap, { TileType } from '../../../src/game/procedural/TileMap.js';
+import { RoomInstance } from '../../../src/engine/procedural/RoomInstance.js';
 
 describe('DistrictGenerator', () => {
   let generator;
@@ -15,6 +16,42 @@ describe('DistrictGenerator', () => {
       minRoomSpacing: 3,
       corridorWidth: 3,
       forceIterations: 50, // Fewer iterations for faster tests
+    });
+  });
+
+  describe('Tile rotation integration', () => {
+    it('applies TileRotationMatrix when copying room tilemaps', () => {
+      const tilemap = new TileMap(2, 2);
+      tilemap.setTile(0, 0, TileType.FLOOR);
+      tilemap.setTile(1, 0, TileType.WALL);
+      tilemap.setTile(0, 1, TileType.DOOR);
+      tilemap.setTile(1, 1, TileType.BLOOD);
+
+      const roomData = new Map();
+      roomData.set('room_a', {
+        tilemap,
+        width: 2,
+        height: 2,
+        rotation: 90,
+      });
+
+      const room = new RoomInstance({
+        id: 'room_a',
+        templateId: 'test_template',
+        x: 0,
+        y: 0,
+        rotation: 90,
+      });
+      room.width = 2;
+      room.height = 2;
+      room.tilemap = tilemap;
+
+      const finalTilemap = generator._buildFinalTilemap([room], roomData, []);
+
+      expect(finalTilemap.getTile(0, 0)).toBe(TileType.DOOR);
+      expect(finalTilemap.getTile(1, 0)).toBe(TileType.FLOOR);
+      expect(finalTilemap.getTile(0, 1)).toBe(TileType.BLOOD);
+      expect(finalTilemap.getTile(1, 1)).toBe(TileType.WALL);
     });
   });
 

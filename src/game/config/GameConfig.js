@@ -148,6 +148,11 @@ export const GameConfig = {
     musicVolume: 0.7,
     sfxVolume: 0.9,
     ambienceVolume: 0.5,
+    enableGameplayEmitters: true,
+    gameplayMoodBridge: {
+      updateIntervalMs: 250,
+      moodHintDurationMs: 6000,
+    },
 
     memoryParlorAmbient: {
       trackId: 'music-memory-parlor-ambient-001',
