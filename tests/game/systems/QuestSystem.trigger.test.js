@@ -1,0 +1,92 @@
+import { QuestSystem } from '../../../src/game/systems/QuestSystem.js';
+import { EventBus } from '../../../src/engine/events/EventBus.js';
+import { EntityManager } from '../../../src/engine/ecs/EntityManager.js';
+import { ComponentRegistry } from '../../../src/engine/ecs/ComponentRegistry.js';
+
+describe('QuestSystem trigger integration', () => {
+  let eventBus;
+  let entityManager;
+  let componentRegistry;
+  let questManager;
+  let system;
+
+  beforeEach(() => {
+    eventBus = new EventBus();
+    entityManager = new EntityManager();
+    componentRegistry = new ComponentRegistry(entityManager);
+    questManager = {
+      startQuest: jest.fn(() => true),
+      getActiveQuests: jest.fn(() => []),
+      quests: new Map(),
+      activeQuests: new Set(),
+      completedQuests: new Set(),
+      checkPrerequisites: jest.fn(() => true),
+    };
+    system = new QuestSystem(componentRegistry, eventBus, questManager);
+    system.init();
+  });
+
+  afterEach(() => {
+    if (typeof system.cleanup === 'function') {
+      system.cleanup();
+    }
+  });
+
+  it('creates quest triggers with Trigger component metadata', () => {
+    const entityId = system.createQuestTrigger(10, 20, 'quest_main', {
+      radius: 90,
+      objectiveId: 'obj_test',
+      targetTags: ['player', 'companion'],
+    });
+
+    const trigger = componentRegistry.getComponent(entityId, 'Trigger');
+    expect(trigger).toBeDefined();
+    expect(trigger.radius).toBe(90);
+    expect(trigger.once).toBe(true);
+    expect(trigger.targetTags instanceof Set).toBe(true);
+    expect(trigger.targetTags.has('player')).toBe(true);
+    expect(trigger.targetTags.has('companion')).toBe(true);
+    expect(trigger.data).toEqual(
+      expect.objectContaining({
+        questTrigger: true,
+        questId: 'quest_main',
+        objectiveId: 'obj_test',
+      })
+    );
+  });
+
+  it('starts quests and removes one-shot triggers on area entry', () => {
+    const entityId = system.createQuestTrigger(0, 0, 'quest_alpha', { objectiveId: 'obj_alpha' });
+    const trigger = componentRegistry.getComponent(entityId, 'Trigger');
+
+    eventBus.emit('area:entered', {
+      triggerId: entityId,
+      trigger,
+      data: { ...trigger.data, questTrigger: true },
+    });
+
+    expect(questManager.startQuest).toHaveBeenCalledWith('quest_alpha');
+    expect(componentRegistry.entityManager.hasEntity(entityId)).toBe(false);
+  });
+
+  it('resets non one-shot quest triggers on exit', () => {
+    const entityId = system.createQuestTrigger(0, 0, 'quest_beta', { oneTime: false });
+    const trigger = componentRegistry.getComponent(entityId, 'Trigger');
+    const questComponent = componentRegistry.getComponent(entityId, 'Quest');
+
+    eventBus.emit('area:entered', {
+      triggerId: entityId,
+      trigger,
+      data: { ...trigger.data, questTrigger: true },
+    });
+    expect(questComponent.triggered).toBe(true);
+
+    eventBus.emit('area:exited', {
+      triggerId: entityId,
+      trigger,
+      data: { ...trigger.data, questTrigger: true },
+    });
+    expect(questComponent.triggered).toBe(false);
+    expect(componentRegistry.entityManager.hasEntity(entityId)).toBe(true);
+  });
+});

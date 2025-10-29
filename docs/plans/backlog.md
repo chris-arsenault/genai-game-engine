@@ -358,6 +358,44 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Fades validated to avoid gain spikes; telemetry logged for overlays.
 - **Notes**: Adaptive combat/disguise triggers now flow through `AmbientSceneAudioController`, telemetry history is capped via stress harness, and the debug overlay exposes searchable/tag-filterable SFX catalog entries with Playwright coverage.
 
+### Session #77 Backlog Updates
+
+#### AUDIO-512: AdaptiveMusic Game Loop Orchestration
+- **Priority**: P1
+- **Tags**: `audio`, `engine`
+- **Effort**: 2 hours
+- **Status**: ✅ Completed — Session #77 wired the shared AdaptiveMusic coordinator into `Game.initializeAudioIntegrations`, exposed EventBus helpers for mood scheduling, and updated telemetry snapshots.
+- **Summary**: Expose AdaptiveMusic to gameplay systems via the main Game coordinator so stealth/combat narratives can schedule moods without manual controller access.
+- **Acceptance Criteria**:
+  - Game initializes a shared AdaptiveMusic instance and updates it each frame.
+  - EventBus helpers (`audio:adaptive:set_mood`, `audio:adaptive:define_mood`, `audio:adaptive:reset`) forward to AdaptiveMusic with coverage.
+  - AmbientSceneAudioController can reuse the shared orchestrator without duplicating controllers.
+- **References**: `src/game/Game.js`, `tests/game/audio/GameAudioTelemetry.test.js`, `docs/plans/audio-system-plan.md` (Game Loop Orchestration Update).
+
+#### PHYS-206: Trigger Authoring Schema Integration
+- **Priority**: P1
+- **Tags**: `physics`, `ecs`, `quest`
+- **Effort**: 3 hours
+- **Status**: ✅ Completed — Memory Parlor restricted zones and quest triggers now attach engineered Trigger components; QuestSystem consumes area events and new docs guide authoring.
+- **Summary**: Layer the Trigger component onto gameplay authoring workflows so restricted areas, quest triggers, and scene transitions emit structured EventBus payloads.
+- **Acceptance Criteria**:
+  - Interaction zones in Memory Parlor emit `area:entered` / `area:exited` with metadata.
+  - QuestSystem consumes trigger payloads to start/reset objectives without polling.
+  - Authoring documentation exists for designers covering trigger metadata and event flow.
+- **References**: `src/game/scenes/MemoryParlorScene.js`, `src/game/systems/QuestSystem.js`, `tests/game/systems/QuestSystem.trigger.test.js`, `docs/tech/trigger-authoring.md`.
+
+#### PROC-119: Rotated Room Placement Support
+- **Priority**: P1
+- **Tags**: `procedural`, `engine`
+- **Effort**: 3 hours
+- **Status**: ✅ Completed — DistrictGenerator records rotation metadata and layout bounds; corridors validate endpoints against rotated rooms with new regression tests.
+- **Summary**: Update DistrictGenerator to support rotated room instances while preserving containment checks and corridor alignment.
+- **Acceptance Criteria**:
+  - Generator records rotation metadata and layout bounds for each room.
+  - Corridor creation uses rotation-aware bounds so endpoints fall inside rooms.
+  - Tests validate rotated rooms and corridors under deterministic seeds.
+- **References**: `src/game/procedural/DistrictGenerator.js`, `tests/game/procedural/DistrictGenerator.test.js`, `docs/guides/procedural-generation-integration.md` (Rotation Support).
+
 ---
 
 ### Session #44 Testing & Stability

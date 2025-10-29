@@ -131,6 +131,9 @@ export class DistrictGenerator {
       repulsionForce: config.repulsionForce || 50,
       attractionForce: config.attractionForce || 0.05,
       centeringForce: config.centeringForce || 0.01,
+      rotationAngles: Array.isArray(config.rotationAngles) && config.rotationAngles.length
+        ? config.rotationAngles
+        : [0, 90, 180, 270],
     };
   }
 
@@ -173,6 +176,7 @@ export class DistrictGenerator {
       graph,
       rooms,
       tilemap,
+      corridors,
       metadata: {
         seed,
         districtType,
@@ -296,6 +300,31 @@ export class DistrictGenerator {
     return 'main';
   }
 
+  _selectRotation(rng) {
+    const angles = this.config.rotationAngles || [0];
+    if (!Array.isArray(angles) || angles.length === 0) {
+      return 0;
+    }
+    return rng.choice(angles);
+  }
+
+  _computeLayoutDimensions(width, height, rotation) {
+    const normalized = ((rotation % 360) + 360) % 360;
+    if (normalized === 90 || normalized === 270) {
+      return { width: height, height: width };
+    }
+    if (normalized === 0 || normalized === 180) {
+      return { width, height };
+    }
+
+    const rad = (normalized * Math.PI) / 180;
+    const sin = Math.abs(Math.sin(rad));
+    const cos = Math.abs(Math.cos(rad));
+    const rotatedWidth = Math.round(width * cos + height * sin);
+    const rotatedHeight = Math.round(width * sin + height * cos);
+    return { width: rotatedWidth, height: rotatedHeight };
+  }
+
   /**
    * Generates interior layouts for each room using BSP or templates
    * @private
@@ -325,9 +354,15 @@ export class DistrictGenerator {
 
         const result = bsp.generate(width, height, rng.next() * 999999);
 
+        const rotation = this._selectRotation(rng);
+        const bounds = this._computeLayoutDimensions(width, height, rotation);
+
         roomData.set(node.id, {
           width,
           height,
+          rotation,
+          layoutWidth: bounds.width,
+          layoutHeight: bounds.height,
           tilemap: result.tilemap,
           rooms: result.rooms,
           type: 'bsp',
@@ -351,9 +386,15 @@ export class DistrictGenerator {
           tilemap.setTile(width - 1, y, TileType.WALL);
         }
 
+        const rotation = this._selectRotation(rng);
+        const bounds = this._computeLayoutDimensions(width, height, rotation);
+
         roomData.set(node.id, {
           width,
           height,
+          rotation,
+          layoutWidth: bounds.width,
+          layoutHeight: bounds.height,
           tilemap,
           type: 'outdoor',
         });
@@ -429,7 +470,12 @@ export class DistrictGenerator {
 
           const room1 = roomData.get(node1);
           const room2 = roomData.get(node2);
-          const minDist = Math.max(room1.width, room1.height, room2.width, room2.height) + this.config.minRoomSpacing;
+          const minDist = Math.max(
+            room1.layoutWidth ?? room1.width,
+            room1.layoutHeight ?? room1.height,
+            room2.layoutWidth ?? room2.width,
+            room2.layoutHeight ?? room2.height
+          ) + this.config.minRoomSpacing;
 
           // Repulsion force
           if (dist < minDist) {
@@ -498,16 +544,20 @@ export class DistrictGenerator {
 
         // Keep within bounds
         const room = roomData.get(nodeId);
-        pos.x = Math.max(room.width / 2, Math.min(this.config.districtSize.width - room.width / 2, pos.x));
-        pos.y = Math.max(room.height / 2, Math.min(this.config.districtSize.height - room.height / 2, pos.y));
+        const layoutWidth = room.layoutWidth ?? room.width;
+        const layoutHeight = room.layoutHeight ?? room.height;
+        pos.x = Math.max(layoutWidth / 2, Math.min(this.config.districtSize.width - layoutWidth / 2, pos.x));
+        pos.y = Math.max(layoutHeight / 2, Math.min(this.config.districtSize.height - layoutHeight / 2, pos.y));
       }
     }
 
     // Convert to integer positions (top-left corner)
     for (const [nodeId, pos] of positions.entries()) {
       const room = roomData.get(nodeId);
-      pos.x = Math.floor(pos.x - room.width / 2);
-      pos.y = Math.floor(pos.y - room.height / 2);
+      const layoutWidth = room.layoutWidth ?? room.width;
+      const layoutHeight = room.layoutHeight ?? room.height;
+      pos.x = Math.floor(pos.x - layoutWidth / 2);
+      pos.y = Math.floor(pos.y - layoutHeight / 2);
     }
 
     return positions;
@@ -533,7 +583,7 @@ export class DistrictGenerator {
         templateId: node.data.roomType || node.type,
         x: pos.x,
         y: pos.y,
-        rotation: 0,
+        rotation: data.rotation ?? 0,
       });
 
       // Store room data for later use
@@ -574,13 +624,16 @@ export class DistrictGenerator {
         if (!room1 || !room2) continue;
 
         // Find door positions (centers of rooms)
+        const bounds1 = room1.getBounds(room1.width, room1.height);
+        const bounds2 = room2.getBounds(room2.width, room2.height);
+
         const door1 = {
-          x: room1.x + Math.floor(room1.width / 2),
-          y: room1.y + Math.floor(room1.height / 2),
+          x: bounds1.x + Math.floor(bounds1.width / 2),
+          y: bounds1.y + Math.floor(bounds1.height / 2),
         };
         const door2 = {
-          x: room2.x + Math.floor(room2.width / 2),
-          y: room2.y + Math.floor(room2.height / 2),
+          x: bounds2.x + Math.floor(bounds2.width / 2),
+          y: bounds2.y + Math.floor(bounds2.height / 2),
         };
 
         // Create L-shaped corridor

@@ -17,6 +17,7 @@ import { createNPCEntity } from '../entities/NPCEntity.js';
 import { createEvidenceEntity } from '../entities/EvidenceEntity.js';
 import { GameConfig } from '../config/GameConfig.js';
 import { AmbientSceneAudioController } from '../audio/AmbientSceneAudioController.js';
+import { Trigger } from '../../engine/physics/Trigger.js';
 
 const ROOM_WIDTH = 960;
 const ROOM_HEIGHT = 600;
@@ -202,6 +203,7 @@ function createTriggerZone(entityManager, componentRegistry, {
   layer = 'ground_fx',
   color = '#5f3b8b',
   alpha = 0.25,
+  data = {},
 } = {}) {
   const entityId = entityManager.createEntity('area_trigger');
   componentRegistry.addComponent(entityId, 'Transform', new Transform(x, y, 0, 1, 1));
@@ -224,6 +226,27 @@ function createTriggerZone(entityManager, componentRegistry, {
     zIndex: 1,
     visible: true,
   }));
+
+  const areaId = id || `area_trigger_${entityId}`;
+  const triggerComponent = new Trigger({
+    id: areaId,
+    radius,
+    once: oneShot,
+    eventOnEnter: 'area:entered',
+    eventOnExit: 'area:exited',
+    targetTags: ['player'],
+    requiredComponents: ['Transform'],
+    data: {
+      areaId,
+      prompt,
+      sceneId: 'memory_parlor',
+      requiresInput,
+      triggerType: 'restricted_area',
+      ...data,
+    },
+  });
+  componentRegistry.addComponent(entityId, 'Trigger', triggerComponent);
+
   return entityId;
 }
 
@@ -366,6 +389,10 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
     radius: 96,
     prompt: 'Hidden stairwell to the Memory Parlor.',
     oneShot: true,
+    data: {
+      triggerType: 'scene_transition',
+      questTrigger: false
+    }
   });
   sceneEntities.push(entranceZoneId);
 
@@ -417,6 +444,11 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
     oneShot: false,
     color: '#3a1f57',
     alpha: 0.18,
+    data: {
+      triggerType: 'objective_area',
+      questTrigger: true,
+      objectiveId: 'obj_infiltrate_interior'
+    }
   });
   sceneEntities.push(interiorZoneId);
 
@@ -514,6 +546,11 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
     oneShot: true,
     color: '#2d8aff',
     alpha: 0.22,
+    data: {
+      triggerType: 'scene_exit',
+      questTrigger: true,
+      objectiveId: 'obj_escape_parlor'
+    }
   });
   sceneEntities.push(exitZoneId);
 
@@ -572,6 +609,11 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
       layer: definition.layer,
       color: DETECTION_CONFIG.dangerColor,
       alpha: DETECTION_CONFIG.baseAlpha,
+      data: {
+        triggerType: 'detection_zone',
+        guardId: definition.id,
+        questTrigger: false
+      }
     });
     const sprite = componentRegistry.getComponent(entityId, 'Sprite');
     if (sprite) {
@@ -591,6 +633,22 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
   }
 
   const detectionZoneMap = new Map(detectionZoneRecords.map((record) => [record.id, record]));
+
+  const resolveAreaId = (payload = {}) => {
+    if (payload.areaId) {
+      return payload.areaId;
+    }
+    if (payload.data && typeof payload.data.areaId === 'string') {
+      return payload.data.areaId;
+    }
+    if (payload.trigger && typeof payload.trigger.id === 'string') {
+      return payload.trigger.id;
+    }
+    if (payload.trigger && payload.trigger.data && typeof payload.trigger.data.areaId === 'string') {
+      return payload.trigger.data.areaId;
+    }
+    return null;
+  };
 
   function cancelDetectionHighlight(record) {
     if (record.resetTimer) {
@@ -637,7 +695,8 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
 
   cleanupHandlers.push(
     eventBus.on('firewall:scrambler_activated', (payload = {}) => {
-      if (payload.areaId && payload.areaId !== FIREWALL_ID && payload.areaId !== 'memory_parlor_interior') {
+      const areaId = resolveAreaId(payload);
+      if (areaId && areaId !== FIREWALL_ID && areaId !== 'memory_parlor_interior') {
         return;
       }
       setFirewallState({ collider: firewallCollider, sprite: firewallSprite, zone: firewallZone }, true);
@@ -673,7 +732,8 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
 
   cleanupHandlers.push(
     eventBus.on('area:entered', (payload = {}) => {
-      const record = detectionZoneMap.get(payload.areaId);
+      const areaId = resolveAreaId(payload);
+      const record = areaId ? detectionZoneMap.get(areaId) : null;
       if (!record) {
         return;
       }

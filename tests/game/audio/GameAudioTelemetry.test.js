@@ -136,4 +136,48 @@ describe('Game audio telemetry integration', () => {
       expect(historyTimestamps[i]).toBeGreaterThanOrEqual(historyTimestamps[i - 1]);
     }
   });
+
+  it('routes adaptive mood requests through the orchestrator and event bus', () => {
+    const adaptiveStub = {
+      init: jest.fn(() => Promise.resolve(true)),
+      setMood: jest.fn((mood) => {
+        adaptiveStub.currentMood = mood;
+        return true;
+      }),
+      defineMood: jest.fn(),
+      update: jest.fn(),
+      dispose: jest.fn(),
+      currentMood: 'ambient',
+      defaultMood: 'ambient'
+    };
+
+    game._registerAdaptiveMusic(adaptiveStub, { skipInit: true });
+    game._ensureAdaptiveMoodHandlers();
+
+    expect(game.setAdaptiveMood('stealth')).toBe(true);
+    expect(adaptiveStub.setMood).toHaveBeenCalledWith('stealth', {});
+
+    eventBus.emit('audio:adaptive:set_mood', {
+      mood: 'alert',
+      options: { duration: 2, revertTo: 'ambient' }
+    });
+
+    expect(adaptiveStub.setMood).toHaveBeenCalledWith('alert', { duration: 2, revertTo: 'ambient' });
+
+    eventBus.emit('audio:adaptive:define_mood', {
+      mood: 'tension',
+      definition: { ambient_base: 0.5, tension_layer: 0.8 }
+    });
+    expect(adaptiveStub.defineMood).toHaveBeenCalledWith('tension', { ambient_base: 0.5, tension_layer: 0.8 });
+
+    game.loaded = true;
+    game.update(0.5);
+    expect(adaptiveStub.update).toHaveBeenCalledWith(0.5);
+
+    eventBus.emit('audio:adaptive:reset', { mood: 'ambient', fadeDuration: 1.2 });
+    expect(adaptiveStub.setMood).toHaveBeenCalledWith(
+      'ambient',
+      expect.objectContaining({ fadeDuration: 1.2 })
+    );
+  });
 });

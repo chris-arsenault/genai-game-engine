@@ -81,6 +81,7 @@ import { InputState } from './config/Controls.js';
 import { Transform } from './components/Transform.js';
 import { Collider } from './components/Collider.js';
 import { Sprite } from './components/Sprite.js';
+import { TriggerSystem } from '../engine/physics/TriggerSystem.js';
 
 const ACT1_RETURN_SPAWN = { x: 220, y: 360 };
 const DEFAULT_FORENSIC_TOOL_LABELS = Object.freeze({
@@ -125,6 +126,10 @@ export class Game {
     this._sfxCatalogSummary = null;
     this.audioTelemetry = { currentState: null, history: [] };
     this._audioTelemetryUnbind = null;
+    this.adaptiveMusic = null;
+    this._adaptiveMusicReady = false;
+    this._adaptiveMoodHandlers = [];
+    this._activeAmbientController = null;
 
     // Game state
     this.inputState = new InputState(engine.eventBus);
@@ -154,6 +159,7 @@ export class Game {
       npcMemory: null,
       firewallScrambler: null,
       disguise: null,
+      trigger: null,
       quest: null,
       render: null  // RenderSystem (engine system managed by game)
     };
@@ -392,6 +398,12 @@ export class Game {
       this.factionManager
     );
 
+    // Create trigger system (engine physics layer for area triggers)
+    this.gameSystems.trigger = new TriggerSystem(
+      this.componentRegistry,
+      this.eventBus
+    );
+
     // Create quest system (requires QuestManager)
     this.gameSystems.quest = new QuestSystem(
       this.componentRegistry,
@@ -422,6 +434,7 @@ export class Game {
       ['npcMemory', this.gameSystems.npcMemory],
       ['firewallScrambler', this.gameSystems.firewallScrambler],
       ['disguise', this.gameSystems.disguise],
+      ['trigger', this.gameSystems.trigger],
       ['factionReputation', this.gameSystems.factionReputation],
       ['quest', this.gameSystems.quest],
       ['deduction', this.gameSystems.deduction],
@@ -636,6 +649,8 @@ export class Game {
       }
     }
     console.log('[Game] Audio feedback controller initialized');
+
+    this._ensureAdaptiveMoodHandlers();
   }
 
   /**
@@ -746,6 +761,8 @@ export class Game {
     this.activeScene.entities = [];
     this.activeScene.cleanup = null;
     this.activeScene.metadata = {};
+    this._activeAmbientController = null;
+    this._registerAdaptiveMusic(null, { reason: 'scene_unloaded' });
   }
 
   /**
@@ -790,6 +807,17 @@ export class Game {
         cleanup: typeof sceneData.cleanup === 'function' ? sceneData.cleanup : null,
         metadata: sceneData.metadata || {}
       };
+
+      this._activeAmbientController = this.activeScene.metadata?.ambientAudioController || null;
+      if (this._activeAmbientController &&
+        typeof this._activeAmbientController.getAdaptiveMusic === 'function') {
+        this._registerAdaptiveMusic(
+          this._activeAmbientController.getAdaptiveMusic(),
+          { source: this.activeScene.id }
+        );
+      } else {
+        this._registerAdaptiveMusic(null, { reason: 'scene_without_ambient' });
+      }
 
       const spawnPoint = sceneData.spawnPoint || { x: 160, y: 320 };
       const playerTransform = this.componentRegistry.getComponent(this.playerEntityId, 'Transform');
@@ -1662,6 +1690,8 @@ export class Game {
     // Game systems are updated by SystemManager automatically
     // This method is for game-level logic only
 
+    this._updateAdaptiveMusic(deltaTime);
+
     // Update interval-based autosave
     if (this.saveManager) {
       this.saveManager.updateAutosave();
@@ -1983,6 +2013,144 @@ export class Game {
     return overlays;
   }
 
+  _updateAdaptiveMusic(deltaTime = 0) {
+    if (!this.adaptiveMusic || typeof this.adaptiveMusic.update !== 'function') {
+      return;
+    }
+    try {
+      this.adaptiveMusic.update(deltaTime);
+    } catch (error) {
+      console.warn('[Game] Adaptive music update failed', error);
+    }
+  }
+
+  _ensureAdaptiveMoodHandlers() {
+    if (!this.eventBus || typeof this.eventBus.on !== 'function') {
+      return;
+    }
+    if (Array.isArray(this._adaptiveMoodHandlers) && this._adaptiveMoodHandlers.length > 0) {
+      return;
+    }
+
+    const handlers = [];
+
+    handlers.push(
+      this.eventBus.on('audio:adaptive:set_mood', (payload = {}) => {
+        const mood = typeof payload?.mood === 'string' ? payload.mood.trim() : '';
+        if (!mood) {
+          return;
+        }
+        const options = typeof payload?.options === 'object' && payload.options !== null
+          ? payload.options
+          : {};
+        const applied = this.setAdaptiveMood(mood, options);
+        if (!applied && payload?.silent !== true) {
+          console.warn('[Game] Failed to apply adaptive mood request', mood);
+        }
+      })
+    );
+
+    handlers.push(
+      this.eventBus.on('audio:adaptive:define_mood', (payload = {}) => {
+        const mood = typeof payload?.mood === 'string' ? payload.mood.trim() : '';
+        if (!mood || typeof payload?.definition !== 'object' || payload.definition === null) {
+          return;
+        }
+        this.defineAdaptiveMood(mood, payload.definition);
+      })
+    );
+
+    handlers.push(
+      this.eventBus.on('audio:adaptive:reset', (payload = {}) => {
+        const fallback = typeof payload?.mood === 'string' ? payload.mood : (this.adaptiveMusic?.defaultMood || null);
+        if (!fallback) {
+          return;
+        }
+        this.setAdaptiveMood(fallback, {
+          fadeDuration: payload?.fadeDuration,
+          force: payload?.force,
+        });
+      })
+    );
+
+    this._adaptiveMoodHandlers = handlers;
+  }
+
+  _cleanupAdaptiveMoodHandlers() {
+    if (!Array.isArray(this._adaptiveMoodHandlers)) {
+      this._adaptiveMoodHandlers = [];
+      return;
+    }
+    for (const off of this._adaptiveMoodHandlers) {
+      try {
+        if (typeof off === 'function') {
+          off();
+        }
+      } catch (error) {
+        console.warn('[Game] Failed to remove adaptive mood handler', error);
+      }
+    }
+    this._adaptiveMoodHandlers.length = 0;
+  }
+
+  _registerAdaptiveMusic(adaptiveInstance, meta = {}) {
+    if (adaptiveInstance === this.adaptiveMusic) {
+      return;
+    }
+
+    this.adaptiveMusic = adaptiveInstance || null;
+    this._adaptiveMusicReady = Boolean(this.adaptiveMusic);
+
+    if (!this.adaptiveMusic) {
+      return;
+    }
+
+    if (typeof this.adaptiveMusic.init === 'function' && meta?.skipInit !== true) {
+      try {
+        void this.adaptiveMusic.init();
+      } catch (error) {
+        console.warn('[Game] Adaptive music init failed during registration', error);
+      }
+    }
+
+    this._ensureAdaptiveMoodHandlers();
+  }
+
+  setAdaptiveMood(mood, options = {}) {
+    if (!this.adaptiveMusic || typeof this.adaptiveMusic.setMood !== 'function') {
+      return false;
+    }
+    if (!options?.force && typeof this.adaptiveMusic.currentMood === 'string') {
+      if (this.adaptiveMusic.currentMood === mood) {
+        return true;
+      }
+    }
+    try {
+      const result = this.adaptiveMusic.setMood(mood, options);
+      return result !== false;
+    } catch (error) {
+      console.warn('[Game] Adaptive mood change failed', mood, error);
+      return false;
+    }
+  }
+
+  defineAdaptiveMood(mood, definition) {
+    if (!this.adaptiveMusic || typeof this.adaptiveMusic.defineMood !== 'function') {
+      return false;
+    }
+    try {
+      this.adaptiveMusic.defineMood(mood, definition);
+      return true;
+    } catch (error) {
+      console.warn('[Game] Adaptive mood definition failed', mood, error);
+      return false;
+    }
+  }
+
+  getAdaptiveMusic() {
+    return this.adaptiveMusic;
+  }
+
   _handleAdaptiveStateChanged(payload = {}) {
     if (!this.audioTelemetry) {
       this.audioTelemetry = { currentState: null, history: [] };
@@ -2272,6 +2440,8 @@ export class Game {
       this._audioTelemetryUnbind = null;
     }
     this.audioTelemetry = { currentState: null, history: [] };
+    this._cleanupAdaptiveMoodHandlers();
+    this._registerAdaptiveMusic(null, { reason: 'cleanup' });
 
     // Reset input state
     this.inputState.reset();

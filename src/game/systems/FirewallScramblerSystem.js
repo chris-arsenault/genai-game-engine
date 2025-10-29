@@ -190,9 +190,10 @@ export class FirewallScramblerSystem extends System {
   }
 
   handleManualActivation(payload = {}) {
+    const payloadAreaId = payload.areaId || payload?.data?.areaId || null;
     this.tryActivateScrambler({
       source: payload.source || 'manual',
-      areaId: payload.areaId || null,
+      areaId: payloadAreaId,
       allowWithoutArea: true,
       force: Boolean(payload.force),
     });

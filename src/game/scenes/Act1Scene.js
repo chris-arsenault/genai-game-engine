@@ -19,6 +19,7 @@ import { InteractionZone } from '../components/InteractionZone.js';
 import { Collider } from '../components/Collider.js';
 import { Sprite } from '../components/Sprite.js';
 import { tutorialCase, tutorialEvidence } from '../data/cases/tutorialCase.js';
+import { Trigger } from '../../engine/physics/Trigger.js';
 
 const SCENE_CENTER_X = 400;
 const SCENE_CENTER_Y = 300;
@@ -235,6 +236,22 @@ function createCrimeSceneArea(entityManager, componentRegistry, eventBus) {
   });
   interactionZone.type = 'InteractionZone';
   componentRegistry.addComponent(entityId, interactionZone);
+
+  const triggerComponent = new Trigger({
+    id: 'crime_scene_alley',
+    radius: interactionZone.radius,
+    once: interactionZone.oneShot,
+    eventOnEnter: 'area:entered',
+    eventOnExit: 'area:exited',
+    targetTags: ['player'],
+    requiredComponents: ['Transform'],
+    data: {
+      areaId: 'crime_scene_alley',
+      triggerType: 'crime_scene',
+      questTrigger: true,
+    },
+  });
+  componentRegistry.addComponent(entityId, 'Trigger', triggerComponent);
 
   // Add trigger collider
   const collider = new Collider({

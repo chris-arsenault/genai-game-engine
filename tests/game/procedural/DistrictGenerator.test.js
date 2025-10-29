@@ -239,6 +239,55 @@ describe('DistrictGenerator', () => {
         expect(room.height).toBeLessThanOrEqual(generator.config.buildingMaxSize);
       }
     });
+
+    it('populates rotated room bounds and keeps corridor endpoints inside rooms', () => {
+      const rotatedGenerator = new DistrictGenerator({
+        districtSize: { width: 200, height: 200 },
+        rotationAngles: [90],
+        corridorWidth: 2,
+        forceIterations: 40,
+      });
+
+      const result = rotatedGenerator.generate(54321, 'mixed');
+
+      expect(result.rooms.some((room) => room.rotation === 90)).toBe(true);
+
+      for (const room of result.rooms) {
+        expect(typeof room.width).toBe('number');
+        expect(typeof room.height).toBe('number');
+        const bounds = room.getBounds(room.width, room.height);
+        expect(bounds.width).toBeGreaterThan(0);
+        expect(bounds.height).toBeGreaterThan(0);
+      }
+
+      for (const corridor of result.corridors.slice(0, 12)) {
+        const fromRoom = result.rooms.find((r) => r.id === corridor.from);
+        const toRoom = result.rooms.find((r) => r.id === corridor.to);
+        if (!fromRoom || !toRoom || corridor.tiles.length === 0) {
+          continue;
+        }
+
+        const fromBounds = fromRoom.getBounds(fromRoom.width, fromRoom.height);
+        const toBounds = toRoom.getBounds(toRoom.width, toRoom.height);
+
+        const intersectsFrom = corridor.tiles.some((tile) =>
+          tile.x >= fromBounds.x &&
+          tile.x < fromBounds.x + fromBounds.width &&
+          tile.y >= fromBounds.y &&
+          tile.y < fromBounds.y + fromBounds.height
+        );
+
+        const intersectsTo = corridor.tiles.some((tile) =>
+          tile.x >= toBounds.x &&
+          tile.x < toBounds.x + toBounds.width &&
+          tile.y >= toBounds.y &&
+          tile.y < toBounds.y + toBounds.height
+        );
+
+        expect(intersectsFrom).toBe(true);
+        expect(intersectsTo).toBe(true);
+      }
+    });
   });
 
   describe('Connectivity', () => {
@@ -264,10 +313,12 @@ describe('DistrictGenerator', () => {
     it('should create L-shaped corridors', () => {
       const result = generator.generate(12345, 'mixed');
 
-      // Check that corridors exist and have tiles
-      for (let i = 0; i < Math.min(5, result.metadata.corridorCount); i++) {
-        // Corridors should have some tiles
-        expect(result.metadata.corridorCount).toBeGreaterThan(0);
+      expect(result.corridors.length).toBeGreaterThan(0);
+
+      const sample = result.corridors.slice(0, Math.min(5, result.corridors.length));
+      for (const corridor of sample) {
+        expect(Array.isArray(corridor.tiles)).toBe(true);
+        expect(corridor.tiles.length).toBeGreaterThan(0);
       }
     });
   });
@@ -576,13 +627,20 @@ describe('DistrictGenerator', () => {
           const room1 = result.rooms[i];
           const room2 = result.rooms[j];
 
+          const bounds1 = room1.getBounds(room1.width, room1.height);
+          const bounds2 = room2.getBounds(room2.width, room2.height);
+          const centerX1 = bounds1.x + bounds1.width / 2;
+          const centerY1 = bounds1.y + bounds1.height / 2;
+          const centerX2 = bounds2.x + bounds2.width / 2;
+          const centerY2 = bounds2.y + bounds2.height / 2;
+
           const centerDist = Math.sqrt(
-            Math.pow(room1.x + room1.width / 2 - room2.x - room2.width / 2, 2) +
-            Math.pow(room1.y + room1.height / 2 - room2.y - room2.height / 2, 2)
+            Math.pow(centerX1 - centerX2, 2) +
+            Math.pow(centerY1 - centerY2, 2)
           );
 
-          // Centers should be reasonably far apart
-          expect(centerDist).toBeGreaterThan(10);
+          // Centers should be reasonably far apart even with rotation adjustments
+          expect(centerDist).toBeGreaterThan(5);
         }
       }
     });

@@ -13,6 +13,7 @@
  */
 
 import { System } from '../../engine/ecs/System.js';
+import { Trigger } from '../../engine/physics/Trigger.js';
 
 export class QuestSystem extends System {
   constructor(componentRegistry, eventBus, questManager) {
@@ -38,7 +39,9 @@ export class QuestSystem extends System {
       this.eventBus.on('quest:completed', (data) => this.onQuestCompleted(data)),
       this.eventBus.on('quest:failed', (data) => this.onQuestFailed(data)),
       this.eventBus.on('objective:progress', (data) => this.onObjectiveProgress(data)),
-      this.eventBus.on('objective:completed', (data) => this.onObjectiveCompleted(data))
+      this.eventBus.on('objective:completed', (data) => this.onObjectiveCompleted(data)),
+      this.eventBus.on('area:entered', (payload) => this._handleAreaEntered(payload)),
+      this.eventBus.on('area:exited', (payload) => this._handleAreaExited(payload))
     ];
 
     console.log('[QuestSystem] Initialized');
@@ -96,6 +99,9 @@ export class QuestSystem extends System {
    * @param {number} distance
    */
   updateQuestTrigger(entity, quest, distance) {
+    if (this.components.hasComponent(entity, 'Trigger')) {
+      return;
+    }
     const radius = quest.triggerRadius || 64;
 
     if (distance <= radius && !quest.triggered) {
@@ -298,6 +304,85 @@ export class QuestSystem extends System {
     }
   }
 
+  _resolveQuestTriggerContext(payload = {}) {
+    if (!payload || !payload.data || payload.data.questTrigger !== true) {
+      return null;
+    }
+
+    const triggerId = typeof payload.triggerId === 'number' ? payload.triggerId : null;
+    if (triggerId == null) {
+      return null;
+    }
+
+    const entityManager = this.components?.entityManager;
+    if (!entityManager || !entityManager.hasEntity(triggerId)) {
+      return null;
+    }
+
+    const questComponent = this.components.getComponent(triggerId, 'Quest');
+    if (!questComponent || questComponent.type !== 'trigger') {
+      return null;
+    }
+
+    return {
+      entityId: triggerId,
+      quest: questComponent,
+      data: payload.data
+    };
+  }
+
+  _handleAreaEntered(payload = {}) {
+    const context = this._resolveQuestTriggerContext(payload);
+    if (!context) {
+      return;
+    }
+
+    const { entityId, quest, data } = context;
+    const entityManager = this.components?.entityManager;
+
+    if (quest.triggered && quest.oneTime) {
+      return;
+    }
+
+    quest.triggered = true;
+
+    const questId = data.questId || quest.startQuestId;
+    if (questId) {
+      const started = this.quests.startQuest(questId);
+      if (started) {
+        console.log(`[QuestSystem] Trigger activated: ${questId}`);
+      }
+    }
+
+    if (quest.objectiveId || data.objectiveId) {
+      this.eventBus.emit('objective:progress', {
+        questId: questId || quest.questId || null,
+        objectiveId: data.objectiveId || quest.objectiveId,
+        areaId: data.areaId || quest.areaId || `trigger_${entityId}`,
+      });
+    }
+
+    if (quest.oneTime && entityManager && entityManager.hasEntity(entityId)) {
+      if (typeof this.components.removeAllComponents === 'function') {
+        this.components.removeAllComponents(entityId);
+      }
+      entityManager.destroyEntity(entityId);
+    }
+  }
+
+  _handleAreaExited(payload = {}) {
+    const context = this._resolveQuestTriggerContext(payload);
+    if (!context) {
+      return;
+    }
+
+    const { quest } = context;
+    if (quest.oneTime) {
+      return;
+    }
+    quest.triggered = false;
+  }
+
   // Event handlers
 
   onQuestStarted(data) {
@@ -379,17 +464,44 @@ export class QuestSystem extends System {
    * @returns {number} Entity ID
    */
   createQuestTrigger(x, y, questId, options = {}) {
-    const entity = this.components.createEntity();
+    const entityManager = this.components.entityManager;
+    const entity = entityManager.createEntity('quest_trigger');
 
     this.components.addComponent(entity, 'Transform', { x, y });
+
+    const radius = options.radius || 64;
+    const areaId = options.areaId || `quest_trigger_${entity}`;
+    const objectiveId = options.objectiveId || null;
+    const oneTime = options.oneTime !== false;
+
     this.components.addComponent(entity, 'Quest', {
       type: 'trigger',
       startQuestId: questId,
-      triggerRadius: options.radius || 64,
-      oneTime: options.oneTime !== false,
+      triggerRadius: radius,
+      oneTime,
       triggered: false,
-      areaId: options.areaId || `trigger_${entity}`
+      areaId,
+      objectiveId,
     });
+
+    const triggerComponent = new Trigger({
+      id: areaId,
+      radius,
+      once: oneTime,
+      eventOnEnter: options.eventOnEnter || 'area:entered',
+      eventOnExit: options.eventOnExit || 'area:exited',
+      targetTags: Array.isArray(options.targetTags) && options.targetTags.length
+        ? options.targetTags
+        : ['player'],
+      requiredComponents: ['Transform'],
+      data: {
+        areaId,
+        questTrigger: true,
+        questId,
+        objectiveId,
+      },
+    });
+    this.components.addComponent(entity, 'Trigger', triggerComponent);
 
     return entity;
   }

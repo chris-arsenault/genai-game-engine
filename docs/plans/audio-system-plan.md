@@ -189,6 +189,11 @@ World state overlay
   - Debug overlay surfaces adaptive telemetry + SFX preview buttons for designers.
   - CI publishes Playwright summary referencing HTML report/trace artifacts.
 
+#### Game Loop Orchestration Update (Session 77)
+- `Game.initializeAudioIntegrations()` instantiates a shared `AdaptiveMusic` instance, wires it to the EventBus (`audio:adaptive:set_mood`, `audio:adaptive:define_mood`, `audio:adaptive:reset`), and forwards `update()` ticks from the main loop so timed reversions fire without bespoke polling.
+- Memory Parlor ambient controller now accepts the shared adaptive coordinator, avoiding duplicate controller creation while keeping scrambler/stealth/combat hooks intact.
+- Telemetry snapshots (`Game.getAdaptiveAudioTelemetry()`) continue to populate the debug overlay; history rolls over in `Game._handleAdaptiveStateChanged` as moods now change through gameplay systems rather than direct controller calls.
+
 ## File Changes
 
 ### New Files

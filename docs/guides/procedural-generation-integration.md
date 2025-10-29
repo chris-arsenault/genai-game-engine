@@ -1032,6 +1032,21 @@ function visualizeDistrict(district) {
 
 ---
 
+## Rotation Support (Session 77)
+
+Procedurally generated rooms now rotate cleanly across the pipeline.
+
+- `DistrictGenerator` selects from `config.rotationAngles` (default `[0, 90, 180, 270]`). Template dimensions stay intact while `layoutWidth` / `layoutHeight` track the rotated bounding box used for force-directed placement and spacing.
+- `RoomInstance` keeps both template dimensions and the assigned `rotation`. Use `room.getBounds(room.width, room.height)` to obtain rotation-aware world bounds—corridor generation, containment checks, and placement heuristics now rely on these helpers.
+- Corridor endpoints are derived from the rotated bounds so hallway tiles always begin and end inside the source/target room. See `tests/game/procedural/DistrictGenerator.test.js` for regression coverage.
+- Disable rotation by configuring `rotationAngles: [0]`, or limit to `[0, 180]` for templates that only support horizontal flips.
+
+**Integration Tips**
+- Keep tilemaps authored in their default orientation; the generator handles rotation during placement.
+- When placing quest triggers or other gameplay probes, convert coordinates via `RoomInstance.localToWorld()` / `worldToLocal()` instead of assuming axis-aligned rectangles.
+
+---
+
 ## Troubleshooting
 
 ### Issue 1: Case Not Solvable

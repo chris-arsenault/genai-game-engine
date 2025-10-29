@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Game coordinator now instantiates the shared `AdaptiveMusic` orchestrator, exposes mood helpers on the EventBus, and drives scheduled reverts via the main update loop ( `src/game/Game.js`, `tests/game/audio/GameAudioTelemetry.test.js`).
+- Trigger authoring schema layers `Trigger` components over `InteractionZone` authoring, wiring Memory Parlor restricted areas and quest triggers to `area:entered` / `area:exited` payloads with new QuestSystem coverage (`src/game/scenes/MemoryParlorScene.js`, `src/game/systems/QuestSystem.js`, `tests/game/systems/QuestSystem.trigger.test.js`, `docs/tech/trigger-authoring.md`).
+- DistrictGenerator now selects rotation angles, stores rotated layout bounds, and validates corridor endpoints against rotated rooms, ensuring RoomInstance containment helpers stay accurate (`src/game/procedural/DistrictGenerator.js`, `tests/game/procedural/DistrictGenerator.test.js`).
 - AdaptiveMusic high-level coordinator wraps AdaptiveMusicLayerController so narrative systems can schedule mood transitions (including timed reverts) with dedicated unit coverage (`src/engine/audio/AdaptiveMusic.js`, `tests/engine/audio/AdaptiveMusic.test.js`).
 - TriggerSystem now tracks entities inside trigger volumes, supports ID/tag/component filters, and emits balanced enter/exit events backed by a new Trigger component and Jest suite (`src/engine/physics/TriggerSystem.js`, `src/engine/physics/Trigger.js`, `tests/engine/physics/TriggerSystem.test.js`).
 - RoomInstance coordinate helpers are rotation-aware for 90° increments, ensuring procedural layouts can place rotated rooms accurately with serialization support (`src/engine/procedural/RoomInstance.js`, `tests/engine/procedural/RoomInstance.test.js`).

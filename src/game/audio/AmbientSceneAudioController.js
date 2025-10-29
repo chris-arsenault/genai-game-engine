@@ -1,4 +1,4 @@
-import { AdaptiveMusicLayerController } from '../../engine/audio/AdaptiveMusicLayerController.js';
+import { AdaptiveMusic } from '../../engine/audio/AdaptiveMusic.js';
 
 /**
  * AmbientSceneAudioController
@@ -104,7 +104,7 @@ export class AmbientSceneAudioController {
 
     this._createAdaptiveController =
       options.createAdaptiveController ??
-      ((manager, controllerOptions) => new AdaptiveMusicLayerController(manager, controllerOptions));
+      ((manager, controllerOptions) => new AdaptiveMusic(manager, controllerOptions));
 
     this._unbinders = [];
     this._initialized = false;
@@ -137,8 +137,8 @@ export class AmbientSceneAudioController {
 
     const controllerOptions = {
       layers: this.layers,
-      states: this.states,
-      defaultState: this.defaultAdaptiveState,
+      moods: this.states,
+      defaultMood: this.defaultAdaptiveState,
       fadeDuration: this.fadeDuration,
       bus: 'music',
       eventBus: this.eventBus,
@@ -158,7 +158,7 @@ export class AmbientSceneAudioController {
     if (adaptiveReady) {
       this._playing = true;
       this._initialized = true;
-      this._currentState = this._adaptiveController.getState() || this.defaultAdaptiveState;
+      this._currentState = this._adaptiveController.currentMood || this.defaultAdaptiveState;
       this._currentVolume = this.baseVolume;
     } else {
       await this._fallbackToSingleTrack();
@@ -327,10 +327,17 @@ export class AmbientSceneAudioController {
     if (!this._playing) {
       return false;
     }
-    if (!payload || !payload.areaId) {
+    if (!payload) {
       return true;
     }
-    return this.allowedAreas.has(payload.areaId);
+    const areaId = payload.areaId
+      || payload?.data?.areaId
+      || (payload?.trigger && payload.trigger.id)
+      || (payload?.trigger?.data && payload.trigger.data.areaId);
+    if (!areaId) {
+      return true;
+    }
+    return this.allowedAreas.has(areaId);
   }
 
   _setVolume(volume) {
@@ -346,11 +353,11 @@ export class AmbientSceneAudioController {
 
   _setState(state) {
     if (this._adaptiveController) {
-      const changed = this._adaptiveController.setState(state, {
+      const changed = this._adaptiveController.setMood(state, {
         fadeDuration: this.scramblerFadeDuration,
       });
       if (changed) {
-        this._currentState = state;
+        this._currentState = this._adaptiveController.currentMood || state;
       }
       return;
     }
@@ -401,5 +408,13 @@ export class AmbientSceneAudioController {
       return false;
     }
     return Object.prototype.hasOwnProperty.call(this.states, stateName);
+  }
+
+  /**
+   * Expose adaptive music instance (if active) so orchestrators can drive moods.
+   * @returns {AdaptiveMusic|null}
+   */
+  getAdaptiveMusic() {
+    return this._adaptiveController || null;
   }
 }
