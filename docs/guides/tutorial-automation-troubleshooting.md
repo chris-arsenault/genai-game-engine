@@ -23,7 +23,7 @@ Always keep a focusable element on the game canvas before issuing `page.keyboard
 - **CaseFileUI** is created in `initializeUIOverlays()` and refreshed automatically on:
   - `case:created`, `case:activated`, `case:objective_completed`, `case:objectives_complete`, `case:solved`, `evidence:collected`, `clue:derived`.
 - **DeductionSystem** now registers with the SystemManager (priority 29) and exposes `setDeductionBoard(board)`. The Playwright flow must open the board with the real keybinding so the tutorial receives `deduction_board:opened`.
-- **ForensicSystem** now pipes `forensic:available` into the interaction prompt overlay. Wait for the prompt (`Press F to run forensic analysis…`), press `KeyF`, and let the runtime call `initiateAnalysis` via the Forensic prompt handler. Reserve the direct method for diagnostics when the UI path breaks.
+- **ForensicSystem** now pipes `forensic:available` into the interaction prompt overlay. Wait for the prompt (`Press F to run forensic analysis…`), press `KeyF`, and let the runtime call `initiateAnalysis` via the Forensic prompt handler. Requirement strings are humanised in the overlay (`Tool: Basic Magnifier · Skill: Forensic Skill II · Difficulty: Challenging (II)`), so update assertions to match the localized labels instead of raw ids.
 
 ## Playwright Interaction Pattern
 ```ts
@@ -61,6 +61,6 @@ await page.evaluate(() => {
 ## Artifact Expectations
 - **Overlay instrumentation**: `ui:overlay_visibility_changed` logs the source (`input:caseFile`, `input:deductionBoard`, etc.) for debugging.
 - **Case telemetry**: `case:solved` and the newly emitted `case:completed` events should appear in the console when the theory validates.
-- **Tutorial context**: `window.game.worldStateStore.getState().tutorial` mirrors `TutorialSystem.context` and can be asserted to confirm prompt history.
+- **Tutorial context**: `window.game.worldStateStore.getState().tutorial` mirrors `TutorialSystem.context` and can be asserted to confirm prompt history. The `completedSteps` array now includes the closing `case_solved` entry once the quest resolves, matching the overlay history for post-run checks.
 
 Stay aligned with these hooks when extending the automation pack to avoid falling back to simulated emits. Update Playwright assertions to rely on runtime-driven state whenever possible.

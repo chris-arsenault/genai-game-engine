@@ -39,7 +39,7 @@ jobs:
         env:
           PLAYWRIGHT_JUNIT_OUTPUT_NAME: playwright-results.xml
           PLAYWRIGHT_HTML_REPORT: playwright-report
-        run: npx playwright test --reporter=line,junit,html --output=test-results
+        run: npx playwright test
 
       - name: Bundle Playwright HTML report
         if: always()

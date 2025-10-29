@@ -353,8 +353,8 @@ tests/game/
 
 **CI Integration Notes**:
 - Install browsers on runners before execution: `npx playwright install --with-deps`.
-- Export `PLAYWRIGHT_JUNIT_OUTPUT_NAME=playwright-report.xml` and run `npx playwright test --reporter=line,junit` to capture pass/fail telemetry for dashboards.
-- Persist `test-results/` and `playwright-report/` directories as artifacts; they contain failure videos, traces, and quest/dialogue overlays for regression triage.
+- Use the default config (`npx playwright test`)—`playwright.config.js` now emits `line`, `junit`, and `html` reporters automatically, honours `PLAYWRIGHT_JUNIT_OUTPUT_NAME`, and keeps artifacts under `test-results/`.
+- Failure telemetry (screenshots, video, traces) is retained on every failure via config (`retain-on-failure`) and uploaded from `test-results/` + `playwright-report/`; adjust `PLAYWRIGHT_OUTPUT_DIR`/`PLAYWRIGHT_HTML_REPORT` if CI paths differ.
 - Set `BROWSER=chromium` (or override via `PLAYWRIGHT_BROWSER`) on CI agents—local dev uses `wslview`, but headless Chromium keeps pipelines deterministic.
 - Record suite duration and flake rate in build metrics; target <90s runtime for smoke pack and alert if retries trigger (`CI=1` enables single retry).
 

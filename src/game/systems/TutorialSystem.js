@@ -225,6 +225,11 @@ export class TutorialSystem extends System {
    * Complete the tutorial
    */
   completeTutorial() {
+    const finalStep = tutorialSteps[tutorialSteps.length - 1];
+    if (finalStep?.id && !this.completedSteps.has(finalStep.id)) {
+      this.completedSteps.add(finalStep.id);
+    }
+
     this.enabled = false;
 
     // Save completion
@@ -325,6 +330,24 @@ export class TutorialSystem extends System {
     this._offEventHandlers.push(this.eventBus.on('quest:completed', (data) => {
       if (data.questId === 'case_001_hollow_case' && this.enabled) {
         console.log('[TutorialSystem] Case 001 completed - completing tutorial');
+        this.context.caseSolved = true;
+
+        const finalIndex = tutorialSteps.length - 1;
+        const finalStep = tutorialSteps[finalIndex];
+
+        if (finalStep) {
+          if (!this.currentStep || this.currentStep.id !== finalStep.id) {
+            this.currentStepIndex = finalIndex;
+            this.currentStep = finalStep;
+            this.startStep(finalStep);
+          }
+
+          if (!this.completedSteps.has(finalStep.id)) {
+            this.completeStep();
+            return;
+          }
+        }
+
         this.completeTutorial();
       }
     }));

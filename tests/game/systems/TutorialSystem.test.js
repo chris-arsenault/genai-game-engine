@@ -351,6 +351,45 @@ describe('TutorialSystem', () => {
     });
   });
 
+  describe('Quest integration', () => {
+    beforeEach(() => {
+      tutorialSystem.init();
+      mockEventBus.emit.mockClear();
+    });
+
+    it('records the final case_solved step when the case quest completes', () => {
+      const questCompletedHandler = mockEventBus.on.mock.calls.find(
+        ([eventName]) => eventName === 'quest:completed'
+      )?.[1];
+      expect(typeof questCompletedHandler).toBe('function');
+
+      const finalIndex = tutorialSteps.length - 1;
+      tutorialSystem.currentStepIndex = finalIndex;
+      tutorialSystem.currentStep = tutorialSteps[finalIndex];
+
+      questCompletedHandler({ questId: 'case_001_hollow_case' });
+
+      expect(tutorialSystem.completedSteps.has('case_solved')).toBe(true);
+      expect(tutorialSystem.context.caseSolved).toBe(true);
+      expect(tutorialSystem.enabled).toBe(false);
+      expect(mockEventBus.emit).toHaveBeenCalledWith(
+        'tutorial:step_completed',
+        expect.objectContaining({
+          stepId: 'case_solved',
+          stepIndex: finalIndex,
+          totalSteps: tutorialSteps.length,
+        })
+      );
+      expect(mockEventBus.emit).toHaveBeenCalledWith(
+        'tutorial:completed',
+        expect.objectContaining({
+          totalSteps: tutorialSteps.length,
+          completedSteps: expect.any(Number),
+        })
+      );
+    });
+  });
+
   describe('Context Tracking', () => {
     beforeEach(() => {
       tutorialSystem.init();

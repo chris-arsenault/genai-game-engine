@@ -81,6 +81,22 @@ import { Collider } from './components/Collider.js';
 import { Sprite } from './components/Sprite.js';
 
 const ACT1_RETURN_SPAWN = { x: 220, y: 360 };
+const FORENSIC_TOOL_LABELS = Object.freeze({
+  basic_magnifier: 'Basic Magnifier',
+  fingerprint_kit: 'Fingerprint Kit',
+  memory_analyzer: 'Memory Analyzer',
+  document_scanner: 'Document Scanner',
+});
+const FORENSIC_SKILL_LABELS = Object.freeze({
+  forensic_skill_1: 'Forensic Skill I',
+  forensic_skill_2: 'Forensic Skill II',
+  forensic_skill_3: 'Forensic Skill III',
+});
+const FORENSIC_DIFFICULTY_DESCRIPTORS = Object.freeze({
+  1: 'Routine',
+  2: 'Challenging',
+  3: 'Expert',
+});
 
 /**
  * Game coordinator class
@@ -1334,16 +1350,30 @@ export class Game {
     }
 
     const parts = [];
-    if (requirements.tool) {
-      parts.push(`tool ${requirements.tool}`);
+    const toolLabel = this._humanizeForensicTool(requirements.tool);
+    if (toolLabel) {
+      parts.push(`Tool: ${toolLabel}`);
     }
-    if (requirements.requiredSkill) {
-      parts.push(`skill ${requirements.requiredSkill}`);
+
+    const skillLabel = this._humanizeForensicSkill(
+      requirements.requiredSkill ?? requirements.skill ?? null
+    );
+    if (skillLabel) {
+      parts.push(`Skill: ${skillLabel}`);
     }
-    if (requirements.minimumDifficulty) {
-      parts.push(`difficulty ${requirements.minimumDifficulty}`);
+
+    const difficultyValue =
+      typeof requirements.minimumDifficulty === 'number'
+        ? requirements.minimumDifficulty
+        : typeof requirements.difficulty === 'number'
+          ? requirements.difficulty
+          : null;
+
+    if (typeof difficultyValue === 'number' && difficultyValue > 0) {
+      parts.push(`Difficulty: ${this._formatForensicDifficulty(difficultyValue)}`);
     }
-    return parts.join(', ');
+
+    return parts.join(' · ');
   }
 
   _formatForensicFailureMessage(payload) {
@@ -1359,10 +1389,16 @@ export class Game {
       case 'missing_requirements': {
         const missing = [];
         if (payload.requiredTool) {
-          missing.push(`tool ${payload.requiredTool}`);
+          const label = this._humanizeForensicTool(payload.requiredTool);
+          if (label) {
+            missing.push(`Tool: ${label}`);
+          }
         }
         if (payload.requiredSkill) {
-          missing.push(`skill ${payload.requiredSkill}`);
+          const label = this._humanizeForensicSkill(payload.requiredSkill);
+          if (label) {
+            missing.push(`Skill: ${label}`);
+          }
         }
         return missing.length > 0
           ? `Missing ${missing.join(' & ')}`
@@ -1373,6 +1409,60 @@ export class Game {
       default:
         return 'Forensic analysis unavailable.';
     }
+  }
+
+  _humanizeForensicTool(toolId) {
+    if (typeof toolId !== 'string' || toolId.length === 0) {
+      return '';
+    }
+    return FORENSIC_TOOL_LABELS[toolId] ?? this._humanizeIdentifier(toolId);
+  }
+
+  _humanizeForensicSkill(skillId) {
+    if (typeof skillId !== 'string' || skillId.length === 0) {
+      return '';
+    }
+    const label = FORENSIC_SKILL_LABELS[skillId];
+    if (label) {
+      return label;
+    }
+    if (/^forensic_skill_(\d+)$/i.test(skillId)) {
+      const [, levelStr] = skillId.match(/^forensic_skill_(\d+)$/i) || [];
+      const level = parseInt(levelStr, 10);
+      if (!Number.isNaN(level)) {
+        const roman = this._romanizeDifficulty(level);
+        return `Forensic Skill ${roman}`;
+      }
+    }
+    return this._humanizeIdentifier(skillId);
+  }
+
+  _formatForensicDifficulty(value) {
+    const descriptor = FORENSIC_DIFFICULTY_DESCRIPTORS[value] ?? `Tier ${value}`;
+    const roman = this._romanizeDifficulty(value);
+    return `${descriptor} (${roman})`;
+  }
+
+  _romanizeDifficulty(value) {
+    const romanMap = {
+      1: 'I',
+      2: 'II',
+      3: 'III',
+      4: 'IV',
+      5: 'V',
+    };
+    return romanMap[value] ?? `${value}`;
+  }
+
+  _humanizeIdentifier(identifier) {
+    if (typeof identifier !== 'string' || identifier.length === 0) {
+      return '';
+    }
+    return identifier
+      .split('_')
+      .filter(Boolean)
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
   }
 
   _hideForensicPrompt() {
