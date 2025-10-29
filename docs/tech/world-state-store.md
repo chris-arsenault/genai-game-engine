@@ -89,10 +89,12 @@ _Updated during Autonomous Sessions #62–64 (2025-10-30)._
   - GitHub Actions (`.github/workflows/ci.yml`) now runs `npm run export-telemetry` after Playwright, setting `TELEMETRY_EXPORT_DIR=telemetry-artifacts` and piping a JSON context payload generated in-line. Artifact uploads are handled by the dedicated "Upload inspector telemetry artifacts" step, keeping manifests alongside JSON/CSV outputs.
   - `.github/ci/telemetry-commands.json` wires in `node scripts/telemetry/providers/githubUpload.js`, which now executes a real `gh artifact upload` when the CLI is present, captures stdout/stderr/exit codes, and persists provider results back to `ci-artifacts.json`. Dry runs and missing CLI scenarios still bail out gracefully with explicit skip reasons.
   - Provider coverage lives in `tests/integration/githubUploadProvider.test.js`, which exercises dry-run skips, CLI-missing paths, failure handling for absent files, and happy-path uploads with captured metrics.
+  - `scripts/telemetry/reportProviderMetrics.js` reads persisted `providerResults` and appends a markdown summary to `$GITHUB_STEP_SUMMARY`, surfacing upload status/exit codes directly inside CI dashboards. Guarded by `tests/integration/providerMetricsReporter.test.js`. Workflow step "Summarize telemetry provider metrics" invokes the reporter immediately after export.
   - On failure, parse adapter summary logs to pinpoint failing writer (filesystem vs CI publisher) and rerun locally with `DEBUG=telemetry npm run export-telemetry`.
 - **Playwright validation**
   - `tests/e2e/utils/telemetryArtifacts.js` exposes `captureTelemetryArtifacts(page, testInfo, options)` which mirrors the filesystem writer pipeline, writes artifacts to the test output directory, and attaches JSON/CSV files plus summary blobs to Playwright reports. Failure handlers in tutorial/debug specs attach error notes if the export falters.
   - Helper coverage now spans the cascade mission, tutorial overlay, debug telemetry, and debug inventory specs, ensuring QA receives matching exports across mission, tutorial, and debug flows. Monitor report attachments to confirm writers remain wired in headless environments.
+  - Cascade mission coverage asserts tutorial transcript ordering alongside cascade telemetry artifacts, catching regressions where transcript serialization drifts from mission sequencing.
   - Use `PLAYWRIGHT_TELEMETRY_DEBUG=1 npx playwright test ...` to surface helper diagnostics during local repro.
 
 ## Tutorial Transcript Capture

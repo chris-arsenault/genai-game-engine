@@ -104,7 +104,7 @@ test.describe('Cascade mission telemetry export', () => {
       prefix: 'pw-mission',
     });
 
-    expect(telemetry.artifacts).toHaveLength(3);
+    expect(telemetry.artifacts.length).toBeGreaterThanOrEqual(5);
     expect(telemetry.artifacts.every((artifact) => artifact.filename.startsWith('pw-mission'))).toBe(true);
 
     const jsonArtifact = telemetry.artifacts.find((artifact) => artifact.type === 'json');
@@ -117,6 +117,31 @@ test.describe('Cascade mission telemetry export', () => {
     const parsedSummary = JSON.parse(jsonArtifact.content);
     expect(parsedSummary.factions.cascadeTargets[0].factionId).toBe('luminari_syndicate');
     expect(cascadeCsv.content).toContain('luminari_syndicate');
+
+    const transcriptSummary = parsedSummary.tutorial?.transcript ?? [];
+    expect(Array.isArray(transcriptSummary)).toBe(true);
+    expect(transcriptSummary.length).toBeGreaterThan(0);
+
+    const events = transcriptSummary.map((entry) => entry.event);
+    expect(events[0]).toBe('tutorial_started');
+    expect(events).toContain('tutorial_step_started');
+    expect(events).toContain('tutorial_step_completed');
+    expect(events[events.length - 1]).toBe('tutorial_completed');
+
+    const missionStepEntries = transcriptSummary.filter(
+      (entry) => entry.promptId === 'mission_infiltration'
+    );
+    expect(missionStepEntries.length).toBeGreaterThanOrEqual(2);
+
+    const sequences = transcriptSummary.map((entry) => entry.sequence);
+    expect(sequences).toEqual(transcriptSummary.map((_, index) => index));
+
+    const transcriptCsv = telemetry.artifacts.find(
+      (artifact) => artifact.type === 'transcript-csv'
+    );
+    expect(transcriptCsv).toBeDefined();
+    expect(transcriptCsv.content).toContain('tutorial_started');
+    expect(transcriptCsv.content).toContain('tutorial_completed');
 
     expect(consoleErrors).toEqual([]);
   });

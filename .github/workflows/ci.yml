@@ -51,6 +51,10 @@ jobs:
           CONTEXT_JSON=$(node -e "const payload = { runId: process.env.GITHUB_RUN_ID, runAttempt: process.env.GITHUB_RUN_ATTEMPT, workflow: process.env.GITHUB_WORKFLOW, job: process.env.GITHUB_JOB }; console.log(JSON.stringify(payload));")
           npm run export-telemetry -- --artifactDir "$TELEMETRY_EXPORT_DIR" --metadata "$TELEMETRY_EXPORT_DIR/ci-artifacts.json" --prefix "ci-${GITHUB_RUN_ID}" --formats json,csv,transcript-csv,transcript-md --context "$CONTEXT_JSON"
 
+      - name: Summarize telemetry provider metrics
+        if: always()
+        run: node scripts/telemetry/reportProviderMetrics.js --metadata telemetry-artifacts/ci-artifacts.json
+
       - name: Bundle Playwright HTML report
         if: always()
         run: |
