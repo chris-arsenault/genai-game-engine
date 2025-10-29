@@ -58,9 +58,17 @@ export class Engine {
     this.logger.info('Engine ready');
   }
 
-  registerSystem(system, name) {
-    this.systemManager.registerSystem(system, name);
-    this.logger.debug(`Registered system: ${name}`);
+  registerSystem(system, options = null, priorityOverride = null) {
+    this.systemManager.registerSystem(system, options, priorityOverride);
+
+    let systemName = null;
+    if (typeof options === 'string') {
+      systemName = options;
+    } else if (options && typeof options === 'object' && typeof options.name === 'string') {
+      systemName = options.name;
+    }
+
+    this.logger.debug(`Registered system: ${systemName || system.constructor.name}`);
   }
 
   start() {

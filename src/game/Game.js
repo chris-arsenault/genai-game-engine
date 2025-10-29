@@ -300,14 +300,11 @@ export class Game {
       this.componentRegistry,
       this.eventBus
     );
-    this.gameSystems.investigation.init();
-
     // Create forensic system (processes analysis queues after investigation)
     this.gameSystems.forensic = new ForensicSystem(
       this.componentRegistry,
       this.eventBus
     );
-    this.gameSystems.forensic.init();
 
     // Create player movement system
     this.gameSystems.playerMovement = new PlayerMovementSystem(
@@ -315,7 +312,6 @@ export class Game {
       this.eventBus,
       this.inputState
     );
-    this.gameSystems.playerMovement.init();
 
     // Create faction reputation system (now receives FactionManager)
     this.gameSystems.factionReputation = new FactionReputationSystem(
@@ -323,7 +319,6 @@ export class Game {
       this.eventBus,
       this.factionManager
     );
-    this.gameSystems.factionReputation.init();
 
     // Create knowledge progression system
     this.gameSystems.knowledgeProgression = new KnowledgeProgressionSystem(
@@ -331,7 +326,6 @@ export class Game {
       this.eventBus,
       this.gameSystems.investigation
     );
-    this.gameSystems.knowledgeProgression.init();
 
     // Create dialogue system (now receives FactionManager)
     this.gameSystems.dialogue = new DialogueSystem(
@@ -341,7 +335,6 @@ export class Game {
       this.factionManager,
       this.worldStateStore
     );
-    this.gameSystems.dialogue.init();
 
     // Register Act 1 dialogues
     registerAct1Dialogues(this.gameSystems.dialogue);
@@ -353,14 +346,12 @@ export class Game {
       this.eventBus,
       this.camera
     );
-    this.gameSystems.cameraFollow.init();
 
     // Create tutorial system
     this.gameSystems.tutorial = new TutorialSystem(
       this.componentRegistry,
       this.eventBus
     );
-    this.gameSystems.tutorial.init();
 
     // Link tutorial system to SaveManager
     if (this.saveManager) {
@@ -373,7 +364,6 @@ export class Game {
       this.eventBus,
       this.factionManager
     );
-    this.gameSystems.npcMemory.init();
 
     // Create firewall scrambler system (bridges infiltration gadget to stealth systems)
     this.gameSystems.firewallScrambler = new FirewallScramblerSystem(
@@ -381,7 +371,6 @@ export class Game {
       this.eventBus,
       this.storyFlagManager
     );
-    this.gameSystems.firewallScrambler.init();
 
     // Create disguise system (requires FactionManager)
     this.gameSystems.disguise = new DisguiseSystem(
@@ -389,7 +378,6 @@ export class Game {
       this.eventBus,
       this.factionManager
     );
-    this.gameSystems.disguise.init();
 
     // Create quest system (requires QuestManager)
     this.gameSystems.quest = new QuestSystem(
@@ -397,7 +385,6 @@ export class Game {
       this.eventBus,
       this.questManager
     );
-    this.gameSystems.quest.init();
 
     // Create deduction system (links case manager to deduction board UI)
     this.gameSystems.deduction = new DeductionSystem(
@@ -406,7 +393,6 @@ export class Game {
       this.caseManager,
       null
     );
-    this.gameSystems.deduction.init();
 
     // Create render system (engine system, runs last after all logic)
     this.gameSystems.render = new RenderSystem(
@@ -415,24 +401,32 @@ export class Game {
       this.renderer.layeredRenderer,
       this.camera
     );
-    this.gameSystems.render.init();
 
-    // Register systems with engine SystemManager
-    // Priority order: Tutorial (5), PlayerMovement (10), NPCMemory (20), Disguise (22), Faction (25), Quest (27), Deduction (29), Investigation (30), Forensic (31), Knowledge (35), Dialogue (40), Camera (90), Render (100)
-    this.systemManager.registerSystem(this.gameSystems.tutorial, 5);
-    this.systemManager.registerSystem(this.gameSystems.playerMovement, 10);
-    this.systemManager.registerSystem(this.gameSystems.npcMemory, 20);
-    this.systemManager.registerSystem(this.gameSystems.firewallScrambler, 21);
-    this.systemManager.registerSystem(this.gameSystems.disguise, 22);
-    this.systemManager.registerSystem(this.gameSystems.factionReputation, 25);
-    this.systemManager.registerSystem(this.gameSystems.quest, 27);
-    this.systemManager.registerSystem(this.gameSystems.deduction, 29);
-    this.systemManager.registerSystem(this.gameSystems.investigation, 30);
-    this.systemManager.registerSystem(this.gameSystems.forensic, 31);
-    this.systemManager.registerSystem(this.gameSystems.knowledgeProgression, 35);
-    this.systemManager.registerSystem(this.gameSystems.dialogue, 40);
-    this.systemManager.registerSystem(this.gameSystems.cameraFollow, 90);
-    this.systemManager.registerSystem(this.gameSystems.render, 100);  // Render last
+    // Register systems with engine SystemManager (priorities come from each system definition)
+    const systemRegistrationOrder = [
+      ['tutorial', this.gameSystems.tutorial],
+      ['playerMovement', this.gameSystems.playerMovement],
+      ['npcMemory', this.gameSystems.npcMemory],
+      ['firewallScrambler', this.gameSystems.firewallScrambler],
+      ['disguise', this.gameSystems.disguise],
+      ['factionReputation', this.gameSystems.factionReputation],
+      ['quest', this.gameSystems.quest],
+      ['deduction', this.gameSystems.deduction],
+      ['investigation', this.gameSystems.investigation],
+      ['forensic', this.gameSystems.forensic],
+      ['knowledgeProgression', this.gameSystems.knowledgeProgression],
+      ['dialogue', this.gameSystems.dialogue],
+      ['cameraFollow', this.gameSystems.cameraFollow],
+      ['render', this.gameSystems.render],
+    ];
+
+    for (const [systemName, systemInstance] of systemRegistrationOrder) {
+      if (!systemInstance) {
+        console.warn(`[Game] Skipping registration for system "${systemName}" (not instantiated)`);
+        continue;
+      }
+      this.systemManager.registerSystem(systemInstance, { name: systemName });
+    }
 
     console.log('[Game] Game systems initialized');
   }

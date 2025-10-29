@@ -36,6 +36,7 @@ export class FirewallScramblerSystem extends System {
 
     this.events = eventBus;
     this.storyFlags = storyFlagManager;
+    this.priority = 21;
 
     this.config = {
       ...DEFAULT_CONFIG,
@@ -62,9 +63,6 @@ export class FirewallScramblerSystem extends System {
   }
 
   init() {
-    // Run just before disguise detection (priority 21)
-    this.priority = 21;
-
     this._subscriptions.push(
       this.events.on('knowledge:learned', this.handleKnowledgeLearned)
     );

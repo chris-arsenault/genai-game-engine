@@ -240,19 +240,21 @@ _formatValidationError(validation, systemName) {
 }
 ```
 
-2. Update `registerSystem()` method:
+2. Update `registerSystem()` method (introduce `_normalizeRegistrationOptions` helper to accept string/number/object signatures):
 
 ```javascript
-registerSystem(system, name = null) {
+registerSystem(system, nameOrOptions = null, priorityOverride = null) {
+  const options = this._normalizeRegistrationOptions(nameOrOptions, priorityOverride);
+
   // VALIDATION PHASE
-  const validation = this._validateSystem(system, name);
+  const validation = this._validateSystem(system, options.name);
   if (!validation.valid) {
-    throw new Error(this._formatValidationError(validation, name));
+    throw new Error(this._formatValidationError(validation, options.name));
   }
 
   // Log warnings in development
   if (validation.warnings.length > 0 && typeof IS_DEVELOPMENT !== 'undefined' && IS_DEVELOPMENT) {
-    console.warn(`System ${name || system.constructor.name} has warnings:`);
+    console.warn(`System ${options.name || system.constructor.name} has warnings:`);
     validation.warnings.forEach(warn => console.warn(`  - ${warn}`));
   }
 

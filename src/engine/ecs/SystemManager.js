@@ -29,57 +29,106 @@ export class SystemManager {
    * @throws {Error} If system with same name already registered
    * @throws {Error} If system is missing required properties
    */
-  registerSystem(system, name = null) {
+  registerSystem(system, nameOrOptions = null, priorityOverride = null) {
+    const defaultOptions = {
+      name: null,
+      priority: null,
+      autoInit: true,
+    };
+
+    let options = { ...defaultOptions };
+
+    if (typeof nameOrOptions === 'string') {
+      options.name = nameOrOptions;
+    } else if (typeof nameOrOptions === 'number') {
+      options.priority = nameOrOptions;
+    } else if (nameOrOptions && typeof nameOrOptions === 'object') {
+      options = {
+        ...options,
+        ...nameOrOptions,
+      };
+    }
+
+    if (typeof priorityOverride === 'number') {
+      options.priority = priorityOverride;
+    }
+
+    if (typeof options.name === 'number') {
+      options.priority = options.priority ?? options.name;
+      options.name = null;
+    }
+
+    if (typeof options.name === 'string') {
+      options.name = options.name.trim();
+      if (options.name.length === 0) {
+        options.name = null;
+      }
+    }
+
     // Validate system has required properties
+    const systemLabel = options.name || system.constructor.name;
+
     if (typeof system.priority !== 'number') {
       throw new Error(
-        `System ${name || system.constructor.name} is missing required 'priority' property. ` +
+        `System ${systemLabel} is missing required 'priority' property. ` +
         `All systems must extend the base System class or define priority as a number.`
       );
     }
 
     if (typeof system.enabled !== 'boolean') {
       throw new Error(
-        `System ${name || system.constructor.name} is missing required 'enabled' property. ` +
+        `System ${systemLabel} is missing required 'enabled' property. ` +
         `All systems must extend the base System class or define enabled as a boolean.`
       );
     }
 
     if (!system.requiredComponents || !Array.isArray(system.requiredComponents)) {
       throw new Error(
-        `System ${name || system.constructor.name} is missing required 'requiredComponents' array. ` +
+        `System ${systemLabel} is missing required 'requiredComponents' array. ` +
         `All systems must define which components they operate on.`
       );
     }
 
     if (typeof system.update !== 'function') {
       throw new Error(
-        `System ${name || system.constructor.name} is missing required 'update' method.`
+        `System ${systemLabel} is missing required 'update' method.`
       );
     }
 
-    // Check for duplicate name
-    if (name && this.systemsByName.has(name)) {
-      throw new Error(`System with name "${name}" already registered`);
+    if (options.name && this.systemsByName.has(options.name)) {
+      throw new Error(`System with name "${options.name}" already registered`);
     }
 
     // Inject dependencies
     system.componentRegistry = this.componentRegistry;
     system.eventBus = this.eventBus;
 
+    if (typeof options.priority === 'number') {
+      if (typeof system.setPriority === 'function') {
+        system.setPriority(options.priority);
+      } else {
+        system.priority = options.priority;
+      }
+    }
+
     // Add to systems list
     this.systems.push(system);
 
     // Store by name if provided
-    if (name) {
-      this.systemsByName.set(name, system);
+    if (options.name) {
+      this.systemsByName.set(options.name, system);
     }
 
-    // Sort by priority (lower priority = runs earlier)
+    // Initialize system (optional)
+    if (options.autoInit !== false && typeof system.init === 'function') {
+      system.init();
+    }
+
+    // Sort by priority (lower priority = runs earlier).
+    // Sorting happens after init so systems that adjust priority inside init are respected.
     this.systems.sort((a, b) => a.priority - b.priority);
 
-    // Initialize system
-    system.init();
+    return system;
   }
 
   /**

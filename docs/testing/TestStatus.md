@@ -1,6 +1,6 @@
 # Test Status Report
 
-**Last Updated**: 2025-10-27 (Sprint 7)
+**Last Updated**: 2025-10-30 (Sprint 8)
 **Test Suite Version**: Jest 29.x + Playwright 1.x
 
 ---
@@ -11,14 +11,21 @@
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| **Pass Rate** | 99.9% | 95%+ | ✅ EXCELLENT |
-| **Tests Passing** | 1,743 / 1,744 | - | ✅ |
-| **Tests Failing** | 1 | 0 | ⚠️ MINOR |
-| **Test Suites Passing** | 48 / 51 | - | ✅ |
-| **Test Suites Failing** | 3 | 0 | ⚠️ MINOR |
+| **Pass Rate** | 100% | 95%+ | ✅ EXCELLENT |
+| **Tests Passing** | 1,959 / 1,959 | - | ✅ |
+| **Tests Failing** | 0 | 0 | ✅ |
+| **Test Suites Passing** | 89 / 89 | - | ✅ |
+| **Test Suites Failing** | 0 | 0 | ✅ |
 | **Engine Coverage** | 82% | 80%+ | ✅ |
 | **Game Coverage** | 68% | 60%+ | ✅ |
-| **Total Test Time** | 28.3s | <60s | ✅ |
+| **Total Test Time** | 28.6s | <60s | ✅ |
+
+---
+
+## Sprint 8 Additions
+
+- Extended `tests/engine/ecs/SystemManager.test.js` to cover numeric/option registration overrides and deferred initialization.
+- Added `tests/game/Game.systemRegistration.test.js` to verify gameplay systems register with named handles and receive shared engine dependencies.
 
 ---
 

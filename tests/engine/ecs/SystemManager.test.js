@@ -105,6 +105,34 @@ describe('SystemManager', () => {
       expect(systemManager.getSystemCount()).toBe(1);
       expect(system.initCalled).toBe(true);
     });
+
+    it('should override priority when numeric argument provided', () => {
+      const system = new MockSystem([], 50);
+
+      systemManager.registerSystem(system, 10);
+
+      expect(system.priority).toBe(10);
+    });
+
+    it('should accept options object for name and priority', () => {
+      const system = new MockSystem([], 80);
+
+      systemManager.registerSystem(system, { name: 'OptionsSystem', priority: 15 });
+
+      expect(system.priority).toBe(15);
+      expect(systemManager.getSystem('OptionsSystem')).toBe(system);
+    });
+
+    it('should respect autoInit:false option', () => {
+      const system = new MockSystem();
+
+      systemManager.registerSystem(system, { name: 'Deferred', autoInit: false });
+
+      expect(system.initCalled).toBe(false);
+
+      system.init();
+      expect(system.initCalled).toBe(true);
+    });
   });
 
   describe('System Priority Ordering', () => {
@@ -139,6 +167,37 @@ describe('SystemManager', () => {
 
       // All should be registered
       expect(systemManager.getSystemCount()).toBe(4);
+    });
+
+    it('should resort after init when system adjusts priority', () => {
+      const updateOrder = [];
+
+      class OrderTrackingSystem extends MockSystem {
+        constructor(requiredComponents, priority, label) {
+          super(requiredComponents, priority);
+          this.label = label;
+        }
+
+        update(deltaTime, entities) {
+          updateOrder.push(this.label);
+          super.update(deltaTime, entities);
+        }
+      }
+
+      const stable = new OrderTrackingSystem([], 40, 'stable');
+      const dynamic = new OrderTrackingSystem([], 90, 'dynamic');
+      dynamic.init = function init() {
+        this.initCalled = true;
+        this.priority = 5;
+      };
+
+      systemManager.registerSystem(stable, { name: 'Stable' });
+      systemManager.registerSystem(dynamic, { name: 'Dynamic' });
+
+      systemManager.update(0.016);
+
+      expect(updateOrder[0]).toBe('dynamic');
+      expect(updateOrder[1]).toBe('stable');
     });
   });
 
