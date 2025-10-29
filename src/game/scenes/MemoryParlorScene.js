@@ -1,0 +1,382 @@
+/**
+ * MemoryParlorScene
+ *
+ * Hand-authored infiltration layout for Act 1's Memory Parlor quest.
+ * Creates the entrance trigger, firewall barrier with scrambler hooks,
+ * and interior trigger that advances the infiltration objective.
+ *
+ * This scene does not create the player entity; the caller should reuse the
+ * existing player and reposition them to the returned spawn point.
+ */
+
+import { Transform } from '../components/Transform.js';
+import { Sprite } from '../components/Sprite.js';
+import { Collider } from '../components/Collider.js';
+import { InteractionZone } from '../components/InteractionZone.js';
+import { createNPCEntity } from '../entities/NPCEntity.js';
+
+const ROOM_WIDTH = 960;
+const ROOM_HEIGHT = 600;
+const WALL_THICKNESS = 24;
+
+const ENTRANCE_POSITION = { x: 160, y: 320 };
+const FIREWALL_POSITION = { x: 480, y: 320 };
+const INTERIOR_CENTER = { x: 720, y: 320 };
+
+const FIREWALL_ID = 'memory_parlor_firewall';
+
+/**
+ * Helper to safely add drawable rectangle.
+ * @param {Object} entityManager
+ * @param {Object} componentRegistry
+ * @param {Object} params
+ * @returns {number} Entity ID
+ */
+function createRectEntity(entityManager, componentRegistry, {
+  x,
+  y,
+  width,
+  height,
+  color = '#1c1228',
+  alpha = 1,
+  layer = 'environment',
+  zIndex = 2,
+  tag = null,
+} = {}) {
+  const entityId = entityManager.createEntity(tag);
+  const transform = new Transform(x + width / 2, y + height / 2, 0, 1, 1);
+  componentRegistry.addComponent(entityId, 'Transform', transform);
+
+  const sprite = new Sprite({
+    image: null,
+    width,
+    height,
+    color,
+    alpha,
+    layer,
+    zIndex,
+    visible: true,
+  });
+  componentRegistry.addComponent(entityId, 'Sprite', sprite);
+
+  return entityId;
+}
+
+function createWall(entityManager, componentRegistry, x, y, width, height, color = '#0d0815') {
+  const entityId = entityManager.createEntity('boundary');
+  componentRegistry.addComponent(entityId, 'Transform', new Transform(x + width / 2, y + height / 2, 0, 1, 1));
+  componentRegistry.addComponent(entityId, 'Collider', new Collider({
+    type: 'AABB',
+    width,
+    height,
+    offsetX: -width / 2,
+    offsetY: -height / 2,
+    isStatic: true,
+    isTrigger: false,
+    tags: ['boundary', 'solid'],
+  }));
+  componentRegistry.addComponent(entityId, 'Sprite', new Sprite({
+    image: null,
+    width,
+    height,
+    color,
+    alpha: 0.92,
+    layer: 'environment',
+    zIndex: 3,
+    visible: true,
+  }));
+  return entityId;
+}
+
+function createTriggerZone(entityManager, componentRegistry, {
+  id,
+  x,
+  y,
+  radius,
+  requiresInput = false,
+  oneShot = false,
+  prompt = '',
+  layer = 'ground_fx',
+  color = '#5f3b8b',
+  alpha = 0.25,
+} = {}) {
+  const entityId = entityManager.createEntity('area_trigger');
+  componentRegistry.addComponent(entityId, 'Transform', new Transform(x, y, 0, 1, 1));
+  componentRegistry.addComponent(entityId, 'InteractionZone', new InteractionZone({
+    id,
+    type: 'trigger',
+    radius,
+    requiresInput,
+    prompt,
+    oneShot,
+    active: true,
+  }));
+  componentRegistry.addComponent(entityId, 'Sprite', new Sprite({
+    image: null,
+    width: radius * 2,
+    height: radius * 2,
+    color,
+    alpha,
+    layer,
+    zIndex: 1,
+    visible: true,
+  }));
+  return entityId;
+}
+
+function setFirewallState({ collider, sprite, zone }, isOpen) {
+  if (collider) {
+    collider.isTrigger = isOpen;
+  }
+  if (sprite) {
+    sprite.color = isOpen ? '#46f1b8' : '#ff2d75';
+    sprite.alpha = isOpen ? 0.35 : 0.85;
+  }
+  if (zone) {
+    zone.prompt = isOpen
+      ? 'Firewall destabilized. Move quickly!'
+      : 'Firewall active. Activate a Cipher scrambler.';
+    if (!zone.oneShot) {
+      zone.triggered = false;
+    }
+  }
+}
+
+/**
+ * Loads the Memory Parlor infiltration scene.
+ * @returns {Promise<Object>} Scene data
+ */
+export async function loadMemoryParlorScene(entityManager, componentRegistry, eventBus, options = {}) {
+  console.log('[MemoryParlorScene] Loading Memory Parlor infiltration scene...');
+
+  const sceneEntities = [];
+  const cleanupHandlers = [];
+
+  const padFloorId = createRectEntity(entityManager, componentRegistry, {
+    x: 0,
+    y: 0,
+    width: ROOM_WIDTH,
+    height: ROOM_HEIGHT,
+    color: '#140c1f',
+    alpha: 0.98,
+    layer: 'ground',
+    zIndex: 0,
+  });
+  sceneEntities.push(padFloorId);
+
+  const entryRunnerId = createRectEntity(entityManager, componentRegistry, {
+    x: 120,
+    y: 240,
+    width: 320,
+    height: 160,
+    color: '#1f1430',
+    alpha: 0.9,
+    layer: 'ground',
+    zIndex: 1,
+  });
+  sceneEntities.push(entryRunnerId);
+
+  const interiorFloorId = createRectEntity(entityManager, componentRegistry, {
+    x: 440,
+    y: 160,
+    width: 440,
+    height: 320,
+    color: '#26163a',
+    alpha: 0.94,
+    layer: 'ground',
+    zIndex: 1,
+  });
+  sceneEntities.push(interiorFloorId);
+
+  const walls = [
+    createWall(entityManager, componentRegistry, 0, 0, ROOM_WIDTH, WALL_THICKNESS),
+    createWall(entityManager, componentRegistry, 0, ROOM_HEIGHT - WALL_THICKNESS, ROOM_WIDTH, WALL_THICKNESS),
+    createWall(entityManager, componentRegistry, 0, 0, WALL_THICKNESS, ROOM_HEIGHT),
+    createWall(entityManager, componentRegistry, ROOM_WIDTH - WALL_THICKNESS, 0, WALL_THICKNESS, ROOM_HEIGHT),
+  ];
+  sceneEntities.push(...walls);
+
+  const entranceZoneId = createTriggerZone(entityManager, componentRegistry, {
+    id: 'memory_parlor_entrance',
+    x: ENTRANCE_POSITION.x,
+    y: ENTRANCE_POSITION.y,
+    radius: 96,
+    prompt: 'Hidden stairwell to the Memory Parlor.',
+    oneShot: true,
+  });
+  sceneEntities.push(entranceZoneId);
+
+  const firewallEntityId = entityManager.createEntity('firewall_gate');
+  componentRegistry.addComponent(firewallEntityId, 'Transform', new Transform(
+    FIREWALL_POSITION.x,
+    FIREWALL_POSITION.y,
+    0,
+    1,
+    1,
+  ));
+  componentRegistry.addComponent(firewallEntityId, 'Collider', new Collider({
+    type: 'AABB',
+    width: 96,
+    height: 32,
+    offsetX: -48,
+    offsetY: -16,
+    isStatic: true,
+    isTrigger: false,
+    tags: ['barrier', 'firewall'],
+  }));
+  componentRegistry.addComponent(firewallEntityId, 'Sprite', new Sprite({
+    image: null,
+    width: 96,
+    height: 32,
+    color: '#ff2d75',
+    alpha: 0.85,
+    layer: 'environment_fx',
+    zIndex: 6,
+    visible: true,
+  }));
+  componentRegistry.addComponent(firewallEntityId, 'InteractionZone', new InteractionZone({
+    id: FIREWALL_ID,
+    type: 'trigger',
+    radius: 96,
+    requiresInput: false,
+    oneShot: false,
+    active: true,
+    prompt: 'Cipher firewall hums here. Scrambler required.',
+  }));
+  sceneEntities.push(firewallEntityId);
+
+  const interiorZoneId = createTriggerZone(entityManager, componentRegistry, {
+    id: 'memory_parlor_interior',
+    x: INTERIOR_CENTER.x,
+    y: INTERIOR_CENTER.y,
+    radius: 140,
+    prompt: 'Memory Parlor interior reached.',
+    oneShot: false,
+    color: '#3a1f57',
+    alpha: 0.18,
+  });
+  sceneEntities.push(interiorZoneId);
+
+  const tables = [
+    createRectEntity(entityManager, componentRegistry, {
+      x: 540,
+      y: 230,
+      width: 120,
+      height: 48,
+      color: '#3d2b5b',
+      alpha: 0.95,
+      layer: 'environment',
+      zIndex: 4,
+    }),
+    createRectEntity(entityManager, componentRegistry, {
+      x: 540,
+      y: 360,
+      width: 120,
+      height: 48,
+      color: '#3d2b5b',
+      alpha: 0.95,
+      layer: 'environment',
+      zIndex: 4,
+    }),
+    createRectEntity(entityManager, componentRegistry, {
+      x: 680,
+      y: 260,
+      width: 140,
+      height: 36,
+      color: '#352147',
+      alpha: 0.92,
+      layer: 'environment',
+      zIndex: 4,
+    }),
+  ];
+  sceneEntities.push(...tables);
+
+  const guardA = createNPCEntity(entityManager, componentRegistry, {
+    x: 700,
+    y: 280,
+    id: 'neurosynch_guard_a',
+    name: 'NeuroSync Guard',
+    faction: 'neurosynch',
+    hasDialogue: false,
+  });
+  const guardB = createNPCEntity(entityManager, componentRegistry, {
+    x: 760,
+    y: 360,
+    id: 'parlor_attendant_a',
+    name: 'Parlor Attendant',
+    faction: 'curators',
+    hasDialogue: false,
+  });
+  sceneEntities.push(guardA, guardB);
+
+  const firewallCollider = componentRegistry.getComponent(firewallEntityId, 'Collider');
+  const firewallSprite = componentRegistry.getComponent(firewallEntityId, 'Sprite');
+  const firewallZone = componentRegistry.getComponent(firewallEntityId, 'InteractionZone');
+
+  setFirewallState({ collider: firewallCollider, sprite: firewallSprite, zone: firewallZone }, false);
+
+  cleanupHandlers.push(
+    eventBus.on('firewall:scrambler_activated', (payload = {}) => {
+      if (payload.areaId && payload.areaId !== FIREWALL_ID && payload.areaId !== 'memory_parlor_interior') {
+        return;
+      }
+      setFirewallState({ collider: firewallCollider, sprite: firewallSprite, zone: firewallZone }, true);
+    })
+  );
+
+  cleanupHandlers.push(
+    eventBus.on('firewall:scrambler_expired', () => {
+      setFirewallState({ collider: firewallCollider, sprite: firewallSprite, zone: firewallZone }, false);
+    })
+  );
+
+  cleanupHandlers.push(
+    eventBus.on('firewall:scrambler_on_cooldown', () => {
+      setFirewallState({ collider: firewallCollider, sprite: firewallSprite, zone: firewallZone }, false);
+    })
+  );
+
+  return {
+    sceneName: 'memory_parlor_infiltration',
+    sceneEntities,
+    spawnPoint: {
+      x: options.spawnPoint?.x ?? ENTRANCE_POSITION.x - 40,
+      y: options.spawnPoint?.y ?? ENTRANCE_POSITION.y,
+    },
+    cleanup: () => {
+      for (const off of cleanupHandlers) {
+        if (typeof off === 'function') {
+          off();
+        }
+      }
+    },
+    metadata: {
+      entranceZoneId,
+      interiorZoneId,
+      firewallEntityId,
+    },
+  };
+}
+
+/**
+ * Unloads Memory Parlor scene entities.
+ * @param {EntityManager} entityManager
+ * @param {ComponentRegistry} componentRegistry
+ * @param {number[]} sceneEntities
+ */
+export function unloadMemoryParlorScene(entityManager, componentRegistry, sceneEntities = []) {
+  if (!entityManager || !componentRegistry) {
+    return;
+  }
+
+  for (const entityId of sceneEntities) {
+    if (entityId == null) {
+      continue;
+    }
+    if (!entityManager.hasEntity(entityId)) {
+      continue;
+    }
+    componentRegistry.removeAllComponents(entityId);
+    entityManager.destroyEntity(entityId);
+  }
+}

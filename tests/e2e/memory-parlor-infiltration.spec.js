@@ -1,0 +1,230 @@
+import { test, expect } from '@playwright/test';
+import { waitForGameLoad, collectConsoleErrors } from './setup.js';
+
+const QUEST_ID = 'case_003_memory_parlor';
+const INFILTRATION_OBJECTIVE_ID = 'obj_infiltrate_parlor';
+
+test.describe('Memory Parlor infiltration', () => {
+  test('requires scrambler activation to bypass firewall and complete infiltration', async ({ page }) => {
+    const consoleErrors = collectConsoleErrors(page);
+
+    await waitForGameLoad(page);
+
+    await page.waitForFunction(
+      () => Boolean(window.game?.questManager && window.game?.storyFlagManager),
+      { timeout: 15000 }
+    );
+
+    await page.evaluate(() => {
+      window.__memoryParlorTest = {
+        blocked: [],
+        scramblerActivated: [],
+        scramblerUnavailable: []
+      };
+
+      const record = (key) => (payload) => {
+        window.__memoryParlorTest[key].push({
+          questId: payload.questId ?? null,
+          objectiveId: payload.objectiveId ?? null,
+          reason: payload.reason ?? null,
+          requirement: payload.requirement ?? null,
+          blockedMessage: payload.blockedMessage ?? null,
+          payload
+        });
+      };
+
+      window.game.eventBus.on('objective:blocked', record('blocked'));
+      window.game.eventBus.on('firewall:scrambler_activated', (payload) => {
+        window.__memoryParlorTest.scramblerActivated.push(payload);
+      });
+      window.game.eventBus.on('firewall:scrambler_unavailable', (payload) => {
+        window.__memoryParlorTest.scramblerUnavailable.push(payload);
+      });
+    });
+
+    await page.evaluate((questId) => {
+      const { questManager, storyFlagManager } = window.game;
+      storyFlagManager.setFlag('case_002_solved', true);
+      storyFlagManager.setFlag('knows_memory_parlors', true);
+      questManager.startQuest(questId);
+    }, QUEST_ID);
+
+    await page.evaluate(() => {
+      window.game.eventBus.emit('area:entered', { areaId: 'memory_parlor_entrance' });
+    });
+
+    await page.waitForFunction(
+      (questId) => {
+        const quest = window.game.questManager.getQuest(questId);
+        if (!quest) return false;
+        const state = quest.objectiveStates.get('obj_locate_parlor');
+        return state?.status === 'completed';
+      },
+      QUEST_ID,
+      { timeout: 5000 }
+    );
+
+    await page.waitForFunction(
+      () => window.game.activeScene?.id === 'memory_parlor_infiltration',
+      { timeout: 5000 }
+    );
+
+    const sceneId = await page.evaluate(() => window.game.activeScene?.id ?? null);
+    const transitionState = await page.evaluate(() => ({
+      inFlight: window.game._sceneTransitionInFlight,
+      memoryParlorLoaded: window.game._memoryParlorSceneLoaded,
+      activeSceneId: window.game.activeScene?.id ?? null,
+      playerEntityId: window.game.playerEntityId ?? null
+    }));
+    expect({ sceneId, ...transitionState }).toEqual({
+      sceneId: 'memory_parlor_infiltration',
+      inFlight: false,
+      memoryParlorLoaded: true,
+      activeSceneId: 'memory_parlor_infiltration',
+      playerEntityId: expect.any(Number)
+    });
+
+    await page.waitForFunction(
+      () => {
+        const registry = window.game.componentRegistry;
+        const zones = registry.getComponentsOfType('InteractionZone');
+        let hasFirewall = false;
+        zones.forEach((zone) => {
+          if (zone.id === 'memory_parlor_firewall') {
+            hasFirewall = true;
+          }
+        });
+        return hasFirewall;
+      },
+      { timeout: 5000 }
+    );
+
+    await page.evaluate(() => {
+      window.game.eventBus.emit('area:entered', { areaId: 'memory_parlor_interior' });
+    });
+
+    const blockedEventsAfterFirstAttempt = await page.evaluate(() =>
+      window.__memoryParlorTest.blocked.map(({ reason, requirement, blockedMessage }) => ({
+        reason,
+        requirement,
+        blockedMessage
+      }))
+    );
+    expect(blockedEventsAfterFirstAttempt.length).toBeGreaterThan(0);
+    expect(blockedEventsAfterFirstAttempt[0].reason).toBe('missing_story_flag');
+    expect(blockedEventsAfterFirstAttempt[0].blockedMessage ?? '').toContain('scrambler');
+
+    await page.evaluate(() => {
+      window.game.eventBus.emit('knowledge:learned', { knowledgeId: 'cipher_scrambler_access' });
+    });
+
+    await page.evaluate(() => {
+      window.game.eventBus.emit('area:entered', { areaId: 'memory_parlor_interior' });
+    });
+
+    const blockedEvents = await page.evaluate(() =>
+      window.__memoryParlorTest.blocked.map((event) => ({
+        reason: event.reason,
+        requirement: event.requirement
+      }))
+    );
+    expect(blockedEvents.some((event) =>
+      event.reason === 'missing_story_flag' && event.requirement === 'cipher_scrambler_access'
+    )).toBe(true);
+    expect(blockedEvents.some((event) =>
+      event.reason === 'missing_story_flag' && event.requirement === 'cipher_scrambler_active'
+    )).toBe(true);
+
+    const unavailableReasonsBeforeCharges = await page.evaluate(() =>
+      window.__memoryParlorTest.scramblerUnavailable.map((event) => event.reason)
+    );
+    expect(unavailableReasonsBeforeCharges).toContain('no_access');
+
+    await page.evaluate(() => {
+      window.game.eventBus.emit('area:entered', { areaId: 'memory_parlor_firewall' });
+    });
+
+    const unavailableReasonsAfterFirewallTrigger = await page.evaluate(() =>
+      window.__memoryParlorTest.scramblerUnavailable.map((event) => event.reason)
+    );
+    expect(unavailableReasonsAfterFirewallTrigger).toContain('no_charges');
+
+    await page.evaluate(() => {
+      window.game.eventBus.emit('inventory:item_added', {
+        id: 'gadget_cipher_scrambler_charge',
+        quantity: 1
+      });
+    });
+
+    await page.evaluate(() => {
+      window.game.eventBus.emit('area:entered', { areaId: 'memory_parlor_firewall' });
+    });
+
+    const activationPayloads = await page.evaluate(() =>
+      window.__memoryParlorTest.scramblerActivated.map((payload) => ({
+        durationSeconds: payload.durationSeconds,
+        detectionMultiplier: payload.detectionMultiplier,
+        chargesRemaining: payload.chargesRemaining
+      }))
+    );
+    expect(activationPayloads.length).toBeGreaterThan(0);
+    const lastActivation = activationPayloads[activationPayloads.length - 1];
+    expect(lastActivation.durationSeconds).toBeGreaterThan(0);
+    expect(lastActivation.detectionMultiplier).toBeLessThan(1);
+
+    const firewallState = await page.evaluate(() => {
+      const registry = window.game.componentRegistry;
+      const zones = registry.getComponentsOfType('InteractionZone');
+      let firewallEntityId = null;
+      zones.forEach((zone, entityId) => {
+        if (zone.id === 'memory_parlor_firewall') {
+          firewallEntityId = entityId;
+        }
+      });
+
+      const collider = firewallEntityId != null
+        ? registry.getComponent(firewallEntityId, 'Collider')
+        : null;
+
+      return {
+        colliderExists: Boolean(collider),
+        isTrigger: collider ? collider.isTrigger : null,
+        scramblerActive: window.game.storyFlagManager.hasFlag('cipher_scrambler_active')
+      };
+    });
+    expect(firewallState.colliderExists).toBe(true);
+    expect(firewallState.isTrigger).toBe(true);
+    expect(firewallState.scramblerActive).toBe(true);
+
+    const scramblerEffect = await page.evaluate(() => window.game.gameSystems.disguise.scramblerEffect);
+    expect(scramblerEffect.active).toBe(true);
+    expect(scramblerEffect.detectionMultiplier).toBeLessThan(1);
+    expect(scramblerEffect.suspicionDecayBonusPerSecond).toBeGreaterThanOrEqual(0);
+
+    const blockedCountBeforeCompletion = await page.evaluate(() =>
+      window.__memoryParlorTest.blocked.length
+    );
+
+    await page.evaluate(() => {
+      window.game.eventBus.emit('area:entered', { areaId: 'memory_parlor_interior' });
+    });
+
+    await page.waitForFunction(
+      ({ questId, objectiveId }) => {
+        const quest = window.game.questManager.getQuest(questId);
+        if (!quest) return false;
+        const state = quest.objectiveStates.get(objectiveId);
+        return state?.status === 'completed';
+      },
+      { questId: QUEST_ID, objectiveId: INFILTRATION_OBJECTIVE_ID },
+      { timeout: 5000 }
+    );
+
+    const blockedCountAfterCompletion = await page.evaluate(() =>
+      window.__memoryParlorTest.blocked.length
+    );
+    expect(blockedCountAfterCompletion).toBe(blockedCountBeforeCompletion);
+
+    expect(consoleErrors).toEqual([]);
+  });
+});

@@ -217,6 +217,8 @@
 - Encrypted data logs (decrypt later with Zara's help)
 - +Investigation XP: Level up investigation skills
 
+_Implementation Note (Session #42)_: A playable Memory Parlor scene now loads when `obj_locate_parlor` completes, featuring a scrambler-responsive firewall barrier, ambient staff NPCs, and automated tests that exercise the infiltration flow.
+
 #### Narrative Beats
 
 - Kira witnesses hollow victims in parlor (emotional impact)

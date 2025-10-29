@@ -62,6 +62,7 @@ import { createNPCEntity } from './entities/NPCEntity.js';
 
 // Scenes
 import { loadAct1Scene } from './scenes/Act1Scene.js';
+import { loadMemoryParlorScene } from './scenes/MemoryParlorScene.js';
 
 // Configuration
 import { GameConfig } from './config/GameConfig.js';
@@ -140,6 +141,19 @@ export class Game {
 
     // Engine frame hook cleanup
     this._detachFrameHooks = null;
+
+    // Scene bookkeeping
+    this.playerEntityId = null;
+    this.activeScene = {
+      id: null,
+      entities: [],
+      cleanup: null,
+      metadata: {}
+    };
+    this._memoryParlorSceneLoaded = false;
+    this._sceneTransitionInFlight = false;
+
+    this.handleObjectiveCompleted = this.handleObjectiveCompleted.bind(this);
   }
 
   /**
@@ -481,12 +495,24 @@ export class Game {
   async loadAct1Scene() {
     console.log('[Game] Loading Act 1 scene...');
 
+    // Clear any existing scene entities before loading new layout
+    this._destroySceneEntities();
+
     // Load the Act 1 scene with all required entities
     const sceneData = await loadAct1Scene(
       this.entityManager,
       this.componentRegistry,
       this.eventBus
     );
+
+    this.playerEntityId = sceneData.playerId;
+    this.activeScene = {
+      id: sceneData.sceneName || 'act1_hollow_case',
+      entities: Array.isArray(sceneData.sceneEntities) ? [...sceneData.sceneEntities] : [],
+      cleanup: typeof sceneData.cleanup === 'function' ? sceneData.cleanup : null,
+      metadata: sceneData.metadata || {}
+    };
+    this._memoryParlorSceneLoaded = false;
 
     // Snap camera to player spawn position
     this.gameSystems.cameraFollow.snapTo(sceneData.spawnPoint.x, sceneData.spawnPoint.y);
@@ -498,6 +524,148 @@ export class Game {
     this.startGame();
 
     console.log('[Game] Act 1 scene loaded');
+  }
+
+  /**
+   * Destroy a single entity safely, removing all associated components first.
+   * @param {number} entityId
+   * @private
+   */
+  _destroyEntity(entityId) {
+    if (entityId == null) {
+      return;
+    }
+
+    if (!this.entityManager || typeof this.entityManager.hasEntity !== 'function') {
+      return;
+    }
+
+    if (!this.entityManager.hasEntity(entityId)) {
+      return;
+    }
+
+    if (this.componentRegistry && typeof this.componentRegistry.removeAllComponents === 'function') {
+      this.componentRegistry.removeAllComponents(entityId);
+    }
+
+    if (typeof this.entityManager.destroyEntity === 'function') {
+      this.entityManager.destroyEntity(entityId);
+    }
+  }
+
+  /**
+   * Clears the currently active scene entities and invokes cleanup handlers.
+   * @private
+   */
+  _destroySceneEntities() {
+    if (!this.activeScene) {
+      return;
+    }
+
+    if (typeof this.activeScene.cleanup === 'function') {
+      try {
+        this.activeScene.cleanup();
+      } catch (error) {
+        console.error('[Game] Scene cleanup handler failed', error);
+      }
+    }
+
+    if (Array.isArray(this.activeScene.entities)) {
+      for (const entityId of this.activeScene.entities) {
+        this._destroyEntity(entityId);
+      }
+    }
+
+    this.activeScene.entities = [];
+    this.activeScene.cleanup = null;
+    this.activeScene.metadata = {};
+  }
+
+  /**
+   * Transition into the Memory Parlor infiltration scene.
+   * Reuses the existing player entity and repositions them at the returned spawn point.
+   *
+   * @param {Object} options - Optional transition options
+   * @returns {Promise<string|null>} Scene identifier or null if transition skipped
+   */
+  async loadMemoryParlorScene(options = {}) {
+    if (this._sceneTransitionInFlight) {
+      return null;
+    }
+
+    if (this.playerEntityId == null) {
+      console.warn('[Game] Cannot load Memory Parlor scene before player is initialized');
+      return null;
+    }
+
+    if (this._memoryParlorSceneLoaded && !options.force) {
+      return this.activeScene?.id || null;
+    }
+
+    this._sceneTransitionInFlight = true;
+
+    try {
+      this._destroySceneEntities();
+
+      const sceneData = await loadMemoryParlorScene(
+        this.entityManager,
+        this.componentRegistry,
+        this.eventBus,
+        options
+      );
+
+      this.activeScene = {
+        id: sceneData.sceneName || 'memory_parlor_infiltration',
+        entities: Array.isArray(sceneData.sceneEntities) ? [...sceneData.sceneEntities] : [],
+        cleanup: typeof sceneData.cleanup === 'function' ? sceneData.cleanup : null,
+        metadata: sceneData.metadata || {}
+      };
+
+      const spawnPoint = sceneData.spawnPoint || { x: 160, y: 320 };
+      const playerTransform = this.componentRegistry.getComponent(this.playerEntityId, 'Transform');
+      if (playerTransform) {
+        playerTransform.x = spawnPoint.x;
+        playerTransform.y = spawnPoint.y;
+      }
+
+      const playerController = this.componentRegistry.getComponent(this.playerEntityId, 'PlayerController');
+      if (playerController) {
+        playerController.velocityX = 0;
+        playerController.velocityY = 0;
+      }
+
+      this.gameSystems.cameraFollow.snapTo(spawnPoint.x, spawnPoint.y);
+      this._memoryParlorSceneLoaded = true;
+
+      this.eventBus.emit('scene:loaded', {
+        sceneId: this.activeScene.id,
+        spawnPoint,
+        reason: options.reason || 'manual'
+      });
+
+      return this.activeScene.id;
+    } finally {
+      this._sceneTransitionInFlight = false;
+    }
+  }
+
+  /**
+   * Objective completion hook for quest-driven scene transitions.
+   * @param {Object} payload
+   */
+  handleObjectiveCompleted(payload = {}) {
+    const { questId, objectiveId } = payload;
+    if (!questId || !objectiveId) {
+      return;
+    }
+
+    if (
+      questId === 'case_003_memory_parlor' &&
+      objectiveId === 'obj_locate_parlor' &&
+      !this._memoryParlorSceneLoaded
+    ) {
+      void this.loadMemoryParlorScene({ reason: 'quest_transition' });
+    }
   }
 
   /**
@@ -728,6 +896,17 @@ export class Game {
           console.log(`[Vendor] Credits spent: ${creditsSpent} at ${vendorName}`);
         }
       }
+    }));
+
+    // Scene transitions
+    this._offGameEventHandlers.push(this.eventBus.on('objective:completed', this.handleObjectiveCompleted));
+
+    this._offGameEventHandlers.push(this.eventBus.on('scene:load:memory_parlor', (data = {}) => {
+      void this.loadMemoryParlorScene({
+        reason: data.reason || 'event_bus',
+        force: Boolean(data.force),
+        spawnPoint: data.spawnPoint || undefined
+      });
     }));
 
     // Player movement

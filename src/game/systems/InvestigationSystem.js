@@ -157,7 +157,12 @@ export class InvestigationSystem extends System {
       if (!transform) continue;
 
       // Check if in range
-      if (!zone.isInRange(playerTransform, transform)) continue;
+      if (!zone.isInRange(playerTransform, transform)) {
+        if (zone.type === 'trigger' && zone.triggered && !zone.oneShot) {
+          zone.triggered = false;
+        }
+        continue;
+      }
 
       // Handle interaction based on type
       if (zone.type === 'evidence') {

@@ -485,6 +485,21 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Jest/Playwright coverage validates the vendor metadata (tags, costs, dialogue context) and ensures credits are deducted through the shared pipeline.
 - **Notes**: Session #41 extended this deliverable with `FirewallScramblerSystem`, adding active scrambler gating to Memory Parlor infiltration and synchronized disguise detection modifiers.
 
+#### SCN-410: Expand Memory Parlor infiltration scene
+- **Priority**: P1
+- **Tags**: `scene`, `stealth`, `quest`
+- **Effort**: 5 hours
+- **Dependencies**: INV-318, QA-245
+- **Status**: ⭕ Pending
+- **Description**: Build out the Memory Parlor infiltration scene introduced in Session #42 with full geometry, quest-driven scene transitions, and exit routing so the scrambler window can be exercised end-to-end.
+- **Acceptance Criteria**:
+  - `loadMemoryParlorScene()` is triggered automatically when `obj_locate_parlor` completes and returns to Act 1 on `obj_escape_parlor`.
+  - Firewall barrier integrates with level collision paths so scrambler activation is required to cross.
+  - Interior provides stealth cover (props, line-of-sight blockers) and at least one evidence/knowledge pickup to justify infiltration.
+  - Playwright infiltration spec passes without forcing the scene load manually.
+  - Manual runtime smoke confirms quest tracker, disguise modifiers, and dialogue hooks behave in the new scene.
+- **Notes**: Initial scene stub (firewall barrier, NPC dressing, scrambler-toggled collider) landed in Session #42; remaining work focuses on traversal polish and automated scene transitions.
+
 #### DIA-208: Support inventory-aware dialogue conditions
 - **Priority**: P1
 - **Tags**: `dialogue`, `inventory`

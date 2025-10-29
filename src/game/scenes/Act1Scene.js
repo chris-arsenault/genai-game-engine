@@ -35,6 +35,7 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus) 
   console.log('[Act1Scene] Loading Act 1 scene...');
 
   const sceneEntities = [];
+  const cleanupHandlers = [];
 
   // 1. Create player at spawn point
   const playerId = createPlayerEntity(entityManager, componentRegistry, 150, 300);
@@ -203,7 +204,7 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus) 
   let evidenceCollectedCount = 0;
   const requiredEvidenceForVision = 3;
 
-  eventBus.on('evidence:collected', (data) => {
+  const offEvidenceCollected = eventBus.on('evidence:collected', (data) => {
     if (data.caseId === 'case_001_hollow_case') {
       evidenceCollectedCount++;
       console.log(
@@ -219,6 +220,7 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus) 
       }
     }
   });
+  cleanupHandlers.push(offEvidenceCollected);
 
   console.log('[Act1Scene] Act 1 scene loaded successfully');
 
@@ -226,7 +228,14 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus) 
     playerId,
     sceneEntities,
     sceneName: 'act1_hollow_case',
-    spawnPoint: { x: 150, y: 300 }
+    spawnPoint: { x: 150, y: 300 },
+    cleanup: () => {
+      for (const off of cleanupHandlers) {
+        if (typeof off === 'function') {
+          off();
+        }
+      }
+    }
   };
 }
 

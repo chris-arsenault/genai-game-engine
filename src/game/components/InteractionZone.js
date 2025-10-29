@@ -12,6 +12,7 @@
  * @property {boolean} active - Whether zone is currently active
  * @property {boolean} oneShot - If true, can only interact once
  * @property {boolean} used - Whether one-shot interaction has been used
+ * @property {boolean} triggered - Whether the zone has emitted its trigger event
  * @property {Object} data - Type-specific interaction data
  */
 export class InteractionZone {
@@ -24,6 +25,7 @@ export class InteractionZone {
     active = true,
     oneShot = false,
     used = false,
+    triggered = false,
     data = {}
   } = {}) {
     this.id = id;
@@ -34,6 +36,7 @@ export class InteractionZone {
     this.active = active;
     this.oneShot = oneShot;
     this.used = used;
+    this.triggered = triggered;
     this.data = data;
   }
 
@@ -83,5 +86,8 @@ export class InteractionZone {
    */
   reset() {
     this.used = false;
+    if (!this.oneShot) {
+      this.triggered = false;
+    }
   }
 }
