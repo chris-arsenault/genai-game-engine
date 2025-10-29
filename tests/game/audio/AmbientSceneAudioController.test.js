@@ -190,6 +190,8 @@ describe('AmbientSceneAudioController', () => {
       fadeDuration: 0.4,
     });
 
+    eventBus.emit('disguise:suspicion_cleared', { suspicionLevel: 0 });
+
     // Scrambler cooldown -> back to stealth while disguise remains equipped
     eventBus.emit('firewall:scrambler_on_cooldown', { areaId: 'memory_parlor_firewall' });
     expect(adaptiveController.setState).toHaveBeenLastCalledWith('stealth', {
@@ -198,6 +200,27 @@ describe('AmbientSceneAudioController', () => {
 
     // Remove disguise -> ambient reset
     eventBus.emit('disguise:removed', {});
+    expect(adaptiveController.setState).toHaveBeenLastCalledWith('ambient', {
+      fadeDuration: 0.4,
+    });
+  });
+
+  it('transitions to alert on suspicion spikes and clears on calm', async () => {
+    await controller.init();
+    adaptiveController.setState.mockClear();
+
+    // Below threshold - ignored
+    eventBus.emit('disguise:suspicion_raised', { suspicionLevel: 5 });
+    expect(adaptiveController.setState).not.toHaveBeenCalled();
+
+    // Alert triggered
+    eventBus.emit('disguise:suspicion_raised', { suspicionLevel: 60 });
+    expect(adaptiveController.setState).toHaveBeenLastCalledWith('alert', {
+      fadeDuration: 0.4,
+    });
+
+    // Clearing resets to ambient when no stealth/combat contexts are active
+    eventBus.emit('disguise:suspicion_cleared', { suspicionLevel: 0 });
     expect(adaptiveController.setState).toHaveBeenLastCalledWith('ambient', {
       fadeDuration: 0.4,
     });

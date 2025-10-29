@@ -81,4 +81,87 @@ test.describe('Tutorial overlay', () => {
 
     expect(consoleErrors).toEqual([]);
   });
+
+  test('advances evidence detection step via proximity', async ({ page }) => {
+    const consoleErrors = collectConsoleErrors(page);
+
+    await page.addInitScript(() => {
+      try {
+        window.localStorage?.removeItem('tutorial_completed');
+        window.localStorage?.removeItem('tutorial_skipped');
+      } catch (error) {
+        console.warn('Unable to reset tutorial flags before load', error);
+      }
+    });
+
+    await waitForGameLoad(page);
+
+    await page.waitForFunction(
+      () => window.game?.worldStateStore != null && window.game?.gameSystems?.tutorial != null,
+      { timeout: 15000 }
+    );
+
+    await page.evaluate(() => {
+      const game = window.game;
+      window.__detectedCount = 0;
+      game.eventBus.on('evidence:detected', () => {
+        window.__detectedCount = (window.__detectedCount || 0) + 1;
+      });
+
+      const tutorialSystem = game.gameSystems.tutorial;
+      // Fast-forward to the evidence detection step
+      tutorialSystem.completeStep(); // welcome
+      tutorialSystem.completeStep(); // movement
+    });
+
+    await page.waitForFunction(
+      () => window.game?.gameSystems?.tutorial?.currentStep?.id === 'evidence_detection',
+      { timeout: 5000 }
+    );
+
+    await page.evaluate(() => {
+      const game = window.game;
+      const playerId = game.playerEntityId;
+      const transform = game.componentRegistry.getComponent(playerId, 'Transform');
+      if (transform) {
+        transform.x = 250;
+        transform.y = 300;
+      }
+      const transformEntities = game.componentRegistry.queryEntities('Transform');
+      const evidenceEntities = game.componentRegistry.queryEntities('Evidence');
+      game.gameSystems.investigation.update(0, transformEntities);
+      game.gameSystems.investigation.scanForEvidence(transform, evidenceEntities);
+    });
+    await page.waitForTimeout(500);
+
+    await page.waitForFunction(() => (window.__detectedCount || 0) > 0, { timeout: 5000 });
+
+    await page.waitForFunction(
+      () => {
+        const state = window.game.worldStateStore.getState();
+        return (
+          state.tutorial.completedSteps.includes('evidence_detection') &&
+          state.tutorial.currentStep === 'evidence_collection'
+        );
+      },
+      { timeout: 5000 }
+    );
+
+    const summary = await page.evaluate(() => {
+      const state = window.game.worldStateStore.getState();
+      const tutorial = state.tutorial || {};
+      const tutorialContext = tutorial.context || {};
+      return {
+        detectedFromStore: tutorialContext.evidenceDetected ?? 0,
+        detectedEvents: window.__detectedCount || 0,
+        promptHistory: Array.isArray(tutorial.promptHistory)
+          ? tutorial.promptHistory.map((entry) => entry.stepId)
+          : [],
+      };
+    });
+
+    expect(summary.detectedEvents).toBeGreaterThan(0);
+    expect(summary.promptHistory).toContain('evidence_detection');
+    expect(consoleErrors).toEqual([]);
+  });
 });

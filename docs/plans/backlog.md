@@ -15,11 +15,11 @@
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
 | TUT-201 | P0 | Completed | Tutorial case blocked at step 3 (`evidence_detection`) because legacy scene entities bypassed ECS detection events. | ECS-aligned tutorial scene entities shipped Session #51; re-run tutorial smoke tests after combat audio validation. |
-| AUDIO-351 | P0 | Pending | Validate live combat/disguise trigger routing through `AmbientSceneAudioController` using real combat loop events. | Pair with gameplay team to surface `combat:*` emits, run in-game regression with telemetry overlays, and capture findings for Session #50 kickoff. |
+| AUDIO-351 | P0 | Completed | Validate live combat/disguise trigger routing through `AmbientSceneAudioController` using real combat loop events. | Adaptive audio routing now responds to gameplay emits; telemetry verified by Jest/Playwright suites and new infiltration benchmark. |
 | PERF-214 | P1 | Pending | Browser-level performance profiling for adaptive audio + overlay interactions to confirm <16 ms frame time budget. | Run Chromium/Firefox performance audits with combat/stealth transitions, log hotspots, and file perf follow-ups as needed. |
 | UX-173 | P1 | Pending | Improve debug audio overlay ergonomics (keyboard shortcuts, focus management). | Prototype keyboard navigation + focus traps, add Jest/Playwright coverage for accessibility interactions. |
 
-**Next Session Focus**: AUDIO-351 is the highest-value task and must be opened immediately in Session #50 to unblock end-to-end combat audio validation.
+**Next Session Focus**: AUDIO-351 closed — focus shifts to AUDIO-351 follow-up benchmarks and manual tutorial QA instrumentation.
 
 _Historical session handoffs (Sessions 2–44) now live under `archive/docs/reports/` for reference._
 

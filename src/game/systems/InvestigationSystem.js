@@ -80,9 +80,12 @@ export class InvestigationSystem extends System {
     this.updateDetectiveVision(deltaTime);
 
     // Find player entity
-    const player = entities.find(id => {
-      const entity = this.componentRegistry.entityManager.getEntity(id);
-      return entity && entity.hasTag && entity.hasTag('player');
+    const player = entities.find((id) => {
+      const tag =
+        this.componentRegistry.entityManager.getTag(id) ??
+        this.componentRegistry.entityManager.getEntity(id)?.tag ??
+        null;
+      return tag === 'player';
     });
 
     if (!player) return;

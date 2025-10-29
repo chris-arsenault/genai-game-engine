@@ -36,6 +36,9 @@ export class DisguiseSystem extends System {
       suspiciousActionPenalty: 15, // Suspicion added per suspicious action
       suspicionDecayRate: 2, // Suspicion decay per second when calm
       baseDetectionChance: 0.2, // 20% base chance per check
+      alertSuspicionThreshold: 25, // Suspicion level that should trigger alert state
+      calmSuspicionThreshold: 5, // Suspicion level that counts as cleared/calm
+      combatResolutionDelayMs: 5000, // Delay before resolving combat after disguise removed
     };
 
     // Track suspicious actions
@@ -48,6 +51,13 @@ export class DisguiseSystem extends System {
       detectionMultiplier: 1,
       suspicionDecayBonusPerSecond: 0,
     };
+
+    // Audio / telemetry hooks
+    this._alertActive = false;
+    this._combatEngaged = false;
+    this._playerEntityId = null;
+    this._lastSuspicionLevel = 0;
+    this._combatResolveAt = 0;
   }
 
   /**
@@ -64,6 +74,7 @@ export class DisguiseSystem extends System {
 
     // Listen for disguise equip/unequip
     this.events.on('disguise:equipped', (data) => this.onDisguiseEquipped(data));
+    this.events.on('disguise:removed', (data) => this.onDisguiseUnequipped(data));
     this.events.on('disguise:unequipped', (data) => this.onDisguiseUnequipped(data));
 
     this.events.on('firewall:scrambler_activated', (payload = {}) => {
@@ -97,23 +108,28 @@ export class DisguiseSystem extends System {
    */
   update(deltaTime) {
     // Get player
-    const playerEntities = this.componentRegistry.queryEntities(['Transform', 'FactionMember']);
+    const playerEntities = this.componentRegistry.queryEntities('Transform', 'FactionMember');
     if (playerEntities.length === 0) return;
 
     const playerEntity = playerEntities[0];
     const playerFaction = this.componentRegistry.getComponent(playerEntity, 'FactionMember');
     const playerTransform = this.componentRegistry.getComponent(playerEntity, 'Transform');
+    this._playerEntityId = playerEntity;
 
     // Check if player has a disguise equipped
     if (!playerFaction.currentDisguise) {
       // No disguise - decay suspicion naturally if player has Disguise component
+      this._updateSuspicionState(null, { reason: 'no_disguise' });
       this.decaySuspicion(playerEntity, deltaTime);
       return;
     }
 
     // Get player's disguise
     const disguise = this.componentRegistry.getComponent(playerEntity, 'Disguise');
-    if (!disguise || !disguise.equipped) return;
+    if (!disguise || !disguise.equipped) {
+      this._updateSuspicionState(null, { reason: 'not_equipped' });
+      return;
+    }
 
     // Decay suspicion when not performing suspicious actions
     if (this.recentSuspiciousActions.length === 0) {
@@ -141,6 +157,8 @@ export class DisguiseSystem extends System {
     this.recentSuspiciousActions = this.recentSuspiciousActions.filter(
       action => now - action.timestamp < 5000
     );
+
+    this._updateSuspicionState(disguise, { reason: 'tick' });
   }
 
   /**
@@ -152,7 +170,7 @@ export class DisguiseSystem extends System {
    */
   performDetectionCheck(playerEntity, playerFaction, playerTransform, disguise) {
     // Get all NPCs
-    const npcEntities = this.componentRegistry.queryEntities(['Transform', 'NPC', 'FactionMember']);
+    const npcEntities = this.componentRegistry.queryEntities('Transform', 'NPC', 'FactionMember');
 
     for (const npcEntity of npcEntities) {
       const npcTransform = this.componentRegistry.getComponent(npcEntity, 'Transform');
@@ -225,6 +243,10 @@ export class DisguiseSystem extends System {
   onDisguiseDetected(playerEntity, npc, disguise) {
     // Add suspicion
     disguise.addSuspicion(this.config.suspiciousActionPenalty);
+    this._updateSuspicionState(disguise, {
+      reason: 'detection',
+      factionId: disguise.factionId,
+    });
 
     // Emit detection event
     this.events.emit('disguise:suspicion_raised', {
@@ -274,6 +296,12 @@ export class DisguiseSystem extends System {
       factionId: disguise.factionId,
       infamyGained: 20
     });
+    this._combatEngaged = true;
+    this._combatResolveAt = Date.now() + this.config.combatResolutionDelayMs;
+    this.events.emit('combat:initiated', {
+      factionId: disguise.factionId,
+      reason: 'disguise_blown'
+    });
 
     // Alert nearby NPCs
     this.alertNearbyNPCs(playerEntity);
@@ -285,7 +313,7 @@ export class DisguiseSystem extends System {
    */
   alertNearbyNPCs(playerEntity) {
     const playerTransform = this.componentRegistry.getComponent(playerEntity, 'Transform');
-    const npcEntities = this.componentRegistry.queryEntities(['Transform', 'NPC']);
+    const npcEntities = this.componentRegistry.queryEntities('Transform', 'NPC');
 
     for (const npcEntity of npcEntities) {
       const npcTransform = this.componentRegistry.getComponent(npcEntity, 'Transform');
@@ -297,14 +325,14 @@ export class DisguiseSystem extends System {
       );
 
       // Alert NPCs within alert radius
-      if (distance <= 200) {
-        npc.setAttitude('hostile');
-        this.events.emit('npc:alerted', {
-          npcId: npc.npcId,
-          reason: 'disguise_blown'
-        });
-      }
+    if (distance <= 200) {
+      npc.setAttitude('hostile');
+      this.events.emit('npc:alerted', {
+        npcId: npc.npcId,
+        reason: 'disguise_blown'
+      });
     }
+  }
   }
 
   /**
@@ -321,7 +349,7 @@ export class DisguiseSystem extends System {
     });
 
     // Get player disguise
-    const playerEntities = this.componentRegistry.queryEntities(['Disguise']);
+    const playerEntities = this.componentRegistry.queryEntities('Disguise');
     if (playerEntities.length === 0) return;
 
     const disguise = this.componentRegistry.getComponent(playerEntities[0], 'Disguise');
@@ -332,6 +360,11 @@ export class DisguiseSystem extends System {
         actionType,
         suspicionAdded: suspicionAmount,
         totalSuspicion: disguise.suspicionLevel
+      });
+
+      this._updateSuspicionState(disguise, {
+        reason: 'suspicious_action',
+        factionId: disguise.factionId,
       });
     }
   }
@@ -345,6 +378,7 @@ export class DisguiseSystem extends System {
     const disguise = this.componentRegistry.getComponent(playerEntity, 'Disguise');
     if (disguise && this.recentSuspiciousActions.length === 0) {
       disguise.reduceSuspicion(this.config.suspicionDecayRate * deltaTime);
+      this._updateSuspicionState(disguise, { reason: 'decay', factionId: disguise.factionId });
     }
   }
 
@@ -355,6 +389,9 @@ export class DisguiseSystem extends System {
   onDisguiseEquipped(data) {
     console.log(`[DisguiseSystem] Disguise equipped: ${data.factionId}`);
     // Reset suspicion on fresh equip
+    this._alertActive = false;
+    this._combatEngaged = false;
+    this._lastSuspicionLevel = 0;
   }
 
   /**
@@ -363,6 +400,7 @@ export class DisguiseSystem extends System {
    */
   onDisguiseUnequipped(data) {
     console.log(`[DisguiseSystem] Disguise unequipped: ${data.factionId}`);
+    this._updateSuspicionState(null, { reason: 'disguise_removed', factionId: data?.factionId });
   }
 
   /**
@@ -371,5 +409,90 @@ export class DisguiseSystem extends System {
   cleanup() {
     console.log('[DisguiseSystem] Cleaning up...');
     this.recentSuspiciousActions = [];
+    this._alertActive = false;
+    this._combatEngaged = false;
+    this._playerEntityId = null;
+    this._lastSuspicionLevel = 0;
+    this._combatResolveAt = 0;
+  }
+
+  /**
+   * Internal helper to manage alert/combat state transitions and emit audio-friendly events.
+   * @param {Disguise|null} disguise
+   * @param {Object} [context]
+   * @private
+   */
+  _updateSuspicionState(disguise, context = {}) {
+    const suspicionLevel = disguise?.suspicionLevel ?? 0;
+    const equipped = Boolean(disguise?.equipped);
+    const factionId = context.factionId ?? disguise?.factionId ?? null;
+    const alertThreshold = this.config.alertSuspicionThreshold;
+    const calmThreshold = this.config.calmSuspicionThreshold;
+    const reason = context.reason || 'tick';
+
+    if (!equipped) {
+      if (this._alertActive) {
+        this._alertActive = false;
+        this.events.emit('disguise:suspicion_cleared', {
+          factionId,
+          suspicionLevel: 0,
+          reason,
+        });
+      }
+      if (this._combatEngaged) {
+        if (Date.now() >= this._combatResolveAt) {
+          this._emitCombatResolved(reason, factionId);
+        }
+      }
+      this._lastSuspicionLevel = suspicionLevel;
+      return;
+    }
+
+    if (!this._alertActive && suspicionLevel >= alertThreshold) {
+      this._alertActive = true;
+      this.events.emit('disguise:alert_started', {
+        factionId,
+        suspicionLevel,
+        reason,
+      });
+    }
+
+    if (this._alertActive && suspicionLevel <= calmThreshold) {
+      this._alertActive = false;
+      this.events.emit('disguise:suspicion_cleared', {
+        factionId,
+        suspicionLevel,
+        reason,
+      });
+      if (this._combatEngaged) {
+        this._emitCombatResolved(reason, factionId);
+      }
+    }
+
+    if (this._combatEngaged && suspicionLevel <= calmThreshold) {
+      this._emitCombatResolved('suspicion_cleared', factionId);
+    } else if (this._combatEngaged) {
+      this._combatResolveAt = Date.now() + this.config.combatResolutionDelayMs;
+    }
+
+    this._lastSuspicionLevel = suspicionLevel;
+  }
+
+  /**
+   * Emit combat resolution event if combat was previously engaged.
+   * @param {string} reason
+   * @param {string|null} factionId
+   * @private
+   */
+  _emitCombatResolved(reason, factionId = null) {
+    if (!this._combatEngaged) {
+      return;
+    }
+    this._combatEngaged = false;
+    this._combatResolveAt = 0;
+    this.events.emit('combat:resolved', {
+      reason,
+      factionId,
+    });
   }
 }

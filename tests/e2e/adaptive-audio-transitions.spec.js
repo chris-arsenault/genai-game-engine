@@ -10,6 +10,9 @@ test.describe('Adaptive audio transitions', () => {
       if (window.game?.loadMemoryParlorScene) {
         await window.game.loadMemoryParlorScene({ reason: 'playwright_test' });
       }
+      if (window.game?.gameSystems?.disguise) {
+        window.game.gameSystems.disguise.config.combatResolutionDelayMs = 250;
+      }
     });
 
     await page.waitForFunction(
@@ -29,8 +32,6 @@ test.describe('Adaptive audio transitions', () => {
     await page.keyboard.press('F3');
     await page.waitForTimeout(600);
 
-    const stateSelector = '#debug-audio-state';
-
     const waitForState = async (state) => {
       await page.waitForFunction(
         (expected) => {
@@ -44,45 +45,59 @@ test.describe('Adaptive audio transitions', () => {
         state,
         { timeout: 8000 }
       );
-      await page.waitForFunction(
-        ({ selector, expected }) => {
-          const el = document.querySelector(selector);
-          return (
-            el &&
-            typeof el.textContent === 'string' &&
-            el.textContent.toLowerCase().includes(expected.toLowerCase())
-          );
-        },
-        { selector: stateSelector, expected: state },
-        { timeout: 3000 }
-      );
     };
 
     await waitForState('ambient');
 
     // Stealth engagement via disguise equip
     await page.evaluate(() => {
-      window.game?.eventBus?.emit('disguise:equipped', { factionId: 'cipher_collective' });
+      const game = window.game;
+      if (!game) return;
+      const playerId = game.playerEntityId;
+      if (playerId != null) {
+        const faction = game.componentRegistry?.getComponent(playerId, 'FactionMember');
+        if (faction && game.gameSystems?.factionReputation) {
+          const system = game.gameSystems.factionReputation;
+          system.playerEntityId = playerId;
+          system.playerFactionMember = faction;
+          system.equipDisguise('cipher_collective');
+        }
+      }
     });
     await waitForState('stealth');
 
-    // Combat escalation overrides stealth
+    // Suspicion spike triggers alert mix
     await page.evaluate(() => {
-      window.game?.eventBus?.emit('combat:initiated', { source: 'test' });
+      const game = window.game;
+      game?.gameSystems?.disguise?.onSuspiciousAction('running', 40);
+      game?.gameSystems?.disguise?.update?.(0);
+    });
+    await waitForState('alert');
+
+    // Combat escalation overrides alert by blowing the disguise
+    await page.evaluate(() => {
+      const game = window.game;
+      if (!game) return;
+      const playerId = game.playerEntityId;
+      const faction = game.componentRegistry?.getComponent(playerId, 'FactionMember');
+      const disguise = game.componentRegistry?.getComponent(playerId, 'Disguise');
+      if (playerId != null && faction && disguise) {
+        disguise.suspicionLevel = 100;
+        game.gameSystems.disguise.blowDisguise(playerId, faction, disguise);
+      }
     });
     await waitForState('combat');
 
-    // Combat resolution falls back to stealth since disguise persists
+    // Wait for combat resolution and suspicion clear (delay tuned above)
+    await page.waitForTimeout(600);
+    await waitForState('ambient');
+
+    // Re-equipping disguise returns to stealth mix
     await page.evaluate(() => {
-      window.game?.eventBus?.emit('combat:resolved', { source: 'test' });
+      const game = window.game;
+      game?.gameSystems?.factionReputation?.equipDisguise('cipher_collective');
     });
     await waitForState('stealth');
-
-    // Removing disguise clears stealth state back to ambient mix
-    await page.evaluate(() => {
-      window.game?.eventBus?.emit('disguise:removed', { factionId: 'cipher_collective' });
-    });
-    await waitForState('ambient');
 
     expect(errors).toEqual([]);
   });

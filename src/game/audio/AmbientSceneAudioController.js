@@ -97,6 +97,11 @@ export class AmbientSceneAudioController {
         },
       };
 
+    this.alertSuspicionThreshold =
+      typeof options.alertSuspicionThreshold === 'number'
+        ? options.alertSuspicionThreshold
+        : 20;
+
     this._createAdaptiveController =
       options.createAdaptiveController ??
       ((manager, controllerOptions) => new AdaptiveMusicLayerController(manager, controllerOptions));
@@ -108,6 +113,7 @@ export class AmbientSceneAudioController {
     this._scramblerActive = false;
     this._stealthActive = false;
     this._combatActive = false;
+    this._alertActive = false;
     this._currentState = null;
     this._adaptiveController = null;
   }
@@ -214,6 +220,9 @@ export class AmbientSceneAudioController {
 
     this._playing = false;
     this._scramblerActive = false;
+    this._stealthActive = false;
+    this._combatActive = false;
+    this._alertActive = false;
     this._currentState = null;
     this._initialized = false;
   }
@@ -275,6 +284,30 @@ export class AmbientSceneAudioController {
       }
     };
 
+    const activateAlert = (payload = {}) => {
+      if (!this._playing) {
+        return;
+      }
+      const level = typeof payload.suspicionLevel === 'number' ? payload.suspicionLevel : null;
+      if (level != null && level < this.alertSuspicionThreshold) {
+        return;
+      }
+      this._alertActive = true;
+      this._applyStateForContext('alert');
+    };
+
+    const onSuspicionCleared = (payload = {}) => {
+      const level = typeof payload.suspicionLevel === 'number' ? payload.suspicionLevel : 0;
+      if (level > this.alertSuspicionThreshold) {
+        return;
+      }
+      const wasAlert = this._alertActive;
+      this._alertActive = false;
+      if (wasAlert && !this._combatActive) {
+        this._applyStateForContext();
+      }
+    };
+
     this._unbinders.push(this.eventBus.on('firewall:scrambler_activated', onActivated));
     this._unbinders.push(this.eventBus.on('firewall:scrambler_expired', onExpired));
     this._unbinders.push(this.eventBus.on('firewall:scrambler_on_cooldown', onCooldown));
@@ -285,6 +318,9 @@ export class AmbientSceneAudioController {
     this._unbinders.push(this.eventBus.on('combat:initiated', onCombatInitiated));
     this._unbinders.push(this.eventBus.on('combat:resolved', onCombatResolved));
     this._unbinders.push(this.eventBus.on('combat:ended', onCombatResolved));
+    this._unbinders.push(this.eventBus.on('disguise:alert_started', activateAlert));
+    this._unbinders.push(this.eventBus.on('disguise:suspicion_raised', activateAlert));
+    this._unbinders.push(this.eventBus.on('disguise:suspicion_cleared', onSuspicionCleared));
   }
 
   _shouldReact(payload) {
@@ -342,7 +378,7 @@ export class AmbientSceneAudioController {
     if (this._combatActive && this._hasState('combat')) {
       return 'combat';
     }
-    if (this._scramblerActive && this._hasState('alert')) {
+    if ((this._scramblerActive || this._alertActive) && this._hasState('alert')) {
       return 'alert';
     }
     if (this._stealthActive) {

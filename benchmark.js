@@ -24,6 +24,8 @@ import { Transform } from './src/game/components/Transform.js';
 import { Velocity } from './src/game/components/Velocity.js';
 import { Collider } from './src/game/components/Collider.js';
 import { Sprite } from './src/game/components/Sprite.js';
+import { EventBus } from './src/engine/events/EventBus.js';
+import { AmbientSceneAudioController } from './src/game/audio/AmbientSceneAudioController.js';
 
 /**
  * Memory tracking utilities
@@ -73,6 +75,44 @@ class MemoryTracker {
   clear() {
     this.snapshots = [];
     this.gcEvents = [];
+  }
+}
+
+class BenchmarkAdaptiveController {
+  constructor(eventBus) {
+    this.eventBus = eventBus;
+    this.currentState = 'ambient';
+    this.history = [];
+  }
+
+  async init() {
+    return true;
+  }
+
+  setState(state) {
+    if (state === this.currentState) {
+      return false;
+    }
+    const previous = this.currentState;
+    this.currentState = state;
+    const payload = {
+      from: previous,
+      to: state,
+      timestamp: Date.now(),
+    };
+    this.history.push(payload);
+    if (this.eventBus && typeof this.eventBus.emit === 'function') {
+      this.eventBus.emit('audio:adaptive:state_changed', payload);
+    }
+    return true;
+  }
+
+  getState() {
+    return this.currentState;
+  }
+
+  dispose() {
+    this.history = [];
   }
 }
 
@@ -366,6 +406,61 @@ async function benchmarkPhysics(runner) {
   }
 }
 
+async function benchmarkAdaptiveAudio(runner) {
+  console.log('\n━━━ ADAPTIVE AUDIO BENCHMARKS ━━━');
+
+  const audioManagerStub = {
+    loadMusic: async () => {},
+    playMusic: () => {},
+    setMusicVolume: () => {},
+    stopMusic: () => {},
+  };
+
+  const eventBus = new EventBus();
+  const transitions = [];
+  eventBus.on('audio:adaptive:state_changed', (payload) => {
+    transitions.push({
+      from: payload.from,
+      to: payload.to,
+      timestamp: payload.timestamp,
+    });
+  });
+
+  const controller = new AmbientSceneAudioController(audioManagerStub, eventBus, {
+    createAdaptiveController: () => new BenchmarkAdaptiveController(eventBus),
+  });
+
+  await controller.init();
+
+  let lastTransitionSummary = [];
+
+  await runner.runBenchmark(
+    'adaptive-audio-infiltration',
+    () => {
+      transitions.length = 0;
+
+      eventBus.emit('disguise:equipped', { factionId: 'cipher_collective' });
+      eventBus.emit('disguise:suspicion_raised', { suspicionLevel: 65 });
+      eventBus.emit('combat:initiated', { source: 'benchmark' });
+      eventBus.emit('combat:resolved', { source: 'benchmark' });
+      eventBus.emit('disguise:suspicion_cleared', { suspicionLevel: 0 });
+      eventBus.emit('disguise:removed', { factionId: 'cipher_collective' });
+
+      lastTransitionSummary = transitions.map((entry) => ({ ...entry }));
+    },
+    { iterations: 100, warmup: 10 }
+  );
+
+  controller.dispose();
+
+  const bench = runner.getResults().benchmarks['adaptive-audio-infiltration'];
+  bench.transitionSample = lastTransitionSummary;
+  bench.transitionCount = lastTransitionSummary.length;
+  bench.context = {
+    stateSequence: lastTransitionSummary.map((entry) => entry.to),
+  };
+}
+
 /**
  * Render System Benchmarks (without actual Canvas)
  */
@@ -612,6 +707,7 @@ async function main() {
   try {
     await benchmarkECS(runner);
     await benchmarkPhysics(runner);
+    await benchmarkAdaptiveAudio(runner);
     await benchmarkRendering(runner);
     await benchmarkAssetLoading(runner);
     await benchmarkGameLoop(runner);
@@ -664,6 +760,20 @@ function printSummary(results) {
 
   const collision500 = benchmarks['physics-collision-500-entities'];
   console.log(`  • Collision (500 entities, 5 frames): ${collision500.timing.mean.toFixed(2)}ms (target: <4ms/frame)`);
+
+  // Adaptive Audio Summary
+  const adaptiveAudio = benchmarks['adaptive-audio-infiltration'];
+  if (adaptiveAudio) {
+    console.log('\n🔹 Adaptive Audio:');
+    console.log(
+      `  • Infiltration transition batch: ${adaptiveAudio.timing.mean.toFixed(3)}ms (target: track <2ms batch)`
+    );
+    if (adaptiveAudio.context?.stateSequence?.length) {
+      console.log(
+        `  • State sequence sample: ${adaptiveAudio.context.stateSequence.join(' → ')}`
+      );
+    }
+  }
 
   // Rendering Summary
   console.log('\n🔹 Rendering Performance:');

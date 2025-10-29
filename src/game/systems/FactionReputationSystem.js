@@ -21,6 +21,7 @@ export class FactionReputationSystem extends System {
 
     // Player faction member (cached for performance)
     this.playerFactionMember = null;
+    this.playerEntityId = null;
 
     // Event unsubscriber references
     this._offEvidenceCollected = null;
@@ -58,9 +59,10 @@ export class FactionReputationSystem extends System {
   update(deltaTime, entities) {
     // Cache player faction member by checking for PlayerController component
     if (!this.playerFactionMember) {
-      const playerEntities = this.componentRegistry.queryEntities(['PlayerController', 'FactionMember']);
+      const playerEntities = this.componentRegistry.queryEntities('PlayerController', 'FactionMember');
       if (playerEntities.length > 0) {
-        this.playerFactionMember = this.getComponent(playerEntities[0], 'FactionMember');
+        this.playerEntityId = playerEntities[0];
+        this.playerFactionMember = this.getComponent(this.playerEntityId, 'FactionMember');
       }
     }
 
@@ -123,6 +125,18 @@ export class FactionReputationSystem extends System {
     if (!this.playerFactionMember) return;
 
     this.playerFactionMember.equipDisguise(factionId);
+    if (this.playerEntityId != null) {
+      const disguiseComponent = this.getComponent(this.playerEntityId, 'Disguise');
+      if (disguiseComponent) {
+        disguiseComponent.factionId = factionId;
+        if (typeof disguiseComponent.equip === 'function') {
+          disguiseComponent.equip();
+        } else {
+          disguiseComponent.equipped = true;
+          disguiseComponent.suspicionLevel = 0;
+        }
+      }
+    }
 
     this.eventBus.emit('disguise:equipped', {
       factionId
@@ -139,6 +153,17 @@ export class FactionReputationSystem extends System {
 
     const oldDisguise = this.playerFactionMember.currentDisguise;
     this.playerFactionMember.removeDisguise();
+    if (this.playerEntityId != null) {
+      const disguiseComponent = this.getComponent(this.playerEntityId, 'Disguise');
+      if (disguiseComponent) {
+        if (typeof disguiseComponent.unequip === 'function') {
+          disguiseComponent.unequip();
+        } else {
+          disguiseComponent.equipped = false;
+          disguiseComponent.suspicionLevel = 0;
+        }
+      }
+    }
 
     this.eventBus.emit('disguise:removed', {
       factionId: oldDisguise
@@ -168,5 +193,7 @@ export class FactionReputationSystem extends System {
       this._offCaseSolved();
       this._offCaseSolved = null;
     }
+    this.playerFactionMember = null;
+    this.playerEntityId = null;
   }
 }

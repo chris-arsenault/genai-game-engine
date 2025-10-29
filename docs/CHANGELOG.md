@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Adaptive audio infiltration benchmarking and Playwright coverage measure the full disguise → combat → ambient transition path, ensuring telemetry stays wired to real gameplay events (`benchmark.js`, `tests/e2e/adaptive-audio-transitions.spec.js`, `tests/e2e/tutorial-overlay.spec.js`).
 - Audio subsystem foundation with Web Audio `AudioManager`, pooled SFX playback, and music channel fade automation covered by dedicated unit suites (`src/engine/audio/AudioManager.js`, `src/engine/audio/{MusicChannel,SFXPool}.js`, `tests/engine/audio/*.test.js`).
 - Memory Parlor ambient audio controller reacts to scrambler windows by crossfading the sourced “Goodnightmare” loop, with configuration hooks and scene cleanup to gate narrative intensity (`src/game/audio/AmbientSceneAudioController.js`, `src/game/scenes/MemoryParlorScene.js`, `src/game/config/GameConfig.js`, `tests/game/audio/AmbientSceneAudioController.test.js`).
 - Integrated FreePD “Goodnightmare” track into the asset pipeline and manifest for Memory Parlor infiltration ambience (`assets/music/memory-parlor/goodnightmare.mp3`, `assets/music/requests.json`, `assets/manifest.example.json`).
@@ -38,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Engine exposes `setFrameHooks` so game coordinators can wire per-frame update and overlay rendering without duplicating requestAnimationFrame plumbing (`src/engine/Engine.js`).
 
 ### Fixed
+- InvestigationSystem now resolves the player entity via tag metadata rather than the deprecated `hasTag` helper, restoring evidence detection events that fuel the tutorial overlay (`src/game/systems/InvestigationSystem.js`).
 - Restored Jest’s browser emulation by polyfilling `TransformStream`, Canvas gradient APIs, and excluding Playwright specs from Jest execution (`tests/setup.js`, `package.json`).
 - Updated TutorialSystem and Reputation UI tests to align with the EventBus `.on` API and overlay metadata emitted during visibility toggles (`tests/game/systems/TutorialSystem.test.js`, `tests/game/ui/ReputationUI.test.js`).
 - Relaxed engine integration frame-time assertions to account for the faster jsdom requestAnimationFrame cadence shipped with Node 20 (`tests/engine/integration-full.test.js`).
