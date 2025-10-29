@@ -254,6 +254,10 @@ _Progress 2025-10-30 (Session #45 implementation): Debug overlay now surfaces qu
   - Test artifacts (screenshots/video) stored on failure.
   - Documentation updated with scenario scope and troubleshooting notes.
 _Progress 2025-10-28 (Session #25 implementation): Added `tests/e2e/tutorial-overlay.spec.js` validating tutorial progression, overlay visibility, and store completion state._
+_Progress 2025-10-30 (Session #53 implementation): Extended Playwright coverage to evidence collection, clue derivation, and detective vision prompts, updating `InvestigationSystem` to emit `ability:activated` for automation telemetry._
+- **Next Steps**:
+  - Automate case file and deduction board tutorial prompts to eliminate remaining manual QA steps.
+  - Capture tutorial automation troubleshooting notes and failure-handling guidance once UI interactions stabilize.
 
 #### QA-202: SaveManager LocalStorage Regression
 - **Priority**: P1

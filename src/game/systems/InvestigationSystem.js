@@ -336,6 +336,12 @@ export class InvestigationSystem extends System {
     this.detectiveVisionActive = true;
     this.detectiveVisionTimer = GameConfig.player.detectiveVisionDuration / 1000;
 
+    this.eventBus.emit('ability:activated', {
+      abilityId: 'detective_vision',
+      source: 'InvestigationSystem',
+      timestamp: Date.now()
+    });
+
     this.eventBus.emit('detective_vision:activated', {
       duration: this.detectiveVisionTimer
     });
