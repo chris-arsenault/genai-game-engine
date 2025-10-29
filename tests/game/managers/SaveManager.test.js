@@ -1298,6 +1298,104 @@ describe('SaveManager', () => {
     });
   });
 
+  // ==================== INSPECTOR EXPORT TESTS ====================
+
+  describe('Inspector Export', () => {
+    test('should build export artifacts and invoke writer callback', () => {
+      const cascadeSummary = {
+        lastCascadeEvent: {
+          targetFactionId: 'luminari_syndicate',
+          targetFactionName: 'The Luminari Syndicate',
+          sourceFactionId: 'vanguard_prime',
+          sourceFactionName: 'Vanguard Prime',
+          newAttitude: 'friendly',
+          occurredAt: Date.UTC(2025, 9, 30, 17, 0, 0),
+        },
+        cascadeTargets: [
+          {
+            factionId: 'luminari_syndicate',
+            cascadeCount: 3,
+            lastCascade: {
+              sourceFactionId: 'vanguard_prime',
+              sourceFactionName: 'Vanguard Prime',
+              newAttitude: 'friendly',
+              occurredAt: Date.UTC(2025, 9, 30, 17, 0, 0),
+            },
+            sources: ['vanguard_prime'],
+          },
+        ],
+      };
+
+      const tutorialSnapshots = [
+        {
+          event: 'tutorial_completed',
+          timestamp: Date.UTC(2025, 9, 30, 17, 5, 0),
+          stepId: 'tutorial_complete',
+          totalSteps: 4,
+          completedSteps: ['intro'],
+        },
+      ];
+
+      const store = {
+        select: jest.fn((selector) => {
+          if (selector === factionSlice.selectors.selectFactionCascadeSummary) {
+            return cascadeSummary;
+          }
+          if (selector === tutorialSlice.selectors.selectPromptHistorySnapshots) {
+            return tutorialSnapshots;
+          }
+          if (selector === tutorialSlice.selectors.selectLatestPromptSnapshot) {
+            return tutorialSnapshots[0];
+          }
+          return null;
+        }),
+      };
+
+      mockManagers.worldStateStore = store;
+      saveManager = new SaveManager(eventBus, mockManagers);
+
+      const writer = jest.fn();
+      const result = saveManager.exportInspectorSummary({ writer, prefix: 'ci-artifact' });
+
+      expect(result.summary.source).toBe('worldStateStore');
+      expect(result.artifacts.length).toBe(3);
+      expect(writer).toHaveBeenCalledTimes(3);
+      expect(writer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filename: expect.stringContaining('ci-artifact'),
+        })
+      );
+    });
+
+    test('should continue when writer throws', () => {
+      mockManagers.worldStateStore = {
+        select: jest.fn((selector) => {
+          if (selector === factionSlice.selectors.selectFactionCascadeSummary) {
+            return { lastCascadeEvent: null, cascadeTargets: [] };
+          }
+          if (selector === tutorialSlice.selectors.selectPromptHistorySnapshots) {
+            return [];
+          }
+          if (selector === tutorialSlice.selectors.selectLatestPromptSnapshot) {
+            return null;
+          }
+          return null;
+        }),
+      };
+
+      saveManager = new SaveManager(eventBus, mockManagers);
+
+      const writer = jest.fn(() => {
+        throw new Error('filesystem unavailable');
+      });
+
+      const result = saveManager.exportInspectorSummary({ writer });
+
+      expect(result.artifacts.length).toBe(3);
+      expect(writer).toHaveBeenCalled();
+    });
+  });
+
   // ==================== DATA COLLECTION TESTS ====================
 
   describe('Data Collection', () => {

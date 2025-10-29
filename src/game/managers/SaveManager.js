@@ -14,6 +14,7 @@
 
 import { factionSlice } from '../state/slices/factionSlice.js';
 import { tutorialSlice } from '../state/slices/tutorialSlice.js';
+import { createInspectorExportArtifacts } from '../telemetry/inspectorTelemetryExporter.js';
 
 export class SaveManager {
   constructor(eventBus, managers = {}) {
@@ -425,6 +426,36 @@ export class SaveManager {
         latestSnapshot: latestSnapshot ?? null,
         snapshots: Array.isArray(tutorialSnapshots) ? tutorialSnapshots : [],
       },
+    };
+  }
+
+  /**
+   * Produce JSON/CSV export artifacts capturing inspector telemetry.
+   * Optionally invokes a writer callback for each artifact produced.
+   * @param {Object} options
+   * @param {Function} [options.writer] - Receives artifact descriptors `{ filename, content, mimeType, type }`
+   * @param {string|string[]} [options.formats] - 'json', 'csv', or both
+   * @param {string} [options.prefix] - File prefix override
+   * @returns {{summary: Object, artifacts: Array}}
+   */
+  exportInspectorSummary(options = {}) {
+    const summary = this.getInspectorSummary();
+    const { summary: sanitizedSummary, artifacts } = createInspectorExportArtifacts(summary, options);
+
+    const writer = options.writer;
+    if (typeof writer === 'function') {
+      for (const artifact of artifacts) {
+        try {
+          writer({ ...artifact });
+        } catch (error) {
+          console.warn('[SaveManager] Telemetry export writer failed', error);
+        }
+      }
+    }
+
+    return {
+      summary: sanitizedSummary,
+      artifacts,
     };
   }
 

@@ -47,8 +47,8 @@ _Updated during Autonomous Sessions #62–64 (2025-10-30)._
 
 ## Debug Overlay & Inspector Surfaces
 - **HUD updates**: `index.html` adds faction cascade and tutorial snapshot containers, while `src/main.js` renders selector output with relative time helpers.
-- **SaveManager inspector**: `SaveManager.getInspectorSummary()` returns cascade and tutorial telemetry (fallback-safe) for console inspection, with Jest coverage.
-- **End-to-end coverage**: `tests/e2e/debug-overlay-telemetry.spec.js` seeds cascade/tutorial events via `WorldStateStore.dispatch` and verifies HUD text plus console cleanliness.
+- **SaveManager inspector**: `SaveManager.getInspectorSummary()` returns cascade and tutorial telemetry (fallback-safe) for console inspection, with Jest coverage. `SaveManager.exportInspectorSummary()` extends this surface with JSON + CSV artifact generation so QA/CI pipelines can capture cascade timelines and tutorial snapshots without ad-hoc scripts.
+- **End-to-end coverage**: `tests/e2e/debug-overlay-telemetry.spec.js` seeds cascade/tutorial events via `WorldStateStore.dispatch` and verifies HUD text plus console cleanliness. `tests/e2e/cascade-mission-telemetry.spec.js` runs a narrative mission cadence, drives faction cascades, and exercises the export pipeline.
 
 ## HUD Telemetry Panels
 - **ReputationUI (`src/game/ui/ReputationUI.js`)**
@@ -65,11 +65,12 @@ _Updated during Autonomous Sessions #62–64 (2025-10-30)._
   - Jest coverage in `tests/game/ui/SaveInspectorOverlay.test.js`.
 - **End-to-end validation**
   - Playwright smoke `tests/e2e/hud-telemetry.spec.js` dispatches cascade/tutorial events, ensures UI overlays surface telemetry, and falls back to explicit `show()` calls if key edge detection is swallowed in headless environments.
+  - Mission-focused `tests/e2e/cascade-mission-telemetry.spec.js` progresses Memory Parlor objectives, leverages `FactionReputationSystem` cascades, and validates that HUD summaries and export artifacts stay in sync.
 
 ## Benchmark Refresh
 - Script: `node benchmarks/state-store-prototype.js`
   - Adds cascade/tutor events and queries `selectFactionCascadeSummary` + `selectPromptHistorySnapshots`.
-  - Emits dispatch threshold verdict: **PASS** when mean ≤ 0.25 ms (current mean ≈ 0.0108 ms for 500 dispatches).
+  - Emits dispatch threshold verdict: **PASS** when mean ≤ 0.25 ms (current mean ≈ 0.0100 ms for 500 dispatches).
   - Summary JSON now carries `dispatchThreshold` and `dispatchThresholdMet` for automated gating.
 - Recommended use: integrate into CI smoke to guard regressions on observability-heavy reducers.
 
@@ -85,6 +86,7 @@ npm test -- SaveInspectorOverlay
 npm test -- tutorialViewModel
 npx playwright test tests/e2e/debug-overlay-telemetry.spec.js
 npx playwright test tests/e2e/hud-telemetry.spec.js
+npx playwright test tests/e2e/cascade-mission-telemetry.spec.js
 node benchmarks/state-store-prototype.js
 ```
 
