@@ -18,6 +18,7 @@
 - Summarize verification work (tests, lint, Playwright, profiling) and outstanding follow-ups in your final response.
 - Stay within your assigned scope; coordinate cross-agent dependencies in the shared plan before touching unrelated assets.
 - Treat MCP integrations as first-class: query before creating; store results immediately after producing them.
+- Ignore artifacts stored under `archive/` unless explicitly asked to reference historical materials; do not modify archived files during active tasks.
 
 ### Command & Editing Practices
 - Keep edits ASCII unless the target file already uses other encodings.

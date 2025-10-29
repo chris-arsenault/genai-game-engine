@@ -14,10 +14,11 @@
  */
 import { tutorialCase, tutorialEvidence, tutorialClues } from '../data/cases/tutorialCase.js';
 import {
-  evidenceToInventoryItem,
   currencyDeltaToInventoryUpdate,
   questRewardToInventoryItem,
 } from '../state/inventory/inventoryEvents.js';
+import { createEvidenceEntity } from '../entities/EvidenceEntity.js';
+import { createPlayerEntity } from '../entities/PlayerEntity.js';
 
 export class TutorialScene {
   /**
@@ -27,13 +28,16 @@ export class TutorialScene {
   constructor(game) {
     this.game = game;
     this.entityManager = game.entityManager;
+    this.componentRegistry = game.componentRegistry;
     this.caseManager = game.caseManager;
     this.eventBus = game.eventBus;
 
     // Scene state
     this.loaded = false;
     this.caseActive = false;
-    this.evidenceEntities = [];
+    this.evidenceEntities = new Map();
+    this.playerEntityId = null;
+    this._eventHandlers = [];
 
     // Scene dimensions
     this.width = 800;
@@ -54,6 +58,10 @@ export class TutorialScene {
     // Register evidence and clues in databases
     this._registerEvidenceAndClues();
 
+    // Ensure fresh scene state
+    this._teardownSceneEventHandlers();
+    this.evidenceEntities.clear();
+
     // Create the tutorial case
     this.caseManager.createCase(tutorialCase);
     this.caseManager.setActiveCase(tutorialCase.id);
@@ -64,6 +72,8 @@ export class TutorialScene {
 
     // Create player entity if not exists
     this._createPlayer();
+
+    this._registerSceneEventHandlers();
 
     this.loaded = true;
 
@@ -81,11 +91,20 @@ export class TutorialScene {
   unload() {
     if (!this.loaded) return;
 
+    this._teardownSceneEventHandlers();
+
     // Clean up evidence entities
-    this.evidenceEntities.forEach(entity => {
-      this.entityManager.removeEntity(entity.id);
-    });
-    this.evidenceEntities = [];
+    for (const entityId of this.evidenceEntities.values()) {
+      if (this.componentRegistry?.removeAllComponents) {
+        this.componentRegistry.removeAllComponents(entityId);
+      }
+      if (typeof this.entityManager.destroyEntity === 'function') {
+        this.entityManager.destroyEntity(entityId);
+      }
+    }
+    this.evidenceEntities.clear();
+
+    this.playerEntityId = null;
 
     this.loaded = false;
     this.caseActive = false;
@@ -133,62 +152,84 @@ export class TutorialScene {
    * Spawn evidence entities in the scene
    * @private
    */
-  _spawnEvidenceEntities() {
-    tutorialEvidence.forEach(evidence => {
-      const entity = this._createEvidenceEntity(evidence);
-      this.evidenceEntities.push(entity);
+  _registerSceneEventHandlers() {
+    this._teardownSceneEventHandlers();
+
+    const offEvidenceCollected = this.eventBus.on('evidence:collected', (data = {}) => {
+      this._handleEvidenceCollected(data);
     });
 
-    console.log(`[TutorialScene] Spawned ${this.evidenceEntities.length} evidence entities`);
+    this._eventHandlers.push(offEvidenceCollected);
   }
 
   /**
-   * Create an evidence entity
+   * Remove any registered scene event handlers.
    * @private
-   * @param {Object} evidenceData - Evidence data
-   * @returns {Object} Created entity
    */
-  _createEvidenceEntity(evidenceData) {
-    const entity = this.entityManager.createEntity();
+  _teardownSceneEventHandlers() {
+    if (!Array.isArray(this._eventHandlers)) {
+      this._eventHandlers = [];
+      return;
+    }
 
-    // Position component
-    entity.addComponent('PositionComponent', {
-      x: evidenceData.position.x,
-      y: evidenceData.position.y
-    });
-
-    // Evidence component
-    entity.addComponent('EvidenceComponent', {
-      evidenceId: evidenceData.id,
-      caseId: tutorialCase.id,
-      collected: false,
-      title: evidenceData.title,
-      description: evidenceData.description,
-      type: evidenceData.type,
-      interactionPrompt: evidenceData.interactionPrompt || 'Examine evidence',
-      derivedClues: evidenceData.derivedClues || []
-    });
-
-    // Interactable component
-    entity.addComponent('InteractableComponent', {
-      range: 50,
-      prompt: evidenceData.interactionPrompt || 'Press E to examine',
-      onInteract: (playerEntity) => {
-        this._onEvidenceInteract(entity, playerEntity);
+    for (const off of this._eventHandlers) {
+      if (typeof off === 'function') {
+        off();
       }
-    });
+    }
 
-    // Render component (simple marker for now)
-    entity.addComponent('RenderComponent', {
-      type: 'circle',
-      radius: 10,
-      color: evidenceData.collected ? '#555555' : '#ffd700', // Gold when uncollected
-      zIndex: 5
-    });
+    this._eventHandlers.length = 0;
+  }
 
-    entity.addTag('evidence');
+  /**
+   * Handle evidence collected event for tutorial visuals.
+   * @param {Object} data
+   * @private
+   */
+  _handleEvidenceCollected(data = {}) {
+    const { evidenceId } = data;
+    if (!evidenceId || !this.evidenceEntities.has(evidenceId)) {
+      return;
+    }
 
-    return entity;
+    const entityId = this.evidenceEntities.get(evidenceId);
+    const sprite = this.componentRegistry?.getComponent?.(entityId, 'Sprite');
+    if (sprite) {
+      sprite.color = '#555555';
+      sprite.alpha = 0.65;
+    }
+  }
+
+  /**
+   * Spawn evidence entities in the scene
+   * @private
+   */
+  _spawnEvidenceEntities() {
+    for (const evidence of tutorialEvidence) {
+      const { position = { x: 0, y: 0 } } = evidence;
+      const requiresAbility = Array.isArray(evidence.requires)
+        ? evidence.requires[0] ?? null
+        : evidence.requires ?? null;
+
+      const entityId = createEvidenceEntity(this.entityManager, this.componentRegistry, {
+        x: position.x,
+        y: position.y,
+        id: evidence.id,
+        type: evidence.type,
+        category: evidence.category,
+        title: evidence.title,
+        description: evidence.description,
+        caseId: tutorialCase.id,
+        hidden: Boolean(evidence.hidden),
+        requires: requiresAbility,
+        derivedClues: evidence.derivedClues || [],
+        prompt: evidence.interactionPrompt || null,
+      });
+
+      this.evidenceEntities.set(evidence.id, entityId);
+    }
+
+    console.log(`[TutorialScene] Spawned ${this.evidenceEntities.size} evidence entities`);
   }
 
   /**
@@ -197,99 +238,19 @@ export class TutorialScene {
    */
   _createPlayer() {
     // Check if player already exists
-    const existingPlayer = this.entityManager.getEntitiesWithTag('player')[0];
-    if (existingPlayer) {
+    const getByTag = this.entityManager.getEntitiesByTag?.bind(this.entityManager);
+    const existingPlayers = typeof getByTag === 'function' ? getByTag('player') : [];
+    if (existingPlayers && existingPlayers.length > 0) {
+      this.playerEntityId = existingPlayers[0];
       console.log('[TutorialScene] Player already exists');
-      return existingPlayer;
+      return this.playerEntityId;
     }
 
-    const player = this.entityManager.createEntity();
-
-    // Position player at scene start
-    player.addComponent('PositionComponent', {
-      x: 100,
-      y: 300
-    });
-
-    // Velocity component
-    player.addComponent('VelocityComponent', {
-      x: 0,
-      y: 0
-    });
-
-    // Input component
-    player.addComponent('InputComponent', {
-      keys: {},
-      mouseX: 0,
-      mouseY: 0
-    });
-
-    // Render component
-    player.addComponent('RenderComponent', {
-      type: 'circle',
-      radius: 15,
-      color: '#4a9eff',
-      zIndex: 10
-    });
-
-    player.addTag('player');
+    const playerEntityId = createPlayerEntity(this.entityManager, this.componentRegistry, 100, 300);
+    this.playerEntityId = playerEntityId;
 
     console.log('[TutorialScene] Player entity created');
-    return player;
-  }
-
-  /**
-   * Handle evidence interaction
-   * @private
-   */
-  _onEvidenceInteract(evidenceEntity, playerEntity) {
-    const evidenceComp = evidenceEntity.getComponent('EvidenceComponent');
-
-    if (evidenceComp.collected) {
-      console.log('[TutorialScene] Evidence already collected');
-      return;
-    }
-
-    // Mark as collected
-    evidenceComp.collected = true;
-
-    // Update render color
-    const renderComp = evidenceEntity.getComponent('RenderComponent');
-    if (renderComp) {
-      renderComp.color = '#555555'; // Gray when collected
-    }
-
-    // Emit evidence collected event
-    this.eventBus.emit('evidence:collected', {
-      caseId: evidenceComp.caseId,
-      evidenceId: evidenceComp.evidenceId
-    });
-
-    const inventoryPayload = evidenceToInventoryItem({
-      id: evidenceComp.evidenceId,
-      title: evidenceComp.title,
-      description: evidenceComp.description,
-      type: evidenceComp.type,
-      category: evidenceComp.category,
-      caseId: evidenceComp.caseId,
-      derivedClues: evidenceComp.derivedClues,
-    }, {
-      source: 'tutorial',
-    });
-
-    if (inventoryPayload) {
-      this.eventBus.emit('inventory:item_added', inventoryPayload);
-    }
-
-    // Derive clues from evidence
-    evidenceComp.derivedClues.forEach(clueId => {
-      this.eventBus.emit('clue:derived', {
-        caseId: evidenceComp.caseId,
-        clueId: clueId
-      });
-    });
-
-    console.log(`[TutorialScene] Evidence collected: ${evidenceComp.title}`);
+    return playerEntityId;
   }
 
   /**

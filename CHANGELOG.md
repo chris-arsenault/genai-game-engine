@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Resolved EventBus deprecation logs by providing a backward-compatible `subscribe` shim while aligning all runtime code with the modern API.
 - Ensured `QuestManager`, `SaveManager`, and tutorial/UI layers unregister their listeners on cleanup to prevent duplicate event handling in long sessions.
+- Fixed tutorial progression hang at step 3 by spawning evidence entities through the ECS factory so investigation detection events fire and prompts advance correctly.
 
 ### Testing
 - Added unit coverage for adaptive music layering controller, catalog loader, and refreshed ambient controller integration.
@@ -37,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated quest/story manager tests to exercise the new event lifecycle and validated UI overlay toggle stability.
 - Introduced telemetry stress harness for adaptive state churn plus Playwright coverage of SFX overlay filtering and mix transitions.
 - Relaxed high-variance performance thresholds in jsdom-based suites while documenting expected real-browser budgets.
+- Added `TutorialScene` integration test ensuring evidence detection integrates with the investigation system (`tests/game/scenes/TutorialScene.test.js`).
 
 ## [0.1.0] - 2025-10-26
 

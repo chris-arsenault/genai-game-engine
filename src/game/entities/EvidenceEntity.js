@@ -42,16 +42,21 @@ export function createEvidenceEntity(entityManager, componentRegistry, evidenceD
     caseId = 'case_tutorial',
     hidden = false,
     requires = null,
-    derivedClues = []
+    derivedClues = [],
+    prompt = null,
   } = evidenceData;
+
+  let normalizedRequires = requires;
+  if (Array.isArray(normalizedRequires)) {
+    normalizedRequires = normalizedRequires[0] ?? null;
+  }
 
   // Create entity with 'evidence' tag
   const entityId = entityManager.createEntity('evidence');
 
   // Add Transform component
   const transform = new Transform(x, y, 0, 1, 1);
-  transform.type = 'Transform';
-  componentRegistry.addComponent(entityId, transform);
+  componentRegistry.addComponent(entityId, 'Transform', transform);
 
   // Add Sprite component
   const sprite = new Sprite({
@@ -64,8 +69,7 @@ export function createEvidenceEntity(entityManager, componentRegistry, evidenceD
     visible: !hidden, // Hidden evidence not visible until detective vision
     alpha: hidden ? 0.3 : 1.0
   });
-  sprite.type = 'Sprite';
-  componentRegistry.addComponent(entityId, sprite);
+  componentRegistry.addComponent(entityId, 'Sprite', sprite);
 
   // Add Evidence component
   const evidence = new Evidence({
@@ -78,11 +82,10 @@ export function createEvidenceEntity(entityManager, componentRegistry, evidenceD
     collected: false,
     analyzed: false,
     hidden,
-    requires,
+    requires: normalizedRequires,
     derivedClues
   });
-  evidence.type = 'Evidence';
-  componentRegistry.addComponent(entityId, evidence);
+  componentRegistry.addComponent(entityId, 'Evidence', evidence);
 
   // Add InteractionZone component
   const interactionZone = new InteractionZone({
@@ -90,7 +93,7 @@ export function createEvidenceEntity(entityManager, componentRegistry, evidenceD
     type: 'evidence',
     radius: 48,
     requiresInput: true,
-    prompt: `Press E to collect: ${title}`,
+    prompt: prompt || `Press E to collect: ${title}`,
     active: true,
     oneShot: true,
     data: {
@@ -98,8 +101,7 @@ export function createEvidenceEntity(entityManager, componentRegistry, evidenceD
       caseId
     }
   });
-  interactionZone.type = 'InteractionZone';
-  componentRegistry.addComponent(entityId, interactionZone);
+  componentRegistry.addComponent(entityId, 'InteractionZone', interactionZone);
 
   // Add trigger collider for detection
   const collider = new Collider({
@@ -109,8 +111,7 @@ export function createEvidenceEntity(entityManager, componentRegistry, evidenceD
     isStatic: true,
     tags: ['evidence']
   });
-  collider.type = 'Collider';
-  componentRegistry.addComponent(entityId, collider);
+  componentRegistry.addComponent(entityId, 'Collider', collider);
 
   if (shouldLog()) {
     console.log(`[EvidenceEntity] Created evidence: ${title} at (${x}, ${y})`);
