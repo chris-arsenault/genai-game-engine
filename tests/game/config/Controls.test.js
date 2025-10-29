@@ -47,28 +47,43 @@ describe('InputState', () => {
   it('emits edge-triggered events once per action press when event bus is provided', () => {
     const eventBus = new EventBus();
     const generalSpy = jest.fn();
-    const specificSpy = jest.fn();
+    const boardSpy = jest.fn();
+    const caseSpy = jest.fn();
 
     eventBus.on('input:action_pressed', generalSpy);
-    eventBus.on('input:deductionBoard:pressed', specificSpy);
+    eventBus.on('input:deductionBoard:pressed', boardSpy);
+    eventBus.on('input:caseFile:pressed', caseSpy);
 
     const stateWithBus = new InputState(eventBus);
 
     const tabDown = { code: 'Tab', preventDefault: jest.fn() };
     stateWithBus.handleKeyDown(tabDown);
 
-    expect(generalSpy).toHaveBeenCalledTimes(1);
-    expect(generalSpy.mock.calls[0][0]).toMatchObject({ action: 'deductionBoard' });
-    expect(specificSpy).toHaveBeenCalledTimes(1);
+    expect(caseSpy).toHaveBeenCalledTimes(1);
+    expect(caseSpy.mock.calls[0][0]).toMatchObject({ action: 'caseFile' });
+
+    const boardDown = { code: 'KeyB', preventDefault: jest.fn() };
+    stateWithBus.handleKeyDown(boardDown);
+
+    expect(generalSpy).toHaveBeenCalledTimes(2);
+    expect(generalSpy.mock.calls[0][0]).toMatchObject({ action: 'caseFile' });
+    expect(generalSpy.mock.calls[1][0]).toMatchObject({ action: 'deductionBoard' });
+    expect(boardSpy).toHaveBeenCalledTimes(1);
 
     // Repeated calls without release should not emit again
     stateWithBus.handleKeyDown(tabDown);
-    expect(generalSpy).toHaveBeenCalledTimes(1);
+    stateWithBus.handleKeyDown(boardDown);
+    expect(caseSpy).toHaveBeenCalledTimes(1);
+    expect(boardSpy).toHaveBeenCalledTimes(1);
+    expect(generalSpy).toHaveBeenCalledTimes(2);
 
     // Release and press again emits once more
     stateWithBus.handleKeyUp({ code: 'Tab' });
     stateWithBus.handleKeyDown({ code: 'Tab', preventDefault: jest.fn() });
-    expect(generalSpy).toHaveBeenCalledTimes(2);
-    expect(specificSpy).toHaveBeenCalledTimes(2);
+    expect(caseSpy).toHaveBeenCalledTimes(2);
+
+    stateWithBus.handleKeyUp({ code: 'KeyB' });
+    stateWithBus.handleKeyDown({ code: 'KeyB', preventDefault: jest.fn() });
+    expect(boardSpy).toHaveBeenCalledTimes(2);
   });
 });

@@ -14,7 +14,8 @@ export const Controls = {
 
   // Actions
   interact: ['KeyE'], // Evidence collection, dialogue, interaction
-  deductionBoard: ['Tab'], // Open deduction board
+  caseFile: ['Tab'], // Open case file
+  deductionBoard: ['KeyB'], // Open deduction board
   inventory: ['KeyI'], // Open inventory
   pause: ['Escape'], // Pause menu
   faction: ['KeyR'], // Open reputation/faction UI

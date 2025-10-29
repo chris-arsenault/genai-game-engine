@@ -16,11 +16,11 @@ export class DeductionSystem extends System {
    * @param {CaseManager} caseManager - Case management system
    * @param {DeductionBoard} deductionBoard - Deduction board UI
    */
-  constructor(componentRegistry, eventBus, caseManager, deductionBoard) {
+  constructor(componentRegistry, eventBus, caseManager, deductionBoard = null) {
     super(componentRegistry, eventBus, []); // No required components
 
     this.caseManager = caseManager;
-    this.deductionBoard = deductionBoard;
+    this.deductionBoard = deductionBoard || null;
     this.priority = 30; // Set priority
 
     // State
@@ -29,6 +29,7 @@ export class DeductionSystem extends System {
 
     // Setup event listeners
     this.setupEventListeners();
+    this._bindBoardCallbacks();
   }
 
   /**
@@ -49,8 +50,26 @@ export class DeductionSystem extends System {
     this.eventBus.on('input:deductionBoard:pressed', () => {
       this.toggleBoard('input:deductionBoard');
     });
+  }
 
-    // Setup deduction board callbacks
+  /**
+   * Attach deduction board instance after construction.
+   * @param {DeductionBoard|null} board
+   */
+  setDeductionBoard(board) {
+    this.deductionBoard = board || null;
+    this._bindBoardCallbacks();
+  }
+
+  /**
+   * Bind board callbacks if board is available.
+   * @private
+   */
+  _bindBoardCallbacks() {
+    if (!this.deductionBoard) {
+      return;
+    }
+
     this.deductionBoard.onValidate = (theory) => {
       return this.validateTheory(theory);
     };
@@ -91,6 +110,11 @@ export class DeductionSystem extends System {
    * Open deduction board
    */
   openBoard(source = 'toggle') {
+    if (!this.deductionBoard) {
+      console.warn('[DeductionSystem] No deduction board UI available to open');
+      return;
+    }
+
     // Check if there's an active case
     const activeCase = this.caseManager.getActiveCase();
     if (!activeCase) {
@@ -122,8 +146,13 @@ export class DeductionSystem extends System {
    * Close deduction board
    */
   closeBoard(source = 'toggle') {
-    this.deductionBoard.hide(source);
     this.isOpen = false;
+
+    if (!this.deductionBoard) {
+      return;
+    }
+
+    this.deductionBoard.hide(source);
 
     this.eventBus.emit('deduction_board:closed', {
       caseId: this.currentCase?.id,
@@ -222,8 +251,8 @@ export class DeductionSystem extends System {
     return {
       isOpen: this.isOpen,
       currentCase: this.currentCase?.id,
-      theory: this.isOpen ? this.deductionBoard.getTheory() : null,
-      accuracy: this.deductionBoard.theoryAccuracy
+      theory: this.isOpen && this.deductionBoard ? this.deductionBoard.getTheory() : null,
+      accuracy: this.deductionBoard?.theoryAccuracy ?? 0
     };
   }
 
@@ -233,5 +262,6 @@ export class DeductionSystem extends System {
   cleanup() {
     this.closeBoard();
     this.currentCase = null;
+    this.deductionBoard = null;
   }
 }

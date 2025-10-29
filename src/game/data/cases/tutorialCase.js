@@ -11,7 +11,7 @@
  */
 
 export const tutorialCase = {
-  id: 'case_001_hollow',
+  id: 'case_001_hollow_case',
   title: 'The Hollow Case',
   act: 'act1',
   description:

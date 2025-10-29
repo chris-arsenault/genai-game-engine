@@ -20,6 +20,7 @@ import { DisguiseSystem } from './systems/DisguiseSystem.js';
 import { QuestSystem } from './systems/QuestSystem.js';
 import { FirewallScramblerSystem } from './systems/FirewallScramblerSystem.js';
 import { ForensicSystem } from './systems/ForensicSystem.js';
+import { DeductionSystem } from './systems/DeductionSystem.js';
 
 // State
 import { WorldStateStore } from './state/WorldStateStore.js';
@@ -41,6 +42,8 @@ import { QuestNotification } from './ui/QuestNotification.js';
 import { InteractionPromptOverlay } from './ui/InteractionPromptOverlay.js';
 import { MovementIndicatorOverlay } from './ui/MovementIndicatorOverlay.js';
 import { QuestLogUI } from './ui/QuestLogUI.js';
+import { CaseFileUI } from './ui/CaseFileUI.js';
+import { DeductionBoard } from './ui/DeductionBoard.js';
 import { InventoryOverlay } from './ui/InventoryOverlay.js';
 import { AudioFeedbackController } from './audio/AudioFeedbackController.js';
 import { SFXCatalogLoader } from './audio/SFXCatalogLoader.js';
@@ -49,10 +52,12 @@ import { SFXCatalogLoader } from './audio/SFXCatalogLoader.js';
 import { FactionManager } from './managers/FactionManager.js';
 import { QuestManager } from './managers/QuestManager.js';
 import { StoryFlagManager } from './managers/StoryFlagManager.js';
+import { CaseManager } from './managers/CaseManager.js';
 import { SaveManager } from './managers/SaveManager.js';
 
 // Quest data
 import { registerAct1Quests } from './data/quests/act1Quests.js';
+import { tutorialCase } from './data/cases/tutorialCase.js';
 
 // Dialogue data
 import { registerAct1Dialogues } from './data/dialogues/Act1Dialogues.js';
@@ -107,12 +112,14 @@ export class Game {
     this.factionManager = null;
     this.questManager = null;
     this.storyFlagManager = null;
+    this.caseManager = null;
     this.saveManager = null;
     this.worldStateStore = null;
 
     // Game systems (game-specific, not engine)
     this.gameSystems = {
       playerMovement: null,
+      deduction: null,
       investigation: null,
       forensic: null,
       factionReputation: null,
@@ -227,6 +234,11 @@ export class Game {
     this.storyFlagManager = new StoryFlagManager(this.eventBus);
     this.storyFlagManager.init();
     console.log('[Game] StoryFlagManager initialized');
+
+    // Initialize CaseManager (register tutorial case and set active)
+    this.caseManager = new CaseManager(this.eventBus);
+    this.caseManager.registerCase(tutorialCase, { activate: true });
+    console.log('[Game] CaseManager initialized with tutorial case');
 
     // Initialize QuestManager (required by QuestSystem)
     this.questManager = new QuestManager(
@@ -356,6 +368,15 @@ export class Game {
     );
     this.gameSystems.quest.init();
 
+    // Create deduction system (links case manager to deduction board UI)
+    this.gameSystems.deduction = new DeductionSystem(
+      this.componentRegistry,
+      this.eventBus,
+      this.caseManager,
+      null
+    );
+    this.gameSystems.deduction.init();
+
     // Create render system (engine system, runs last after all logic)
     this.gameSystems.render = new RenderSystem(
       this.componentRegistry,
@@ -366,7 +387,7 @@ export class Game {
     this.gameSystems.render.init();
 
     // Register systems with engine SystemManager
-    // Priority order: Tutorial (5), PlayerMovement (10), NPCMemory (20), Disguise (22), Faction (25), Quest (27), Investigation (30), Forensic (31), Knowledge (35), Dialogue (40), Camera (90), Render (100)
+    // Priority order: Tutorial (5), PlayerMovement (10), NPCMemory (20), Disguise (22), Faction (25), Quest (27), Deduction (29), Investigation (30), Forensic (31), Knowledge (35), Dialogue (40), Camera (90), Render (100)
     this.systemManager.registerSystem(this.gameSystems.tutorial, 5);
     this.systemManager.registerSystem(this.gameSystems.playerMovement, 10);
     this.systemManager.registerSystem(this.gameSystems.npcMemory, 20);
@@ -374,6 +395,7 @@ export class Game {
     this.systemManager.registerSystem(this.gameSystems.disguise, 22);
     this.systemManager.registerSystem(this.gameSystems.factionReputation, 25);
     this.systemManager.registerSystem(this.gameSystems.quest, 27);
+    this.systemManager.registerSystem(this.gameSystems.deduction, 29);
     this.systemManager.registerSystem(this.gameSystems.investigation, 30);
     this.systemManager.registerSystem(this.gameSystems.forensic, 31);
     this.systemManager.registerSystem(this.gameSystems.knowledgeProgression, 35);
@@ -445,15 +467,44 @@ export class Game {
     });
     this.questTrackerHUD.init();
 
+    const canvasWidth = this.engine.canvas.width;
+    const canvasHeight = this.engine.canvas.height;
+
     // Create quest log UI
     this.questLogUI = new QuestLogUI(700, 500, {
       eventBus: this.eventBus,
       questManager: this.questManager,
       worldStateStore: this.worldStateStore,
-      x: (this.engine.canvas.width - 700) / 2,
-      y: (this.engine.canvas.height - 500) / 2
+      x: (canvasWidth - 700) / 2,
+      y: (canvasHeight - 500) / 2
     });
     this.questLogUI.init();
+
+    // Create case file UI (anchored near right edge)
+    this.caseFileUI = new CaseFileUI(420, 520, {
+      eventBus: this.eventBus,
+      x: canvasWidth - 440,
+      y: 80,
+      onClose: () => {
+        if (this.caseFileUI) {
+          this.caseFileUI.hide('close_button');
+        }
+      }
+    });
+    this._loadActiveCaseIntoUI();
+
+    // Create deduction board UI (centered)
+    this.deductionBoard = new DeductionBoard(720, 520, {
+      eventBus: this.eventBus,
+      onClose: () => {
+        if (this.deductionBoard) {
+          this.deductionBoard.hide('close_button');
+        }
+      }
+    });
+    if (this.gameSystems.deduction) {
+      this.gameSystems.deduction.setDeductionBoard(this.deductionBoard);
+    }
 
     // Create inventory overlay (operates on world state inventory slice)
     this.inventoryOverlay = new InventoryOverlay(
@@ -840,6 +891,8 @@ export class Game {
       disguise: 'Disguise UI',
       interactionPrompt: 'Interaction Prompt',
       questLog: 'Quest Log',
+      caseFile: 'Case File',
+      deductionBoard: 'Deduction Board',
       reputation: 'Reputation UI',
       tutorial: 'Tutorial Overlay',
     };
@@ -868,9 +921,18 @@ export class Game {
       console.log(`[UI] Overlay ${stateLabel}: ${label}${suffix}`);
     }));
 
+    this._offGameEventHandlers.push(this.eventBus.on('input:caseFile:pressed', () => {
+      if (!this.caseFileUI) {
+        return;
+      }
+      this._loadActiveCaseIntoUI();
+      this.caseFileUI.toggle('input:caseFile');
+    }));
+
     // Evidence events
     this._offGameEventHandlers.push(this.eventBus.on('evidence:collected', (data) => {
       console.log(`[Game] Evidence collected: ${data.evidenceId}`);
+      this._loadActiveCaseIntoUI();
     }));
 
     this._offGameEventHandlers.push(this.eventBus.on('evidence:detected', () => {
@@ -880,7 +942,21 @@ export class Game {
     // Clue events
     this._offGameEventHandlers.push(this.eventBus.on('clue:derived', (data) => {
       console.log(`[Game] New clue: ${data.clueId} from ${data.evidenceId}`);
+      this._loadActiveCaseIntoUI();
     }));
+
+    const caseEventsForRefresh = [
+      'case:created',
+      'case:activated',
+      'case:objective_completed',
+      'case:objectives_complete',
+      'case:solved'
+    ];
+    for (const eventName of caseEventsForRefresh) {
+      this._offGameEventHandlers.push(this.eventBus.on(eventName, () => {
+        this._loadActiveCaseIntoUI();
+      }));
+    }
 
     // Reputation events
     this._offGameEventHandlers.push(this.eventBus.on('reputation:changed', (data) => {
@@ -1020,6 +1096,28 @@ export class Game {
   }
 
   /**
+   * Sync the currently active case into the case file UI.
+   * @private
+   */
+  _loadActiveCaseIntoUI() {
+    if (!this.caseFileUI) {
+      return;
+    }
+
+    if (!this.caseManager) {
+      this.caseFileUI.loadCase(null);
+      return;
+    }
+
+    const activeCase = this.caseManager.getActiveCase();
+    if (activeCase) {
+      this.caseFileUI.loadCase(activeCase);
+    } else {
+      this.caseFileUI.loadCase(null);
+    }
+  }
+
+  /**
    * Update game (called by engine each frame)
    * @param {number} deltaTime - Time since last frame (seconds)
    */
@@ -1099,6 +1197,7 @@ export class Game {
     if (this.inventoryOverlay && this.inputState.wasJustPressed('inventory')) {
       this.inventoryOverlay.toggle('input:inventory');
     }
+
   }
 
   /**
@@ -1476,6 +1575,14 @@ export class Game {
       this.questLogUI.render(ctx);
     }
 
+    if (this.caseFileUI) {
+      this.caseFileUI.render(ctx);
+    }
+
+    if (this.deductionBoard) {
+      this.deductionBoard.render(ctx);
+    }
+
     // Render dialogue box above HUD but below tutorial overlay for clarity
     if (this.dialogueBox) {
       this.dialogueBox.render(this.engine.canvas.width, this.engine.canvas.height);
@@ -1534,6 +1641,15 @@ export class Game {
     if (this.questLogUI && this.questLogUI.cleanup) {
       this.questLogUI.cleanup();
     }
+    if (this.caseFileUI) {
+      this.caseFileUI.hide('cleanup');
+    }
+    if (this.deductionBoard) {
+      this.deductionBoard.hide('cleanup');
+    }
+    if (this.gameSystems.deduction && typeof this.gameSystems.deduction.setDeductionBoard === 'function') {
+      this.gameSystems.deduction.setDeductionBoard(null);
+    }
     if (this.questTrackerHUD && this.questTrackerHUD.cleanup) {
       this.questTrackerHUD.cleanup();
     }
@@ -1574,6 +1690,10 @@ export class Game {
         }
       });
       this._offGameEventHandlers.length = 0;
+    }
+
+    if (this.caseManager && typeof this.caseManager.cleanup === 'function') {
+      this.caseManager.cleanup();
     }
 
     if (this.questManager && typeof this.questManager.cleanup === 'function') {

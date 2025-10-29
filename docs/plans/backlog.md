@@ -256,8 +256,8 @@ _Progress 2025-10-30 (Session #45 implementation): Debug overlay now surfaces qu
 _Progress 2025-10-28 (Session #25 implementation): Added `tests/e2e/tutorial-overlay.spec.js` validating tutorial progression, overlay visibility, and store completion state._
 _Progress 2025-10-30 (Session #53 implementation): Extended Playwright coverage to evidence collection, clue derivation, and detective vision prompts, updating `InvestigationSystem` to emit `ability:activated` for automation telemetry._
 _Progress 2025-10-30 (Session #54 implementation): Added Playwright flows for case file prompts, forensic analysis completion, and deduction board resolution using event-driven helpers in `tests/e2e/tutorial-overlay.spec.js`._
-- **Next Steps**:
-  - Capture tutorial automation troubleshooting notes and failure-handling guidance once UI interactions stabilize.
+_Progress 2025-10-30 (Session #55 implementation): CaseManager + DeductionSystem wired into runtime, Playwright scenarios now rely on live inputs, and troubleshooting guidance published (`docs/guides/tutorial-automation-troubleshooting.md`)._
+- **Status**: ✅ Completed – documentation, runtime wiring, and automation coverage delivered Session #55.
 
 #### QA-202: SaveManager LocalStorage Regression
 - **Priority**: P1

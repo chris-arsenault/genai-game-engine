@@ -36,7 +36,8 @@ describe('DeductionSystem', () => {
       onClose: null
     };
 
-    system = new DeductionSystem(mockComponentRegistry, mockEventBus, mockCaseManager, mockDeductionBoard);
+    system = new DeductionSystem(mockComponentRegistry, mockEventBus, mockCaseManager, null);
+    system.setDeductionBoard(mockDeductionBoard);
   });
 
   describe('Initialization', () => {
@@ -55,6 +56,23 @@ describe('DeductionSystem', () => {
     it('should set up board callbacks', () => {
       expect(mockDeductionBoard.onValidate).toBeDefined();
       expect(mockDeductionBoard.onClose).toBeDefined();
+    });
+
+    it('supports attaching deduction board after construction', () => {
+      const newBoard = {
+        show: jest.fn(),
+        hide: jest.fn(),
+        loadClues: jest.fn(),
+        getTheory: jest.fn(),
+        theoryAccuracy: 0,
+        onValidate: null,
+        onClose: null
+      };
+
+      system.setDeductionBoard(newBoard);
+
+      expect(newBoard.onValidate).toBeDefined();
+      expect(newBoard.onClose).toBeDefined();
     });
   });
 
@@ -176,6 +194,12 @@ describe('DeductionSystem', () => {
         })
       );
     });
+  });
+
+  it('gracefully handles board toggle when no UI attached', () => {
+    const noBoardSystem = new DeductionSystem(mockComponentRegistry, mockEventBus, mockCaseManager, null);
+    expect(() => noBoardSystem.openBoard()).not.toThrow();
+    expect(() => noBoardSystem.closeBoard()).not.toThrow();
   });
 
   describe('Toggling Board', () => {

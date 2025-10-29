@@ -77,6 +77,76 @@ describe('CaseManager', () => {
     });
   });
 
+  describe('registerCase', () => {
+    const baseCaseData = {
+      id: 'case_register',
+      title: 'Registered Case',
+      description: 'Case registered via helper',
+      objectives: [
+        { type: 'collect_evidence', description: 'Collect primary evidence', evidenceIds: ['ev_a'] }
+      ],
+      evidenceIds: ['ev_a'],
+      requiredClues: ['clue_a'],
+      theoryGraph: {
+        nodes: ['clue_a'],
+        connections: []
+      },
+      solution: {
+        minAccuracy: 0.8,
+        rewards: {
+          credits: 100,
+          reputation: { faction: 'citizens', change: 5 }
+        }
+      },
+      evidence: [
+        { id: 'ev_a', title: 'Primary Evidence' }
+      ],
+      clues: [
+        { id: 'clue_a', title: 'Primary Clue' }
+      ]
+    };
+
+    it('registers evidence and clues before creating the case', () => {
+      caseManager.registerCase(baseCaseData);
+
+      expect(caseManager.evidenceDatabase.get('ev_a')).toMatchObject({ title: 'Primary Evidence' });
+      expect(caseManager.clueDatabase.get('clue_a')).toMatchObject({ title: 'Primary Clue' });
+      expect(caseManager.getCase('case_register')).toBeDefined();
+    });
+
+    it('applies solution rewards and accuracy threshold to case definition', () => {
+      caseManager.registerCase(baseCaseData);
+      const caseFile = caseManager.getCase('case_register');
+
+      expect(caseFile.accuracyThreshold).toBe(0.8);
+      expect(caseFile.rewards).toMatchObject({
+        credits: 100,
+        reputation: { faction: 'citizens', change: 5 }
+      });
+    });
+
+    it('optionally activates the case after registration', () => {
+      caseManager.registerCase(baseCaseData, { activate: true });
+
+      expect(caseManager.activeCase).toBe('case_register');
+      expect(mockEventBus.emit).toHaveBeenCalledWith(
+        'case:activated',
+        expect.objectContaining({ caseId: 'case_register' })
+      );
+    });
+
+    it('skips overwriting definitions unless explicitly requested', () => {
+      caseManager.evidenceDatabase.set('ev_a', { id: 'ev_a', title: 'Existing Evidence' });
+      caseManager.clueDatabase.set('clue_a', { id: 'clue_a', title: 'Existing Clue' });
+
+      caseManager.registerCase(baseCaseData);
+      expect(caseManager.evidenceDatabase.get('ev_a').title).toBe('Existing Evidence');
+
+      caseManager.registerCase(baseCaseData, { overwrite: true });
+      expect(caseManager.evidenceDatabase.get('ev_a').title).toBe('Primary Evidence');
+    });
+  });
+
   describe('Active Case Management', () => {
     beforeEach(() => {
       caseManager.createCase({
@@ -442,6 +512,17 @@ describe('CaseManager', () => {
       caseManager.solveCase('case_1', 0.85);
 
       expect(mockEventBus.emit).toHaveBeenCalledWith('case:solved',
+        expect.objectContaining({
+          caseId: 'case_1',
+          title: 'Test Case',
+          accuracy: 0.85,
+          rewards: expect.objectContaining({
+            abilities: ['forensic_kit']
+          })
+        })
+      );
+
+      expect(mockEventBus.emit).toHaveBeenCalledWith('case:completed',
         expect.objectContaining({
           caseId: 'case_1',
           title: 'Test Case',

@@ -1,0 +1,61 @@
+# Tutorial Automation Troubleshooting
+
+Integrating the Playwright tutorial suite with the live runtime now relies on real input events instead of direct event injections. This guide captures the key hooks, helper calls, and common failure modes when driving the onboarding sequence end-to-end.
+
+## Updated Control Map
+- **Tab** → Opens the Case File UI (`input:caseFile:pressed`)
+- **B** → Opens the Deduction Board (`input:deductionBoard:pressed`)
+- **F** → Triggers forensic analysis when a target prompt is active (`input:forensicAnalysis:pressed`)
+- **V** → Activates Detective Vision once unlocked
+
+Always keep a focusable element on the game canvas before issuing `page.keyboard.press(...)` in Playwright so the key reaches the InputState listeners.
+
+## Pre-flight Checklist
+1. **Reset tutorial flags** by removing `tutorial_completed` and `tutorial_skipped` from `localStorage` before page load (see `resetTutorialProgress` helper).
+2. **Wait for bootstrap**: ensure `window.game`, `game.gameSystems.tutorial`, and `game.worldStateStore` are ready (`waitForTutorialBootstrap` helper).
+3. **Verify CaseManager state**: `window.game.caseManager.getActiveCase()` should return `case_001_hollow_case` before interacting with the Case File or Deduction Board.
+4. **Confirm listeners are registered**:
+   - `case_file:opened` and overlay telemetry events fire when UI toggles.
+   - `deduction_board:opened`/`deduction_board:connection_created` emit from `DeductionBoard`.
+
+## Runtime Hooks & Helpers
+- **CaseManager** is initialized during `Game.initializeGameSystems()` and seeded with the tutorial case via `registerCase(...)`. If the active case is `null`, the tutorial will stall at the Case File step.
+- **CaseFileUI** is created in `initializeUIOverlays()` and refreshed automatically on:
+  - `case:created`, `case:activated`, `case:objective_completed`, `case:objectives_complete`, `case:solved`, `evidence:collected`, `clue:derived`.
+- **DeductionSystem** now registers with the SystemManager (priority 29) and exposes `setDeductionBoard(board)`. The Playwright flow must open the board with the real keybinding so the tutorial receives `deduction_board:opened`.
+- **ForensicSystem** still exposes `initiateAnalysis` for automation, but expect `forensic:available`, `forensic:queued`, `forensic:complete` to increment tutorial counters. Ensure evidence is collected before starting analysis.
+
+## Playwright Interaction Pattern
+```ts
+await prepareTutorial(page); // resets flags + waits for init
+await page.keyboard.press('Tab'); // open Case File
+await page.waitForFunction(() => window.game.caseFileUI.visible === true);
+
+await page.keyboard.press('KeyB'); // open Deduction Board
+await page.waitForFunction(() => window.game.deductionBoard.visible === true);
+
+await page.evaluate(() => {
+  const board = window.game.deductionBoard;
+  const activeCase = window.game.caseManager.getActiveCase();
+  const theory = window.game.caseManager.getCase(activeCase.id).theoryGraph;
+  for (const connection of theory.connections) {
+    board.addConnection(connection.from, connection.to, connection.type);
+  }
+  board.onValidate(board.getTheory());
+});
+```
+
+## Common Failure Modes
+| Symptom | Likely Cause | Fix |
+| --- | --- | --- |
+| `case_file` step never completes | Case File never opened through InputState | Use `keyboard.press('Tab')` and wait for `caseFileUI.visible === true` |
+| Deduction step stays on intro | Board not opened via KeyB or CaseManager inactive | Verify `setActiveCase` succeeded and press `KeyB` after forensic step |
+| Theory validation stalls | Connections do not match tutorial theory graph | Iterate over `caseManager.getCase(activeCase.id).theoryGraph.connections` when building links |
+| Forensic step does not advance | Evidence not collected or ability missing | Collect at least three evidence entities before calling `completeForensicAnalysis` |
+
+## Artifact Expectations
+- **Overlay instrumentation**: `ui:overlay_visibility_changed` logs the source (`input:caseFile`, `input:deductionBoard`, etc.) for debugging.
+- **Case telemetry**: `case:solved` and the newly emitted `case:completed` events should appear in the console when the theory validates.
+- **Tutorial context**: `window.game.worldStateStore.getState().tutorial` mirrors `TutorialSystem.context` and can be asserted to confirm prompt history.
+
+Stay aligned with these hooks when extending the automation pack to avoid falling back to simulated emits. Update Playwright assertions to rely on runtime-driven state whenever possible.

@@ -81,18 +81,6 @@ async function collectEvidenceAtIndex(page, index) {
   }, index);
 }
 
-async function emitTutorialEvent(page, eventName, payload = {}) {
-  await page.evaluate(
-    ({ eventName, payload }) => {
-      window.game.eventBus.emit(eventName, payload);
-    },
-    { eventName, payload }
-  );
-  await page.evaluate(() => {
-    window.game.gameSystems.tutorial.update(0);
-  });
-}
-
 async function completeForensicAnalysis(page, evidenceId = 'ev_002_blood') {
   await page.evaluate(({ evidenceId }) => {
     const game = window.game;
@@ -207,7 +195,13 @@ async function reachCaseFileStep(page) {
 
 async function reachForensicStep(page) {
   await reachCaseFileStep(page);
-  await emitTutorialEvent(page, 'case_file:opened', { caseId: 'case_001_hollow_case' });
+  await page.keyboard.press('Tab');
+  await page.waitForFunction(
+    () =>
+      window.game?.caseFileUI?.visible === true &&
+      window.game?.gameSystems?.tutorial?.context?.caseFileOpened === true,
+    { timeout: 5000 }
+  );
 
   await page.waitForFunction(
     () => window.game?.gameSystems?.tutorial?.currentStep?.id === 'collect_more_evidence',
@@ -527,7 +521,14 @@ test.describe('Tutorial overlay', () => {
     expect(preState.step).toBe('case_file');
     expect(preState.context.caseFileOpened).toBe(false);
 
-    await emitTutorialEvent(page, 'case_file:opened', { caseId: 'case_001_hollow_case' });
+    await page.keyboard.press('Tab');
+
+    await page.waitForFunction(
+      () =>
+        window.game?.caseFileUI?.visible === true &&
+        window.game?.gameSystems?.tutorial?.context?.caseFileOpened === true,
+      { timeout: 5000 }
+    );
 
     const state = await page.evaluate(() => {
       const tutorialSystem = window.game.gameSystems.tutorial;
@@ -541,6 +542,7 @@ test.describe('Tutorial overlay', () => {
         promptHistory: Array.isArray(store.promptHistory)
           ? store.promptHistory.map((entry) => entry.stepId)
           : [],
+        caseFileVisible: Boolean(window.game.caseFileUI?.visible),
       };
     });
 
@@ -550,6 +552,7 @@ test.describe('Tutorial overlay', () => {
     expect(state.storeStep).toBe('collect_more_evidence');
     expect(state.storeCompletedSteps).toContain('case_file');
     expect(state.promptHistory).toContain('case_file');
+    expect(state.caseFileVisible).toBe(true);
     expect(consoleErrors).toEqual([]);
   });
 
@@ -591,21 +594,29 @@ test.describe('Tutorial overlay', () => {
 
     await completeForensicAnalysis(page, 'ev_002_blood');
 
-    await emitTutorialEvent(page, 'deduction_board:opened', {
-      caseId: 'case_001_hollow_case',
-      source: 'automation'
-    });
+    await page.keyboard.press('KeyB');
 
     await page.waitForFunction(
-      () => window.game?.gameSystems?.tutorial?.currentStep?.id === 'deduction_connections',
+      () =>
+        window.game?.deductionBoard?.visible === true &&
+        window.game?.gameSystems?.tutorial?.currentStep?.id === 'deduction_connections',
       { timeout: 5000 }
     );
 
-    await emitTutorialEvent(page, 'deduction_board:connection_created', {
-      from: 'clue_001_hollow',
-      to: 'clue_002_professional',
-      type: 'supports',
-      totalConnections: 1
+    await page.evaluate(() => {
+      const board = window.game.deductionBoard;
+      const caseManager = window.game.caseManager;
+      const activeCase = caseManager.getActiveCase();
+      const caseFile = caseManager.getCase(activeCase.id);
+      const theory = caseFile?.theoryGraph;
+
+      if (!theory) {
+        throw new Error('Missing theory graph for active case');
+      }
+
+      for (const connection of theory.connections) {
+        board.addConnection(connection.from, connection.to, connection.type);
+      }
     });
 
     await page.waitForFunction(
@@ -613,23 +624,17 @@ test.describe('Tutorial overlay', () => {
       { timeout: 5000 }
     );
 
-    await emitTutorialEvent(page, 'case:theory_validated', {
-      caseId: 'case_001_hollow_case',
-      accuracy: 0.82,
-      valid: true
-    });
-
-    await emitTutorialEvent(page, 'case:completed', {
-      caseId: 'case_001_hollow_case',
-      accuracy: 0.86
-    });
-
     await page.evaluate(() => {
-      const tutorial = window.game.gameSystems.tutorial;
-      if (tutorial.currentStep?.id === 'case_solved') {
-        tutorial.completeStep();
+      const board = window.game.deductionBoard;
+      if (typeof board.onValidate === 'function') {
+        board.onValidate(board.getTheory());
       }
     });
+
+    await page.waitForFunction(
+      () => window.game?.gameSystems?.tutorial?.completedSteps?.has?.('case_solved') === true,
+      { timeout: 7000 }
+    );
 
     const finalState = await page.evaluate(() => {
       const tutorialSystem = window.game.gameSystems.tutorial;

@@ -154,7 +154,7 @@ export const tutorialSteps = [
     id: 'deduction_board_intro',
     title: 'Deduction Board',
     description:
-      'Press D to open the Deduction Board. This is where you connect clues to solve the case. ' +
+      'Press B to open the Deduction Board. This is where you connect clues to solve the case. ' +
       'Drag clues to create connections.',
     trigger: 'auto',
     completionCondition: (context) => {
