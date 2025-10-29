@@ -31,15 +31,26 @@ const CRIME_SCENE_HEIGHT = 360;
  * @param {Object} eventBus - Event bus instance
  * @returns {Object} Scene data with playerId and entity IDs
  */
-export async function loadAct1Scene(entityManager, componentRegistry, eventBus) {
+export async function loadAct1Scene(entityManager, componentRegistry, eventBus, options = {}) {
   console.log('[Act1Scene] Loading Act 1 scene...');
 
   const sceneEntities = [];
   const cleanupHandlers = [];
 
   // 1. Create player at spawn point
-  const playerId = createPlayerEntity(entityManager, componentRegistry, 150, 300);
-  console.log(`[Act1Scene] Player created: ${playerId}`);
+  const reusePlayerId = options.reusePlayerId ?? null;
+  const canReusePlayer = reusePlayerId != null
+    && typeof entityManager.hasEntity === 'function'
+    && entityManager.hasEntity(reusePlayerId);
+
+  let playerId;
+  if (canReusePlayer) {
+    playerId = reusePlayerId;
+    console.log(`[Act1Scene] Reusing existing player entity: ${playerId}`);
+  } else {
+    playerId = createPlayerEntity(entityManager, componentRegistry, 150, 300);
+    console.log(`[Act1Scene] Player created: ${playerId}`);
+  }
 
   // 1b. Dress the crime scene ground decal, caution markers, and ambient props
   const visualSetPieces = createCrimeSceneVisuals(entityManager, componentRegistry);

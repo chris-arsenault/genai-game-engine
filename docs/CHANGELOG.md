@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Memory Parlor infiltration scene now includes stealth cover geometry, intel evidence pickups (with knowledge emission for the client registry), and an exit trigger that routes the player back to the Neon District (`src/game/scenes/MemoryParlorScene.js`).
 - Memory Parlor infiltration scene loads via the new `loadMemoryParlorScene()` transition, introducing dedicated firewall trigger volumes, barrier visuals that react to scrambler events, and interior NPC set dressing to exercise stealth beats (`src/game/scenes/MemoryParlorScene.js`, `src/game/Game.js`).
 - Playwright infiltration coverage validates scrambler gating, firewall cooldown messaging, and disguise modifiers during the Memory Parlor objective (`tests/e2e/memory-parlor-infiltration.spec.js`).
 - FirewallScramblerSystem links Cipher scrambler charges to Memory Parlor infiltration by consuming vendor gear, emitting timed firewall bypass events, and propagating disguise detection modifiers through the DisguiseSystem and quest gating (`src/game/systems/FirewallScramblerSystem.js`, `src/game/systems/DisguiseSystem.js`, `src/game/managers/QuestManager.js`, `src/game/data/quests/act1Quests.js`).
@@ -50,6 +51,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Expanded inventory coverage to include quantity delta reducers, SaveManager inventory autosave throttling, and end-to-end inventory persistence (`tests/game/state/inventorySlice.test.js`, `tests/game/managers/SaveManager.test.js`, `tests/game/Game.uiOverlays.test.js`).
 
 ### Changed
+- Game reuses the active player entity when Memory Parlor escape completes, automatically returning to Act 1 on `obj_escape_parlor` while maintaining camera alignment (`src/game/Game.js`, `src/game/scenes/Act1Scene.js`).
+- InvestigationSystem now records externally emitted knowledge events so scene scripts that emit `knowledge:learned` stay in sync with the player's knowledge ledger (`src/game/systems/InvestigationSystem.js`).
 - InteractionZone now tracks trigger state explicitly and InvestigationSystem resets non-one-shot zones when the player exits, allowing Memory Parlor firewall checks to re-arm between scrambler attempts (`src/game/components/InteractionZone.js`, `src/game/systems/InvestigationSystem.js`).
 - DialogueSystem now composes dialogue context with live inventory snapshots and evaluates object-form `hasItem` conditions so currency gates follow the player's actual state (`src/game/systems/DialogueSystem.js`, `src/game/data/DialogueTree.js`).
 - Removed `Game.seedInventoryState` bootstrap in favor of live acquisition events emitted from InvestigationSystem, TutorialScene, QuestManager, and vendor economy bridges, ensuring overlays mirror player progress in runtime builds (`src/game/Game.js`, `src/game/systems/InvestigationSystem.js`, `src/game/scenes/TutorialScene.js`, `src/game/managers/QuestManager.js`).

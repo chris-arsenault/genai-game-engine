@@ -14,6 +14,7 @@ import { Sprite } from '../components/Sprite.js';
 import { Collider } from '../components/Collider.js';
 import { InteractionZone } from '../components/InteractionZone.js';
 import { createNPCEntity } from '../entities/NPCEntity.js';
+import { createEvidenceEntity } from '../entities/EvidenceEntity.js';
 
 const ROOM_WIDTH = 960;
 const ROOM_HEIGHT = 600;
@@ -22,8 +23,63 @@ const WALL_THICKNESS = 24;
 const ENTRANCE_POSITION = { x: 160, y: 320 };
 const FIREWALL_POSITION = { x: 480, y: 320 };
 const INTERIOR_CENTER = { x: 720, y: 320 };
+const EXIT_POSITION = { x: 120, y: 260 };
+const EXIT_RADIUS = 96;
 
 const FIREWALL_ID = 'memory_parlor_firewall';
+const CLIENT_REGISTRY_EVIDENCE_ID = 'evidence_memory_parlor_client_registry';
+
+const INTEL_EVIDENCE_DATA = [
+  {
+    x: 690,
+    y: 250,
+    id: 'evidence_memory_parlor_access_card',
+    type: 'physical',
+    category: 'security',
+    title: 'Access Card Fragment',
+    description: 'Broken security card with encrypted routing data.',
+    caseId: 'case_003_memory_parlor',
+    hidden: false,
+    derivedClues: ['clue_parlor_security_patterns'],
+  },
+  {
+    x: 770,
+    y: 330,
+    id: 'evidence_memory_parlor_modulator',
+    type: 'digital',
+    category: 'device',
+    title: 'Signal Modulator',
+    description: 'Handheld resonance modulator used to dampen firewall signatures.',
+    caseId: 'case_003_memory_parlor',
+    hidden: false,
+    derivedClues: ['clue_scrambler_frequency_map'],
+  },
+  {
+    x: 820,
+    y: 270,
+    id: 'evidence_memory_parlor_ledger',
+    type: 'physical',
+    category: 'document',
+    title: 'Ledger Shards',
+    description: 'Fragments of a ledger enumerating extraction orders.',
+    caseId: 'case_003_memory_parlor',
+    hidden: true,
+    requires: 'detective_vision',
+    derivedClues: ['clue_curator_payment_cycle'],
+  },
+  {
+    x: 840,
+    y: 340,
+    id: CLIENT_REGISTRY_EVIDENCE_ID,
+    type: 'digital',
+    category: 'database',
+    title: 'Client Registry Core Dump',
+    description: 'Encrypted drive containing the Memory Parlor client roster.',
+    caseId: 'case_003_memory_parlor',
+    hidden: false,
+    derivedClues: ['clue_client_billing_routes'],
+  },
+];
 
 /**
  * Helper to safely add drawable rectangle.
@@ -83,6 +139,41 @@ function createWall(entityManager, componentRegistry, x, y, width, height, color
     alpha: 0.92,
     layer: 'environment',
     zIndex: 3,
+    visible: true,
+  }));
+  return entityId;
+}
+
+function createCoverBlock(entityManager, componentRegistry, {
+  x,
+  y,
+  width,
+  height,
+  color = '#2d1b42',
+  alpha = 0.95,
+  tag = 'stealth_cover',
+  zIndex = 5,
+} = {}) {
+  const entityId = entityManager.createEntity(tag);
+  componentRegistry.addComponent(entityId, 'Transform', new Transform(x + width / 2, y + height / 2, 0, 1, 1));
+  componentRegistry.addComponent(entityId, 'Collider', new Collider({
+    type: 'AABB',
+    width,
+    height,
+    offsetX: -width / 2,
+    offsetY: -height / 2,
+    isStatic: true,
+    isTrigger: false,
+    tags: ['cover', 'solid'],
+  }));
+  componentRegistry.addComponent(entityId, 'Sprite', new Sprite({
+    image: null,
+    width,
+    height,
+    color,
+    alpha,
+    layer: 'environment',
+    zIndex,
     visible: true,
   }));
   return entityId;
@@ -291,6 +382,74 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
   ];
   sceneEntities.push(...tables);
 
+  const coverBlocks = [
+    createCoverBlock(entityManager, componentRegistry, {
+      x: 612,
+      y: 205,
+      width: 60,
+      height: 110,
+      color: '#251632',
+    }),
+    createCoverBlock(entityManager, componentRegistry, {
+      x: 660,
+      y: 360,
+      width: 48,
+      height: 96,
+      color: '#2f1d44',
+    }),
+    createCoverBlock(entityManager, componentRegistry, {
+      x: 740,
+      y: 210,
+      width: 52,
+      height: 120,
+      color: '#281838',
+    }),
+    createCoverBlock(entityManager, componentRegistry, {
+      x: FIREWALL_POSITION.x - 100,
+      y: FIREWALL_POSITION.y - 140,
+      width: 200,
+      height: 48,
+      color: '#180f28',
+    }),
+    createCoverBlock(entityManager, componentRegistry, {
+      x: FIREWALL_POSITION.x - 100,
+      y: FIREWALL_POSITION.y + 72,
+      width: 200,
+      height: 48,
+      color: '#180f28',
+    }),
+  ];
+  sceneEntities.push(...coverBlocks);
+
+  const exitRunnerId = createRectEntity(entityManager, componentRegistry, {
+    x: EXIT_POSITION.x - 60,
+    y: EXIT_POSITION.y - 60,
+    width: 140,
+    height: 160,
+    color: '#1b102a',
+    alpha: 0.9,
+    layer: 'ground',
+    zIndex: 1,
+  });
+  sceneEntities.push(exitRunnerId);
+
+  const exitZoneId = createTriggerZone(entityManager, componentRegistry, {
+    id: 'neon_districts_street',
+    x: EXIT_POSITION.x,
+    y: EXIT_POSITION.y,
+    radius: EXIT_RADIUS,
+    prompt: 'Return to the Neon District streets.',
+    oneShot: true,
+    color: '#2d8aff',
+    alpha: 0.22,
+  });
+  sceneEntities.push(exitZoneId);
+
+  for (const evidenceData of INTEL_EVIDENCE_DATA) {
+    const evidenceId = createEvidenceEntity(entityManager, componentRegistry, evidenceData);
+    sceneEntities.push(evidenceId);
+  }
+
   const guardA = createNPCEntity(entityManager, componentRegistry, {
     x: 700,
     y: 280,
@@ -336,6 +495,19 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
     })
   );
 
+  cleanupHandlers.push(
+    eventBus.on('evidence:collected', (payload = {}) => {
+      if (payload.evidenceId !== CLIENT_REGISTRY_EVIDENCE_ID) {
+        return;
+      }
+
+      eventBus.emit('knowledge:learned', {
+        knowledgeId: 'memory_parlor_clients',
+        source: 'memory_parlor_terminal',
+      });
+    })
+  );
+
   return {
     sceneName: 'memory_parlor_infiltration',
     sceneEntities,
@@ -354,6 +526,7 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
       entranceZoneId,
       interiorZoneId,
       firewallEntityId,
+      exitZoneId,
     },
   };
 }

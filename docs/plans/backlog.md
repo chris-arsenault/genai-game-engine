@@ -490,7 +490,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Tags**: `scene`, `stealth`, `quest`
 - **Effort**: 5 hours
 - **Dependencies**: INV-318, QA-245
-- **Status**: ⭕ Pending
+- **Status**: ✅ Completed — Session #43 delivered full traversal polish, quest handoff, and automated coverage.
 - **Description**: Build out the Memory Parlor infiltration scene introduced in Session #42 with full geometry, quest-driven scene transitions, and exit routing so the scrambler window can be exercised end-to-end.
 - **Acceptance Criteria**:
   - `loadMemoryParlorScene()` is triggered automatically when `obj_locate_parlor` completes and returns to Act 1 on `obj_escape_parlor`.
@@ -498,7 +498,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Interior provides stealth cover (props, line-of-sight blockers) and at least one evidence/knowledge pickup to justify infiltration.
   - Playwright infiltration spec passes without forcing the scene load manually.
   - Manual runtime smoke confirms quest tracker, disguise modifiers, and dialogue hooks behave in the new scene.
-- **Notes**: Initial scene stub (firewall barrier, NPC dressing, scrambler-toggled collider) landed in Session #42; remaining work focuses on traversal polish and automated scene transitions.
+- **Notes**: Session #43 added stealth cover geometry, intel pickups (including the client registry knowledge hook), automatic return to Act 1 on escape, and extended Playwright coverage that exercises evidence collection through the quest exit.
 
 #### DIA-208: Support inventory-aware dialogue conditions
 - **Priority**: P1

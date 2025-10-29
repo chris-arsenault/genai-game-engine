@@ -3,6 +3,16 @@ import { waitForGameLoad, collectConsoleErrors } from './setup.js';
 
 const QUEST_ID = 'case_003_memory_parlor';
 const INFILTRATION_OBJECTIVE_ID = 'obj_infiltrate_parlor';
+const INTEL_OBJECTIVE_ID = 'obj_gather_intel';
+const DOWNLOAD_OBJECTIVE_ID = 'obj_download_client_list';
+const ESCAPE_OBJECTIVE_ID = 'obj_escape_parlor';
+const EVIDENCE_IDS = [
+  'evidence_memory_parlor_access_card',
+  'evidence_memory_parlor_modulator',
+  'evidence_memory_parlor_ledger',
+  'evidence_memory_parlor_client_registry',
+];
+const CLIENT_REGISTRY_EVIDENCE_ID = 'evidence_memory_parlor_client_registry';
 
 test.describe('Memory Parlor infiltration', () => {
   test('requires scrambler activation to bypass firewall and complete infiltration', async ({ page }) => {
@@ -83,6 +93,7 @@ test.describe('Memory Parlor infiltration', () => {
       activeSceneId: 'memory_parlor_infiltration',
       playerEntityId: expect.any(Number)
     });
+    const memoryParlorPlayerEntityId = transitionState.playerEntityId;
 
     await page.waitForFunction(
       () => {
@@ -224,6 +235,111 @@ test.describe('Memory Parlor infiltration', () => {
       window.__memoryParlorTest.blocked.length
     );
     expect(blockedCountAfterCompletion).toBe(blockedCountBeforeCompletion);
+
+    await page.evaluate(() => {
+      window.game.gameSystems.investigation.unlockAbility('detective_vision');
+    });
+
+    await page.evaluate((evidenceIds) => {
+      const { gameSystems, componentRegistry } = window.game;
+      const investigation = gameSystems.investigation;
+      const evidenceComponents = componentRegistry.getComponentsOfType('Evidence');
+
+      evidenceIds.forEach((targetId) => {
+        evidenceComponents.forEach((evidenceComponent, entityId) => {
+          if (evidenceComponent.id !== targetId) {
+            return;
+          }
+          if (evidenceComponent.collected) {
+            return;
+          }
+          investigation.collectEvidence(entityId, evidenceComponent.id);
+        });
+      });
+    }, EVIDENCE_IDS);
+
+    await page.waitForFunction(
+      ({ questId, objectiveId }) => {
+        const quest = window.game.questManager.getQuest(questId);
+        if (!quest) return false;
+        const state = quest.objectiveStates.get(objectiveId);
+        return state?.status === 'completed';
+      },
+      { questId: QUEST_ID, objectiveId: INTEL_OBJECTIVE_ID },
+      { timeout: 5000 }
+    );
+
+    await page.waitForFunction(
+      ({ questId, objectiveId }) => {
+        const quest = window.game.questManager.getQuest(questId);
+        if (!quest) return false;
+        const state = quest.objectiveStates.get(objectiveId);
+        return state?.status === 'completed';
+      },
+      { questId: QUEST_ID, objectiveId: DOWNLOAD_OBJECTIVE_ID },
+      { timeout: 5000 }
+    );
+
+    const knowledgeState = await page.evaluate(() => {
+      return Array.from(window.game.gameSystems.investigation.playerKnowledge);
+    });
+    expect(knowledgeState).toContain('memory_parlor_clients');
+
+    await page.evaluate((clientRegistryEvidenceId) => {
+      const { componentRegistry, eventBus, gameSystems } = window.game;
+      const registry = componentRegistry.getComponentsOfType('Evidence');
+      registry.forEach((evidence, entityId) => {
+        if (evidence.id !== clientRegistryEvidenceId) {
+          return;
+        }
+        if (!evidence.collected) {
+          gameSystems.investigation.collectEvidence(entityId, evidence.id);
+        }
+      });
+      const playerTransform = componentRegistry.getComponent(window.game.playerEntityId, 'Transform');
+      if (playerTransform) {
+        playerTransform.x = 120;
+        playerTransform.y = 260;
+      }
+      const playerController = componentRegistry.getComponent(window.game.playerEntityId, 'PlayerController');
+      if (playerController) {
+        playerController.velocityX = 0;
+        playerController.velocityY = 0;
+      }
+      eventBus.emit('area:entered', {
+        areaId: 'neon_districts_street',
+        position: { x: 120, y: 260 }
+      });
+    }, CLIENT_REGISTRY_EVIDENCE_ID);
+
+    await page.waitForFunction(
+      ({ questId, objectiveId }) => {
+        const quest = window.game.questManager.getQuest(questId);
+        if (!quest) return false;
+        const state = quest.objectiveStates.get(objectiveId);
+        return state?.status === 'completed';
+      },
+      { questId: QUEST_ID, objectiveId: ESCAPE_OBJECTIVE_ID },
+      { timeout: 5000 }
+    );
+
+    await page.waitForFunction(
+      () => window.game.activeScene?.id === 'act1_hollow_case',
+      { timeout: 5000 }
+    );
+
+    const returnState = await page.evaluate(() => ({
+      sceneId: window.game.activeScene?.id ?? null,
+      transitionInFlight: window.game._sceneTransitionInFlight,
+      memoryParlorLoaded: window.game._memoryParlorSceneLoaded,
+      playerEntityId: window.game.playerEntityId ?? null
+    }));
+    expect(returnState).toEqual({
+      sceneId: 'act1_hollow_case',
+      transitionInFlight: false,
+      memoryParlorLoaded: false,
+      playerEntityId: memoryParlorPlayerEntityId
+    });
 
     expect(consoleErrors).toEqual([]);
   });

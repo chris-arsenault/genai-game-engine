@@ -73,6 +73,8 @@ import { Transform } from './components/Transform.js';
 import { Collider } from './components/Collider.js';
 import { Sprite } from './components/Sprite.js';
 
+const ACT1_RETURN_SPAWN = { x: 220, y: 360 };
+
 /**
  * Game coordinator class
  */
@@ -492,7 +494,7 @@ export class Game {
   /**
    * Load Act 1 scene (The Hollow Case)
    */
-  async loadAct1Scene() {
+  async loadAct1Scene(options = {}) {
     console.log('[Game] Loading Act 1 scene...');
 
     // Clear any existing scene entities before loading new layout
@@ -502,7 +504,10 @@ export class Game {
     const sceneData = await loadAct1Scene(
       this.entityManager,
       this.componentRegistry,
-      this.eventBus
+      this.eventBus,
+      {
+        reusePlayerId: options.reusePlayerId ?? null,
+      }
     );
 
     this.playerEntityId = sceneData.playerId;
@@ -514,8 +519,23 @@ export class Game {
     };
     this._memoryParlorSceneLoaded = false;
 
+    const spawnPoint = options.spawnPoint
+      || sceneData.spawnPoint
+      || { x: 150, y: 300 };
+    const playerTransform = this.componentRegistry.getComponent(this.playerEntityId, 'Transform');
+    if (playerTransform) {
+      playerTransform.x = spawnPoint.x;
+      playerTransform.y = spawnPoint.y;
+    }
+
+    const playerController = this.componentRegistry.getComponent(this.playerEntityId, 'PlayerController');
+    if (playerController) {
+      playerController.velocityX = 0;
+      playerController.velocityY = 0;
+    }
+
     // Snap camera to player spawn position
-    this.gameSystems.cameraFollow.snapTo(sceneData.spawnPoint.x, sceneData.spawnPoint.y);
+    this.gameSystems.cameraFollow.snapTo(spawnPoint.x, spawnPoint.y);
 
     // Subscribe to game events for logging
     this.subscribeToGameEvents();
@@ -650,6 +670,42 @@ export class Game {
   }
 
   /**
+   * Return the player to Act 1 after completing the Memory Parlor escape.
+   * @param {Object} options
+   * @returns {Promise<string|null>}
+   */
+  async returnToAct1FromMemoryParlor(options = {}) {
+    if (this._sceneTransitionInFlight) {
+      return null;
+    }
+
+    if (this.playerEntityId == null) {
+      console.warn('[Game] Cannot return to Act 1 without an active player entity');
+      return null;
+    }
+
+    this._sceneTransitionInFlight = true;
+    const spawnPoint = options.spawnPoint || ACT1_RETURN_SPAWN;
+
+    try {
+      await this.loadAct1Scene({
+        reusePlayerId: this.playerEntityId,
+        spawnPoint,
+      });
+
+      this.eventBus.emit('scene:loaded', {
+        sceneId: this.activeScene?.id || 'act1_hollow_case',
+        spawnPoint,
+        reason: options.reason || 'quest_return',
+      });
+
+      return this.activeScene?.id || null;
+    } finally {
+      this._sceneTransitionInFlight = false;
+    }
+  }
+
+  /**
    * Objective completion hook for quest-driven scene transitions.
    * @param {Object} payload
    */
@@ -665,6 +721,15 @@ export class Game {
       !this._memoryParlorSceneLoaded
     ) {
       void this.loadMemoryParlorScene({ reason: 'quest_transition' });
+      return;
+    }
+
+    if (
+      questId === 'case_003_memory_parlor' &&
+      objectiveId === 'obj_escape_parlor' &&
+      this._memoryParlorSceneLoaded
+    ) {
+      void this.returnToAct1FromMemoryParlor({ reason: 'quest_return' });
     }
   }
 

@@ -217,7 +217,9 @@
 - Encrypted data logs (decrypt later with Zara's help)
 - +Investigation XP: Level up investigation skills
 
-_Implementation Note (Session #42)_: A playable Memory Parlor scene now loads when `obj_locate_parlor` completes, featuring a scrambler-responsive firewall barrier, ambient staff NPCs, and automated tests that exercise the infiltration flow.
+_Implementation Notes_:
+- _(Session #42)_: A playable Memory Parlor scene now loads when `obj_locate_parlor` completes, featuring a scrambler-responsive firewall barrier, ambient staff NPCs, and automated tests that exercise the infiltration flow.
+- _(Session #43)_: The interior now includes stealth cover geometry, intel evidence pickups (including the client registry knowledge hook), and an exit trigger that returns Kira to Act 1 once `obj_escape_parlor` fires. Playwright coverage walks the evidence gathering, knowledge unlock, and escape beat end-to-end.
 
 #### Narrative Beats
 

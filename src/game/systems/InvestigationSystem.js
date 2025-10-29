@@ -34,6 +34,9 @@ export class InvestigationSystem extends System {
     this.evidenceCache = new Map(); // entityId -> Evidence component
     this.lastCacheUpdate = 0;
     this.promptVisible = false;
+
+    this._offAbilityUnlocked = null;
+    this._offKnowledgeLearned = null;
   }
 
   /**
@@ -44,12 +47,24 @@ export class InvestigationSystem extends System {
     this.playerAbilities.add('basic_observation');
 
     // Listen for ability unlocks from external sources (e.g., quest rewards, scenes)
-    this.eventBus.on('ability:unlocked', (data) => {
+    this._offAbilityUnlocked = this.eventBus.on('ability:unlocked', (data = {}) => {
       // Add ability directly without re-emitting (to avoid recursion)
       if (!this.playerAbilities.has(data.abilityId)) {
         this.playerAbilities.add(data.abilityId);
         console.log(`[InvestigationSystem] Ability unlocked via event: ${data.abilityId}`);
       }
+    });
+
+    this._offKnowledgeLearned = this.eventBus.on('knowledge:learned', (data = {}) => {
+      const knowledgeId = data.knowledgeId;
+      if (typeof knowledgeId !== 'string' || knowledgeId.length === 0) {
+        return;
+      }
+      if (this.playerKnowledge.has(knowledgeId)) {
+        return;
+      }
+      this.playerKnowledge.add(knowledgeId);
+      console.log(`[InvestigationSystem] Knowledge registered via event: ${knowledgeId}`);
     });
 
     console.log('[InvestigationSystem] Initialized');
@@ -409,6 +424,16 @@ export class InvestigationSystem extends System {
   cleanup() {
     this.collectedEvidence.clear();
     this.discoveredClues.clear();
+
+    if (typeof this._offAbilityUnlocked === 'function') {
+      this._offAbilityUnlocked();
+      this._offAbilityUnlocked = null;
+    }
+
+    if (typeof this._offKnowledgeLearned === 'function') {
+      this._offKnowledgeLearned();
+      this._offKnowledgeLearned = null;
+    }
   }
 
   /**
