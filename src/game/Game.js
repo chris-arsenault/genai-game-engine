@@ -19,6 +19,7 @@ import { NPCMemorySystem } from './systems/NPCMemorySystem.js';
 import { DisguiseSystem } from './systems/DisguiseSystem.js';
 import { QuestSystem } from './systems/QuestSystem.js';
 import { FirewallScramblerSystem } from './systems/FirewallScramblerSystem.js';
+import { ForensicSystem } from './systems/ForensicSystem.js';
 
 // State
 import { WorldStateStore } from './state/WorldStateStore.js';
@@ -113,6 +114,7 @@ export class Game {
     this.gameSystems = {
       playerMovement: null,
       investigation: null,
+      forensic: null,
       factionReputation: null,
       knowledgeProgression: null,
       dialogue: null,
@@ -257,6 +259,13 @@ export class Game {
     );
     this.gameSystems.investigation.init();
 
+    // Create forensic system (processes analysis queues after investigation)
+    this.gameSystems.forensic = new ForensicSystem(
+      this.componentRegistry,
+      this.eventBus
+    );
+    this.gameSystems.forensic.init();
+
     // Create player movement system
     this.gameSystems.playerMovement = new PlayerMovementSystem(
       this.componentRegistry,
@@ -357,7 +366,7 @@ export class Game {
     this.gameSystems.render.init();
 
     // Register systems with engine SystemManager
-    // Priority order: Tutorial (5), PlayerMovement (10), NPCMemory (20), Disguise (22), Faction (25), Quest (27), Investigation (30), Knowledge (35), Dialogue (40), Camera (90), Render (100)
+    // Priority order: Tutorial (5), PlayerMovement (10), NPCMemory (20), Disguise (22), Faction (25), Quest (27), Investigation (30), Forensic (31), Knowledge (35), Dialogue (40), Camera (90), Render (100)
     this.systemManager.registerSystem(this.gameSystems.tutorial, 5);
     this.systemManager.registerSystem(this.gameSystems.playerMovement, 10);
     this.systemManager.registerSystem(this.gameSystems.npcMemory, 20);
@@ -366,6 +375,7 @@ export class Game {
     this.systemManager.registerSystem(this.gameSystems.factionReputation, 25);
     this.systemManager.registerSystem(this.gameSystems.quest, 27);
     this.systemManager.registerSystem(this.gameSystems.investigation, 30);
+    this.systemManager.registerSystem(this.gameSystems.forensic, 31);
     this.systemManager.registerSystem(this.gameSystems.knowledgeProgression, 35);
     this.systemManager.registerSystem(this.gameSystems.dialogue, 40);
     this.systemManager.registerSystem(this.gameSystems.cameraFollow, 90);

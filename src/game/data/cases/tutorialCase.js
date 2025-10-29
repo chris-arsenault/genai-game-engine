@@ -76,7 +76,7 @@ export const tutorialCase = {
       hidden: false,
       requires: [], // No special abilities needed
       interactionPrompt: 'Scan the neural extractor',
-      derivedClues: ['clue_001_hollow', 'clue_002_professional']
+      derivedClues: ['clue_001_hollow']
     },
     {
       id: 'ev_002_blood',
@@ -90,7 +90,15 @@ export const tutorialCase = {
       hidden: false,
       requires: [],
       interactionPrompt: 'Analyze blood pattern',
-      derivedClues: ['clue_002_professional']
+      derivedClues: ['clue_005_systematic'],
+      forensic: {
+        forensicType: 'analysis',
+        requiresAnalysis: true,
+        requiredTool: 'basic_magnifier',
+        difficulty: 1,
+        analysisTime: 1500,
+        hiddenClues: ['clue_002_professional']
+      }
     },
     {
       id: 'ev_003_residue',
@@ -104,7 +112,7 @@ export const tutorialCase = {
       hidden: false,
       requires: [],
       interactionPrompt: 'Scan neural residue',
-      derivedClues: ['clue_001_hollow', 'clue_002_professional']
+      derivedClues: ['clue_001_hollow']
     },
     {
       id: 'ev_004_badge',
@@ -154,7 +162,7 @@ export const tutorialCase = {
         'Equipment and technique exceed typical memory theft. This was not a crime of ' +
         'opportunity but a planned, professional extraction by someone with resources.',
       confidence: 0.9,
-      derivedFrom: ['ev_001_extractor', 'ev_002_blood', 'ev_003_residue']
+      derivedFrom: ['ev_002_blood']
     },
     {
       id: 'clue_003_neurosync',
@@ -172,7 +180,7 @@ export const tutorialCase = {
         'Marcus was your former partner. His investigation was related to your dismissal. ' +
         'This case may hold answers about your own past.',
       confidence: 0.8,
-      derivedFrom: ['ev_004_badge', 'ev_005_memory_drive']
+      derivedFrom: ['ev_002_blood', 'ev_004_badge', 'ev_005_memory_drive']
     },
     {
       id: 'clue_005_systematic',

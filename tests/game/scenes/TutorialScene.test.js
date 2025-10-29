@@ -32,6 +32,11 @@ describe('TutorialScene integration', () => {
     expect(evidenceTransform).toBeDefined();
     expect(evidenceComponent).toBeDefined();
 
+    const forensicEntityId = tutorialScene.evidenceEntities.get('ev_002_blood');
+    expect(forensicEntityId).toBeDefined();
+    const forensicComponent = componentRegistry.getComponent(forensicEntityId, 'ForensicEvidence');
+    expect(forensicComponent).toBeDefined();
+
     const playerTransform = componentRegistry.getComponent(tutorialScene.playerEntityId, 'Transform');
     expect(playerTransform).toBeDefined();
 

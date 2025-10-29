@@ -224,6 +224,7 @@ export class TutorialScene {
         requires: requiresAbility,
         derivedClues: evidence.derivedClues || [],
         prompt: evidence.interactionPrompt || null,
+        forensic: evidence.forensic || null,
       });
 
       this.evidenceEntities.set(evidence.id, entityId);

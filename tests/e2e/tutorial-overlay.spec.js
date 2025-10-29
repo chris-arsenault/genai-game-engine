@@ -93,6 +93,52 @@ async function emitTutorialEvent(page, eventName, payload = {}) {
   });
 }
 
+async function completeForensicAnalysis(page, evidenceId = 'ev_002_blood') {
+  await page.evaluate(({ evidenceId }) => {
+    const game = window.game;
+    if (!game?.gameSystems?.forensic) {
+      throw new Error('Forensic system unavailable for tutorial automation');
+    }
+
+    window.__forensicCompleteCount = 0;
+    game.eventBus.on('forensic:complete', (payload = {}) => {
+      if (payload?.evidenceId === evidenceId) {
+        window.__forensicCompleteCount = (window.__forensicCompleteCount || 0) + 1;
+      }
+    });
+
+    const registry = game.componentRegistry;
+    const forensicEntities = registry.queryEntities('ForensicEvidence');
+    const targetEntityId = forensicEntities.find((entityId) => {
+      const evidence = registry.getComponent(entityId, 'Evidence');
+      return evidence?.id === evidenceId;
+    });
+
+    if (targetEntityId == null) {
+      throw new Error(`Forensic evidence entity not found for ${evidenceId}`);
+    }
+
+    const started = game.gameSystems.forensic.initiateAnalysis(targetEntityId, evidenceId);
+    if (!started) {
+      throw new Error(`Failed to start forensic analysis for ${evidenceId}`);
+    }
+
+    const transformEntities = registry.queryEntities('Transform');
+    for (let i = 0; i < 16; i++) {
+      game.gameSystems.forensic.update(0.25, transformEntities);
+    }
+  }, { evidenceId });
+
+  await page.waitForFunction(
+    () => (window.__forensicCompleteCount || 0) > 0,
+    { timeout: 5000 }
+  );
+
+  await page.evaluate(() => {
+    window.game.gameSystems.tutorial.update(0);
+  });
+}
+
 async function activateDetectiveVisionFlow(page) {
   await page.evaluate(() => {
     const game = window.game;
@@ -168,6 +214,13 @@ async function reachForensicStep(page) {
     { timeout: 5000 }
   );
 
+  await page.evaluate(() => {
+    window.__forensicAvailable = 0;
+    window.game.eventBus.on('forensic:available', () => {
+      window.__forensicAvailable = (window.__forensicAvailable || 0) + 1;
+    });
+  });
+
   await collectEvidenceAtIndex(page, 1);
   await collectEvidenceAtIndex(page, 2);
 
@@ -176,10 +229,10 @@ async function reachForensicStep(page) {
     { timeout: 5000 }
   );
 
-  await emitTutorialEvent(page, 'forensic:available', {
-    evidenceId: 'ev_001_extractor',
-    forensicType: 'analysis'
-  });
+  await page.waitForFunction(
+    () => (window.__forensicAvailable || 0) > 0,
+    { timeout: 5000 }
+  );
 
   await page.waitForFunction(
     () => window.game?.gameSystems?.tutorial?.currentStep?.id === 'forensic_analysis',
@@ -505,11 +558,7 @@ test.describe('Tutorial overlay', () => {
 
     await reachForensicStep(page);
 
-    await emitTutorialEvent(page, 'forensic:complete', {
-      evidenceId: 'ev_001_extractor',
-      forensicType: 'analysis',
-      hiddenClues: ['clue_001_hollow']
-    });
+    await completeForensicAnalysis(page, 'ev_002_blood');
 
     const state = await page.evaluate(() => {
       const tutorialSystem = window.game.gameSystems.tutorial;
@@ -540,10 +589,7 @@ test.describe('Tutorial overlay', () => {
 
     await reachForensicStep(page);
 
-    await emitTutorialEvent(page, 'forensic:complete', {
-      evidenceId: 'ev_001_extractor',
-      forensicType: 'analysis'
-    });
+    await completeForensicAnalysis(page, 'ev_002_blood');
 
     await emitTutorialEvent(page, 'deduction_board:opened', {
       caseId: 'case_001_hollow_case',

@@ -10,6 +10,7 @@ import { Sprite } from '../components/Sprite.js';
 import { Evidence } from '../components/Evidence.js';
 import { InteractionZone } from '../components/InteractionZone.js';
 import { Collider } from '../components/Collider.js';
+import { ForensicEvidence } from '../components/ForensicEvidence.js';
 
 function shouldLog() {
   if (typeof __DEV__ !== 'undefined') {
@@ -44,6 +45,7 @@ export function createEvidenceEntity(entityManager, componentRegistry, evidenceD
     requires = null,
     derivedClues = [],
     prompt = null,
+    forensic: forensicConfig = null,
   } = evidenceData;
 
   let normalizedRequires = requires;
@@ -86,6 +88,18 @@ export function createEvidenceEntity(entityManager, componentRegistry, evidenceD
     derivedClues
   });
   componentRegistry.addComponent(entityId, 'Evidence', evidence);
+
+  if (forensicConfig) {
+    const hiddenClues = Array.isArray(forensicConfig.hiddenClues)
+      ? forensicConfig.hiddenClues
+      : derivedClues;
+
+    const forensic = new ForensicEvidence({
+      hiddenClues,
+      ...forensicConfig,
+    });
+    componentRegistry.addComponent(entityId, 'ForensicEvidence', forensic);
+  }
 
   // Add InteractionZone component
   const interactionZone = new InteractionZone({
