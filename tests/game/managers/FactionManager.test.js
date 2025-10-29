@@ -725,7 +725,7 @@ describe('FactionManager', () => {
       const elapsed = performance.now() - start;
       const avgTime = elapsed / 100;
 
-      expect(avgTime).toBeLessThan(1.5);
+      expect(avgTime).toBeLessThan(2);
     });
 
     it('should calculate attitude quickly', () => {

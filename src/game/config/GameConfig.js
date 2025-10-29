@@ -175,6 +175,11 @@ export const GameConfig = {
           tension_layer: 0,
           combat_layer: 0,
         },
+        stealth: {
+          ambient_base: 0.65,
+          tension_layer: 0.4,
+          combat_layer: 0,
+        },
         alert: {
           ambient_base: 0.55,
           tension_layer: 0.9,

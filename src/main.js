@@ -62,6 +62,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   const debugAudioState = document.getElementById('debug-audio-state');
   const debugAudioHistory = document.getElementById('debug-audio-history');
   const debugSfxList = document.getElementById('debug-sfx-list');
+  const debugSfxFilterInput = document.getElementById('debug-sfx-filter');
+  const debugSfxTagFilters = document.getElementById('debug-sfx-tag-filters');
 
   const formatClock = (timestamp) => {
     if (!timestamp || Number.isNaN(timestamp)) {
@@ -151,6 +153,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   let debugTranscriptNeedsScroll = true;
   let lastWorldStateSignature = null;
   let lastSfxSignature = null;
+  let lastSfxTagSignature = null;
+  let sfxFilterText = '';
+  let sfxTagFilter = null;
   let lastAudioHistorySignature = null;
   let worldStateStoreErrorLogged = false;
 
@@ -198,6 +203,48 @@ window.addEventListener('DOMContentLoaded', async () => {
       container.appendChild(row);
     }
   }
+
+  function updateSfxTagFilters(tagsArray, { force = false } = {}) {
+    if (!debugSfxTagFilters) {
+      return;
+    }
+    const normalized = Array.isArray(tagsArray) ? tagsArray.slice() : [];
+    const signature = `${normalized.join('|')}|${sfxTagFilter ?? 'all'}`;
+    if (!force && signature === lastSfxTagSignature) {
+      return;
+    }
+    lastSfxTagSignature = signature;
+    debugSfxTagFilters.innerHTML = '';
+
+    const options = [{ label: 'All', value: null }, ...normalized.map((tag) => ({ label: tag, value: tag }))];
+    for (const option of options) {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'debug-sfx-tag-chip';
+      if ((option.value ?? null) === (sfxTagFilter ?? null)) {
+        chip.classList.add('active');
+      }
+      chip.textContent = option.label ?? 'All';
+      chip.addEventListener('click', () => {
+        const current = sfxTagFilter ?? null;
+        const nextValue = (option.value ?? null) === current ? null : option.value ?? null;
+        sfxTagFilter = nextValue;
+        lastSfxSignature = null;
+        updateSfxTagFilters(normalized, { force: true });
+      });
+      debugSfxTagFilters.appendChild(chip);
+    }
+  }
+
+  if (debugSfxFilterInput) {
+    debugSfxFilterInput.addEventListener('input', (event) => {
+      const value = typeof event?.target?.value === 'string' ? event.target.value : '';
+      sfxFilterText = value.toLowerCase().trim();
+      lastSfxSignature = null;
+    });
+  }
+
+  updateSfxTagFilters([], { force: true });
 
   window.addEventListener('keydown', (e) => {
     if (e.key === 'F3') {
@@ -415,29 +462,72 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (debugSfxList && window.game?.getSfxCatalogEntries) {
-      let sfxEntries = [];
+      let catalogEntries = [];
       try {
-        sfxEntries = window.game.getSfxCatalogEntries() || [];
+        catalogEntries = window.game.getSfxCatalogEntries() || [];
       } catch (error) {
         console.warn('[DebugOverlay] Failed to read SFX catalog entries', error);
-        sfxEntries = [];
+        catalogEntries = [];
       }
 
-      const signature = sfxEntries
+      const entries = Array.isArray(catalogEntries) ? catalogEntries : [];
+      const availableTags = new Set();
+      for (const entry of entries) {
+        if (Array.isArray(entry.tags)) {
+          for (const tag of entry.tags) {
+            if (typeof tag === 'string' && tag.trim()) {
+              availableTags.add(tag.trim());
+            }
+          }
+        }
+      }
+      const sortedTags = Array.from(availableTags).sort((a, b) => a.localeCompare(b));
+      updateSfxTagFilters(sortedTags);
+
+      const textFilter = sfxFilterText;
+      const filteredEntries = entries.filter((entry) => {
+        const matchesTag =
+          !sfxTagFilter ||
+          (Array.isArray(entry.tags) && entry.tags.some((tag) => typeof tag === 'string' && tag === sfxTagFilter));
+        if (!matchesTag) {
+          return false;
+        }
+        if (!textFilter) {
+          return true;
+        }
+        const haystack = [
+          entry.id,
+          entry.description,
+          entry.file,
+          ...(Array.isArray(entry.tags) ? entry.tags : []),
+        ]
+          .filter((value) => typeof value === 'string' && value.length)
+          .map((value) => value.toLowerCase());
+        return haystack.some((value) => value.includes(textFilter));
+      });
+
+      const baseSignature = entries
         .map((entry) => `${entry.id}:${Array.isArray(entry.tags) ? entry.tags.join(',') : ''}`)
         .join('|');
+      const filteredSignature = filteredEntries.map((entry) => entry.id).join('|');
+      const signature = `${baseSignature}|filtered=${filteredSignature}|q=${textFilter}|tag=${sfxTagFilter ?? ''}`;
 
       if (signature !== lastSfxSignature) {
         lastSfxSignature = signature;
         debugSfxList.innerHTML = '';
 
-        if (!Array.isArray(sfxEntries) || sfxEntries.length === 0) {
+        if (!entries.length) {
           const row = document.createElement('div');
           row.className = 'debug-sfx-empty';
           row.textContent = 'Catalog not loaded';
           debugSfxList.appendChild(row);
+        } else if (!filteredEntries.length) {
+          const row = document.createElement('div');
+          row.className = 'debug-sfx-empty';
+          row.textContent = 'No entries match current filter';
+          debugSfxList.appendChild(row);
         } else {
-          for (const entry of sfxEntries) {
+          for (const entry of filteredEntries) {
             const row = document.createElement('div');
             row.className = 'debug-sfx-row';
 

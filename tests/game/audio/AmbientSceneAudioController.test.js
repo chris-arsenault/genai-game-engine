@@ -95,6 +95,13 @@ describe('AmbientSceneAudioController', () => {
         combat_layer: expect.any(Number),
       })
     );
+    expect(adaptiveOptions.states.stealth).toEqual(
+      expect.objectContaining({
+        ambient_base: expect.any(Number),
+        tension_layer: expect.any(Number),
+        combat_layer: expect.any(Number),
+      })
+    );
     expect(audioManager.playMusic).not.toHaveBeenCalled();
   });
 
@@ -137,5 +144,62 @@ describe('AmbientSceneAudioController', () => {
         fadeDuration: 0.7,
       })
     );
+  });
+
+  it('promotes disguise events to stealth state when available', async () => {
+    await controller.init();
+    adaptiveController.setState.mockClear();
+
+    eventBus.emit('disguise:equipped', { factionId: 'vanguard_prime' });
+
+    expect(adaptiveController.setState).toHaveBeenCalledWith('stealth', {
+      fadeDuration: 0.4,
+    });
+
+    eventBus.emit('disguise:removed', { factionId: 'vanguard_prime' });
+    expect(adaptiveController.setState).toHaveBeenLastCalledWith('ambient', {
+      fadeDuration: 0.4,
+    });
+  });
+
+  it('prioritizes combat state over stealth and alert contexts', async () => {
+    await controller.init();
+    adaptiveController.setState.mockClear();
+
+    // Stealth first
+    eventBus.emit('disguise:equipped', { factionId: 'vanguard_prime' });
+    expect(adaptiveController.setState).toHaveBeenLastCalledWith('stealth', {
+      fadeDuration: 0.4,
+    });
+
+    // Scrambler should not override combat when active later
+    eventBus.emit('combat:initiated', {});
+    expect(adaptiveController.setState).toHaveBeenLastCalledWith('combat', {
+      fadeDuration: 0.4,
+    });
+
+    // Scrambler activation while combat active should keep combat mix
+    eventBus.emit('firewall:scrambler_activated', { areaId: 'memory_parlor_firewall' });
+    expect(adaptiveController.setState).toHaveBeenLastCalledWith('combat', {
+      fadeDuration: 0.4,
+    });
+
+    // Resolve combat -> scrambler still active, so mix stays in alert
+    eventBus.emit('combat:resolved', {});
+    expect(adaptiveController.setState).toHaveBeenLastCalledWith('alert', {
+      fadeDuration: 0.4,
+    });
+
+    // Scrambler cooldown -> back to stealth while disguise remains equipped
+    eventBus.emit('firewall:scrambler_on_cooldown', { areaId: 'memory_parlor_firewall' });
+    expect(adaptiveController.setState).toHaveBeenLastCalledWith('stealth', {
+      fadeDuration: 0.4,
+    });
+
+    // Remove disguise -> ambient reset
+    eventBus.emit('disguise:removed', {});
+    expect(adaptiveController.setState).toHaveBeenLastCalledWith('ambient', {
+      fadeDuration: 0.4,
+    });
   });
 });

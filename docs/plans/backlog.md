@@ -324,13 +324,13 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Priority**: P2
 - **Tags**: `audio`, `narrative`, `asset`
 - **Effort**: 3 hours
-- **Status**: 🚧 In Progress
-- **Summary**: Source bespoke tension/combat stems, wire combat/disguise event transitions, and profile mix stability under rapid scrambler toggles.
+- **Status**: ✅ Completed
+- **Summary**: Source bespoke tension/combat stems, wire combat/disguise event transitions, stress-test telemetry, and deliver catalog filtering UX for audio designers.
 - **Acceptance Criteria**:
   - Dedicated tension/combat stems registered with loop metadata.
   - Combat events invoke adaptive state transitions with Playwright coverage.
   - Fades validated to avoid gain spikes; telemetry logged for overlays.
-- **Notes**: Procedural tension/combat stems integrated (`goodnightmare-tension.wav`, `goodnightmare-combat.wav`), adaptive telemetry now feeds debug overlay, and SFX preview tooling online. Remaining work: combat event hooks + Playwright coverage + stress profiling.
+- **Notes**: Adaptive combat/disguise triggers now flow through `AmbientSceneAudioController`, telemetry history is capped via stress harness, and the debug overlay exposes searchable/tag-filterable SFX catalog entries with Playwright coverage.
 
 ---
 

@@ -74,10 +74,10 @@ class AdaptiveMusicLayer {
 ### Component 3: `AmbientSceneAudioController` (updated)
 - **Purpose**: Route Memory Parlor scrambler events into adaptive states instead of directly manipulating master music volume.
 - **Responsibilities**:
-  - Configure adaptive controller with layer/state mapping (ambient baseline, scrambler alert boost, combat escalation hook) backed by bespoke tension/combat stems.
-  - Forward `firewall:scrambler_*` events to `AdaptiveMusicLayerController.setState` (`alert` during scrambler active, fallback to `ambient` on cooldown/expiry).
-  - Expose hooks for future combat events (`security:combat_engaged`).
-  - Default configuration now loads procedural stems (`goodnightmare-tension.wav`, `goodnightmare-combat.wav`) while retaining ambient fallback if assets fail.
+  - Configure adaptive controller with layer/state mapping (ambient baseline, stealth tension lift, scrambler alert boost, combat escalation) backed by bespoke tension/combat stems.
+  - Forward `firewall:scrambler_*` events to `AdaptiveMusicLayerController.setState` (`alert` during scrambler active, fallback to ambient/stealth on cooldown/expiry).
+  - React to disguise lifecycle (`disguise:equipped`, `disguise:removed`, `disguise:blown`) and combat cadence (`combat:initiated`, `combat:resolved`) so stealth/combat states override ambient contexts with clear priority ordering.
+  - Default configuration now loads procedural stems (`goodnightmare-tension.wav`, `goodnightmare-combat.wav`) while retaining ambient fallback if assets fail, and exposes an optional `stealth` state profile.
 - **Dependencies**:
   - `AdaptiveMusicLayerController` (new dependency).
   - Existing EventBus + scrambler event schema.
@@ -99,7 +99,7 @@ game.getAdaptiveAudioTelemetry(); // { currentState, history[] }
 game.getSfxCatalogEntries();      // [{ id, file, tags, description, baseVolume }]
 game.previewSfx('investigation_clue_ping');
 ```
-- **Testing**: Jest coverage in `tests/game/ui/GameAudioTelemetry.test.js` (telemetry) and `tests/game/Game.uiOverlays.test.js` (SFX preview hook).
+- **Testing**: Jest coverage in `tests/game/ui/GameAudioTelemetry.test.js` (telemetry) and `tests/game/Game.uiOverlays.test.js` (SFX preview hook) plus Playwright smoke (`tests/e2e/adaptive-audio-transitions.spec.js`, `tests/e2e/sfx-catalog-filter.spec.js`).
 
 ### Component 4: `SFXCatalog` configuration
 - **Purpose**: Provide declarative SFX asset definitions consumed by `AssetManager` and `AudioManager`.

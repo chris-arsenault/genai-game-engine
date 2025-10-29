@@ -111,4 +111,29 @@ describe('Game audio telemetry integration', () => {
     expect(updated.history).toHaveLength(2);
     expect(updated.history[1].to).toBe('combat');
   });
+
+  it('keeps telemetry history bounded under rapid state churn', async () => {
+    await game.initializeAudioIntegrations();
+
+    const baseTimestamp = Date.now();
+    const states = ['ambient', 'alert', 'stealth', 'combat'];
+    for (let i = 0; i < 24; i++) {
+      const from = states[i % states.length];
+      const to = states[(i + 1) % states.length];
+      eventBus.emit('audio:adaptive:state_changed', {
+        from,
+        to,
+        timestamp: baseTimestamp + i * 10,
+      });
+    }
+
+    const telemetry = game.getAdaptiveAudioTelemetry();
+    expect(telemetry.history.length).toBeLessThanOrEqual(8);
+    expect(telemetry.currentState).toBe('ambient'); // wraps every 4 iterations
+
+    const historyTimestamps = telemetry.history.map((entry) => entry.timestamp);
+    for (let i = 1; i < historyTimestamps.length; i++) {
+      expect(historyTimestamps[i]).toBeGreaterThanOrEqual(historyTimestamps[i - 1]);
+    }
+  });
 });

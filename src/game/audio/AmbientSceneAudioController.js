@@ -80,6 +80,11 @@ export class AmbientSceneAudioController {
           tension_layer: 0,
           combat_layer: 0,
         },
+        stealth: {
+          ambient_base: 0.65,
+          tension_layer: 0.4,
+          combat_layer: 0,
+        },
         alert: {
           ambient_base: 0.55,
           tension_layer: 0.9,
@@ -101,6 +106,8 @@ export class AmbientSceneAudioController {
     this._playing = false;
     this._currentVolume = this.baseVolume;
     this._scramblerActive = false;
+    this._stealthActive = false;
+    this._combatActive = false;
     this._currentState = null;
     this._adaptiveController = null;
   }
@@ -217,15 +224,15 @@ export class AmbientSceneAudioController {
         return;
       }
       this._scramblerActive = true;
-      this._setState('alert');
+      this._applyStateForContext();
     };
 
     const onExpired = () => {
-      if (!this._scramblerActive) {
-        return;
-      }
+      const wasActive = this._scramblerActive;
       this._scramblerActive = false;
-      this._setState('ambient');
+      if (wasActive) {
+        this._applyStateForContext();
+      }
     };
 
     const onCooldown = (payload = {}) => {
@@ -233,12 +240,51 @@ export class AmbientSceneAudioController {
         return;
       }
       this._scramblerActive = false;
-      this._setState('ambient');
+      this._applyStateForContext();
+    };
+
+    const onDisguiseEquipped = () => {
+      this._stealthActive = true;
+      this._applyStateForContext();
+    };
+
+    const onDisguiseRemoved = () => {
+      const wasStealthing = this._stealthActive;
+      this._stealthActive = false;
+      if (wasStealthing) {
+        this._applyStateForContext();
+      }
+    };
+
+    const onDisguiseBlown = () => {
+      this._stealthActive = false;
+      this._combatActive = true;
+      this._applyStateForContext();
+    };
+
+    const onCombatInitiated = () => {
+      this._combatActive = true;
+      this._applyStateForContext();
+    };
+
+    const onCombatResolved = () => {
+      const wasCombat = this._combatActive;
+      this._combatActive = false;
+      if (wasCombat) {
+        this._applyStateForContext();
+      }
     };
 
     this._unbinders.push(this.eventBus.on('firewall:scrambler_activated', onActivated));
     this._unbinders.push(this.eventBus.on('firewall:scrambler_expired', onExpired));
     this._unbinders.push(this.eventBus.on('firewall:scrambler_on_cooldown', onCooldown));
+    this._unbinders.push(this.eventBus.on('disguise:equipped', onDisguiseEquipped));
+    this._unbinders.push(this.eventBus.on('disguise:removed', onDisguiseRemoved));
+    this._unbinders.push(this.eventBus.on('disguise:unequipped', onDisguiseRemoved));
+    this._unbinders.push(this.eventBus.on('disguise:blown', onDisguiseBlown));
+    this._unbinders.push(this.eventBus.on('combat:initiated', onCombatInitiated));
+    this._unbinders.push(this.eventBus.on('combat:resolved', onCombatResolved));
+    this._unbinders.push(this.eventBus.on('combat:ended', onCombatResolved));
   }
 
   _shouldReact(payload) {
@@ -273,11 +319,51 @@ export class AmbientSceneAudioController {
       return;
     }
 
-    if (state === 'alert') {
+    if (state === 'combat') {
+      const boosted = Math.min(1, this.baseVolume + this.scramblerBoost * 1.5);
+      this._setVolume(boosted);
+    } else if (state === 'alert' || state === 'stealth') {
       const boosted = Math.min(1, this.baseVolume + this.scramblerBoost);
       this._setVolume(boosted);
     } else {
       this._setVolume(this.baseVolume);
     }
+    this._currentState = state;
+  }
+
+  _applyStateForContext(forceState = null) {
+    const candidate = forceState && this._hasState(forceState) ? forceState : this._computeState();
+    if (candidate) {
+      this._setState(candidate);
+    }
+  }
+
+  _computeState() {
+    if (this._combatActive && this._hasState('combat')) {
+      return 'combat';
+    }
+    if (this._scramblerActive && this._hasState('alert')) {
+      return 'alert';
+    }
+    if (this._stealthActive) {
+      if (this._hasState('stealth')) {
+        return 'stealth';
+      }
+      if (this._hasState('alert')) {
+        return 'alert';
+      }
+    }
+    if (this._hasState(this.defaultAdaptiveState)) {
+      return this.defaultAdaptiveState;
+    }
+    const keys = this.states ? Object.keys(this.states) : [];
+    return keys.length ? keys[0] : null;
+  }
+
+  _hasState(stateName) {
+    if (!stateName || !this.states || typeof this.states !== 'object') {
+      return false;
+    }
+    return Object.prototype.hasOwnProperty.call(this.states, stateName);
   }
 }

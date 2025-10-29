@@ -95,6 +95,7 @@
 
     #debug-overlay.visible {
       display: block;
+      pointer-events: auto;
     }
 
     #debug-overlay.paused {
@@ -229,10 +230,60 @@
       margin-top: 3px;
     }
 
+    .debug-sfx-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin: 6px 0;
+    }
+
+    .debug-sfx-filter {
+      flex: 1 1 160px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      padding: 4px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      outline: none;
+    }
+
+    .debug-sfx-filter::placeholder {
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .debug-sfx-tag-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .debug-sfx-tag-chip {
+      background: rgba(102, 255, 204, 0.2);
+      border: 1px solid rgba(102, 255, 204, 0.4);
+      border-radius: 12px;
+      color: #66ffcc;
+      font-size: 11px;
+      padding: 2px 8px;
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+
+    .debug-sfx-tag-chip.active {
+      background: rgba(102, 255, 204, 0.45);
+      border-color: rgba(102, 255, 204, 0.85);
+    }
+
+    .debug-sfx-tag-chip:hover {
+      background: rgba(102, 255, 204, 0.6);
+    }
+
     .debug-sfx-list {
       display: flex;
       flex-direction: column;
       gap: 4px;
+      margin-top: 4px;
     }
 
     .debug-sfx-row {
@@ -393,6 +444,16 @@
         </div>
         <div class="debug-audio-section">
           <div class="debug-subtitle">SFX Catalog</div>
+          <div class="debug-sfx-controls">
+            <input
+              type="search"
+              id="debug-sfx-filter"
+              class="debug-sfx-filter"
+              placeholder="Filter by id, description, or tag"
+              autocomplete="off"
+            />
+            <div id="debug-sfx-tag-filters" class="debug-sfx-tag-filters"></div>
+          </div>
           <div id="debug-sfx-list" class="debug-sfx-list">
             <div class="debug-sfx-empty">Catalog not loaded</div>
           </div>

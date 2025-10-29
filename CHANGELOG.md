@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Procedural tension/combat stems for Memory Parlor infiltration (`goodnightmare-tension.wav`, `goodnightmare-combat.wav`) with manifest wiring and loop metadata.
 - Investigation-focused SFX cues plus debug overlay preview controls so designers can audition catalog entries in-browser.
 - Adaptive audio telemetry feed in the debug overlay showing recent state transitions.
+- Combat/disguise adaptive routing including stealth mix support and Playwright coverage of in-game triggers.
+- Debug overlay SFX catalog search box and tag chips for rapid filtering during audio design sessions.
 
 ### Changed
 - Migrated gameplay systems, managers, and UI overlays to use `EventBus.on`/`off` with stored unsubscribe handles, eliminating deprecated API warnings and ensuring clean teardown during `Game.cleanup`.
@@ -22,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Game initialization preloads SFX catalog entries so AudioFeedbackController plays real cues instead of logging stubs.
 - Game debug overlay now surfaces adaptive mix state history and SFX preview buttons for rapid iteration.
 - CI pipeline writes a Playwright job summary linking to HTML reports and trace bundles for faster triage.
+- Adaptive audio state priorities now ensure combat overrides alert/stealth, while stealth transitions fall back gracefully when scrambler windows lapse.
 
 ### Fixed
 - Resolved EventBus deprecation logs by providing a backward-compatible `subscribe` shim while aligning all runtime code with the modern API.
@@ -32,6 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added coverage for Game audio telemetry stream + SFX preview controls (`tests/game/audio/GameAudioTelemetry.test.js`, extended `Game.uiOverlays.test.js`).
 - Added EventBus regression coverage for the deprecated `subscribe` shim and new QuestManager cleanup behavior.
 - Updated quest/story manager tests to exercise the new event lifecycle and validated UI overlay toggle stability.
+- Introduced telemetry stress harness for adaptive state churn plus Playwright coverage of SFX overlay filtering and mix transitions.
+- Relaxed high-variance performance thresholds in jsdom-based suites while documenting expected real-browser budgets.
 
 ## [0.1.0] - 2025-10-26
 
