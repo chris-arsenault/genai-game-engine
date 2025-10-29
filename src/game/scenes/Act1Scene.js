@@ -150,7 +150,20 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus) 
   sceneEntities.push(brokerId);
   console.log(`[Act1Scene] Black market broker NPC created: ${brokerId}`);
 
-  // 6. Create Captain Reese NPC (for objective 9)
+  // 6. Create Cipher Collective quartermaster (sells infiltration gadget)
+  const quartermasterId = createNPCEntity(entityManager, componentRegistry, {
+    x: 660,
+    y: 420,
+    id: 'cipher_quartermaster',
+    name: 'Cipher Quartermaster',
+    faction: 'cipher_collective',
+    hasDialogue: true,
+    dialogueId: 'cipher_quartermaster'
+  });
+  sceneEntities.push(quartermasterId);
+  console.log(`[Act1Scene] Cipher quartermaster NPC created: ${quartermasterId}`);
+
+  // 7. Create Captain Reese NPC (for objective 9)
   // Position at precinct entrance
   const captainId = createNPCEntity(entityManager, componentRegistry, {
     x: 200,
@@ -164,7 +177,7 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus) 
   sceneEntities.push(captainId);
   console.log(`[Act1Scene] Captain Reese NPC created: ${captainId}`);
 
-  // 7. Create boundary walls
+  // 8. Create boundary walls
   const boundaries = [
     { x: 0, y: 0, width: 800, height: 20 }, // Top
     { x: 0, y: 580, width: 800, height: 20 }, // Bottom
@@ -185,7 +198,7 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus) 
   }
   console.log('[Act1Scene] Boundary walls created');
 
-  // 8. Set up Detective Vision tutorial trigger
+  // 9. Set up Detective Vision tutorial trigger
   // After collecting 3 evidence, unlock Detective Vision (objective 5)
   let evidenceCollectedCount = 0;
   const requiredEvidenceForVision = 3;

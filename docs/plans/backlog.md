@@ -472,6 +472,18 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Inventory overlay highlights vendor-sourced items with vendor, cost, and timestamp details; Jest coverage verifies output.
   - DialogueSystem supports declarative consequence events and currency-aware conditions (`hasCurrency`, `notHasCurrency`).
 
+#### INV-318: Add Cipher quartermaster vendor for parlor infiltration
+- **Priority**: P1
+- **Tags**: `inventory`, `vendor`, `narrative`, `quest`
+- **Effort**: 4 hours
+- **Dependencies**: INV-304, DIA-208
+- **Status**: ✅ Completed — Session #40 introduced the Cipher Collective quartermaster with scrambler gear, updated Act 1 quests, and automated vendor smoke coverage.
+- **Description**: Extend the vendor roster with a Cipher Collective contact who trades infiltration gear, tie the acquisition into optional Act 1 progression, and ensure metadata feeds the shared vendor pipeline.
+- **Acceptance Criteria**:
+  - New `cipher_quartermaster` dialogue tree exposes currency and trade branches using `hasCurrency` conditions plus vendor transactions that emit knowledge events.
+  - Act 1 scene spawns the quartermaster NPC and the Hollow Case quest logs an optional objective when `cipher_scrambler_access` knowledge fires.
+  - Jest/Playwright coverage validates the vendor metadata (tags, costs, dialogue context) and ensures credits are deducted through the shared pipeline.
+
 #### DIA-208: Support inventory-aware dialogue conditions
 - **Priority**: P1
 - **Tags**: `dialogue`, `inventory`
@@ -501,12 +513,13 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Tags**: `perf`, `tooling`
 - **Effort**: 1 hour
 - **Dependencies**: None
-- **Status**: 🚧 Pending — Session #39 attempted `npm run profile` but `src/benchmark.js` is missing, blocking throughput profiling for vendor autosave changes.
+- **Status**: ✅ Completed — Session #40 restored the profiling harness by pointing `npm run profile` at `benchmark.js` and updating benchmark component wiring to the current ECS APIs.
 - **Description**: Recreate or relink the Node profiling entry point so `npm run profile` executes without module errors and captures frame timing under economy flows.
 - **Acceptance Criteria**:
   - `npm run profile` runs without module-not-found failures on CI and local machines.
   - Profiling script loads representative scenes (vendor transactions + dialogue gating) and outputs V8 log for inspection.
   - Documentation updated with usage instructions and expected output location.
+  - Latest run captures vendor purchase scenarios and writes JSON summaries under `benchmark-results/`.
 
 ---
 

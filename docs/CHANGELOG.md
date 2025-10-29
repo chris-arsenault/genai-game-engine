@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Optional Act 1 Black Market Broker vendor introduces purchase and trade branches that award memory parlor intel and emit knowledge events for optional quest tracking (`src/game/data/dialogues/Act1Dialogues.js`, `src/game/scenes/Act1Scene.js`, `src/game/data/quests/act1Quests.js`).
+- Cipher Collective quartermaster vendor now offers parlor scrambler gear with currency-or-trade branches, emits knowledge events, and adds a matching optional Hollow Case objective (`src/game/data/dialogues/Act1Dialogues.js`, `src/game/scenes/Act1Scene.js`, `src/game/data/quests/act1Quests.js`).
 - InventoryOverlay surfaces vendor acquisition metadata (vendor name, cost breakdown, timestamp) and highlights vendor-sourced loot for QA traceability (`src/game/ui/InventoryOverlay.js`, `src/game/Game.js`).
 - DialogueSystem integrates WorldStateStore story flags into dialogue context and adds currency-aware conditions for inventory gating (`src/game/systems/DialogueSystem.js`, `src/game/data/DialogueTree.js`).
 - Vendor economy helper emits normalized `economy:purchase:completed` payloads so vendor trades and bribes feed the inventory autosave pipeline (`src/game/economy/vendorEvents.js`, `src/game/Game.js`).
@@ -30,11 +31,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Input edge detection now treats pause, disguise, and quest toggles as single actions per key press so UI overlays and dialogue prompts remain visible during manual QA (`src/game/config/Controls.js`, `src/game/Game.js`).
 - KnowledgeProgressionSystem now queries gates via `componentRegistry` for both scheduled and event-driven checks, preventing missed gate unlocks when knowledge events fire (`src/game/systems/KnowledgeProgressionSystem.js`).
 - Game registers engine frame hooks to drive `update()` and `renderOverlays()` each frame, ensuring HUD layers display in runtime builds instead of only in tests (`src/game/Game.js`).
+- Restored the performance profiling harness by pointing `npm run profile` at `benchmark.js` and upgrading benchmark component registration to the explicit type API, eliminating `MODULE_NOT_FOUND` and component validation errors (`package.json`, `benchmark.js`).
 
 ### Testing
 - Added coverage for black market vendor dialogue data, vendor metadata rendering in InventoryOverlay, and currency-aware dialogue gating (`tests/game/data/Act1Dialogues.blackMarketVendor.test.js`, `tests/game/ui/InventoryOverlay.vendorSummary.test.js`, `tests/game/systems/DialogueSystem.test.js`).
 - Added coverage for vendor purchase emission, Game inventory integration, and dialogue inventory gating (`tests/game/economy/vendorEvents.test.js`, `tests/game/Game.vendorPurchases.test.js`, `tests/game/systems/DialogueSystem.test.js`).
 - Added unit coverage for WorldStateStore inventory reducers, inventory overlay navigation, and Playwright smoke ensuring debug overlay entries reflect inventory state (`tests/game/state/inventorySlice.test.js`, `tests/game/Game.uiOverlays.test.js`, `tests/e2e/debug-overlay-inventory.spec.js`).
+- Added Playwright smoke for black market vendor purchases and Jest coverage for Cipher quartermaster dialogue metadata, enforcing vendor pipeline behaviours and credit deductions (`tests/e2e/vendor-black-market-flow.spec.js`, `tests/game/data/Act1Dialogues.cipherQuartermaster.test.js`).
 - Added unit coverage for AudioFeedbackController throttling and SFX dispatch (`tests/game/audio/AudioFeedbackController.test.js`).
 - Added regression coverage for InputState edge detection and overlay toggles (`tests/game/config/Controls.test.js`, `tests/game/Game.uiOverlays.test.js`).
 - Added Jest coverage for overlay visibility instrumentation and knowledge gate evaluation (`tests/game/Game.uiOverlays.test.js`, `tests/game/systems/KnowledgeProgressionSystem.test.js`).

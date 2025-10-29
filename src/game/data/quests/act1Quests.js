@@ -82,6 +82,15 @@ export const QUEST_001_HOLLOW_CASE = {
       optional: true
     },
     {
+      id: 'obj_contact_cipher_quartermaster',
+      description: 'Acquire a Cipher scrambler charge for parlor infiltration',
+      trigger: {
+        event: 'knowledge:learned',
+        knowledgeId: 'cipher_scrambler_access'
+      },
+      optional: true
+    },
+    {
       id: 'obj_unlock_detective_vision',
       description: 'Learn to use Detective Vision',
       trigger: {

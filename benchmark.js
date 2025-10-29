@@ -200,8 +200,8 @@ async function benchmarkECS(runner) {
 
       for (let i = 0; i < 1000; i++) {
         const entity = entityManager.createEntity();
-        componentRegistry.addComponent(entity, new Transform(i, i));
-        componentRegistry.addComponent(entity, new Velocity(0, 0));
+        componentRegistry.addComponent(entity, 'Transform', new Transform(i, i));
+        componentRegistry.addComponent(entity, 'Velocity', new Velocity(0, 0));
       }
     },
     { iterations: 10, warmup: 2, memorySnapshot: true }
@@ -217,16 +217,16 @@ async function benchmarkECS(runner) {
       // Create 1000 entities with Transform
       for (let i = 0; i < 1000; i++) {
         const entity = entityManager.createEntity();
-        componentRegistry.addComponent(entity, new Transform(i, i));
+        componentRegistry.addComponent(entity, 'Transform', new Transform(i, i));
 
         // 70% also have Velocity
         if (i % 10 < 7) {
-          componentRegistry.addComponent(entity, new Velocity(0, 0));
+          componentRegistry.addComponent(entity, 'Velocity', new Velocity(0, 0));
         }
 
         // 30% also have Collider
         if (i % 10 < 3) {
-          componentRegistry.addComponent(entity, new Collider({ width: 32, height: 32 }));
+          componentRegistry.addComponent(entity, 'Collider', new Collider({ width: 32, height: 32 }));
         }
       }
 
@@ -252,9 +252,9 @@ async function benchmarkECS(runner) {
 
         for (let i = 0; i < count; i++) {
           const entity = entityManager.createEntity();
-          componentRegistry.addComponent(entity, new Transform(i, i));
+          componentRegistry.addComponent(entity, 'Transform', new Transform(i, i));
           if (i % 2 === 0) {
-            componentRegistry.addComponent(entity, new Velocity(0, 0));
+            componentRegistry.addComponent(entity, 'Velocity', new Velocity(0, 0));
           }
         }
 
@@ -279,7 +279,7 @@ async function benchmarkECS(runner) {
       const entities = [];
       for (let i = 0; i < 1000; i++) {
         const entity = entityManager.createEntity();
-        componentRegistry.addComponent(entity, new Transform(i, i));
+        componentRegistry.addComponent(entity, 'Transform', new Transform(i, i));
         entities.push(entity);
       }
 
@@ -312,8 +312,8 @@ async function benchmarkPhysics(runner) {
         const entities = [];
         for (let i = 0; i < count; i++) {
           const entity = entityManager.createEntity();
-          componentRegistry.addComponent(entity, new Transform(i, i));
-          componentRegistry.addComponent(entity, new Velocity(10, 10));
+          componentRegistry.addComponent(entity, 'Transform', new Transform(i, i));
+          componentRegistry.addComponent(entity, 'Velocity', new Velocity(10, 10));
           entities.push(entity);
         }
 
@@ -347,8 +347,8 @@ async function benchmarkPhysics(runner) {
           const y = Math.floor(i / gridSize) * 40;
 
           const entity = entityManager.createEntity();
-          componentRegistry.addComponent(entity, new Transform(x, y));
-          componentRegistry.addComponent(entity, new Collider({
+          componentRegistry.addComponent(entity, 'Transform', new Transform(x, y));
+          componentRegistry.addComponent(entity, 'Collider', new Collider({
             width: 32,
             height: 32,
             isStatic: i % 5 === 0, // 20% static
@@ -524,12 +524,12 @@ async function benchmarkGameLoop(runner) {
           const y = Math.floor(i / gridSize) * 40;
 
           const entity = entityManager.createEntity();
-          componentRegistry.addComponent(entity, new Transform(x, y));
-          componentRegistry.addComponent(entity, new Velocity(10, 10));
+          componentRegistry.addComponent(entity, 'Transform', new Transform(x, y));
+          componentRegistry.addComponent(entity, 'Velocity', new Velocity(10, 10));
 
           // 50% have colliders
           if (i % 2 === 0) {
-            componentRegistry.addComponent(entity, new Collider({
+            componentRegistry.addComponent(entity, 'Collider', new Collider({
               width: 32,
               height: 32,
             }));
@@ -562,8 +562,8 @@ async function benchmarkMemory(runner) {
       for (let cycle = 0; cycle < 1000; cycle++) {
         // Create entity
         const entity = entityManager.createEntity();
-        componentRegistry.addComponent(entity, new Transform(0, 0));
-        componentRegistry.addComponent(entity, new Velocity(0, 0));
+        componentRegistry.addComponent(entity, 'Transform', new Transform(0, 0));
+        componentRegistry.addComponent(entity, 'Velocity', new Velocity(0, 0));
 
         // Destroy entity
         componentRegistry.removeAllComponents(entity);
@@ -583,8 +583,8 @@ async function benchmarkMemory(runner) {
       const entities = [];
       for (let i = 0; i < 10000; i++) {
         const entity = entityManager.createEntity();
-        componentRegistry.addComponent(entity, new Transform(i, i));
-        componentRegistry.addComponent(entity, new Velocity(i % 10, i % 10));
+        componentRegistry.addComponent(entity, 'Transform', new Transform(i, i));
+        componentRegistry.addComponent(entity, 'Velocity', new Velocity(i % 10, i % 10));
         entities.push(entity);
       }
 

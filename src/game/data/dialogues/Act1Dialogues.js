@@ -337,6 +337,171 @@ export const DIALOGUE_BLACK_MARKET_VENDOR = new DialogueTree({
 });
 
 /**
+ * Cipher Collective Quartermaster - Provides stealth gear for parlor infiltration
+ */
+export const DIALOGUE_CIPHER_QUARTERMASTER = new DialogueTree({
+  id: 'cipher_quartermaster',
+  title: 'Cipher Quartermaster',
+  npcId: 'cipher_quartermaster',
+  startNode: 'start',
+  nodes: {
+    start: {
+      speaker: 'Cipher Quartermaster',
+      text: 'The Collective does not open the locker for badge-carrying detectives. State your need or move along.',
+      choices: [
+        {
+          text: 'I need a scrambler to bypass parlor firewalls.',
+          nextNode: 'offer'
+        },
+        {
+          text: 'Relax. I am leaving.',
+          nextNode: 'dismiss'
+        }
+      ]
+    },
+    offer: {
+      speaker: 'Cipher Quartermaster',
+      text: 'Scrambler charges are scarce. One use buys you thirty seconds against a memory parlor firewall.',
+      choices: [
+        {
+          text: 'Credits ready. Hand over the scrambler.',
+          nextNode: 'purchase_full_price',
+          conditions: [{ type: 'hasCurrency', currency: 'credits', amount: 120 }]
+        },
+        {
+          text: 'I brought transit routes intel—interested?',
+          nextNode: 'trade_offer',
+          conditions: [
+            { type: 'hasItem', item: 'intel_parlor_transit_routes', amount: 1 }
+          ]
+        },
+        {
+          text: 'I will circle back later.',
+          nextNode: 'no_deal'
+        }
+      ]
+    },
+    trade_offer: {
+      speaker: 'Cipher Quartermaster',
+      text: 'Transit tunnels in exchange? Useful leverage. Price drops if I log those routes.',
+      choices: [
+        {
+          text: 'Deal. Take the routes intel and the credits.',
+          nextNode: 'purchase_discounted',
+          conditions: [{ type: 'hasCurrency', currency: 'credits', amount: 60 }]
+        },
+        {
+          text: 'On second thought, I need those routes.',
+          nextNode: 'offer'
+        }
+      ]
+    },
+    purchase_full_price: {
+      speaker: 'Cipher Quartermaster',
+      text: 'Charge is yours. Do not stay in one place when it fires.',
+      consequences: {
+        vendorTransaction: {
+          vendorId: 'cipher_quartermaster',
+          vendorName: 'Cipher Quartermaster',
+          vendorFaction: 'cipher_collective',
+          cost: { credits: 120 },
+          items: [
+            {
+              id: 'gadget_cipher_scrambler_charge',
+              name: 'Cipher Scrambler Charge',
+              description: 'Single-use device that destabilizes parlor firewall nodes for thirty seconds.',
+              type: 'Gadget',
+              rarity: 'rare',
+              quantity: 1,
+              tags: [
+                'gadget',
+                'lead:parlor_infiltration',
+                'vendor:cipher_quartermaster',
+                'faction:cipher_collective'
+              ],
+              metadata: {
+                knowledgeId: 'cipher_scrambler_access',
+                gearId: 'cipher_scrambler_charge',
+                acquisition: 'purchase_full_price'
+              }
+            }
+          ]
+        },
+        events: ['knowledge:learned'],
+        data: {
+          knowledgeId: 'cipher_scrambler_access',
+          npcId: 'cipher_quartermaster'
+        },
+        setFlags: ['cipher_scrambler_acquired']
+      },
+      nextNode: 'wrap_up'
+    },
+    purchase_discounted: {
+      speaker: 'Cipher Quartermaster',
+      text: 'Intelligence traded. The Collective thanks you for the leverage. Keep the scrambler close.',
+      consequences: {
+        removeItem: {
+          item: 'intel_parlor_transit_routes',
+          amount: 1
+        },
+        vendorTransaction: {
+          vendorId: 'cipher_quartermaster',
+          vendorName: 'Cipher Quartermaster',
+          vendorFaction: 'cipher_collective',
+          cost: { credits: 60 },
+          items: [
+            {
+              id: 'gadget_cipher_scrambler_charge',
+              name: 'Cipher Scrambler Charge',
+              description: 'Single-use device that destabilizes parlor firewall nodes for thirty seconds.',
+              type: 'Gadget',
+              rarity: 'rare',
+              quantity: 1,
+              tags: [
+                'gadget',
+                'lead:parlor_infiltration',
+                'vendor:cipher_quartermaster',
+                'faction:cipher_collective'
+              ],
+              metadata: {
+                knowledgeId: 'cipher_scrambler_access',
+                gearId: 'cipher_scrambler_charge',
+                acquisition: 'purchase_discounted'
+              }
+            }
+          ]
+        },
+        events: ['knowledge:learned'],
+        data: {
+          knowledgeId: 'cipher_scrambler_access',
+          npcId: 'cipher_quartermaster'
+        },
+        setFlags: [
+          'cipher_scrambler_acquired',
+          'routes_intel_traded_to_cipher'
+        ]
+      },
+      nextNode: 'wrap_up'
+    },
+    wrap_up: {
+      speaker: 'Cipher Quartermaster',
+      text: 'Scrambler hum peaks after five seconds. Trigger it then move like your neural mesh depends on it.',
+      nextNode: null
+    },
+    no_deal: {
+      speaker: 'Cipher Quartermaster',
+      text: 'Then the locker stays sealed. Bring currency or leverage next time.',
+      nextNode: null
+    },
+    dismiss: {
+      speaker: 'Cipher Quartermaster',
+      text: 'Then walk away before a Cipher spotter tags your badge.',
+      nextNode: null
+    }
+  }
+});
+
+/**
  * Informant Jax - Building the Network (Case 004)
  */
 export const DIALOGUE_JAX_INTRO = new DialogueTree({
@@ -616,6 +781,7 @@ export const ACT1_DIALOGUES = [
   DIALOGUE_REESE_BRIEFING,
   DIALOGUE_WITNESS_VENDOR,
   DIALOGUE_BLACK_MARKET_VENDOR,
+  DIALOGUE_CIPHER_QUARTERMASTER,
   DIALOGUE_JAX_INTRO,
   DIALOGUE_ERASER_CIPHER,
   DIALOGUE_REESE_CONCLUSION
@@ -629,5 +795,5 @@ export function registerAct1Dialogues(dialogueSystem) {
   for (const dialogue of ACT1_DIALOGUES) {
     dialogueSystem.registerDialogueTree(dialogue);
   }
-  console.log('[Act1Dialogues] Registered 6 Act 1 dialogue trees');
+  console.log(`[Act1Dialogues] Registered ${ACT1_DIALOGUES.length} Act 1 dialogue trees`);
 }
