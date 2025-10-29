@@ -174,6 +174,7 @@ _Progress 2025-10-30 (Session #64 implementation): Player-facing HUD overlays (R
 _Progress 2025-10-30 (Session #65 export tooling): SaveManager JSON/CSV export artifacts unlock QA/CI capture, cascade mission Playwright flow verifies telemetry, and benchmark dispatch latency holds at 0.0100 ms (<0.25 ms)._
 _Progress 2025-10-30 (Session #66 architecture): Authored telemetry export integration and tutorial transcript export plans (`docs/plans/telemetry-export-integration-plan.md`, `docs/plans/tutorial-transcript-export-plan.md`) plus monitoring guidance in `docs/tech/world-state-store.md`; backlog next steps aligned with the phased rollout._
 _Progress 2025-10-30 (Session #67 implementation): Delivered TelemetryArtifactWriterAdapter + FileSystemTelemetryWriter with SaveManager async integration, Jest coverage, Playwright updates, documentation refresh, and a telemetry-export-writer benchmark (mean 1.39 ms over 5 iterations)._
+_Progress 2025-10-31 (Session #68 CLI integration): Introduced `npm run export-telemetry` with `CiArtifactPublisher` metadata manifests, Jest + integration coverage, and a Playwright telemetry helper that mirrors filesystem writer outputs for cascade mission automation._
 
 ---
 

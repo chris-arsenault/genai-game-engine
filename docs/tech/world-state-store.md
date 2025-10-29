@@ -77,6 +77,9 @@ _Updated during Autonomous Sessions #62–64 (2025-10-30)._
 ## Telemetry Export Monitoring
 - **Adapter instrumentation**: `src/game/telemetry/TelemetryArtifactWriterAdapter.js` now records per-writer timings, success/failure counts, and emits `telemetry:artifacts_written` / `telemetry:artifact_failed`. SaveManager boots a default instance (eventBus wired) so automation pipelines only need to register writers.
 - **Filesystem writer**: `src/game/telemetry/FileSystemTelemetryWriter.js` persists artifacts with deterministic UTF-8 output and recursive dir creation. Combine with adapter fan-out for QA captures, Playwright attachments, or CI upload staging.
+- **CLI export task**: `scripts/telemetry/exportInspectorTelemetry.js` (exposed via `npm run export-telemetry`) instantiates SaveManager with the filesystem writer, hydrates optional snapshots, and invokes the new `CiArtifactPublisher` to emit `ci-artifacts.json` manifests. Pass `--ciCommand='{"command":"gh","args":["run","upload-artifact","--name","telemetry","--path","telemetry-artifacts"]}'` to mirror CI uploads, or rely on the default dry-run metadata for local inspection.
+- **CI artifact publisher**: `src/game/telemetry/CiArtifactPublisher.js` writes metadata manifests and executes optional upload commands with dependency-injected runners. Lifecycle events (`telemetry:ci_publish_started/completed/failed`) bubble through the EventBus for dashboards; Jest coverage (`tests/game/telemetry/CiArtifactPublisher.test.js`) asserts command invocation, metadata payloads, and failure handling.
+- **Integration coverage**: `tests/integration/telemetryExportTask.test.js` drives `runTelemetryExport` end-to-end with a seeded `WorldStateStore`, verifying artifact persistence, metadata manifests, and dry-run logging. Treat this suite as the smoke test whenever adjusting CLI flags or publisher behaviour.
 - **Asynchronous export contract**: `SaveManager.exportInspectorSummary()` is now `async`—always `await window.game.saveManager.exportInspectorSummary(...)` inside automation helpers to ensure writer completion and metrics availability (`result.metrics.artifactsWritten`, etc.).
 - **Writer benchmark**: `benchmarks/telemetry-export-writer.js` exercises adapter + filesystem writer against synthetic summaries. Target <10 ms per artifact on CI runners; keep console output in the session handoff when thresholds drift.
 - **Dispatch regression guardrail**
@@ -86,7 +89,8 @@ _Updated during Autonomous Sessions #62–64 (2025-10-30)._
   - CI pipelines should run `npm run export-telemetry -- --formats=json,csv --artifactDir=$CI_ARTIFACTS` (Phase 2 task). Capture summary JSON and ensure artifact upload job validates file presence.
   - On failure, parse adapter summary logs to pinpoint failing writer (filesystem vs CI publisher) and rerun locally with `DEBUG=telemetry npm run export-telemetry`.
 - **Playwright validation**
-  - `tests/e2e/cascade-mission-telemetry.spec.js` (and future tutorial transcript spec) attach telemetry artifacts to Playwright reports. Monitor report attachments to confirm writers remain wired in headless environments.
+  - `tests/e2e/utils/telemetryArtifacts.js` exposes `captureTelemetryArtifacts(page, testInfo, options)` which mirrors the filesystem writer pipeline, writes artifacts to the test output directory, and attaches JSON/CSV files plus summary blobs to Playwright reports.
+  - `tests/e2e/cascade-mission-telemetry.spec.js` (and future tutorial transcript spec) now leverage the helper so exports remain consistent across automation surfaces. Monitor report attachments to confirm writers remain wired in headless environments.
   - Use `PLAYWRIGHT_TELEMETRY_DEBUG=1 npx playwright test ...` to surface helper diagnostics during local repro.
 
 ## Verification Commands
@@ -95,6 +99,7 @@ npm test -- factionSlice
 npm test -- tutorialSlice
 npm test -- worldStateStore
 npm test -- SaveManager
+npm test -- --runTestsByPath tests/game/telemetry/CiArtifactPublisher.test.js tests/integration/telemetryExportTask.test.js
 npm test -- ReputationUI
 npm test -- TutorialOverlay
 npm test -- SaveInspectorOverlay
@@ -105,6 +110,7 @@ npx playwright test tests/e2e/cascade-mission-telemetry.spec.js
 node benchmarks/state-store-prototype.js
 node benchmarks/telemetry-export-writer.js # validate writer throughput (<10ms per artifact)
 DEBUG=telemetry npm run export-telemetry -- --dryRun # validates writer wiring without disk writes
+npm run export-telemetry -- --artifactDir=./telemetry-artifacts --metadata=./telemetry-artifacts/ci-artifacts.json --dryRun
 ```
 
 All suites must stay green; benchmark should continue reporting `Dispatch latency … : PASS`.

@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { waitForGameLoad, collectConsoleErrors } from './setup.js';
+import { captureTelemetryArtifacts } from './utils/telemetryArtifacts.js';
 
 test.describe('Cascade mission telemetry export', () => {
-  test('captures cascade telemetry during mission flow and exports artifacts', async ({ page }) => {
+  test('captures cascade telemetry during mission flow and exports artifacts', async ({ page }, testInfo) => {
     const consoleErrors = collectConsoleErrors(page);
 
     await waitForGameLoad(page);
@@ -99,24 +100,23 @@ test.describe('Cascade mission telemetry export', () => {
       { timeout: 4000 }
     );
 
-    const exportResult = await page.evaluate(async () => {
-      const result = await window.game.saveManager.exportInspectorSummary({ prefix: 'pw-mission' });
-      const jsonArtifact = result.artifacts.find((artifact) => artifact.type === 'json');
-      const cascadeCsv = result.artifacts.find(
-        (artifact) => artifact.type === 'csv' && artifact.section === 'cascade'
-      );
-      return {
-        artifactCount: result.artifacts.length,
-        jsonSummary: JSON.parse(jsonArtifact.content),
-        cascadeCsvContent: cascadeCsv.content,
-        filenames: result.artifacts.map((artifact) => artifact.filename),
-      };
+    const telemetry = await captureTelemetryArtifacts(page, testInfo, {
+      prefix: 'pw-mission',
     });
 
-    expect(exportResult.artifactCount).toBe(3);
-    expect(exportResult.filenames.every((name) => name.startsWith('pw-mission'))).toBe(true);
-    expect(exportResult.jsonSummary.factions.cascadeTargets[0].factionId).toBe('luminari_syndicate');
-    expect(exportResult.cascadeCsvContent).toContain('luminari_syndicate');
+    expect(telemetry.artifacts).toHaveLength(3);
+    expect(telemetry.artifacts.every((artifact) => artifact.filename.startsWith('pw-mission'))).toBe(true);
+
+    const jsonArtifact = telemetry.artifacts.find((artifact) => artifact.type === 'json');
+    expect(jsonArtifact).toBeDefined();
+    const cascadeCsv = telemetry.artifacts.find(
+      (artifact) => artifact.type === 'csv' && artifact.section === 'cascade'
+    );
+    expect(cascadeCsv).toBeDefined();
+
+    const parsedSummary = JSON.parse(jsonArtifact.content);
+    expect(parsedSummary.factions.cascadeTargets[0].factionId).toBe('luminari_syndicate');
+    expect(cascadeCsv.content).toContain('luminari_syndicate');
 
     expect(consoleErrors).toEqual([]);
   });

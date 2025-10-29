@@ -50,6 +50,14 @@ await page.evaluate(() => {
 });
 ```
 
+## Telemetry Artifact Capture
+- Use `captureTelemetryArtifacts(page, testInfo, { prefix: 'tutorial-flow' })` from `tests/e2e/utils/telemetryArtifacts.js` once the automation run reaches the verification phase. The helper:
+  - Invokes `SaveManager.exportInspectorSummary()` within the browser context.
+  - Pipes artifacts through `TelemetryArtifactWriterAdapter` + `FileSystemTelemetryWriter` so output mirrors the CLI pipeline.
+  - Attaches JSON/CSV artifacts and a `telemetry-summary-*.json` blob to the Playwright report automatically.
+- The helper writes files to `<testInfo.outputDir>/telemetry/<prefix>/` by default; override `artifactDir` when CI needs a shared directory.
+- For quick local spot checks run `npm run export-telemetry -- --artifactDir=.playwright-artifacts --dryRun` after the suite to compare Playwright attachments with the CLI export metadata.
+
 ## Common Failure Modes
 | Symptom | Likely Cause | Fix |
 | --- | --- | --- |
