@@ -208,4 +208,39 @@ describe('telemetry export CLI', () => {
       })
     );
   });
+
+  test('gracefully skips commands when runner indicates missing executable', async () => {
+    const artifactDir = path.join(tempDir, 'artifacts-missing');
+    const metadataPath = path.join(tempDir, 'ci', 'missing-manifest.json');
+    const { eventBus, worldStateStore } = createSeededWorldStateStore();
+    const missingError = Object.assign(new Error('spawn gh ENOENT'), { code: 'ENOENT' });
+    const commandRunner = jest.fn().mockRejectedValue(missingError);
+
+    const result = await runTelemetryExport({
+      artifactDir,
+      metadataPath,
+      prefix: 'missing',
+      env: {
+        CI: 'true',
+        TELEMETRY_CI_COMMANDS: JSON.stringify([{ command: 'gh', args: ['artifact', 'upload'] }]),
+      },
+      eventBus,
+      worldStateStore,
+      commandRunner,
+    });
+
+    expect(commandRunner).toHaveBeenCalledWith(
+      'gh',
+      ['artifact', 'upload'],
+      expect.objectContaining({ env: expect.objectContaining({ CI: 'true' }) })
+    );
+    expect(result.publishResult.commandResults).toEqual([
+      expect.objectContaining({
+        command: 'gh',
+        status: 'skipped',
+        skippedReason: 'command_not_found',
+        exitCode: 127,
+      }),
+    ]);
+  });
 });

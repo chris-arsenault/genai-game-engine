@@ -87,6 +87,8 @@ describe('CiArtifactPublisher', () => {
         command: 'gh',
         args: ['run', 'upload-artifact'],
         exitCode: 0,
+        status: 'succeeded',
+        skippedReason: null,
       }),
     ]);
     expect(logger.info).not.toHaveBeenCalledWith(
@@ -152,5 +154,37 @@ describe('CiArtifactPublisher', () => {
       expect.objectContaining({ message: 'upload failed' })
     );
   });
-});
 
+  test('skips missing command gracefully and records fallback result', async () => {
+    const metadataPath = path.join(tempDir, 'ci-metadata.json');
+    const missingError = Object.assign(new Error('spawn gh ENOENT'), { code: 'ENOENT' });
+    const commandRunner = jest.fn().mockRejectedValue(missingError);
+
+    const publisher = new CiArtifactPublisher({
+      metadataPath,
+      dryRun: false,
+      commands: [{ command: 'gh', args: ['artifact', 'upload'] }],
+      commandRunner,
+      env: { CI: 'true' },
+      logger,
+    });
+
+    const result = await publisher.publish([artifactPath], { runId: 'ci' });
+
+    expect(result.commandResults).toHaveLength(1);
+    expect(result.commandResults[0]).toEqual(
+      expect.objectContaining({
+        command: 'gh',
+        status: 'skipped',
+        skippedReason: 'command_not_found',
+        exitCode: 127,
+        errorMessage: expect.stringContaining('ENOENT'),
+      })
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      '[CiArtifactPublisher] Command missing; skipping execution',
+      expect.objectContaining({ command: 'gh', message: expect.stringContaining('ENOENT') })
+    );
+    expect(logger.error).not.toHaveBeenCalled();
+  });
+});

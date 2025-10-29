@@ -95,15 +95,65 @@ export class CiArtifactPublisher {
 
       const commandResults = [];
       for (const entry of this.commands) {
-        const result = await this.commandRunner(entry.command, entry.args, {
-          env: { ...this.env, ...(entry.env || {}) },
-          cwd: entry.cwd || process.cwd(),
-        });
-        commandResults.push({
-          command: entry.command,
-          args: [...entry.args],
-          ...result,
-        });
+        try {
+          const result = await this.commandRunner(entry.command, entry.args, {
+            env: { ...this.env, ...(entry.env || {}) },
+            cwd: entry.cwd || process.cwd(),
+          });
+
+          const exitCode = typeof result?.exitCode === 'number' ? result.exitCode : 0;
+          const normalizedResult = {
+            command: entry.command,
+            args: [...entry.args],
+            exitCode,
+            stdout: result?.stdout ?? '',
+            stderr: result?.stderr ?? '',
+            status: exitCode === 0 ? 'succeeded' : 'failed',
+            skippedReason: null,
+            errorMessage: null,
+            errorCode: null,
+          };
+
+          if (result && typeof result === 'object') {
+            for (const [key, value] of Object.entries(result)) {
+              if (!(key in normalizedResult)) {
+                normalizedResult[key] = value;
+              }
+            }
+          }
+
+          commandResults.push(normalizedResult);
+
+          if (exitCode !== 0) {
+            this.logger?.warn?.('[CiArtifactPublisher] Command exited with non-zero code', {
+              command: entry.command,
+              exitCode,
+            });
+          }
+        } catch (error) {
+          if (this.#isCommandMissingError(error)) {
+            const message = error instanceof Error ? error.message : String(error);
+            this.logger?.warn?.('[CiArtifactPublisher] Command missing; skipping execution', {
+              command: entry.command,
+              message,
+            });
+            commandResults.push({
+              command: entry.command,
+              args: [...entry.args],
+              exitCode: 127,
+              stdout: '',
+              stderr: '',
+              status: 'skipped',
+              skippedReason: 'command_not_found',
+              errorMessage: message,
+              errorCode: typeof error === 'object' && error?.code ? error.code : null,
+              durationMs: 0,
+            });
+            continue;
+          }
+
+          throw error;
+        }
       }
 
       this.#emitEvent('telemetry:ci_publish_completed', {
@@ -159,6 +209,30 @@ export class CiArtifactPublisher {
       });
     }
   }
+
+  #isCommandMissingError(error) {
+    if (!error) {
+      return false;
+    }
+
+    if (error.code === 'ENOENT') {
+      return true;
+    }
+
+    const message =
+      typeof error.message === 'string'
+        ? error.message
+        : typeof error === 'string'
+          ? error
+          : '';
+
+    if (!message) {
+      return false;
+    }
+
+    const normalized = message.toLowerCase();
+    return normalized.includes('enoent') || normalized.includes('not found') || normalized.includes('is not recognized');
+  }
 }
 
 async function defaultCommandRunner(command, args = [], options = {}) {
@@ -213,4 +287,3 @@ function normalizeCommand(entry, index) {
 
   throw new Error(`commands[${index}] must be a string, array, or object with a command property.`);
 }
-

@@ -179,6 +179,7 @@ _Progress 2025-10-31 (Session #69 CI + transcript kickoff): GitHub Actions now r
 _Progress 2025-11-01 (Session #70 transcript exports): Exporter now emits tutorial transcript CSV/Markdown artifacts consumed by CLI/Playwright, CI stage runs with provider command hooks (GitHub upload stub), and tutorial automation assertions cover transcript availability while docs/backlog capture the new pipeline._
 _Progress 2025-11-01 (Session #71 runtime wiring): Game bootstrap auto-starts TutorialTranscriptRecorder for runtime sessions, GitHub upload provider executes real CLI uploads while persisting metrics into `ci-artifacts.json`, and new Jest/Playwright/integration suites guard transcript content and provider behaviour._
 _Progress 2025-11-02 (Session #72 telemetry dashboards): CI workflow now appends provider-result metrics to step summaries via `reportProviderMetrics.js`, and cascade mission automation asserts tutorial transcript ordering alongside cascade telemetry artifacts._
+_Progress 2025-11-03 (Session #73 resilience): `CiArtifactPublisher` downgrades missing upload executables to `status: skipped (command_not_found)` without failing exports, with new Jest/integration coverage documenting the fallback and docs refreshed for CI operators._
 
 ---
 
