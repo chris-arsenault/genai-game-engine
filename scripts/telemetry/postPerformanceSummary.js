@@ -8,6 +8,8 @@ import {
   formatMarkdownSummary,
 } from './summarizePerformanceBaseline.js';
 
+const HISTORY_ENV_VAR = 'TELEMETRY_BASELINE_HISTORY_DIR';
+
 /**
  * Resolve CLI arguments for baseline and output paths.
  * @returns {{ baselinePath: string, outputPath: string }}
@@ -24,6 +26,131 @@ async function ensureDirectory(filePath) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
 }
 
+function resolveHistoryDir(baselinePath) {
+  if (process.env[HISTORY_ENV_VAR]) {
+    return path.resolve(process.env[HISTORY_ENV_VAR]);
+  }
+  return path.join(path.dirname(baselinePath), 'history');
+}
+
+async function findPreviousBaselineInfo(baselinePath) {
+  const historyDir = resolveHistoryDir(baselinePath);
+  let entries;
+  try {
+    entries = await fs.readdir(historyDir, { withFileTypes: true });
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      console.warn(
+        `[postPerformanceSummary] Unable to read baseline history directory ${historyDir}`,
+        error
+      );
+    }
+    return null;
+  }
+
+  const currentResolved = path.resolve(baselinePath);
+  const candidates = entries
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+    .map((entry) => {
+      const candidatePath = path.join(historyDir, entry.name);
+      return {
+        name: entry.name,
+        path: candidatePath,
+        resolved: path.resolve(candidatePath),
+      };
+    })
+    .filter((candidate) => candidate.resolved !== currentResolved)
+    .sort((a, b) => (a.name < b.name ? 1 : -1));
+
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  return { path: candidates[0].path, name: candidates[0].name };
+}
+
+function computeMetricDeltas(currentSummary, previousSummary) {
+  const previousMap = new Map();
+  for (const metric of previousSummary.metrics || []) {
+    previousMap.set(metric.name, metric);
+  }
+
+  const deltas = [];
+
+  for (const metric of currentSummary.metrics || []) {
+    const previous = previousMap.get(metric.name);
+    if (previous) {
+      const rawDelta = Number(metric.averageMs ?? 0) - Number(previous.averageMs ?? 0);
+      const deltaMs = Number(rawDelta.toFixed(4));
+      const deltaPct =
+        Number(previous.averageMs ?? 0) === 0
+          ? null
+          : Number(((rawDelta / Number(previous.averageMs)) * 100).toFixed(2));
+      const trend =
+        deltaMs > 0 ? 'regression' : deltaMs < 0 ? 'improvement' : 'flat';
+      deltas.push({
+        name: metric.name,
+        previous: Number(previous.averageMs ?? 0),
+        current: Number(metric.averageMs ?? 0),
+        deltaMs,
+        deltaPct,
+        trend,
+      });
+      previousMap.delete(metric.name);
+    } else {
+      deltas.push({
+        name: metric.name,
+        previous: null,
+        current: Number(metric.averageMs ?? 0),
+        deltaMs: null,
+        deltaPct: null,
+        trend: 'new',
+      });
+    }
+  }
+
+  for (const [name, metric] of previousMap.entries()) {
+    deltas.push({
+      name,
+      previous: Number(metric.averageMs ?? 0),
+      current: null,
+      deltaMs: null,
+      deltaPct: null,
+      trend: 'removed',
+    });
+  }
+
+  return deltas.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function annotateDeltas(deltas = [], previousLabel) {
+  if (!Array.isArray(deltas) || deltas.length === 0) {
+    return;
+  }
+
+  const label = previousLabel ? `previous baseline (${previousLabel})` : 'previous baseline';
+
+  for (const delta of deltas) {
+    if (delta.deltaMs == null || delta.deltaMs === 0) {
+      continue;
+    }
+
+    const absMs = Math.abs(delta.deltaMs).toFixed(4);
+    const pct =
+      delta.deltaPct != null ? `${Math.abs(delta.deltaPct).toFixed(2)}%` : 'n/a';
+
+    if (delta.deltaMs > 0) {
+      console.warn(
+        `::warning title=Performance delta::${delta.name} regressed ${absMs} ms (${pct}) vs ${label}`
+      );
+    } else {
+      console.log(
+        `::notice title=Performance delta::${delta.name} improved ${absMs} ms (${pct}) vs ${label}`
+      );
+    }
+  }
+}
+
 async function main() {
   const { baselinePath, outputPath } = resolvePaths();
 
@@ -38,6 +165,33 @@ async function main() {
   }
 
   const summary = summariseBaseline(baseline);
+  const previousInfo = await findPreviousBaselineInfo(baselinePath);
+
+  if (previousInfo) {
+    try {
+      const previousBaseline = await loadBaseline(previousInfo.path);
+      const previousSummary = summariseBaseline(previousBaseline);
+      summary.previousBaseline = {
+        label: previousInfo.name,
+        path: previousInfo.path,
+        generatedAt: previousSummary.generatedAt || null,
+        runs: previousSummary.runs ?? null,
+      };
+      summary.deltas = computeMetricDeltas(summary, previousSummary);
+    } catch (error) {
+      console.warn(
+        `[postPerformanceSummary] Failed to load previous baseline from ${previousInfo.path}`,
+        error
+      );
+      summary.deltas = [];
+    }
+  } else {
+    summary.deltas = [];
+    console.log(
+      '::notice title=Performance delta::No prior baseline found for delta comparison.'
+    );
+  }
+
   const markdown = formatMarkdownSummary(summary);
 
   await ensureDirectory(outputPath);
@@ -60,6 +214,8 @@ async function main() {
       );
     }
   }
+
+  annotateDeltas(summary.deltas, summary.previousBaseline?.label);
 }
 
 main().catch((error) => {

@@ -40,7 +40,9 @@ describe('Act2CrossroadsScene trigger migration', () => {
   it('attaches quest triggers using registry definitions', async () => {
     await scene.load();
 
-    const triggerEntities = Array.from(scene.sceneEntities);
+    const triggerEntities = Array.from(scene.sceneEntities).filter((entityId) =>
+      componentRegistry.hasComponent(entityId, 'Trigger')
+    );
     expect(triggerEntities.length).toBe(3);
 
     const triggerComponents = new Map();

@@ -66,5 +66,7 @@ the same files to artifact storage for long-term retention.
 
 - CI now calls `postPerformanceSummary.js` after every baseline run so the job summary
   and uploaded artifacts always include markdown plus annotated warnings.
-- Extend the summary step with delta analysis against the previous baseline once the
-  history directory contains more than one entry.
+- Delta analysis is now active: when `telemetry-artifacts/performance/history/` contains
+  a prior baseline, the summary appends a comparison table and emits GitHub warnings/notices
+  for regressions or improvements. Override the history directory by setting
+  `TELEMETRY_BASELINE_HISTORY_DIR` if CI stores artifacts elsewhere.

@@ -8,8 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Act 2 Crossroads hub scaffolding with registry-backed triggers, scene loader, and Jest coverage for branching metadata (`src/game/scenes/Act2CrossroadsScene.js`, `tests/game/scenes/Act2CrossroadsScene.triggers.test.js`, `docs/guides/act2-trigger-authoring.md`).
-- Telemetry summary post-step that appends markdown + GitHub warnings during CI runs (`scripts/telemetry/postPerformanceSummary.js`, `.github/workflows/ci.yml`, `docs/performance/performance-baseline-guardrails.md`).
+- Act 2 Crossroads hub geometry, navigation mesh metadata, ambient audio controller, and trigger-driven UI/narrative prompts with expanded Jest coverage (`src/game/scenes/Act2CrossroadsScene.js`, `tests/game/scenes/Act2CrossroadsScene.{triggers,layout,prompts}.test.js`, `docs/guides/act2-trigger-authoring.md`).
+- Telemetry summary post-step now appends markdown, GitHub warnings, and baseline delta comparisons against history artifacts (`scripts/telemetry/postPerformanceSummary.js`, `.github/workflows/ci.yml`, `docs/performance/performance-baseline-guardrails.md`).
 - Game coordinator now instantiates the shared `AdaptiveMusic` orchestrator, exposes mood helpers on the EventBus, and drives scheduled reverts via the main update loop ( `src/game/Game.js`, `tests/game/audio/GameAudioTelemetry.test.js`).
 - Trigger authoring schema layers `Trigger` components over `InteractionZone` authoring, wiring Memory Parlor restricted areas and quest triggers to `area:entered` / `area:exited` payloads with new QuestSystem coverage (`src/game/scenes/MemoryParlorScene.js`, `src/game/systems/QuestSystem.js`, `tests/game/systems/QuestSystem.trigger.test.js`, `docs/tech/trigger-authoring.md`).
 - DistrictGenerator now selects rotation angles, stores rotated layout bounds, and validates corridor endpoints against rotated rooms, ensuring RoomInstance containment helpers stay accurate (`src/game/procedural/DistrictGenerator.js`, `tests/game/procedural/DistrictGenerator.test.js`).

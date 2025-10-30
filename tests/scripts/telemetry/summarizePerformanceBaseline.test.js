@@ -90,5 +90,43 @@ describe('summarizePerformanceBaseline utilities', () => {
     expect(markdown).toContain('## Alerts');
     expect(markdown).toContain('[CRITICAL]: busyMetric');
   });
-});
 
+  test('formatMarkdownSummary renders delta section when provided', () => {
+    const summary = {
+      generatedAt: '2025-10-31T04:12:00.000Z',
+      runs: 5,
+      previousBaseline: {
+        label: '2025-10-30-ci-baseline.json',
+        generatedAt: '2025-10-30T02:19:47.904Z',
+      },
+      metrics: [],
+      deltas: [
+        {
+          name: 'bspGeneration',
+          current: 4.0,
+          previous: 3.8,
+          deltaMs: 0.2,
+          deltaPct: 5.26,
+          trend: 'regression',
+        },
+        {
+          name: 'factionModify',
+          current: 0.01,
+          previous: 0.02,
+          deltaMs: -0.01,
+          deltaPct: -50,
+          trend: 'improvement',
+        },
+      ],
+    };
+
+    const markdown = formatMarkdownSummary(summary);
+    expect(markdown).toContain('## Delta vs Previous Baseline (2025-10-30-ci-baseline.json)');
+    expect(markdown).toContain(
+      '| bspGeneration | 4 | 3.8 | +0.2000 | +5.26% | REGRESSION |'
+    );
+    expect(markdown).toContain(
+      '| factionModify | 0.01 | 0.02 | -0.0100 | -50.00% | IMPROVEMENT |'
+    );
+  });
+});

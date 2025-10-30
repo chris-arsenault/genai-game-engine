@@ -26,7 +26,8 @@ zones.
 3. Extend scene-level Jest coverage (similar to `tests/game/scenes/TutorialScene.triggers.test.js`)
    to assert quest metadata, branching flags, and telemetry tags.
 4. Update narrative tooling so dialogue/UI copy pulls from the registry prompts
-   rather than hard-coded strings.
+   rather than hard-coded strings. (The Crossroads scene now emits `ui:show_prompt`
+   and `narrative:crossroads_prompt` events directly from the registry metadata.)
 5. When each trigger is migrated, the toolkit will mark it as migrated and the
    outstanding report will shrink accordingly.
 
@@ -35,11 +36,16 @@ strategy and acceptance criteria.
 
 ## Current Implementation Status
 
-- `src/game/scenes/Act2CrossroadsScene.js` scaffolds the hub space and attaches all
-  three registry definitions via `TriggerMigrationToolkit`. The scene emits a
-  `scene:loaded` event with the created trigger entities for downstream systems.
+- `src/game/scenes/Act2CrossroadsScene.js` now instantiates authored hub geometry,
+  nav mesh metadata, ambient audio wiring, and attaches all three registry definitions
+  via `TriggerMigrationToolkit`. The scene emits a `scene:loaded` event with trigger ids,
+  navigation mesh, and geometry metadata for downstream systems.
 - Regression coverage lives in `tests/game/scenes/Act2CrossroadsScene.triggers.test.js`,
   asserting quest metadata (`branchingChoice`, `telemetryTag`, `worldFlag`) and ensuring
   the registry records the triggers as migrated.
-- Designer prompts now flow from the registry definitions, so UI tooling can bind to
-  the same IDs that analytics expects (`ACT2_CROSSROADS_TRIGGER_DEFINITIONS`).
+- `tests/game/scenes/Act2CrossroadsScene.layout.test.js` validates geometry + navigation
+  scaffolding, and `tests/game/scenes/Act2CrossroadsScene.prompts.test.js` locks the
+  UI/narrative prompt and telemetry event bindings.
+- Designer prompts now flow from the registry definitions through `ui:show_prompt`, and
+  narrative/analytics listeners can subscribe to `narrative:crossroads_prompt` and
+  `telemetry:trigger_entered` for branch selection deltas.

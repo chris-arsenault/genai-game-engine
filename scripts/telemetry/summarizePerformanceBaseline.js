@@ -5,6 +5,19 @@ import path from 'path';
 export const DEFAULT_WARNING_RATIO = 0.8;
 export const DEFAULT_CRITICAL_RATIO = 0.95;
 
+function formatSigned(value, decimals = 2) {
+  if (!Number.isFinite(value)) {
+    return Number(0).toFixed(decimals);
+  }
+  const abs = Math.abs(value);
+  const isZero = abs < 10 ** -(decimals + 1);
+  const fixed = isZero ? Number(0).toFixed(decimals) : Number(value).toFixed(decimals);
+  if (value > 0 && !fixed.startsWith('+')) {
+    return `+${fixed}`;
+  }
+  return fixed;
+}
+
 /**
  * Parse CLI arguments for the summary script.
  * Supports both `--key value` and `--key=value` pairs plus positional args.
@@ -169,6 +182,13 @@ export function formatMarkdownSummary(summary = {}) {
   if (summary.runs != null) {
     lines.push(`- Runs aggregated: ${summary.runs}`);
   }
+  if (summary.previousBaseline?.label || summary.previousBaseline?.generatedAt) {
+    const label = summary.previousBaseline?.label ?? 'previous baseline';
+    const generatedAt = summary.previousBaseline?.generatedAt
+      ? ` (${summary.previousBaseline.generatedAt})`
+      : '';
+    lines.push(`- Compared against: ${label}${generatedAt}`);
+  }
   lines.push('');
 
   const headers = [
@@ -204,6 +224,27 @@ export function formatMarkdownSummary(summary = {}) {
       const prefix = metric.status === 'critical' ? '[CRITICAL]' : '[WARNING]';
       const detail = metric.issues.length > 0 ? ` - ${metric.issues.join('; ')}` : '';
       lines.push(`- ${prefix}: ${metric.name}${detail}`);
+    }
+  }
+
+  if (Array.isArray(summary.deltas) && summary.deltas.length > 0) {
+    lines.push('');
+    const headingLabel =
+      summary.previousBaseline?.label ?? summary.previousBaseline?.generatedAt ?? 'previous baseline';
+    lines.push(`## Delta vs Previous Baseline (${headingLabel})`);
+    lines.push('| Metric | Current Avg (ms) | Previous Avg (ms) | Δ ms | Δ % | Trend |');
+    lines.push('| --- | --- | --- | --- | --- | --- |');
+    for (const delta of summary.deltas) {
+      const current = delta.current != null ? delta.current : 'n/a';
+      const previous = delta.previous != null ? delta.previous : 'n/a';
+      const deltaMs =
+        delta.deltaMs != null ? formatSigned(delta.deltaMs, 4) : 'n/a';
+      const deltaPct =
+        delta.deltaPct != null ? `${formatSigned(delta.deltaPct, 2)}%` : 'n/a';
+      const trend = delta.trend ? delta.trend.toUpperCase() : 'FLAT';
+      lines.push(
+        `| ${delta.name} | ${current} | ${previous} | ${deltaMs} | ${deltaPct} | ${trend} |`
+      );
     }
   }
 
