@@ -33,6 +33,57 @@ function resolveHistoryDir(baselinePath) {
   return path.join(path.dirname(baselinePath), 'history');
 }
 
+function sanitiseTimestamp(value) {
+  if (!value) {
+    return null;
+  }
+  try {
+    const date = new Date(value);
+    if (!Number.isFinite(date.getTime())) {
+      return null;
+    }
+    return date.toISOString();
+  } catch (error) {
+    return null;
+  }
+}
+
+export function buildHistoryFileName(summary = {}, fallbackDate = null) {
+  const timestamp = sanitiseTimestamp(summary.generatedAt) || fallbackDate || new Date().toISOString();
+  const safeTimestamp = timestamp.replace(/[:]/g, '-');
+  const runs =
+    Number.isFinite(summary.runs) && summary.runs > 0
+      ? `-r${String(summary.runs).padStart(2, '0')}`
+      : '';
+  return `baseline-${safeTimestamp}${runs}.json`;
+}
+
+export async function persistBaselineHistory(baselinePath, summary) {
+  const historyDir = resolveHistoryDir(baselinePath);
+  await fs.mkdir(historyDir, { recursive: true });
+  const fallbackIso = new Date().toISOString();
+  const fileName = buildHistoryFileName(summary, fallbackIso);
+  const destinationPath = path.join(historyDir, fileName);
+
+  try {
+    await fs.copyFile(baselinePath, destinationPath);
+    console.log(`::notice title=Performance baseline history::Archived baseline to ${destinationPath}`);
+  } catch (error) {
+    if (error.code === 'EEXIST') {
+      console.warn(
+        `::notice title=Performance baseline history::History file ${destinationPath} already exists, skipping copy.`
+      );
+    } else {
+      console.warn(
+        `[postPerformanceSummary] Failed to persist baseline history to ${destinationPath}`,
+        error
+      );
+    }
+  }
+
+  return destinationPath;
+}
+
 async function findPreviousBaselineInfo(baselinePath) {
   const historyDir = resolveHistoryDir(baselinePath);
   let entries;
@@ -201,6 +252,8 @@ async function main() {
     await fs.appendFile(process.env.GITHUB_STEP_SUMMARY, `${markdown}\n`);
   }
 
+  await persistBaselineHistory(baselinePath, summary);
+
   for (const metric of summary.metrics || []) {
     if (metric.status === 'critical') {
       const details = metric.issues?.length ? metric.issues.join('; ') : 'Threshold exceeded';
@@ -218,7 +271,15 @@ async function main() {
   annotateDeltas(summary.deltas, summary.previousBaseline?.label);
 }
 
-main().catch((error) => {
-  console.error('[postPerformanceSummary] Fatal error', error);
-  process.exitCode = 1;
-});
+const CLI_SCRIPT_NAME = 'postPerformanceSummary.js';
+const isCliInvocation =
+  Array.isArray(process?.argv) &&
+  typeof process.argv[1] === 'string' &&
+  process.argv[1].endsWith(CLI_SCRIPT_NAME);
+
+if (isCliInvocation) {
+  main().catch((error) => {
+    console.error('[postPerformanceSummary] Fatal error', error);
+    process.exitCode = 1;
+  });
+}

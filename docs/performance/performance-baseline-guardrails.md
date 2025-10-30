@@ -53,7 +53,9 @@ latest baseline can be reviewed quickly in pull requests or stored with build ar
 ## Retention Policy
 
 1. After each CI run, copy the generated `ci-baseline.json` into
-   `telemetry-artifacts/performance/history/<ISO-DATE>-ci-baseline.json`.
+   `telemetry-artifacts/performance/history/<ISO-DATE>-ci-baseline.json`. `scripts/telemetry/postPerformanceSummary.js`
+   now performs this archival step automatically (timestamped filenames with optional run counts) so CI just needs to
+   retain the history directory.
 2. Keep the last **14** baseline aggregates (roughly two weeks of CI history) inside the
    `history/` folder; prune older files during weekly maintenance.
 3. When a warning or critical alert fires, attach the corresponding JSON and markdown
@@ -66,6 +68,8 @@ the same files to artifact storage for long-term retention.
 
 - CI now calls `postPerformanceSummary.js` after every baseline run so the job summary
   and uploaded artifacts always include markdown plus annotated warnings.
+- `postPerformanceSummary.js` automatically mirrors the latest baseline into the history directory, ensuring
+  delta analysis always has a previous artifact (override the directory with `TELEMETRY_BASELINE_HISTORY_DIR`).
 - Delta analysis is now active: when `telemetry-artifacts/performance/history/` contains
   a prior baseline, the summary appends a comparison table and emits GitHub warnings/notices
   for regressions or improvements. Override the history directory by setting

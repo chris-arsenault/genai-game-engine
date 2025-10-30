@@ -319,6 +319,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Progress (Session #86)**: Executed the first five-run CI-aligned baseline, added `telemetry:performance:summary` to generate markdown guardrail reports, and documented retention/alert policies in `docs/performance/performance-baseline-guardrails.md` (warning raised for BSP peak spikes to monitor in follow-up runs).
 - **Progress (Session #87)**: Patched `performanceSnapshot.js` to warm up BSP generation outside the measured window, introduced `scripts/telemetry/postPerformanceSummary.js` for CI job summaries, wired the new step into `.github/workflows/ci.yml`, and refreshed baseline artifacts with warning-free metrics plus updated guardrail docs.
 - **Progress (Session #88)**: Added baseline delta comparisons to `postPerformanceSummary.js`, appended comparison tables/notices to CI summaries, and documented the workflow in `docs/performance/performance-baseline-guardrails.md`; next up is backfilling at least one history artifact and continuing BSP trend monitoring before tightening thresholds.
+- **Progress (Session #89)**: Automated baseline history archival inside `postPerformanceSummary.js`, exported helpers for unit testing, and added Jest coverage/temporary-dir smoke to validate timestamped filenames + copy semantics; baseline doc now references the auto-archive flow.
 
 #### CI-014: Playwright Smoke Integration
 - **Priority**: P3
@@ -441,11 +442,12 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Priority**: P1
 - **Tags**: `quest`, `narrative`, `trigger`
 - **Effort**: 3 hours
-- **Status**: In progress — Hub geometry + prompts are live; final art/navigation consumers still pending.
+- **Status**: In progress — Crossroads prompts/dialogue are wired; movement/pathfinding still need to consume the shared navigation mesh.
 - **Summary**: Attach Act 2 Crossroads hub volumes (checkpoint, Zara briefing table, thread selection console) to TriggerMigrationToolkit so branching choices feed QuestSystem, telemetry, and designer tooling consistently with Act 1.
 - **Progress (Session #86)**: Seeded Act 2 Crossroads trigger definitions in `QuestTriggerRegistry`, added regression coverage (`tests/game/quests/Act2TriggerDefinitions.test.js`), generated authoring notes (`docs/guides/act2-trigger-authoring.md`), and ensured outstanding migration reports surface the Act 2 work.
 - **Progress (Session #87)**: Authored `src/game/scenes/Act2CrossroadsScene.js` to attach registry-backed triggers, added Jest coverage (`tests/game/scenes/Act2CrossroadsScene.triggers.test.js`) verifying branching metadata, and refreshed designer notes with migration status.
 - **Progress (Session #88)**: Layered Crossroads hub geometry, navigation mesh metadata, ambient audio config, and trigger-driven UI/narrative events; expanded Jest coverage (`tests/game/scenes/Act2CrossroadsScene.layout.test.js`, `.prompts.test.js`) and documented the new workflow in `docs/guides/act2-trigger-authoring.md`.
+- **Progress (Session #89)**: Introduced `CrossroadsPromptController` + Act 2 quest scaffolding to drive Zara's briefing/branch selection UI, seeded `NavigationMeshService` + `PlayerMovementSystem` consumer to expose hub nav metadata, and added targeted Jest coverage for narrative/navigational plumbing.
 - **Acceptance Criteria**:
   - Crossroads triggers attach registry-backed Quest + Trigger components via the toolkit and mark definitions migrated.
   - Scene-level Jest coverage verifies branching metadata (`branchingChoice`, `telemetryTag`) and objective progression without legacy listeners.

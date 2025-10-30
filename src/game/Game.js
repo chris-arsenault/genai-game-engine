@@ -52,6 +52,8 @@ import { AdaptiveMoodEmitter } from './audio/AdaptiveMoodEmitter.js';
 import { SuspicionMoodMapper } from './audio/SuspicionMoodMapper.js';
 import { GameplayAdaptiveAudioBridge } from './audio/GameplayAdaptiveAudioBridge.js';
 import { SaveInspectorOverlay } from './ui/SaveInspectorOverlay.js';
+import { CrossroadsPromptController } from './narrative/CrossroadsPromptController.js';
+import { NavigationMeshService } from './navigation/NavigationMeshService.js';
 
 // Managers
 import { FactionManager } from './managers/FactionManager.js';
@@ -62,10 +64,12 @@ import { SaveManager } from './managers/SaveManager.js';
 
 // Quest data
 import { registerAct1Quests } from './data/quests/act1Quests.js';
+import { registerAct2CrossroadsQuest } from './data/quests/act2CrossroadsQuest.js';
 import { tutorialCase } from './data/cases/tutorialCase.js';
 
 // Dialogue data
 import { registerAct1Dialogues } from './data/dialogues/Act1Dialogues.js';
+import { registerAct2CrossroadsDialogues } from './data/dialogues/Act2CrossroadsDialogue.js';
 
 // Entity factories
 import { createPlayerEntity } from './entities/PlayerEntity.js';
@@ -185,6 +189,8 @@ export class Game {
     this.deductionBoard = null;
     this.audioFeedback = null;
     this.saveInspectorOverlay = null;
+    this.crossroadsPromptController = null;
+    this.navigationMeshService = null;
 
     // Forensic prompt plumbing
     this._forensicPromptQueue = [];
@@ -231,10 +237,14 @@ export class Game {
     // Initialize game systems
     this.initializeGameSystems();
 
+    this.initializeNavigationServices();
+
     // Initialize UI overlays
     this.initializeUIOverlays();
     // Initialize audio integrations that respond to UI/gameplay feedback
     await this.initializeAudioIntegrations();
+
+    this.initializeNarrativeControllers();
 
     if (typeof this.engine.setFrameHooks === 'function') {
       this._detachFrameHooks = this.engine.setFrameHooks({
@@ -300,6 +310,10 @@ export class Game {
     registerAct1Quests(this.questManager);
     console.log('[Game] Act 1 quests registered');
 
+    // Register Act 2 crossroads quest scaffolding
+    registerAct2CrossroadsQuest(this.questManager);
+    console.log('[Game] Act 2 Crossroads quest registered');
+
     // Initialize TutorialTranscriptRecorder prior to SaveManager wiring
     this.tutorialTranscriptRecorder = new TutorialTranscriptRecorder(this.eventBus);
     console.log('[Game] TutorialTranscriptRecorder initialized');
@@ -364,6 +378,10 @@ export class Game {
     // Register Act 1 dialogues
     registerAct1Dialogues(this.gameSystems.dialogue);
     console.log('[Game] Act 1 dialogues registered');
+
+    // Register Act 2 crossroads dialogue
+    registerAct2CrossroadsDialogues(this.gameSystems.dialogue);
+    console.log('[Game] Act 2 Crossroads dialogues registered');
 
     // Create camera follow system
     this.gameSystems.cameraFollow = new CameraFollowSystem(
@@ -461,6 +479,21 @@ export class Game {
     }
 
     console.log('[Game] Game systems initialized');
+  }
+
+  initializeNavigationServices() {
+    if (this.navigationMeshService && typeof this.navigationMeshService.dispose === 'function') {
+      this.navigationMeshService.dispose();
+    }
+
+    this.navigationMeshService = new NavigationMeshService(this.eventBus, {});
+    if (typeof this.navigationMeshService.init === 'function') {
+      this.navigationMeshService.init();
+    }
+
+    if (this.gameSystems?.playerMovement) {
+      this.navigationMeshService.addConsumer(this.gameSystems.playerMovement);
+    }
   }
 
   initializeUIOverlays() {
@@ -613,6 +646,26 @@ export class Game {
     }
 
     console.log('[Game] UI overlays initialized');
+  }
+
+  initializeNarrativeControllers() {
+    if (this.crossroadsPromptController && typeof this.crossroadsPromptController.dispose === 'function') {
+      this.crossroadsPromptController.dispose();
+    }
+
+    this.crossroadsPromptController = new CrossroadsPromptController({
+      eventBus: this.eventBus,
+      dialogueSystem: this.gameSystems.dialogue,
+      questManager: this.questManager,
+      storyFlagManager: this.storyFlagManager,
+      config: GameConfig?.narrative?.act2?.crossroads || {},
+      dialogueId: GameConfig?.narrative?.act2?.crossroads?.briefingDialogueId,
+      questId: GameConfig?.narrative?.act2?.crossroads?.questId,
+    });
+
+    if (typeof this.crossroadsPromptController.init === 'function') {
+      this.crossroadsPromptController.init();
+    }
   }
 
   /**

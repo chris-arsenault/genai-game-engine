@@ -260,6 +260,45 @@ export const GameConfig = {
     },
   },
 
+  narrative: {
+    act2: {
+      crossroads: {
+        briefingDialogueId: 'dialogue_act2_crossroads_briefing',
+        questId: 'main-act2-crossroads',
+        npcId: 'zara_crossroads',
+        threads: [
+          {
+            id: 'act2_thread_corporate_infiltration',
+            title: 'Corporate Infiltration',
+            summary: "Slip into NeuroSync HQ using Zara's forged credentials to expose what the corporation is hiding.",
+            questId: 'main-act2-neurosync-infiltration',
+            telemetryTag: 'act2_thread_selection_corporate',
+            worldFlags: ['act2_branch_corporate_selected'],
+            defaultUnlocked: true,
+          },
+          {
+            id: 'act2_thread_resistance_contact',
+            title: 'Resistance Contact',
+            summary: 'Meet the Archivists in the under-city, navigate faction politics, and unlock alternate infiltration routes.',
+            questId: 'main-act2-archivist-alliance',
+            telemetryTag: 'act2_thread_selection_resistance',
+            worldFlags: ['act2_branch_resistance_selected'],
+            defaultUnlocked: true,
+          },
+          {
+            id: 'act2_thread_personal_investigation',
+            title: 'Personal Investigation',
+            summary: "Dig into Mid-City archives to uncover what really happened to Kira's old cases and missing allies.",
+            questId: 'main-act2-personal-investigation',
+            telemetryTag: 'act2_thread_selection_personal',
+            worldFlags: ['act2_branch_personal_selected'],
+            defaultUnlocked: true,
+          },
+        ],
+      },
+    },
+  },
+
   debug: {
     showColliders: false,
     showSpatialHash: false,

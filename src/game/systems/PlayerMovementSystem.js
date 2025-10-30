@@ -18,6 +18,7 @@ export class PlayerMovementSystem extends System {
     this.priority = 10;
     this._offPause = null;
     this._offResume = null;
+    this.navigationMesh = null;
   }
 
   /**
@@ -140,5 +141,13 @@ export class PlayerMovementSystem extends System {
       this._offResume();
       this._offResume = null;
     }
+  }
+
+  /**
+   * Receive navigation mesh updates from NavigationMeshService.
+   * @param {Object|null} mesh
+   */
+  setNavigationMesh(mesh) {
+    this.navigationMesh = mesh ? JSON.parse(JSON.stringify(mesh)) : null;
   }
 }

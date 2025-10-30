@@ -54,7 +54,9 @@ export class QuestManager {
       this.eventBus.on('ability:unlocked', (data) => this.onAbilityUnlocked(data)),
       this.eventBus.on('area:entered', (data) => this.onAreaEntered(data)),
       this.eventBus.on('faction:reputation:changed', (data) => this.onReputationChanged(data)),
-      this.eventBus.on('knowledge:learned', (data) => this.onKnowledgeLearned(data))
+      this.eventBus.on('knowledge:learned', (data) => this.onKnowledgeLearned(data)),
+      this.eventBus.on('narrative:crossroads_prompt', (data) => this.onCrossroadsPrompt(data)),
+      this.eventBus.on('crossroads:thread_selected', (data) => this.onCrossroadsThreadSelected(data))
     ];
 
     console.log('[QuestManager] Initialized');
@@ -299,6 +301,8 @@ export class QuestManager {
     if (trigger.npcId && eventData.npcId !== trigger.npcId) return { matched: false };
     if (trigger.areaId && eventData.areaId !== trigger.areaId) return { matched: false };
     if (trigger.abilityId && eventData.abilityId !== trigger.abilityId) return { matched: false };
+    if (trigger.questId && eventData.questId && eventData.questId !== trigger.questId) return { matched: false };
+    if (trigger.branchId && eventData.branchId !== trigger.branchId) return { matched: false };
 
     const requirementResult = this.evaluateObjectiveRequirements(objective.requirements, eventData);
     if (!requirementResult.met) {
@@ -725,6 +729,33 @@ export class QuestManager {
 
   onKnowledgeLearned(data) {
     this.updateObjectives('knowledge:learned', data);
+  }
+
+  onCrossroadsPrompt(data) {
+    this.updateObjectives('narrative:crossroads_prompt', data);
+  }
+
+  onCrossroadsThreadSelected(data) {
+    if (this.storyFlags && data) {
+      const worldFlags = Array.isArray(data?.worldFlags)
+        ? data.worldFlags
+        : Array.isArray(data?.metadata?.worldFlags)
+          ? data.metadata.worldFlags
+          : null;
+
+      if (Array.isArray(worldFlags)) {
+        for (const flagId of worldFlags) {
+          if (typeof flagId === 'string' && flagId.trim().length > 0) {
+            this.storyFlags.setFlag(flagId, true, {
+              source: 'crossroads_thread_selected',
+              branchId: data?.branchId || null,
+            });
+          }
+        }
+      }
+    }
+
+    this.updateObjectives('crossroads:thread_selected', data);
   }
 
   /**

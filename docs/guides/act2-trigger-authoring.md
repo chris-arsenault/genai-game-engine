@@ -46,6 +46,11 @@ strategy and acceptance criteria.
 - `tests/game/scenes/Act2CrossroadsScene.layout.test.js` validates geometry + navigation
   scaffolding, and `tests/game/scenes/Act2CrossroadsScene.prompts.test.js` locks the
   UI/narrative prompt and telemetry event bindings.
+- Session 89 layered narrative + system consumers: `CrossroadsPromptController`
+  drives Zara's briefing/branch selection dialogue off the shared registry prompts,
+  `registerAct2CrossroadsQuest` seeds quest scaffolding for Act 2 hub objectives, and
+  `NavigationMeshService` now broadcasts the authored navigation mesh to movement
+  systems (with dedicated Jest coverage).
 - Designer prompts now flow from the registry definitions through `ui:show_prompt`, and
   narrative/analytics listeners can subscribe to `narrative:crossroads_prompt` and
   `telemetry:trigger_entered` for branch selection deltas.
