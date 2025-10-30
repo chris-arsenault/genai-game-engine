@@ -81,6 +81,11 @@
 - Generated neon-noir placeholder atlas set for AR-001 through AR-005 via `python scripts/art/generate_ar_placeholders.py`; outputs reside in `assets/generated/ar-placeholders/` and cover deduction board UI, evidence icons, player/NPC sprites, and the four district tilesets.
 - Advanced `assets/images/requests.json` entries to `placeholder-generated`, recording Session 115 provenance so gameplay/UI teams can iterate with internally licensed placeholders while awaiting bespoke art or AI reruns.
 
+## Session 116 Updates
+- Built `scripts/art/packageRenderOpsLighting.js` + `RenderOpsPacketBuilder` to bundle lighting previews, summary markdown, and actionable metadata into timestamped share-out packets under `reports/art/renderops-packets/`.
+- Added `scripts/art/auditPlaceholderAssets.js` and companion `PlaceholderAudit` utilities to emit JSON/markdown audits (`reports/art/placeholder-audit.*`) highlighting all `placeholder-generated` manifest entries and whether source atlases exist.
+- New npm aliases `art:package-renderops` and `art:audit-placeholders` keep RenderOps delivery and bespoke replacement planning on a repeatable cadence with test coverage in place.
+
 ## Next Actions
-1. Circulate the refreshed lighting preview report to RenderOps for approval and capture any follow-up tweaks once the in-engine review is complete.
-2. Review the Session 115 placeholders with art/narrative direction, then schedule bespoke renders (AI or commissioned) to replace them before content lock; update manifests with final licensing once approved.
+1. Distribute the latest RenderOps packet (`npm run art:package-renderops`) to RenderOps, log follow-up feedback for segments flagged as actionable, and regenerate after any art tweaks.
+2. Use `reports/art/placeholder-audit.md` to prioritise bespoke replacements for AR-001 – AR-005, updating `assets/images/requests.json` with final licensing once art is approved.

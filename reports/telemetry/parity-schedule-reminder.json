@@ -1,0 +1,29 @@
+{
+  "generatedAt": "2025-10-30T11:13:08.954Z",
+  "schedulePath": "/home/tsonu/src/genai-game-engine/telemetry-artifacts/analytics/parity-schedule.json",
+  "warningThresholdDays": 3,
+  "nextCheckAt": "2025-11-13T11:00:21.857740+00:00",
+  "dueInDays": 13.9911215625,
+  "status": "scheduled",
+  "overdueFlag": false,
+  "recommendedAction": "Next parity checkpoint is scheduled for 2025-11-13T11:00:21.857740+00:00. Monitor incoming analytics requests and be ready to acknowledge ahead of the deadline if data changes.",
+  "latestDispatch": {
+    "label": "act2-crossroads-20251112",
+    "dispatchedAt": "2025-10-30T07:52:43.968Z",
+    "nextSteps": [
+      "Share summary with analytics for ingestion confirmation.",
+      "Schedule next parity run when new telemetry batches arrive."
+    ],
+    "manifestPath": "telemetry-artifacts/analytics/outbox/act2-crossroads-20251112/dispatch-manifest.json"
+  },
+  "latestAcknowledgement": {
+    "label": "act2-crossroads-20251112",
+    "acknowledgedAt": "2025-10-30T11:00:21.857740+00:00",
+    "acknowledgedBy": "Codex Session 115",
+    "method": "manual-review",
+    "note": "Parity check re-run; dataset matches schema."
+  },
+  "pendingDispatches": [],
+  "daysSinceLastCheck": 0.0088784375,
+  "historyCount": 1
+}

@@ -1,0 +1,220 @@
+{
+  "generatedAt": "2025-10-30T11:11:32.082Z",
+  "manifestPath": "/home/tsonu/src/genai-game-engine/assets/images/requests.json",
+  "placeholderDir": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders",
+  "totalManifestEntries": 37,
+  "placeholderEntryCount": 16,
+  "pendingReplacementCount": 16,
+  "missingFileCount": 0,
+  "placeholders": [
+    {
+      "id": "image-ar-001-deduction-board-bg",
+      "arId": "AR-001",
+      "title": "Deduction Board UI Background",
+      "status": "placeholder-generated",
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-001-deduction-board-bg.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-001-deduction-board-bg.png",
+      "placeholderExists": true,
+      "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
+      "notes": "Needs layered neon corkboard vibe with space for clue nodes and narrative callouts. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use."
+    },
+    {
+      "id": "image-ar-001-clue-node-pack",
+      "arId": "AR-001",
+      "title": "Clue Node Sprite Variations",
+      "status": "placeholder-generated",
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-001-clue-node-pack.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-001-clue-node-pack.png",
+      "placeholderExists": true,
+      "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
+      "notes": "Requires at least three variations with animated pulse option for narrative emphasis. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use."
+    },
+    {
+      "id": "image-ar-001-evidence-icon-set",
+      "arId": "AR-001",
+      "title": "Evidence Type Icon Set",
+      "status": "placeholder-generated",
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-001-evidence-icon-set.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-001-evidence-icon-set.png",
+      "placeholderExists": true,
+      "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
+      "notes": "Icons must read at small sizes; include monochrome and color treatments. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use."
+    },
+    {
+      "id": "image-ar-001-ui-button-pack",
+      "arId": "AR-001",
+      "title": "Core UI Button Pack",
+      "status": "placeholder-generated",
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-001-ui-button-pack.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-001-ui-button-pack.png",
+      "placeholderExists": true,
+      "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
+      "notes": "Target 64x32 sprites with hover/pressed states; neon noir styling. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use."
+    },
+    {
+      "id": "image-ar-002-generic-marker",
+      "arId": "AR-002",
+      "title": "Generic Evidence Marker",
+      "status": "placeholder-generated",
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-002-generic-marker.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-002-generic-marker.png",
+      "placeholderExists": true,
+      "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
+      "notes": "Needs blank label area for procedural numbering. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use."
+    },
+    {
+      "id": "image-ar-002-fingerprint",
+      "arId": "AR-002",
+      "title": "Fingerprint Evidence Sprite",
+      "status": "placeholder-generated",
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-002-fingerprint.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-002-fingerprint.png",
+      "placeholderExists": true,
+      "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
+      "notes": "Supports neon-guided cyan lighting to align with Memory Parlor palette. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use."
+    },
+    {
+      "id": "image-ar-002-document",
+      "arId": "AR-002",
+      "title": "Confidential Document Sprite",
+      "status": "placeholder-generated",
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-002-document.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-002-document.png",
+      "placeholderExists": true,
+      "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
+      "notes": "Add subtle fold and holographic seal for narrative flair. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use."
+    },
+    {
+      "id": "image-ar-002-neural-extractor",
+      "arId": "AR-002",
+      "title": "Neural Extractor Sprite",
+      "status": "placeholder-generated",
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-002-neural-extractor.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-002-neural-extractor.png",
+      "placeholderExists": true,
+      "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
+      "notes": "Depict compact tech device with blue accent lights and removable prongs. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use."
+    },
+    {
+      "id": "image-ar-002-blood-spatter",
+      "arId": "AR-002",
+      "title": "Blood Spatter Evidence Sprite",
+      "status": "placeholder-generated",
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-002-blood-spatter.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-002-blood-spatter.png",
+      "placeholderExists": true,
+      "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
+      "notes": "Stylise to remain readable while respecting M2 rating guidelines. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use."
+    },
+    {
+      "id": "image-ar-003-player-kira-sprite",
+      "arId": "AR-003",
+      "title": "Kira Player Sprite Sheet",
+      "status": "placeholder-generated",
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-003-player-kira-sprite.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-003-player-kira-sprite.png",
+      "placeholderExists": true,
+      "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
+      "notes": "Detective coat silhouette with readable silhouette; 6 frames per animation recommended. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use."
+    },
+    {
+      "id": "image-ar-004-npc-civilian-pack",
+      "arId": "AR-004",
+      "title": "Civilian NPC Sprite Pack",
+      "status": "placeholder-generated",
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-004-npc-civilian-pack.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-004-npc-civilian-pack.png",
+      "placeholderExists": true,
+      "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
+      "notes": "Represent faction-aligned outfits; include gender-diverse silhouettes. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use."
+    },
+    {
+      "id": "image-ar-004-npc-guard-pack",
+      "arId": "AR-004",
+      "title": "Security Guard NPC Sprite Pack",
+      "status": "placeholder-generated",
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-004-npc-guard-pack.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-004-npc-guard-pack.png",
+      "placeholderExists": true,
+      "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
+      "notes": "Include visor glow for detection cues; integrate faction insignia. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use."
+    },
+    {
+      "id": "image-ar-005-tileset-neon-district",
+      "arId": "AR-005",
+      "title": "Neon District Tileset",
+      "status": "placeholder-generated",
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-005-tileset-neon-district.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-005-tileset-neon-district.png",
+      "placeholderExists": true,
+      "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
+      "notes": "Needs wet reflections, signage layers, and animated neon strips. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use."
+    },
+    {
+      "id": "image-ar-005-tileset-corporate-spires",
+      "arId": "AR-005",
+      "title": "Corporate Spires Tileset",
+      "status": "placeholder-generated",
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-005-tileset-corporate-spires.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-005-tileset-corporate-spires.png",
+      "placeholderExists": true,
+      "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
+      "notes": "Feature frosted glass, chrome flooring, and light columns. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use."
+    },
+    {
+      "id": "image-ar-005-tileset-archive-undercity",
+      "arId": "AR-005",
+      "title": "Archive Undercity Tileset",
+      "status": "placeholder-generated",
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-005-tileset-archive-undercity.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-005-tileset-archive-undercity.png",
+      "placeholderExists": true,
+      "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
+      "notes": "Blend corroded metal with glowing conduits and dust particles. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use."
+    },
+    {
+      "id": "image-ar-005-tileset-zenith-sector",
+      "arId": "AR-005",
+      "title": "Zenith Sector Tileset",
+      "status": "placeholder-generated",
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-005-tileset-zenith-sector.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-005-tileset-zenith-sector.png",
+      "placeholderExists": true,
+      "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
+      "notes": "Incorporate holographic banners and elevated rail tracks. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use."
+    }
+  ],
+  "missingFiles": [],
+  "summaryByArId": [
+    {
+      "arId": "AR-001",
+      "total": 4,
+      "missing": 0,
+      "available": 4
+    },
+    {
+      "arId": "AR-002",
+      "total": 5,
+      "missing": 0,
+      "available": 5
+    },
+    {
+      "arId": "AR-003",
+      "total": 1,
+      "missing": 0,
+      "available": 1
+    },
+    {
+      "arId": "AR-004",
+      "total": 2,
+      "missing": 0,
+      "available": 2
+    },
+    {
+      "arId": "AR-005",
+      "total": 4,
+      "missing": 0,
+      "available": 4
+    }
+  ]
+}
