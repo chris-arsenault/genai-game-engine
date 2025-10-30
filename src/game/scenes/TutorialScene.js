@@ -18,6 +18,94 @@ import {
   questRewardToInventoryItem,
 } from '../state/inventory/inventoryEvents.js';
 import { loadAct1Scene } from './Act1Scene.js';
+import { Transform } from '../components/Transform.js';
+import { Collider } from '../components/Collider.js';
+import { InteractionZone } from '../components/InteractionZone.js';
+import { TriggerMigrationToolkit } from '../quests/TriggerMigrationToolkit.js';
+import { QuestTriggerRegistry } from '../quests/QuestTriggerRegistry.js';
+import { QUEST_001_HOLLOW_CASE } from '../data/quests/act1Quests.js';
+
+const TUTORIAL_TRIGGER_IDS = Object.freeze({
+  DETECTIVE_VISION: 'tutorial_detective_vision_training',
+  DEDUCTION: 'tutorial_deduction_board',
+  EXIT: 'tutorial_scene_exit',
+});
+
+const TUTORIAL_TRIGGER_DEFINITIONS = [
+  {
+    id: TUTORIAL_TRIGGER_IDS.DETECTIVE_VISION,
+    questId: QUEST_001_HOLLOW_CASE.id,
+    objectiveId: 'obj_unlock_detective_vision',
+    areaId: 'tutorial_detective_vision_training',
+    radius: 120,
+    once: true,
+    prompt: 'Use Detective Vision to reveal hidden evidence hotspots.',
+    triggerType: 'tutorial_training',
+    metadata: {
+      tutorialStage: 'detective_vision',
+      moodHint: 'investigation_focus',
+    },
+  },
+  {
+    id: TUTORIAL_TRIGGER_IDS.DEDUCTION,
+    questId: QUEST_001_HOLLOW_CASE.id,
+    objectiveId: 'obj_connect_clues',
+    areaId: 'tutorial_deduction_board',
+    radius: 96,
+    once: false,
+    prompt: 'Open the deduction board to connect Marcus’s clues.',
+    triggerType: 'tutorial_objective',
+    metadata: {
+      tutorialStage: 'deduction_board',
+      moodHint: 'analysis_phase',
+    },
+  },
+  {
+    id: TUTORIAL_TRIGGER_IDS.EXIT,
+    questId: QUEST_001_HOLLOW_CASE.id,
+    objectiveId: 'obj_report_findings',
+    areaId: 'tutorial_scene_exit',
+    radius: 128,
+    once: true,
+    prompt: 'Exit to report findings to Captain Reese.',
+    triggerType: 'scene_exit',
+    metadata: {
+      tutorialStage: 'reporting',
+      moodHint: 'resolution_moment',
+    },
+  },
+];
+
+const TUTORIAL_TRIGGER_LAYOUT = {
+  [TUTORIAL_TRIGGER_IDS.DETECTIVE_VISION]: {
+    x: 520,
+    y: 210,
+    width: 220,
+    height: 170,
+  },
+  [TUTORIAL_TRIGGER_IDS.DEDUCTION]: {
+    x: 340,
+    y: 160,
+    width: 180,
+    height: 120,
+  },
+  [TUTORIAL_TRIGGER_IDS.EXIT]: {
+    x: 60,
+    y: 250,
+    width: 140,
+    height: 160,
+  },
+};
+
+function ensureTutorialTriggerDefinitions() {
+  for (const definition of TUTORIAL_TRIGGER_DEFINITIONS) {
+    if (!QuestTriggerRegistry.getTriggerDefinition(definition.id)) {
+      QuestTriggerRegistry.registerDefinition(definition);
+    }
+  }
+}
+
+ensureTutorialTriggerDefinitions();
 
 export class TutorialScene {
   /**
@@ -58,6 +146,8 @@ export class TutorialScene {
 
     this._cleanupSceneEntities();
 
+    ensureTutorialTriggerDefinitions();
+
     // Register evidence and clues in databases
     this._registerEvidenceAndClues();
 
@@ -89,6 +179,14 @@ export class TutorialScene {
     this._cacheEvidenceEntities();
 
     this._registerSceneEventHandlers();
+
+    const questTriggerToolkit = new TriggerMigrationToolkit(this.componentRegistry, this.eventBus);
+    const tutorialTriggerEntities = this._createTutorialQuestTriggers(questTriggerToolkit);
+    for (const entityId of tutorialTriggerEntities) {
+      if (entityId != null) {
+        this.sceneEntities.add(entityId);
+      }
+    }
 
     this.loaded = true;
 
@@ -168,6 +266,97 @@ export class TutorialScene {
     });
 
     this._eventHandlers.push(offEvidenceCollected);
+  }
+
+  /**
+   * Create registry-backed quest triggers for tutorial objectives.
+   * @param {TriggerMigrationToolkit} questTriggerToolkit
+   * @returns {number[]} Entity IDs created for tutorial triggers
+   * @private
+   */
+  _createTutorialQuestTriggers(questTriggerToolkit) {
+    if (!questTriggerToolkit || typeof questTriggerToolkit.createQuestTrigger !== 'function') {
+      return [];
+    }
+
+    const entities = [];
+    for (const [triggerId, layout] of Object.entries(TUTORIAL_TRIGGER_LAYOUT)) {
+      const entityId = this._createTutorialTriggerEntity(questTriggerToolkit, triggerId, layout);
+      if (entityId != null) {
+        entities.push(entityId);
+      }
+    }
+    return entities;
+  }
+
+  /**
+   * Construct a tutorial trigger entity aligned with registry definitions.
+   * @param {TriggerMigrationToolkit} questTriggerToolkit
+   * @param {string} triggerId
+   * @param {{x:number,y:number,width:number,height:number}} layout
+   * @returns {number|null} Entity ID or null when construction fails
+   * @private
+   */
+  _createTutorialTriggerEntity(questTriggerToolkit, triggerId, layout) {
+    if (
+      !layout ||
+      typeof layout.x !== 'number' ||
+      typeof layout.y !== 'number' ||
+      typeof layout.width !== 'number' ||
+      typeof layout.height !== 'number'
+    ) {
+      return null;
+    }
+
+    if (
+      !this.entityManager ||
+      typeof this.entityManager.createEntity !== 'function' ||
+      !this.componentRegistry ||
+      typeof this.componentRegistry.addComponent !== 'function'
+    ) {
+      return null;
+    }
+
+    const definition = QuestTriggerRegistry.getTriggerDefinition(triggerId);
+    if (!definition) {
+      return null;
+    }
+
+    const entityId = this.entityManager.createEntity('tutorial_trigger');
+    const centerX = layout.x + layout.width / 2;
+    const centerY = layout.y + layout.height / 2;
+
+    const transform = new Transform(centerX, centerY, 0, 1, 1);
+    this.componentRegistry.addComponent(entityId, 'Transform', transform);
+
+    const collider = new Collider({
+      type: 'AABB',
+      width: layout.width,
+      height: layout.height,
+      isTrigger: true,
+      isStatic: true,
+      tags: ['tutorial_trigger', 'quest_trigger'],
+    });
+    this.componentRegistry.addComponent(entityId, 'Collider', collider);
+
+    const interactionRadius = Math.max(layout.width, layout.height) / 2;
+    const interaction = new InteractionZone({
+      id: triggerId,
+      type: 'trigger',
+      radius: interactionRadius,
+      requiresInput: false,
+      prompt: definition.prompt ?? 'Interact',
+      oneShot: definition.once ?? true,
+      data: {
+        areaId: definition.areaId,
+        questTrigger: true,
+        tutorialStage: definition.metadata?.tutorialStage ?? null,
+      },
+    });
+    this.componentRegistry.addComponent(entityId, 'InteractionZone', interaction);
+
+    questTriggerToolkit.createQuestTrigger(entityId, triggerId);
+    return entityId;
   }
 
   /**

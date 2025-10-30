@@ -41,6 +41,9 @@ jobs:
           PLAYWRIGHT_HTML_REPORT: playwright-report
         run: npx playwright test
 
+      - name: Capture performance baseline snapshot
+        run: npm run telemetry:performance:baseline -- --runs 5 --out telemetry-artifacts/performance/ci-baseline.json
+
       - name: Export inspector telemetry artifacts
         if: always()
         env:
