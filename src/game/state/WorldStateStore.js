@@ -197,6 +197,41 @@ export class WorldStateStore {
         });
       }),
 
+      this.eventBus.on('quest:npc_availability', (payload = {}) => {
+        const objectives = Array.isArray(payload.objectives)
+          ? payload.objectives.map((entry) => ({
+              questId: entry?.questId ?? null,
+              questTitle: entry?.questTitle ?? null,
+              questType: entry?.questType ?? null,
+              objectiveId: entry?.objectiveId ?? null,
+              objectiveTitle: entry?.objectiveTitle ?? null,
+              reason: entry?.reason ?? null,
+              requirement: entry?.requirement ?? null,
+              message: entry?.message ?? null,
+              recordedAt: entry?.recordedAt ?? null,
+            }))
+          : [];
+
+        const updatedAt = payload.updatedAt ?? Date.now();
+
+        this.dispatch({
+          type: 'QUEST_NPC_AVAILABILITY',
+          domain: 'quest',
+          timestamp: updatedAt,
+          payload: {
+            npcId: payload.npcId ?? null,
+            npcName: payload.npcName ?? null,
+            factionId: payload.factionId ?? null,
+            tag: payload.tag ?? null,
+            entityId: payload.entityId ?? null,
+            available: Boolean(payload.available),
+            updatedAt,
+            reason: payload.reason ?? null,
+            objectives,
+          },
+        });
+      }),
+
       this.eventBus.on('story:flag:changed', (payload) => {
         this.dispatch({
           type: 'STORY_FLAG_SET',

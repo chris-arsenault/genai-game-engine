@@ -9,6 +9,26 @@
 import { emitOverlayVisibility } from './helpers/overlayEvents.js';
 import { buildQuestListByStatus, buildQuestViewModel, summarizeQuestProgress } from './helpers/questViewModel.js';
 
+function humanizeIdentifier(value) {
+  if (!value) {
+    return '';
+  }
+  return String(value)
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatIsoTimestamp(timestamp) {
+  if (!Number.isFinite(timestamp)) {
+    return null;
+  }
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+  return date.toISOString().slice(0, 16).replace('T', ' ');
+}
+
 export class QuestLogUI {
   /**
    * Create a QuestLogUI
@@ -55,6 +75,12 @@ export class QuestLogUI {
       fontFamily: 'Arial, sans-serif',
       padding: 15,
       lineHeight: 24,
+      noticeColor: '#fbbf24',
+      noticeSubtleColor: '#f1c27d',
+      npcAvailabilityHeaderColor: '#a5d8ff',
+      npcAvailabilityStatusAvailable: '#4CAF50',
+      npcAvailabilityStatusBlocked: '#fbbf24',
+      subtleTextColor: '#b8b8cc',
       ...options.style
     };
 
@@ -466,10 +492,30 @@ export class QuestLogUI {
 
     // Objectives
     ctx.font = `${this.style.fontSize}px ${this.style.fontFamily}`;
-    this.selectedQuest.objectives.filter(obj => !obj.hidden).forEach((objective) => {
-      this._renderObjective(ctx, objective, detailsX + this.style.padding, currentY, detailsWidth);
-      currentY += this.style.lineHeight;
-    });
+    const visibleObjectives = Array.isArray(this.selectedQuest.objectives)
+      ? this.selectedQuest.objectives.filter((obj) => !obj.hidden)
+      : [];
+
+    for (const objective of visibleObjectives) {
+      const consumedHeight = this._renderObjective(
+        ctx,
+        objective,
+        detailsX + this.style.padding,
+        currentY,
+        detailsWidth - this.style.padding * 2
+      );
+      currentY += consumedHeight;
+    }
+
+    const availabilityHeight = this._renderNpcAvailabilitySection(
+      ctx,
+      detailsX + this.style.padding,
+      currentY + 10,
+      detailsWidth - this.style.padding * 2
+    );
+    if (availabilityHeight > 0) {
+      currentY += 10 + availabilityHeight;
+    }
 
     ctx.restore();
   }
@@ -489,7 +535,6 @@ export class QuestLogUI {
     if (isCompleted) {
       ctx.fillStyle = this.style.completedColor;
       ctx.fillRect(checkboxX, checkboxY, checkboxSize, checkboxSize);
-      // Checkmark
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -503,7 +548,7 @@ export class QuestLogUI {
       ctx.strokeRect(checkboxX, checkboxY, checkboxSize, checkboxSize);
     }
 
-    // Draw text
+    // Draw main text
     ctx.fillStyle = isCompleted ? this.style.dimmedColor : this.style.textColor;
     const description = objective.description || objective.title || objective.id;
     let text = description;
@@ -511,8 +556,138 @@ export class QuestLogUI {
       const progressValue = typeof objective.progress === 'number' ? objective.progress : 0;
       text += ` (${Math.min(progressValue, objective.target)}/${objective.target})`;
     }
-    text = this._truncateText(ctx, text, maxWidth - textX - this.style.padding);
-    ctx.fillText(text, textX, y);
+    const textWidth = Math.max(0, maxWidth - (textX - x) - this.style.padding);
+    const truncated = this._truncateText(ctx, text, textWidth);
+    ctx.fillText(truncated, textX, y);
+
+    let totalHeight = this.style.lineHeight;
+
+    if (objective.blocked) {
+      const previousFont = ctx.font;
+      const detailFontSize = Math.max(10, this.style.fontSize - 2);
+      ctx.font = `${detailFontSize}px ${this.style.fontFamily}`;
+      ctx.fillStyle = this.style.noticeColor;
+      const detailWidth = Math.max(0, maxWidth - (textX - x) - this.style.padding);
+      const detailLines = this._buildObjectiveBlockedLines(ctx, objective.blocked, detailWidth);
+      const detailLineHeight = this.style.lineHeight * 0.8;
+
+      for (const line of detailLines) {
+        ctx.fillText(line, textX, y + totalHeight);
+        totalHeight += detailLineHeight;
+      }
+
+      ctx.font = previousFont;
+      ctx.fillStyle = isCompleted ? this.style.dimmedColor : this.style.textColor;
+    }
+
+    return totalHeight + this.style.lineHeight * 0.25;
+  }
+
+  _buildObjectiveBlockedLines(ctx, blocked, maxWidth) {
+    if (!blocked) {
+      return [];
+    }
+
+    const fragments = [];
+    if (blocked.npcName) {
+      fragments.push(`NPC: ${blocked.npcName}`);
+    }
+    if (blocked.reason) {
+      fragments.push(humanizeIdentifier(blocked.reason));
+    }
+    if (blocked.requirement) {
+      fragments.push(`Needs: ${blocked.requirement}`);
+    }
+    if (blocked.message) {
+      fragments.push(blocked.message);
+    }
+    if (!fragments.length) {
+      fragments.push('Awaiting NPC availability');
+    }
+
+    const summary = `Blocked — ${fragments.join(' • ')}`;
+    const lines = this._wrapText(ctx, summary, maxWidth);
+
+    if (Number.isFinite(blocked.recordedAt)) {
+      const timestamp = formatIsoTimestamp(blocked.recordedAt);
+      if (timestamp) {
+        lines.push(`Logged: ${timestamp}`);
+      }
+    }
+
+    return lines;
+  }
+
+  _renderNpcAvailabilitySection(ctx, x, y, width) {
+    const entries = Array.isArray(this.selectedQuest?.npcAvailability)
+      ? this.selectedQuest.npcAvailability
+      : [];
+
+    if (!entries.length) {
+      return 0;
+    }
+
+    let currentY = y;
+
+    ctx.fillStyle = this.style.npcAvailabilityHeaderColor;
+    ctx.font = `bold ${this.style.fontSize}px ${this.style.fontFamily}`;
+    ctx.fillText('NPC Availability', x, currentY);
+    currentY += this.style.lineHeight;
+
+    const statusFont = `${this.style.fontSize}px ${this.style.fontFamily}`;
+    const detailFont = `${Math.max(10, this.style.fontSize - 2)}px ${this.style.fontFamily}`;
+    const detailLineHeight = this.style.lineHeight * 0.8;
+
+    for (const entry of entries) {
+      const npcLabel = entry.npcName ?? entry.npcId ?? 'Unknown Contact';
+      const statusLabel = entry.available ? 'Available' : 'Unavailable';
+
+      ctx.font = statusFont;
+      ctx.fillStyle = entry.available
+        ? this.style.npcAvailabilityStatusAvailable
+        : this.style.npcAvailabilityStatusBlocked;
+      ctx.fillText(`${npcLabel} — ${statusLabel}`, x, currentY);
+      currentY += this.style.lineHeight;
+
+      const detailParts = [];
+      if (entry.reason) {
+        detailParts.push(humanizeIdentifier(entry.reason));
+      }
+      if (entry.requirement) {
+        detailParts.push(`Needs: ${entry.requirement}`);
+      }
+      if (entry.message) {
+        detailParts.push(entry.message);
+      }
+      if (Array.isArray(entry.objectives) && entry.objectives.length > 0) {
+        const objectivesText = entry.objectives
+          .map((objective) => objective?.title ?? objective?.id)
+          .filter(Boolean);
+        if (objectivesText.length) {
+          detailParts.push(`Blocks: ${objectivesText.join(', ')}`);
+        }
+      }
+      if (Number.isFinite(entry.updatedAt)) {
+        const timestamp = formatIsoTimestamp(entry.updatedAt);
+        if (timestamp) {
+          detailParts.push(`Updated: ${timestamp}`);
+        }
+      }
+
+      if (detailParts.length) {
+        ctx.font = detailFont;
+        ctx.fillStyle = this.style.subtleTextColor;
+        const detailLines = this._wrapText(ctx, detailParts.join(' • '), width);
+        for (const line of detailLines) {
+          ctx.fillText(line, x, currentY);
+          currentY += detailLineHeight;
+        }
+      }
+
+      currentY += this.style.lineHeight * 0.3;
+    }
+
+    return currentY - y;
   }
 
   /**

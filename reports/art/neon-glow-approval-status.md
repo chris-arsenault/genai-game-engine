@@ -1,17 +1,17 @@
 # Neon Glow Approval Status
 
-Generated at: 2025-10-30T14:17:25.133Z
+Generated at: 2025-11-17T09:45:30.000Z
 
 ## Summary
 - Total tracked neon/glow assets: 25
-- Pending/in review count: 1
-- Narrative approvals pending: 1
+- Pending/in review count: 0
+- Narrative approvals pending: 0
 - RenderOps approvals pending: 0
 
 ## Asset Details
 | ID | Status | Last Updated | Approvals Needed | Latest Notes |
 | --- | --- | --- | --- | --- |
-| image-ar-005-tileset-neon-district | bespoke-in-review | 2025-10-30T13:35:23.800Z | Narrative | Reflection polish applied; signage glow pending approval with Narrative for branch cues. |
+| image-ar-005-tileset-neon-district | bespoke-approved | 2025-11-17T09:45:10.000Z | — | Narrative sign-off captured; signage layers align with Act 2 branch gating and licensing notes updated. |
 | image-ar-001-deduction-board-bg | bespoke-approved | 2025-10-30T13:35:23.800Z | — | Final 2048x1536 layered PSD approved; includes investigation overlays + branch callouts. |
 | image-ar-001-clue-node-pack | bespoke-approved | 2025-10-30T13:35:23.800Z | — | Ensure exported spritesheet includes 6-frame glow loop for integration. |
 | image-ar-001-ui-button-pack | placeholder-generated | — | — | Target 64x32 sprites with hover/pressed states; neon noir styling. \| Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use. |

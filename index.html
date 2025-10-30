@@ -214,6 +214,14 @@
       color: #ff7b7b;
     }
 
+    .debug-world-row[data-tone="npc-alert"] {
+      color: #ffb347;
+    }
+
+    .debug-world-row[data-tone="npc-restored"] {
+      color: #8ef9d3;
+    }
+
     .debug-world-row.empty {
       color: rgba(255, 255, 255, 0.6);
     }
@@ -598,6 +606,17 @@
             <div class="debug-world-row empty">No cascade data</div>
           </div>
           <div id="debug-faction-cascade-meta" class="debug-meta">Last cascade: n/a</div>
+        </div>
+        <div class="debug-world-section">
+          <div class="debug-subtitle">NPC Availability</div>
+          <div id="debug-npc-meta" class="debug-meta">NPCs tracked: 0</div>
+          <div id="debug-npc-list" class="debug-world-list">
+            <div class="debug-world-row empty">No NPC availability data</div>
+          </div>
+          <div class="debug-subtitle">Recent Events</div>
+          <div id="debug-npc-history" class="debug-world-list">
+            <div class="debug-world-row empty">No availability events</div>
+          </div>
         </div>
       </div>
       <div id="debug-tutorial">

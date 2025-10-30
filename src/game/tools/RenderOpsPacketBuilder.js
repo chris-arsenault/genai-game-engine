@@ -26,6 +26,7 @@ export async function buildRenderOpsPacket(options) {
     outputRoot,
     label = DEFAULT_LABEL,
     now = new Date(),
+    attachments = [],
     createArchive = true,
     archiveFormat = 'zip',
   } = options ?? {};
@@ -83,6 +84,95 @@ export async function buildRenderOpsPacket(options) {
     fs.copyFile(resolvedSummaryPath, packetSummaryPath),
   ]);
 
+  const attachmentInput = Array.isArray(attachments) ? attachments.filter(Boolean) : [];
+  const attachmentRecords = [];
+
+  if (attachmentInput.length > 0) {
+    const attachmentsDir = path.join(packetDir, 'attachments');
+    await fs.mkdir(attachmentsDir, { recursive: true });
+    const usedNames = new Set();
+
+    let fallbackIndex = 1;
+    for (const rawEntry of attachmentInput) {
+      const entry =
+        typeof rawEntry === 'string'
+          ? { path: rawEntry }
+          : rawEntry && typeof rawEntry === 'object'
+            ? rawEntry
+            : null;
+      if (!entry?.path) {
+        continue;
+      }
+
+      const resolvedAttachmentPath = path.resolve(entry.path);
+      let buffer;
+      try {
+        buffer = await fs.readFile(resolvedAttachmentPath);
+      } catch (error) {
+        const wrapped = new Error(
+          `buildRenderOpsPacket: Failed to read attachment at ${resolvedAttachmentPath}`
+        );
+        wrapped.cause = error;
+        throw wrapped;
+      }
+
+      const preferredName =
+        typeof entry.filename === 'string' && entry.filename.trim().length > 0
+          ? entry.filename.trim()
+          : typeof entry.fileName === 'string' && entry.fileName.trim().length > 0
+            ? entry.fileName.trim()
+            : null;
+
+      let baseName = preferredName ? path.basename(preferredName) : null;
+      const originalExt = path.extname(baseName ?? resolvedAttachmentPath) || '';
+      if (!baseName) {
+        const fallbackLabel =
+          typeof entry.label === 'string' && entry.label.trim().length > 0
+            ? entry.label.trim()
+            : path.basename(resolvedAttachmentPath, originalExt);
+        const safeStem = slugify(fallbackLabel) || `attachment-${fallbackIndex}`;
+        baseName = `${safeStem}${originalExt}`;
+        fallbackIndex += 1;
+      }
+
+      let ext = path.extname(baseName) || originalExt;
+      if (!ext) {
+        ext = '.bin';
+      }
+      let stem = ext ? baseName.slice(0, -ext.length) : baseName;
+      stem = stem || `attachment-${fallbackIndex++}`;
+      stem = stem.trim();
+      if (!stem) {
+        stem = `attachment-${fallbackIndex++}`;
+      }
+
+      let candidateName = `${stem}${ext}`;
+      let dedupe = 1;
+      while (usedNames.has(candidateName)) {
+        candidateName = `${stem}-${dedupe}${ext}`;
+        dedupe += 1;
+      }
+      usedNames.add(candidateName);
+
+      const destinationPath = path.join(attachmentsDir, candidateName);
+      await fs.writeFile(destinationPath, buffer);
+
+      const checksumSha256 = createHash('sha256').update(buffer).digest('hex');
+      const relativeFilename = path.posix.join('attachments', candidateName.replace(/\\/g, '/'));
+
+      attachmentRecords.push({
+        filename: relativeFilename,
+        label:
+          typeof entry.label === 'string' && entry.label.trim().length > 0
+            ? entry.label.trim()
+            : path.basename(resolvedAttachmentPath),
+        originalPath: resolvedAttachmentPath,
+        sizeBytes: buffer.length,
+        checksumSha256,
+      });
+    }
+  }
+
   const summary = summarizeLightingReport(reportJson);
 
   const actionableSegments = Array.isArray(reportJson?.entries)
@@ -127,6 +217,7 @@ export async function buildRenderOpsPacket(options) {
       readme: readmeFileName,
       metadata: metadataFileName,
       shareManifest: shareManifestFileName,
+      attachments: attachmentRecords.map((record) => record.filename),
     },
     summary,
     actionableSegments,
@@ -136,6 +227,7 @@ export async function buildRenderOpsPacket(options) {
           relativePath: relativeBundlePath,
         }
       : null,
+    attachments: attachmentRecords,
   };
 
   const metadataPath = path.join(packetDir, metadataFileName);
@@ -146,7 +238,7 @@ export async function buildRenderOpsPacket(options) {
   const readmePath = path.join(packetDir, readmeFileName);
   await fs.writeFile(
     readmePath,
-    createReadmeContent({ label: safeLabel, timestampIso, summary }),
+    createReadmeContent({ label: safeLabel, timestampIso, summary, attachments: attachmentRecords }),
     'utf-8'
   );
 
@@ -255,6 +347,7 @@ export function summarizeLightingReport(report) {
 }
 
 function createShareManifest({ metadata, relativeBundlePath }) {
+  const hasAttachments = Array.isArray(metadata.attachments) && metadata.attachments.length > 0;
   return {
     packetId: metadata.packetId,
     label: metadata.label,
@@ -272,10 +365,14 @@ function createShareManifest({ metadata, relativeBundlePath }) {
       ? metadata.actionableSegments.length
       : 0,
     actionableSegments: metadata.actionableSegments,
+    attachments: metadata.attachments ?? [],
     instructions: [
       'Share the generated ZIP bundle with the RenderOps team via the secure art handoff channel.',
       `Include ${metadata.files.readme} in the communication so context and actionable segments are visible up front.`,
       'After RenderOps responds, update the placeholder audit and regenerate the packet if art tweaks were requested.',
+      ...(hasAttachments
+        ? ['Flag the `attachments/` directory when sharing so supplemental references are reviewed alongside the metrics.']
+        : []),
     ],
   };
 }
@@ -299,6 +396,7 @@ function createDeliveryManifest({ metadata, archiveInfo, shareManifestPath }) {
     actionableSegmentCount: Array.isArray(metadata.actionableSegments)
       ? metadata.actionableSegments.length
       : 0,
+    attachmentCount: Array.isArray(metadata.attachments) ? metadata.attachments.length : 0,
   };
 }
 
@@ -395,7 +493,7 @@ function normalizeIssue(issue) {
   };
 }
 
-function createReadmeContent({ label, timestampIso, summary }) {
+function createReadmeContent({ label, timestampIso, summary, attachments = [] }) {
   const lines = [
     `# RenderOps Packet — ${label}`,
     '',
@@ -405,6 +503,9 @@ function createReadmeContent({ label, timestampIso, summary }) {
     '- `lighting-preview.json`: Full numeric preview report for Act 2 Crossroads.',
     '- `lighting-preview-summary.md`: RenderOps-facing digest generated from the report.',
     '- `metadata.json`: Machine-readable metadata and actionable segment list.',
+    ...(Array.isArray(attachments) && attachments.length
+      ? ['- `attachments/`: Supplemental references bundled for review.']
+      : []),
     '',
     '## Snapshot',
     `- Segments evaluated: ${summary.total}`,
@@ -418,6 +519,16 @@ function createReadmeContent({ label, timestampIso, summary }) {
     'Review `metadata.json` for actionable segments requiring manual intervention. Re-run the preview script after adjustments to keep this packet aligned with the latest art configuration.',
     '',
   ];
+
+  if (Array.isArray(attachments) && attachments.length) {
+    lines.push('## Attachments');
+    for (const attachment of attachments) {
+      const displayLabel = attachment.label ?? attachment.filename;
+      lines.push(`- ${attachment.filename} — ${displayLabel}`);
+    }
+    lines.push('');
+  }
+
   return `${lines.join('\n')}\n`;
 }
 

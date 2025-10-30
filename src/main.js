@@ -7,6 +7,7 @@ import { buildDialogueViewModel } from './game/ui/helpers/dialogueViewModel.js';
 import {
   buildQuestDebugSummary,
   buildStoryDebugSummary,
+  buildNpcAvailabilityDebugSummary,
 } from './game/ui/helpers/worldStateDebugView.js';
 import { buildSystemMetricsDebugView } from './game/ui/helpers/systemMetricsDebugView.js';
 import {
@@ -69,6 +70,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   const debugStoryList = document.getElementById('debug-story-list');
   const debugFactionCascadeList = document.getElementById('debug-faction-cascades');
   const debugFactionCascadeMeta = document.getElementById('debug-faction-cascade-meta');
+  const debugNpcMeta = document.getElementById('debug-npc-meta');
+  const debugNpcList = document.getElementById('debug-npc-list');
+  const debugNpcHistory = document.getElementById('debug-npc-history');
   const debugTutorialLatest = document.getElementById('debug-tutorial-latest');
   const debugTutorialSnapshots = document.getElementById('debug-tutorial-snapshots');
   const debugAudioState = document.getElementById('debug-audio-state');
@@ -189,6 +193,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   let lastTutorialSnapshotSignature = null;
   let lastSfxSignature = null;
   let lastSfxTagSignature = null;
+  let lastNpcSummarySignature = null;
+  let lastNpcHistorySignature = null;
   let sfxFilterText = '';
   let sfxTagFilter = null;
   let lastAudioHistorySignature = null;
@@ -696,6 +702,96 @@ window.addEventListener('DOMContentLoaded', async () => {
             ].join(' · ');
           }
           lastWorldStateSignature = signature;
+        }
+
+        if (debugNpcList || debugNpcMeta || debugNpcHistory) {
+          const npcSummary = buildNpcAvailabilityDebugSummary(worldState.quest);
+
+          if (debugNpcMeta) {
+            const metaParts = [
+              `NPCs tracked: ${npcSummary.stats.tracked}`,
+              `Unavailable: ${npcSummary.stats.unavailable}`,
+            ];
+            if (npcSummary.stats.blockedObjectives > 0) {
+              metaParts.push(`Blocked objectives: ${npcSummary.stats.blockedObjectives}`);
+            }
+            debugNpcMeta.textContent = metaParts.join(' · ');
+          }
+
+          if (debugNpcList) {
+            const npcSignature = JSON.stringify({
+              stats: npcSummary.stats,
+              entries: npcSummary.entries.map((entry) => [
+                entry.npcId,
+                entry.available ? 1 : 0,
+                entry.updatedAt ?? 0,
+                Array.isArray(entry.objectives) ? entry.objectives.length : 0,
+              ]),
+            });
+
+            if (npcSignature !== lastNpcSummarySignature) {
+              const rows = npcSummary.entries.slice(0, 5).map((entry) => {
+                const name = entry.npcName ?? entry.npcId ?? 'Unknown NPC';
+                const factionLabel = entry.factionId ? formatFactionName(entry.factionId) : null;
+                const statusLabel = entry.available ? 'available' : 'unavailable';
+                const objectives = Array.isArray(entry.objectives) ? entry.objectives : [];
+                const objectivePreview = objectives.slice(0, 2).map((objective) => {
+                  const questTitle = objective.questTitle ?? objective.questId ?? 'quest';
+                  const objectiveTitle = objective.objectiveTitle ?? objective.objectiveId ?? 'objective';
+                  return `${questTitle}/${objectiveTitle}`;
+                });
+
+                const parts = [name];
+                if (factionLabel) {
+                  parts.push(`(${factionLabel})`);
+                }
+                parts.push(statusLabel);
+                if (!entry.available && objectivePreview.length) {
+                  const overflow = objectives.length - objectivePreview.length;
+                  parts.push(
+                    `blocks ${objectivePreview.join(', ')}${overflow > 0 ? ` +${overflow} more` : ''}`
+                  );
+                }
+                if (Number.isFinite(entry.updatedAt)) {
+                  parts.push(formatRelativeTime(entry.updatedAt, now));
+                }
+
+                return {
+                  text: parts.join(' · '),
+                  tone: entry.available ? 'npc-restored' : 'npc-alert',
+                };
+              });
+
+              renderWorldList(debugNpcList, rows, 'No NPC availability data');
+              lastNpcSummarySignature = npcSignature;
+            }
+          }
+
+          if (debugNpcHistory) {
+            const trimmedHistory = npcSummary.history.slice(0, 6);
+            const historySignature = JSON.stringify(
+              trimmedHistory.map((entry) => [entry.npcId, entry.available ? 1 : 0, entry.recordedAt ?? 0])
+            );
+            if (historySignature !== lastNpcHistorySignature) {
+              const rows = trimmedHistory.map((entry) => {
+                const name = entry.npcName ?? entry.npcId ?? 'NPC';
+                const statusLabel = entry.available ? 'available' : 'unavailable';
+                const parts = [`${name}: ${statusLabel}`];
+                if (entry.reason) {
+                  parts.push(entry.reason.replace(/_/g, ' '));
+                }
+                if (Number.isFinite(entry.recordedAt)) {
+                  parts.push(formatRelativeTime(entry.recordedAt, now));
+                }
+                return {
+                  text: parts.join(' · '),
+                  tone: entry.available ? 'npc-restored' : 'npc-alert',
+                };
+              });
+              renderWorldList(debugNpcHistory, rows, 'No availability events');
+              lastNpcHistorySignature = historySignature;
+            }
+          }
         }
       }
     }

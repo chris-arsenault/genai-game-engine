@@ -1,6 +1,7 @@
 import {
   buildQuestDebugSummary,
   buildStoryDebugSummary,
+  buildNpcAvailabilityDebugSummary,
 } from '../../../src/game/ui/helpers/worldStateDebugView.js';
 
 describe('worldStateDebugView helpers', () => {
@@ -70,5 +71,69 @@ describe('worldStateDebugView helpers', () => {
     expect(result.entries[0].flagId).toBe('memory_parlor_unlocked');
     expect(result.entries[0].tone).toBe('flag-active');
     expect(result.entries[2].flagId).toBe('act2_started');
+  });
+
+  it('builds NPC availability summary with stats and history', () => {
+    const recordedAt = Date.now();
+    const questState = {
+      npcAvailability: {
+        npc_alpha: {
+          npcId: 'npc_alpha',
+          npcName: 'Archivist Lira',
+          factionId: 'archivists',
+          available: false,
+          updatedAt: recordedAt - 2000,
+          reason: 'entity_destroyed',
+          objectives: [
+            {
+              questId: 'quest_alpha',
+              questTitle: 'Silent Archives',
+              objectiveId: 'obj_interview_lira',
+              objectiveTitle: 'Interview Lira',
+              recordedAt: recordedAt - 2100,
+            },
+          ],
+        },
+        npc_beta: {
+          npcId: 'npc_beta',
+          npcName: 'Broker Jax',
+          factionId: 'independents',
+          available: true,
+          updatedAt: recordedAt - 500,
+          reason: 'availability_restored',
+          objectives: [],
+        },
+      },
+      npcAvailabilityHistory: [
+        {
+          npcId: 'npc_alpha',
+          npcName: 'Archivist Lira',
+          available: false,
+          recordedAt: recordedAt - 2000,
+          reason: 'entity_destroyed',
+        },
+        {
+          npcId: 'npc_beta',
+          npcName: 'Broker Jax',
+          available: true,
+          recordedAt: recordedAt - 500,
+          reason: 'availability_restored',
+        },
+      ],
+    };
+
+    const summary = buildNpcAvailabilityDebugSummary(questState);
+
+    expect(summary.stats).toEqual({
+      tracked: 2,
+      unavailable: 1,
+      blockedObjectives: 1,
+    });
+    expect(summary.entries[0].npcId).toBe('npc_alpha');
+    expect(summary.entries[0].available).toBe(false);
+    expect(summary.entries[0].objectives[0].questId).toBe('quest_alpha');
+    expect(summary.entries[1].npcId).toBe('npc_beta');
+    expect(summary.history).toHaveLength(2);
+    expect(summary.history[0].npcId).toBe('npc_alpha');
   });
 });

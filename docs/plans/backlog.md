@@ -33,6 +33,23 @@
 - Authored `scripts/art/summarizeNeonGlowApprovals.js` (`npm run art:summarize-neon-glow`) to generate `reports/art/neon-glow-approval-status.(json|md)`, consolidating neon signage/glow assets and flagging outstanding narrative approvals.
 - Updated `docs/assets/visual-asset-inventory.md` with the new reporting flow so Narrative and RenderOps have a live view of glow-pass approvals before final sign-off.
 
+### Session #125 Backlog Updates
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- Narrative signed off on `image-ar-005-tileset-neon-district`, advancing manifest status to `bespoke-approved` and bundling the neon glow approval summaries with every RenderOps packet via `scripts/art/packageRenderOpsLighting.js` attachment support.
+- Neon glow approval consolidation now lives in `reports/art/neon-glow-approval-status.(json|md)` so RenderOps and narrative leads can confirm which lighting assets remain under review.
+
+### Session #126 Backlog Updates
+
+#### M1-002 / M1-012: ECS/Narrative Integrations
+- Quest log overlay now surfaces NPC availability metadata from the world state store, including blocked objective callouts and a dedicated availability panel, giving designers a player-facing view of quest gating outside the debug HUD. New Jest coverage (`tests/game/ui/helpers/questViewModel.test.js`) protects the aggregation path.
+
+#### Telemetry Export
+- `scripts/telemetry/exportInspectorTelemetry.js` gained Slack/webhook escalation for payload budget overruns (configured via `TELEMETRY_BUDGET_WEBHOOK_URL`), and integration tests verify both notification and suppression paths.
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- Added `scripts/art/importRenderOpsFeedback.js` plus baseline `reports/art/renderops-feedback.(json|md)` artifacts so RenderOps reviews are normalized for follow-up and can be linked directly to manifest notes.
+
 ### Session #123 Backlog Updates
 
 #### M1-002 / M1-012: ECS/Narrative Integrations

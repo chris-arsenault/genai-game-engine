@@ -266,11 +266,11 @@
     "creator": "Codex Placeholder Generator",
     "source": "assets/generated/ar-placeholders/image-ar-005-tileset-neon-district.png",
     "license": "Internal Commission – Environment Tiles (Act 2)",
-    "status": "bespoke-in-review",
+    "status": "bespoke-approved",
     "scheduledWeek": 1,
     "scheduledOn": "2025-11-13",
     "usage": "16x16 tile atlas for rain-soaked neon city blocks.",
-    "notes": "Needs wet reflections, signage layers, and animated neon strips. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use. | Week 1 bespoke slot kicked off 2025-11-13; art brief includes latest lighting preview metrics.",
+    "notes": "Needs wet reflections, signage layers, and animated neon strips. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use. | Week 1 bespoke slot kicked off 2025-11-13; art brief includes latest lighting preview metrics. | Narrative approved neon signage cues and branch triggers during Session 125 review; manifest updated accordingly.",
     "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
     "statusHistory": [
       {
@@ -286,16 +286,26 @@
         "context": "Reflection polish applied; signage glow pending approval with Narrative for branch cues.",
         "receivedOn": "2025-11-15",
         "approvedOn": null
+      },
+      {
+        "status": "bespoke-approved",
+        "recordedAt": "2025-11-17T09:45:10.000Z",
+        "context": "Narrative sign-off captured; signage layers align with Act 2 branch gating and licensing notes updated.",
+        "receivedOn": "2025-11-15",
+        "approvedOn": "2025-11-17"
       }
     ],
     "artist": "Axiom Studio",
     "bespokeReceivedOn": "2025-11-15",
     "bespokeNotes": [
       "Blocking pass delivered; needs reflection polish + signage layer.",
-      "Reflection polish applied; signage glow pending approval with Narrative for branch cues."
+      "Reflection polish applied; signage glow pending approval with Narrative for branch cues.",
+      "Narrative approved signage cues; lock palette variants for branching patrols."
     ],
-    "updatedAt": "2025-10-30T13:35:23.800Z",
-    "deliverablePath": "assets/bespoke/week1/image-ar-005-tileset-neon-district_v2.png"
+    "updatedAt": "2025-11-17T09:45:10.000Z",
+    "deliverablePath": "assets/bespoke/week1/image-ar-005-tileset-neon-district_v2.png",
+    "bespokeApprovedOn": "2025-11-17",
+    "bespokeReviewedBy": "Narrative Lead: I. Ramos"
   },
   {
     "id": "image-ar-005-tileset-corporate-spires",

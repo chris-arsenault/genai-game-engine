@@ -15,6 +15,8 @@ describe('RenderOpsPacketBuilder', () => {
     const reportPath = path.join(tempRoot, 'report.json');
     const summaryPath = path.join(tempRoot, 'summary.md');
     const outputRoot = path.join(tempRoot, 'out');
+    const neonMarkdown = path.join(tempRoot, 'neon-summary.md');
+    const neonJson = path.join(tempRoot, 'neon-summary.json');
 
     const report = {
       entries: [
@@ -53,6 +55,8 @@ describe('RenderOpsPacketBuilder', () => {
       '# Test Summary\n\nSegments evaluated: 2\n',
       'utf-8'
     );
+    await fs.writeFile(neonMarkdown, '# Neon Glow\n', 'utf-8');
+    await fs.writeFile(neonJson, JSON.stringify({ approvals: 1 }), 'utf-8');
 
     const fixedDate = new Date('2025-11-13T12:00:00.000Z');
     const {
@@ -71,6 +75,10 @@ describe('RenderOpsPacketBuilder', () => {
       outputRoot,
       label: 'Act2 Crossroads',
       now: fixedDate,
+      attachments: [
+        { path: neonMarkdown, label: 'Neon Glow Approvals (Markdown)' },
+        neonJson,
+      ],
     });
 
     const expectedDirName = 'act2-crossroads-2025-11-13T12-00-00-000Z';
@@ -116,10 +124,16 @@ describe('RenderOpsPacketBuilder', () => {
       segmentId: 'segment-b',
       status: 'missing-overlay',
     });
+    expect(metadataOnDisk.attachments).toHaveLength(2);
+    expect(metadataOnDisk.files.attachments).toEqual([
+      'attachments/neon-glow-approvals-markdown.md',
+      'attachments/neon-summary.json',
+    ]);
 
     // Ensure helper return value mirrors on-disk metadata.
     expect(metadata.actionableSegments).toHaveLength(1);
     expect(metadata.actionableSegments[0].segmentId).toBe('segment-b');
+    expect(metadata.attachments).toHaveLength(2);
 
     // Share manifest should reference the bundle and actionable segments.
     expect(shareManifestPath).toBe(expectedShareManifestPath);
@@ -133,6 +147,8 @@ describe('RenderOpsPacketBuilder', () => {
     expect(shareManifestOnDisk.actionableSegmentCount).toBe(1);
     expect(Array.isArray(shareManifestOnDisk.instructions)).toBe(true);
     expect(shareManifestOnDisk.instructions.length).toBeGreaterThanOrEqual(3);
+    expect(Array.isArray(shareManifestOnDisk.attachments)).toBe(true);
+    expect(shareManifestOnDisk.attachments).toHaveLength(2);
     expect(shareManifest).toEqual(shareManifestOnDisk);
 
     // Delivery manifest should surface archive metadata for external delivery.
@@ -162,6 +178,8 @@ describe('RenderOpsPacketBuilder', () => {
     expect(zip.file('PACKET_README.md')).not.toBeNull();
     expect(zip.file('metadata.json')).not.toBeNull();
     expect(zip.file('share-manifest.json')).not.toBeNull();
+    expect(zip.file('attachments/neon-glow-approvals-markdown.md')).not.toBeNull();
+    expect(zip.file('attachments/neon-summary.json')).not.toBeNull();
   });
 
   test('summarizeLightingReport computes fallback counts when summary is missing', () => {

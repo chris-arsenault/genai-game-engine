@@ -137,3 +137,80 @@ export function buildStoryDebugSummary(storyState) {
 
   return { stats, entries };
 }
+
+/**
+ * Build debug summary data for quest-linked NPC availability.
+ * @param {Object} questState
+ * @returns {{stats: {tracked:number, unavailable:number, blockedObjectives:number}, entries: Array, history: Array}}
+ */
+export function buildNpcAvailabilityDebugSummary(questState) {
+  const stats = {
+    tracked: 0,
+    unavailable: 0,
+    blockedObjectives: 0,
+  };
+
+  if (!questState || typeof questState !== 'object') {
+    return { stats, entries: [], history: [] };
+  }
+
+  const availability = questState.npcAvailability || {};
+  const records = Object.values(availability)
+    .map((record) => {
+      const objectives = Array.isArray(record?.objectives)
+        ? record.objectives.map((objective) => ({
+            questId: objective?.questId ?? null,
+            questTitle: objective?.questTitle ?? null,
+            questType: objective?.questType ?? null,
+            objectiveId: objective?.objectiveId ?? null,
+            objectiveTitle: objective?.objectiveTitle ?? null,
+            reason: objective?.reason ?? null,
+            requirement: objective?.requirement ?? null,
+            message: objective?.message ?? null,
+            recordedAt: objective?.recordedAt ?? null,
+          }))
+        : [];
+
+      return {
+        npcId: record?.npcId ?? null,
+        npcName: record?.npcName ?? null,
+        factionId: record?.factionId ?? null,
+        tag: record?.tag ?? null,
+        entityId: record?.entityId ?? null,
+        available: Boolean(record?.available),
+        updatedAt: record?.updatedAt ?? null,
+        reason: record?.reason ?? null,
+        objectives,
+      };
+    })
+    .sort((a, b) => {
+      if (a.available !== b.available) {
+        return a.available ? 1 : -1;
+      }
+      const timeA = a.updatedAt ?? 0;
+      const timeB = b.updatedAt ?? 0;
+      return timeB - timeA;
+    });
+
+  stats.tracked = records.length;
+  stats.unavailable = records.filter((record) => record.available === false).length;
+  stats.blockedObjectives = records.reduce(
+    (total, record) => total + (Array.isArray(record.objectives) ? record.objectives.length : 0),
+    0
+  );
+
+  const history = Array.isArray(questState.npcAvailabilityHistory)
+    ? questState.npcAvailabilityHistory.map((entry) => ({
+        npcId: entry?.npcId ?? null,
+        npcName: entry?.npcName ?? null,
+        factionId: entry?.factionId ?? null,
+        available: Boolean(entry?.available),
+        recordedAt: entry?.recordedAt ?? null,
+        reason: entry?.reason ?? null,
+        tag: entry?.tag ?? null,
+        objectiveCount: Number.isFinite(entry?.objectiveCount) ? entry.objectiveCount : null,
+      }))
+    : [];
+
+  return { stats, entries: records, history };
+}

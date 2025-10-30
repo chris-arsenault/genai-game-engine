@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -19,6 +20,14 @@ const DEFAULT_OUTPUT_ROOT = path.resolve(
   __dirname,
   '../../reports/art/renderops-packets'
 );
+const DEFAULT_NEON_APPROVAL_JSON = path.resolve(
+  __dirname,
+  '../../reports/art/neon-glow-approval-status.json'
+);
+const DEFAULT_NEON_APPROVAL_MD = path.resolve(
+  __dirname,
+  '../../reports/art/neon-glow-approval-status.md'
+);
 
 async function main() {
   const args = process.argv.slice(2);
@@ -27,6 +36,7 @@ async function main() {
     summaryPath: DEFAULT_SUMMARY,
     outputRoot: DEFAULT_OUTPUT_ROOT,
     label: 'act2-crossroads',
+    attachments: [],
   };
 
   for (const arg of args) {
@@ -38,10 +48,33 @@ async function main() {
       options.outputRoot = path.resolve(process.cwd(), arg.slice(10));
     } else if (arg.startsWith('--label=')) {
       options.label = arg.slice(8).trim();
+    } else if (arg.startsWith('--attachment=')) {
+      const attachmentPath = path.resolve(process.cwd(), arg.slice(13));
+      options.attachments.push({ path: attachmentPath });
     } else if (arg === '--help' || arg === '-h') {
       printHelp();
       return;
     }
+  }
+
+  const attachmentPaths = new Set(
+    options.attachments.map((entry) => path.resolve(entry.path))
+  );
+
+  if (fs.existsSync(DEFAULT_NEON_APPROVAL_JSON) && !attachmentPaths.has(DEFAULT_NEON_APPROVAL_JSON)) {
+    options.attachments.push({
+      path: DEFAULT_NEON_APPROVAL_JSON,
+      label: 'Neon glow approvals — JSON summary',
+    });
+    attachmentPaths.add(DEFAULT_NEON_APPROVAL_JSON);
+  }
+
+  if (fs.existsSync(DEFAULT_NEON_APPROVAL_MD) && !attachmentPaths.has(DEFAULT_NEON_APPROVAL_MD)) {
+    options.attachments.push({
+      path: DEFAULT_NEON_APPROVAL_MD,
+      label: 'Neon glow approvals — Markdown summary',
+    });
+    attachmentPaths.add(DEFAULT_NEON_APPROVAL_MD);
   }
 
   try {
@@ -94,6 +127,7 @@ function printHelp() {
       '  --summary=<path>   Path to the RenderOps-facing markdown summary.',
       '  --out-dir=<path>   Output directory root for generated packets.',
       '  --label=<value>    Label to include in the packet directory name.',
+      '  --attachment=<path> Attach an additional file to the packet.',
       '  -h, --help         Show this help message.',
       '',
     ].join('\n')

@@ -112,8 +112,17 @@
 - Added `assets/bespoke/week1/README.md` to log vendor hand-offs and repository-visible exports while original source files remain in the studio vault.
 
 ## Session 124 Updates
+- Narratives flagged neon signage approvals via Session 124 summary; pending follow-up for act-wide lighting pass.
+
+## Session 125 Updates
+- Narrative signed off on `image-ar-005-tileset-neon-district`, advancing the manifest entry to `bespoke-approved` with updated licensing notes and neon signage cues locked for Act 2 branch gating. Neon glow approval reports are now bundled automatically with RenderOps packets via `scripts/art/packageRenderOpsLighting.js` attachments support.
 - Authored `scripts/art/summarizeNeonGlowApprovals.js` and npm alias `art:summarize-neon-glow` to consolidate every neon signage/glow asset (AR-050 overlays, Memory Parlor lighting, neon district tileset) into `reports/art/neon-glow-approval-status.(json|md)`, highlighting pending narrative/RenderOps approvals and latest status contexts ahead of the glow pass sign-off push.
 - The markdown summary surfaces the lone Week 1 bespoke item (`image-ar-005-tileset-neon-district`) still awaiting narrative approval and inventories all derivative overlays, keeping RenderOps and narrative leads aligned on outstanding glow validations.
+
+## Session 126 Updates
+- Introduced `scripts/art/importRenderOpsFeedback.js` to ingest structured RenderOps review payloads and append them to a canonical feedback log. Run `node scripts/art/importRenderOpsFeedback.js --input <feedback.json>` after each packet review to normalize segment notes, requested revisions, and reviewer metadata.
+- New artifacts `reports/art/renderops-feedback.json` and `reports/art/renderops-feedback.md` capture the aggregated history, per-segment status, and reviewer notes so art, lighting, and narrative can coordinate revisions without parsing email threads or ad-hoc docs.
+- When feedback lands, import it, regenerate the RenderOps packet if required (`npm run art:package-renderops`), and link the feedback entry in `assets/images/requests.json` notes for any segments that shift back to `needs_revision`.
 
 ## Next Actions
 1. Distribute the latest RenderOps packet (`npm run art:package-renderops` then `npm run art:stage-renderops`) and attach the staged ZIP (`deliveries/renderops/.../*.zip`) plus `*-delivery.json` manifest when sharing with RenderOps; log feedback on actionable segments and regenerate after art tweaks.
