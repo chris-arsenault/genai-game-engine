@@ -55,12 +55,14 @@ Restricted areas, quest gates, and scene transitions now rely on the engine-leve
 - Definitions can include `metadata.moodHint` to influence adaptive audio bridges; hints expire automatically after a configurable duration.
 - QuestSystem only reacts to `area:entered`/`area:exited` payloads coming from `Trigger` components. Legacy `InteractionZone` polling has been removed, so always attach a trigger before expecting quest progression.
 - Act 1 vendors (`witness_street_vendor`, `black_market_broker`, `cipher_quartermaster`) now have registry-backed definitions that attach quest metadata and adaptive audio hints when the player enters their dialogue radius. See `docs/guides/act1-trigger-authoring.md` for designer-ready reference sheets.
+- Memory Parlor infiltration zones (entrance scan, interior firewall check, alloy exit) are registered up front and attached via `TriggerMigrationToolkit` during scene load. Registry metadata captures `narrativeBeat`, `requiresScrambler`, and designer prompts so quest objectives, adaptive audio, and UI copy stay synchronized.
 - Unit coverage lives in `tests/game/quests/TriggerMigrationToolkit.test.js`; scene-level migrations are captured in `tests/game/scenes/Act1Scene.triggers.test.js`.
 
 ### Memory Parlor Restricted Areas
 - `InteractionZone` retains prompt text and highlight visuals.
 - A paired `Trigger` component emits structured enter/exit payloads consumed by UI highlights and the Firewall Scrambler system.
 - Payloads now drive `Game` adaptive music state via `audio:adaptive:set_mood` handlers.
+- For quest-critical volumes (entrance scan, interior breach, street exit), `MemoryParlorScene` uses `createQuestRegistryTrigger()` to stitch in `Quest` components and registry-authored metadata before attaching the `Trigger`. This keeps quest data, prompts, and telemetry thresholds in sync with the registry reporting pipeline.
 
 ```javascript
 componentRegistry.addComponent(entityId, 'Trigger', new Trigger({
@@ -80,7 +82,7 @@ componentRegistry.addComponent(entityId, 'Trigger', new Trigger({
 - Prefer `TriggerMigrationToolkit.createQuestTrigger()` for Act 1+ content; it pulls definitions from `QuestTriggerRegistry`, adds consistent metadata, and marks migrations complete for reporting.
 - `QuestSystem.createQuestTrigger()` remains available for bespoke cases but should be phased out as legacy `InteractionZone` flows migrate.
 - One-shot quest triggers remove themselves after firing; reusable triggers reset `quest.triggered` on exit events.
-- Jest suites (`tests/game/systems/QuestSystem.trigger.test.js`, `tests/game/scenes/Act1Scene.triggers.test.js`) validate event wiring, outstanding migration tracking, and metadata propagation.
+- Jest suites (`tests/game/systems/QuestSystem.trigger.test.js`, `tests/game/scenes/Act1Scene.triggers.test.js`, `tests/game/scenes/MemoryParlorScene.triggers.test.js`) validate event wiring, outstanding migration tracking, and metadata propagation.
 
 ### Scene Transitions and Exits
 - Exit zones (e.g., Memory Parlor escape route) mark `triggerType: 'scene_exit'` and set `questTrigger: true` so quest objectives progress automatically before the scene swap.

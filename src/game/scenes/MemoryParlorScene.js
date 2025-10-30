@@ -18,6 +18,9 @@ import { createEvidenceEntity } from '../entities/EvidenceEntity.js';
 import { GameConfig } from '../config/GameConfig.js';
 import { AmbientSceneAudioController } from '../audio/AmbientSceneAudioController.js';
 import { Trigger } from '../../engine/physics/Trigger.js';
+import { TriggerMigrationToolkit } from '../quests/TriggerMigrationToolkit.js';
+import { QuestTriggerRegistry } from '../quests/QuestTriggerRegistry.js';
+import { QUEST_003_MEMORY_PARLOR } from '../data/quests/act1Quests.js';
 
 const ROOM_WIDTH = 960;
 const ROOM_HEIGHT = 600;
@@ -41,6 +44,69 @@ const DETECTION_CONFIG =
     safeBaseAlpha: 0.28,
     safeHighlightAlpha: 0.5,
   };
+
+const MEMORY_PARLOR_TRIGGER_IDS = Object.freeze({
+  ENTRANCE: 'memory_parlor_entrance',
+  INTERIOR: 'memory_parlor_interior',
+  EXIT: 'neon_districts_street',
+});
+
+const MEMORY_PARLOR_TRIGGER_DEFINITIONS = [
+  {
+    id: MEMORY_PARLOR_TRIGGER_IDS.ENTRANCE,
+    questId: QUEST_003_MEMORY_PARLOR.id,
+    objectiveId: 'obj_locate_parlor',
+    areaId: 'memory_parlor_entrance',
+    radius: 96,
+    once: true,
+    prompt: 'Hidden stairwell to the Memory Parlor.',
+    triggerType: 'scene_transition',
+    metadata: {
+      moodHint: 'pre_infiltration',
+      narrativeBeat: 'act1_memory_parlor_entry',
+      sceneId: 'memory_parlor_infiltration',
+    },
+  },
+  {
+    id: MEMORY_PARLOR_TRIGGER_IDS.INTERIOR,
+    questId: QUEST_003_MEMORY_PARLOR.id,
+    objectiveId: 'obj_infiltrate_parlor',
+    areaId: 'memory_parlor_interior',
+    radius: 140,
+    once: false,
+    prompt: 'Memory Parlor interior reached.',
+    triggerType: 'objective_area',
+    metadata: {
+      moodHint: 'infiltration_tension',
+      narrativeBeat: 'act1_memory_parlor_interior',
+      requiresScrambler: true,
+    },
+  },
+  {
+    id: MEMORY_PARLOR_TRIGGER_IDS.EXIT,
+    questId: QUEST_003_MEMORY_PARLOR.id,
+    objectiveId: 'obj_escape_parlor',
+    areaId: 'neon_districts_street',
+    radius: EXIT_RADIUS,
+    once: true,
+    prompt: 'Return to the Neon District streets.',
+    triggerType: 'scene_exit',
+    metadata: {
+      moodHint: 'escape_release',
+      narrativeBeat: 'act1_memory_parlor_exit',
+    },
+  },
+];
+
+function ensureMemoryParlorTriggerDefinitions() {
+  for (const definition of MEMORY_PARLOR_TRIGGER_DEFINITIONS) {
+    if (!QuestTriggerRegistry.getTriggerDefinition(definition.id)) {
+      QuestTriggerRegistry.registerDefinition(definition);
+    }
+  }
+}
+
+ensureMemoryParlorTriggerDefinitions();
 
 const INTEL_EVIDENCE_DATA = [
   {
@@ -250,6 +316,34 @@ function createTriggerZone(entityManager, componentRegistry, {
   return entityId;
 }
 
+function createQuestRegistryTrigger(entityManager, componentRegistry, questTriggerToolkit, definitionId, {
+  x,
+  y,
+  radius,
+  layer = 'ground_fx',
+  color = '#5f3b8b',
+  alpha = 0.25,
+  zIndex = 1,
+} = {}) {
+  if (!questTriggerToolkit) {
+    throw new Error('[MemoryParlorScene] Quest trigger toolkit is required for registry-backed triggers');
+  }
+  const entityId = entityManager.createEntity('quest_area_trigger');
+  componentRegistry.addComponent(entityId, 'Transform', new Transform(x, y, 0, 1, 1));
+  componentRegistry.addComponent(entityId, 'Sprite', new Sprite({
+    image: null,
+    width: radius * 2,
+    height: radius * 2,
+    color,
+    alpha,
+    layer,
+    zIndex,
+    visible: true,
+  }));
+  questTriggerToolkit.createQuestTrigger(entityId, definitionId);
+  return entityId;
+}
+
 function setFirewallState({ collider, sprite, zone }, isOpen) {
   if (collider) {
     collider.isTrigger = isOpen;
@@ -275,8 +369,11 @@ function setFirewallState({ collider, sprite, zone }, isOpen) {
 export async function loadMemoryParlorScene(entityManager, componentRegistry, eventBus, options = {}) {
   console.log('[MemoryParlorScene] Loading Memory Parlor infiltration scene...');
 
+  ensureMemoryParlorTriggerDefinitions();
+
   const sceneEntities = [];
   const cleanupHandlers = [];
+  const questTriggerToolkit = new TriggerMigrationToolkit(componentRegistry, eventBus);
   let ambientAudioController = null;
 
   if (options.audioManager) {
@@ -382,18 +479,17 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
   ];
   sceneEntities.push(...walls);
 
-  const entranceZoneId = createTriggerZone(entityManager, componentRegistry, {
-    id: 'memory_parlor_entrance',
-    x: ENTRANCE_POSITION.x,
-    y: ENTRANCE_POSITION.y,
-    radius: 96,
-    prompt: 'Hidden stairwell to the Memory Parlor.',
-    oneShot: true,
-    data: {
-      triggerType: 'scene_transition',
-      questTrigger: false
+  const entranceZoneId = createQuestRegistryTrigger(
+    entityManager,
+    componentRegistry,
+    questTriggerToolkit,
+    MEMORY_PARLOR_TRIGGER_IDS.ENTRANCE,
+    {
+      x: ENTRANCE_POSITION.x,
+      y: ENTRANCE_POSITION.y,
+      radius: 96,
     }
-  });
+  );
   sceneEntities.push(entranceZoneId);
 
   const firewallEntityId = entityManager.createEntity('firewall_gate');
@@ -435,21 +531,19 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
   }));
   sceneEntities.push(firewallEntityId);
 
-  const interiorZoneId = createTriggerZone(entityManager, componentRegistry, {
-    id: 'memory_parlor_interior',
-    x: INTERIOR_CENTER.x,
-    y: INTERIOR_CENTER.y,
-    radius: 140,
-    prompt: 'Memory Parlor interior reached.',
-    oneShot: false,
-    color: '#3a1f57',
-    alpha: 0.18,
-    data: {
-      triggerType: 'objective_area',
-      questTrigger: true,
-      objectiveId: 'obj_infiltrate_interior'
+  const interiorZoneId = createQuestRegistryTrigger(
+    entityManager,
+    componentRegistry,
+    questTriggerToolkit,
+    MEMORY_PARLOR_TRIGGER_IDS.INTERIOR,
+    {
+      x: INTERIOR_CENTER.x,
+      y: INTERIOR_CENTER.y,
+      radius: 140,
+      color: '#3a1f57',
+      alpha: 0.18,
     }
-  });
+  );
   sceneEntities.push(interiorZoneId);
 
   const tables = [
@@ -537,21 +631,19 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
   });
   sceneEntities.push(exitRunnerId);
 
-  const exitZoneId = createTriggerZone(entityManager, componentRegistry, {
-    id: 'neon_districts_street',
-    x: EXIT_POSITION.x,
-    y: EXIT_POSITION.y,
-    radius: EXIT_RADIUS,
-    prompt: 'Return to the Neon District streets.',
-    oneShot: true,
-    color: '#2d8aff',
-    alpha: 0.22,
-    data: {
-      triggerType: 'scene_exit',
-      questTrigger: true,
-      objectiveId: 'obj_escape_parlor'
+  const exitZoneId = createQuestRegistryTrigger(
+    entityManager,
+    componentRegistry,
+    questTriggerToolkit,
+    MEMORY_PARLOR_TRIGGER_IDS.EXIT,
+    {
+      x: EXIT_POSITION.x,
+      y: EXIT_POSITION.y,
+      radius: EXIT_RADIUS,
+      color: '#2d8aff',
+      alpha: 0.22,
     }
-  });
+  );
   sceneEntities.push(exitZoneId);
 
   for (const evidenceData of INTEL_EVIDENCE_DATA) {

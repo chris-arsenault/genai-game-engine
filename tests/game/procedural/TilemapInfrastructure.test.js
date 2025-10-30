@@ -7,6 +7,8 @@ import {
   createAuthoredTemplateForRoomType,
   CRIME_SCENE_TEMPLATE_ID,
   VENDOR_STALL_TEMPLATE_ID,
+  DETECTIVE_OFFICE_TEMPLATE_ID,
+  ALLEY_HUB_TEMPLATE_ID,
 } from '../../../src/game/procedural/templates/authoredTemplates.js';
 import { DistrictGenerator } from '../../../src/game/procedural/DistrictGenerator.js';
 
@@ -159,6 +161,89 @@ describe('Procedural tilemap infrastructure', () => {
       );
       expect(result.seams).toEqual(
         expect.arrayContaining([expect.objectContaining({ edge: 'east', tile: TileType.DOOR })])
+      );
+    });
+
+    it('provides detective office variant metadata with rotated seams intact', () => {
+      const resolver = new TemplateVariantResolver(templateVariantManifest);
+      const authored = createAuthoredTemplateForRoomType('detective_office');
+      const result = resolver.resolve({
+        room: {
+          id: 'office_node_1',
+          type: 'detective_office',
+          templateId: authored.templateId,
+        },
+        template: { id: authored.templateId, tilemap: authored.tilemap.clone() },
+        rotation: 180,
+      });
+
+      expect(result.strategy).toBe('variant');
+      expect(result.variantId).toBe(`${DETECTIVE_OFFICE_TEMPLATE_ID}_r180`);
+      expect(result.metadata).toEqual(
+        expect.objectContaining({
+          templateId: DETECTIVE_OFFICE_TEMPLATE_ID,
+          moodHint: 'investigative_hub',
+          orientation: 180,
+          deskLayout: 'dual_wall',
+        })
+      );
+      expect(result.seams).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            edge: 'north',
+            tags: expect.arrayContaining(['primary_entry']),
+          }),
+          expect.objectContaining({
+            edge: 'west',
+            tags: expect.arrayContaining(['secondary_exit']),
+          }),
+        ])
+      );
+    });
+
+    it('applies alley hub seam metadata for multi-branch coverage when rotated', () => {
+      const resolver = new TemplateVariantResolver(templateVariantManifest);
+      const authored = createAuthoredTemplateForRoomType('alley');
+      const result = resolver.resolve({
+        room: {
+          id: 'alley_node_1',
+          type: 'alley',
+          templateId: authored.templateId,
+        },
+        template: { id: authored.templateId, tilemap: authored.tilemap.clone() },
+        rotation: 90,
+      });
+
+      expect(result.strategy).toBe('variant');
+      expect(result.variantId).toBe(`${ALLEY_HUB_TEMPLATE_ID}_r90`);
+      expect(result.metadata).toEqual(
+        expect.objectContaining({
+          templateId: ALLEY_HUB_TEMPLATE_ID,
+          moodHint: 'shadow_network',
+          orientation: 90,
+          accessPattern: 'vertical_split',
+        })
+      );
+      expect(result.seams.length).toBe(4);
+      expect(result.seams).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            edge: 'east',
+            tags: expect.arrayContaining(['north_branch']),
+          }),
+          expect.objectContaining({
+            edge: 'north',
+            tags: expect.arrayContaining(['west_branch']),
+          }),
+          expect.objectContaining({
+            edge: 'south',
+            tags: expect.arrayContaining(['east_branch']),
+          }),
+          expect.objectContaining({
+            edge: 'west',
+            tags: expect.arrayContaining(['south_branch']),
+          }),
+        ])
       );
     });
   });

@@ -314,6 +314,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - CI telemetry logged for five consecutive runs.
   - Threshold adjustments (if any) documented and linked to raw data.
   - Failing runs emit actionable messaging for engineers.
+- **Progress (Session #84)**: Authored `scripts/telemetry/performanceSnapshot.js`, exposed `npm run telemetry:performance`, and captured a seed run producing `telemetry-artifacts/performance/performance-metrics.json`; pending work: wiring into CI for ongoing guardrails.
 
 #### CI-014: Playwright Smoke Integration
 - **Priority**: P3
@@ -424,6 +425,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Progress (Session #80)**: Migrated the Act 1 crime scene trigger to the registry-backed toolkit (`src/game/scenes/Act1Scene.js`) and added Jest coverage (`tests/game/scenes/Act1Scene.triggers.test.js`) confirming outstanding migration tracking and quest metadata.
 - **Progress (Session #82)**: Converted Act 1 vendor NPCs to toolkit-backed quest triggers with mood hint metadata, updated `TriggerMigrationToolkit` to seed Quest components, and extended Jest suites (`tests/game/quests/TriggerMigrationToolkit.test.js`, `tests/game/scenes/Act1Scene.triggers.test.js`) to cover vendor migrations.
 - **Progress (Session #83)**: Pruned QuestSystem's legacy polling path, fortified `tests/game/systems/QuestSystem.trigger.test.js`, and published the Act 1 trigger authoring cheat sheet (`docs/guides/act1-trigger-authoring.md`).
+- **Progress (Session #84)**: Memory Parlor entrance/interior/exit triggers now register through the toolkit with quest metadata + mood hints, `MemoryParlorScene` attaches Quest components via registry definitions, and Jest coverage (`tests/game/scenes/MemoryParlorScene.triggers.test.js`) locks the migration.
 - **Acceptance Criteria**:
   - Migrated triggers emit `area:entered`/`area:exited` with quest metadata aligned to the schema.
   - QuestSystem progression and resets validated via updated regression tests.
@@ -441,6 +443,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Progress (Session #81)**: Stubbed TemplateVariantResolver, TilemapTransformer, and CorridorSeamPainter, refactored `DistrictGenerator` to route room placement through the new pipeline, and added coverage in `tests/game/procedural/TilemapInfrastructure.test.js`.
 - **Progress (Session #82)**: Implemented manifest-driven variant resolution, corridor seam painting, expanded `TilemapInfrastructure` tests for variants/seams, and benchmarked rotated generation (avg 29.76 ms across three samples).
 - **Progress (Session #83)**: Added authored manifest variants for Act 1 crime scenes and vendor bays (`src/game/procedural/templates/authoredTemplates.js`), defaulted DistrictGenerator to the manifest, extended regression tests, and re-benchmarked rotation overhead (avg 28.86 ms across three seeds).
+- **Progress (Session #84)**: Authored detective office + alley hub manifest variants with multi-edge seam metadata, updated factory helpers, and extended Jest coverage to lock orientation metadata and seam propagation.
 - **Acceptance Criteria**:
   - Rotated rooms display correct tile orientation without misaligned seams.
   - Corridor seam painter places door tiles matching rotation.
