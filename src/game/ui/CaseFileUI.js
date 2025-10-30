@@ -17,6 +17,7 @@
  */
 import { ObjectiveList } from './ObjectiveList.js';
 import { emitOverlayVisibility } from './helpers/overlayEvents.js';
+import { getBindingLabels } from '../utils/controlBindingPrompts.js';
 
 export class CaseFileUI {
   /**
@@ -84,6 +85,49 @@ export class CaseFileUI {
 
     // Callbacks
     this.onClose = options.onClose || (() => {});
+  }
+
+  /**
+   * Render inline binding hints with dynamic labels.
+   * @private
+   */
+  _renderBindingHints(ctx, baseY) {
+    const hintFontSize = Math.max(12, this.style.fontSize - 1);
+    ctx.font = `${hintFontSize}px ${this.style.fontFamily}`;
+    ctx.fillStyle = this.style.dimmedTextColor;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+
+    const candidates = [
+      { label: 'Close', action: 'caseFile', fallback: 'Tab' },
+      { label: 'Deduction', action: 'deductionBoard', fallback: 'B' },
+      { label: 'Inventory', action: 'inventory', fallback: 'I' },
+    ];
+
+    const parts = candidates.map(({ label, action, fallback }) => {
+      const bindingLabel = this._getBindingLabel(action, fallback);
+      return `${label}: ${bindingLabel}`;
+    });
+
+    const maxWidth = this.width - this.style.padding * 2;
+    let text = parts.join('  ·  ');
+    while (parts.length > 1 && ctx.measureText(text).width > maxWidth) {
+      parts.pop();
+      text = parts.join('  ·  ');
+    }
+
+    ctx.fillText(text, this.x + this.width - this.style.padding, baseY);
+  }
+
+  _getBindingLabel(action, fallback) {
+    const labels = getBindingLabels(action, { fallbackLabel: fallback });
+    if (Array.isArray(labels) && labels.length > 0) {
+      return labels.join(' / ');
+    }
+    if (typeof fallback === 'string' && fallback.length) {
+      return fallback;
+    }
+    return '—';
   }
 
   /**
@@ -240,7 +284,10 @@ export class CaseFileUI {
     ctx.strokeRect(this.x, this.y, this.width, this.height);
 
     // Draw header
-    this._renderHeader(ctx);
+    const headerBottom = this._renderHeader(ctx);
+
+    // Draw binding hints
+    this._renderBindingHints(ctx, headerBottom + 12);
 
     // Draw objectives section
     this._renderObjectivesSection(ctx);
@@ -297,6 +344,7 @@ export class CaseFileUI {
    */
   _renderHeader(ctx) {
     const headerY = this.y + this.style.padding;
+    let bottomY = headerY + this.style.titleFontSize;
 
     // Case title
     ctx.fillStyle = this.style.textColor;
@@ -310,13 +358,17 @@ export class CaseFileUI {
       ctx.fillStyle = this.style.dimmedTextColor;
       ctx.font = `${this.style.fontSize}px ${this.style.fontFamily}`;
       const lines = this._wrapText(ctx, this.caseData.description, this.width - this.style.padding * 2);
-      const descY = headerY + this.style.titleFontSize + 10;
+      const descY = bottomY + 10;
+      const drawn = lines.slice(0, 2);
 
-      // Only show first 2 lines
-      lines.slice(0, 2).forEach((line, i) => {
+      drawn.forEach((line, i) => {
         ctx.fillText(line, this.x + this.style.padding, descY + i * (this.style.fontSize + 4));
       });
+
+      bottomY = descY + drawn.length * (this.style.fontSize + 4);
     }
+
+    return bottomY;
   }
 
   /**

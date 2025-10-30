@@ -165,4 +165,68 @@ describe('ControlBindingsOverlay', () => {
     );
     overlay.cleanup();
   });
+
+  it('cycles list modes and paginates control entries', () => {
+    const canvas = createMockCanvas();
+    const eventBus = new EventBus();
+    const bigBindingSet = {
+      moveUp: ['KeyW'],
+      moveDown: ['KeyS'],
+      moveLeft: ['KeyA'],
+      moveRight: ['KeyD'],
+      interact: ['KeyE'],
+      detectiveVision: ['KeyV'],
+      forensicAnalysis: ['KeyF'],
+      attack: ['Space'],
+      dodge: ['ShiftLeft'],
+      inventory: ['KeyI'],
+      quest: ['KeyQ'],
+      faction: ['KeyR'],
+      disguise: ['KeyG'],
+      caseFile: ['Tab'],
+      deductionBoard: ['KeyB'],
+      controlsMenu: ['KeyK'],
+      pause: ['Escape'],
+      confirm: ['Enter'],
+      cancel: ['Backspace'],
+      debugToggle: ['Backquote'],
+      sprint: ['KeyL'],
+      map: ['KeyM'],
+      journal: ['KeyJ'],
+      hotbar1: ['Digit1'],
+      hotbar2: ['Digit2'],
+      hotbar3: ['Digit3'],
+      hotbar4: ['Digit4'],
+    };
+    const keyMap = new Map();
+    for (const [action, codes] of Object.entries(bigBindingSet)) {
+      for (const code of codes) {
+        keyMap.set(code, new Set([action]));
+      }
+    }
+
+    getBindingsSnapshot.mockReturnValue(bigBindingSet);
+    getKeyToActionsSnapshot.mockReturnValue(keyMap);
+
+    const overlay = new ControlBindingsOverlay(canvas, eventBus);
+    overlay.init();
+    overlay.show('test');
+    overlay.update(1);
+    overlay.render(canvas._ctx);
+
+    expect(overlay.pageCount).toBeGreaterThan(1);
+    const initialMode = overlay.getListMode().id;
+
+    const pageDownEvent = { code: 'PageDown', preventDefault: jest.fn() };
+    overlay.handleGlobalKeyDown(pageDownEvent);
+    expect(pageDownEvent.preventDefault).toHaveBeenCalled();
+    expect(overlay.captureMessage).toMatch(/Viewing page/i);
+
+    const cycleEvent = { code: 'BracketRight', preventDefault: jest.fn() };
+    overlay.handleGlobalKeyDown(cycleEvent);
+    expect(cycleEvent.preventDefault).toHaveBeenCalled();
+    expect(overlay.getListMode().id).not.toEqual(initialMode);
+
+    overlay.cleanup();
+  });
 });

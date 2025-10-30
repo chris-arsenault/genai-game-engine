@@ -2,7 +2,23 @@
  * CaseFileUI Tests
  */
 
+jest.mock('../../../src/game/utils/controlBindingPrompts.js', () => ({
+  getBindingLabels: jest.fn((action) => {
+    switch (action) {
+      case 'caseFile':
+        return ['Tab'];
+      case 'deductionBoard':
+        return ['B'];
+      case 'inventory':
+        return ['I'];
+      default:
+        return [];
+    }
+  }),
+}));
+
 import { CaseFileUI } from '../../../src/game/ui/CaseFileUI.js';
+import { getBindingLabels } from '../../../src/game/utils/controlBindingPrompts.js';
 
 describe('CaseFileUI', () => {
   let caseFileUI;
@@ -366,6 +382,21 @@ describe('CaseFileUI', () => {
         call => call[0] === 'The Missing Memory'
       );
       expect(titleCall).toBeDefined();
+    });
+
+    test('renders binding hint text with dynamic labels', () => {
+      caseFileUI.render(mockCtx);
+
+      expect(getBindingLabels).toHaveBeenCalledWith(
+        'caseFile',
+        expect.objectContaining({ fallbackLabel: 'Tab' })
+      );
+
+      const hintCall = mockCtx.fillText.mock.calls.find(
+        call => typeof call[0] === 'string' && call[0].includes('Close:')
+      );
+      expect(hintCall).toBeDefined();
+      expect(hintCall[0]).toContain('Close: Tab');
     });
 
     test('should render section headers', () => {

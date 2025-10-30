@@ -56,6 +56,18 @@
 - Subscribed forensic prompts and the InteractionPromptOverlay to binding updates so active HUD text and tutorial hints always reflect remapped keys.
 - Verification: `npm test`, `npx playwright test tests/e2e/tutorial-overlay.spec.js`.
 
+### Session #132 Backlog Updates
+
+#### INPUT-320: Control overlay navigation enhancements
+- Added list-mode cycling (category, alphabetical, conflicts-first) and page indicators to `ControlBindingsOverlay`, with keyboard shortcuts for view and pagination.
+- Detail panel now surfaces the active list mode/page, and footer hints document the new controls so players can quickly navigate large action catalogs.
+- Verification: `npm test`.
+
+#### UI-520: Case file & quest log binding cues
+- Case file and quest log overlays now render dynamic binding hints sourced from `controlBindingPrompts`, trimming content to avoid overflow while staying in sync with remapped keys.
+- Extended Jest coverage (`tests/game/ui/CaseFileUI.test.js`, `tests/game/ui/QuestLogUI.test.js`) to guard the binding lookups and ensure HUD copy updates alongside the store.
+- Verification: `npm test`.
+
 ### Session #124 Backlog Updates
 
 #### M1-002 / M1-012: ECS/Narrative Integrations

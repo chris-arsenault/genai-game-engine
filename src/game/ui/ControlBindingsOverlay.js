@@ -69,6 +69,24 @@ const ACTION_METADATA = {
   debugToggle: { label: 'Debug Overlay', description: 'Toggle developer HUD visibility for QA.' },
 };
 
+const LIST_MODES = [
+  {
+    id: 'sections',
+    label: 'By Category',
+    description: 'Group actions into movement, interaction, UI, and system sections.',
+  },
+  {
+    id: 'alphabetical',
+    label: 'Alphabetical',
+    description: 'List every action A→Z to help locate specific bindings quickly.',
+  },
+  {
+    id: 'conflicts',
+    label: 'Conflicts First',
+    description: 'Surface bindings that currently share keys with other actions.',
+  },
+];
+
 function defaultLabelFromAction(action) {
   if (typeof action !== 'string' || action.length === 0) {
     return 'Action';
@@ -136,6 +154,12 @@ export class ControlBindingsOverlay {
     this.sections = [];
     this.actionEntries = [];
     this.selectedIndex = 0;
+    this.listModeIndex = 0;
+    this.listRowsCache = null;
+    this.pageIndex = 0;
+    this.pageCount = 1;
+    this.manualPageOverride = false;
+    this._pendingEnsureSelectionVisible = false;
 
     this.capturing = false;
     this.captureAction = null;
@@ -312,12 +336,93 @@ export class ControlBindingsOverlay {
 
     this.sections = sectionList;
     this.actionEntries = actionEntries;
+    this.invalidateListLayout();
+    this.ensureSelectionValid();
 
     if (!this.actionEntries.length) {
       this.selectedIndex = 0;
     } else if (this.selectedIndex >= this.actionEntries.length) {
       this.selectedIndex = this.actionEntries.length - 1;
     }
+  }
+
+  invalidateListLayout() {
+    this.listRowsCache = null;
+    this._pendingEnsureSelectionVisible = true;
+    if (!this.manualPageOverride) {
+      this.pageIndex = 0;
+    }
+  }
+
+  ensureSelectionValid() {
+    if (!this.actionEntries.length) {
+      this.selectedIndex = 0;
+      return;
+    }
+    if (this.selectedIndex < 0) {
+      this.selectedIndex = 0;
+    } else if (this.selectedIndex >= this.actionEntries.length) {
+      this.selectedIndex = this.actionEntries.length - 1;
+    }
+  }
+
+  getListMode() {
+    return LIST_MODES[this.listModeIndex] ?? LIST_MODES[0];
+  }
+
+  setListModeByIndex(index) {
+    const clamped = ((index % LIST_MODES.length) + LIST_MODES.length) % LIST_MODES.length;
+    if (clamped === this.listModeIndex) {
+      return;
+    }
+    this.listModeIndex = clamped;
+    this.manualPageOverride = false;
+    this.captureStatus = null;
+    this.captureMessage = `${this.getListMode().label} view enabled.`;
+    this.invalidateListLayout();
+  }
+
+  cycleListMode(direction = 1) {
+    this.setListModeByIndex(this.listModeIndex + (direction >= 0 ? 1 : -1));
+  }
+
+  changePage(delta = 1) {
+    if (this.pageCount <= 1) {
+      return;
+    }
+    this.manualPageOverride = true;
+    this._pendingEnsureSelectionVisible = false;
+    const next = this.pageIndex + delta;
+    if (next < 0) {
+      this.pageIndex = 0;
+      return;
+    }
+    if (next >= this.pageCount) {
+      this.pageIndex = this.pageCount - 1;
+      return;
+    }
+    this.pageIndex = next;
+  }
+
+  setPage(index) {
+    if (this.pageCount <= 1) {
+      this.pageIndex = 0;
+      return;
+    }
+    const clamped = Math.max(0, Math.min(this.pageCount - 1, index));
+    if (clamped === this.pageIndex) {
+      return;
+    }
+    this.pageIndex = clamped;
+    this._pendingEnsureSelectionVisible = false;
+  }
+
+  getListModeLabel() {
+    return this.getListMode().label;
+  }
+
+  getListModeDescription() {
+    return this.getListMode().description;
   }
 
   buildActionEntry(action, sectionId) {
@@ -332,6 +437,127 @@ export class ControlBindingsOverlay {
       codes,
       labels,
     };
+  }
+
+  getListRows() {
+    const mode = this.getListMode();
+    const cacheId = mode.id;
+    if (this.listRowsCache && this.listRowsCache.modeId === cacheId) {
+      return this.listRowsCache.rows;
+    }
+
+    let rows;
+    switch (cacheId) {
+      case 'alphabetical':
+        rows = this.buildAlphabeticalRows();
+        break;
+      case 'conflicts':
+        rows = this.buildConflictRows();
+        break;
+      case 'sections':
+      default:
+        rows = this.buildSectionRows();
+    }
+
+    if (!rows.length) {
+      rows = [
+        {
+          type: 'message',
+          text: 'No actions available.',
+        },
+      ];
+    }
+
+    this.listRowsCache = {
+      modeId: cacheId,
+      rows,
+    };
+    return rows;
+  }
+
+  buildSectionRows() {
+    const rows = [];
+    for (const section of this.sections) {
+      rows.push({
+        type: 'section',
+        title: section.title,
+      });
+      for (const entry of section.actions) {
+        const actionIndex = this.actionEntries.findIndex((item) => item.action === entry.action);
+        rows.push({
+          type: 'action',
+          entry,
+          actionIndex,
+        });
+      }
+      rows.push({ type: 'spacer' });
+    }
+    return rows;
+  }
+
+  buildAlphabeticalRows() {
+    const rows = [];
+    const sorted = [...this.actionEntries].sort((a, b) => a.label.localeCompare(b.label));
+    let currentGroup = null;
+    for (const entry of sorted) {
+      const initial = entry.label?.charAt(0)?.toUpperCase() || '#';
+      if (initial !== currentGroup) {
+        currentGroup = initial;
+        rows.push({
+          type: 'group',
+          title: `${initial} actions`,
+        });
+      }
+      const actionIndex = this.actionEntries.findIndex((item) => item.action === entry.action);
+      rows.push({
+        type: 'action',
+        entry,
+        actionIndex,
+      });
+    }
+    rows.push({ type: 'spacer' });
+    return rows;
+  }
+
+  buildConflictRows() {
+    const rows = [];
+    const entriesWithConflicts = this.actionEntries
+      .map((entry) => ({
+        entry,
+        conflicts: this.getConflicts(entry),
+      }))
+      .filter((item) => item.conflicts.length > 0)
+      .sort((a, b) => {
+        if (b.conflicts.length !== a.conflicts.length) {
+          return b.conflicts.length - a.conflicts.length;
+        }
+        return a.entry.label.localeCompare(b.entry.label);
+      });
+
+    if (!entriesWithConflicts.length) {
+      return [
+        {
+          type: 'message',
+          text: 'No conflicting bindings detected. Switch views with [ and ] keys.',
+        },
+      ];
+    }
+
+    rows.push({
+      type: 'group',
+      title: 'Conflicting bindings',
+    });
+
+    for (const { entry } of entriesWithConflicts) {
+      const actionIndex = this.actionEntries.findIndex((item) => item.action === entry.action);
+      rows.push({
+        type: 'action',
+        entry,
+        actionIndex,
+      });
+    }
+    rows.push({ type: 'spacer' });
+    return rows;
   }
 
   isVisible() {
@@ -355,6 +581,8 @@ export class ControlBindingsOverlay {
     this.targetAlpha = 1;
     this.captureMessage = null;
     this.captureStatus = null;
+    this.manualPageOverride = false;
+    this._pendingEnsureSelectionVisible = true;
     emitOverlayVisibility(this.eventBus, 'controlBindings', true, { source });
   }
 
@@ -422,10 +650,20 @@ export class ControlBindingsOverlay {
     ctx.fillRect(x + 28, y + 78, width - 56, 2);
 
     const listX = x + 28;
-    const listY = y + 98;
+    const viewLabelY = y + 92;
+    const listY = viewLabelY + 18;
     const listWidth = Math.floor(width * 0.56);
     const listHeight = height - (listY - y) - 72;
     this.renderActionList(ctx, listX, listY, listWidth, listHeight);
+    const safePageCount = Math.max(1, this.pageCount);
+    const safePageIndex = Math.min(this.pageIndex + 1, safePageCount);
+    ctx.font = this.style.header.subtitleFont;
+    ctx.fillStyle = this.style.header.subtitleColor;
+    ctx.fillText(
+      `View: ${this.getListModeLabel()} · Page ${safePageIndex}/${safePageCount}`,
+      listX,
+      viewLabelY,
+    );
 
     const detailX = x + listWidth + 48;
     const detailY = listY;
@@ -437,7 +675,7 @@ export class ControlBindingsOverlay {
     ctx.fillStyle = this.style.footer.color;
     const footerText = this.capturing
       ? 'Press a new key to bind. Backspace resets to defaults. Esc cancels.'
-      : 'Enter: Remap · Backspace: Reset action · Esc: Close menu';
+      : 'Enter: Remap · Backspace: Reset · [: Prev view · ]: Next view · PgUp/PgDn: Page · Esc: Close menu';
     ctx.fillText(footerText, x + 28, y + height - 32);
 
     ctx.restore();
@@ -445,51 +683,116 @@ export class ControlBindingsOverlay {
 
   renderActionList(ctx, x, y, width, height) {
     const lineHeight = this.style.list.lineHeight;
+    const rows = this.getListRows();
+    const maxHeight = Math.max(height, lineHeight);
+    const pages = [];
+    const actionIndexToPage = new Map();
+
+    let currentPage = [];
+    let currentHeight = 0;
+    for (const row of rows) {
+      const rowHeight = row.type === 'spacer' ? 12 : lineHeight;
+      if (currentPage.length > 0 && currentHeight + rowHeight > maxHeight) {
+        pages.push(currentPage);
+        currentPage = [];
+        currentHeight = 0;
+      }
+      if (row.type === 'action') {
+        actionIndexToPage.set(
+          row.actionIndex,
+          pages.length,
+        );
+      }
+      currentPage.push({ ...row, height: rowHeight });
+      currentHeight += rowHeight;
+    }
+
+    if (!currentPage.length) {
+      currentPage.push({
+        type: 'message',
+        text: 'No actions available.',
+        height: lineHeight,
+      });
+    }
+    pages.push(currentPage);
+
+    this.pageCount = pages.length || 1;
+    if (this.pageCount < 1) {
+      this.pageCount = 1;
+    }
+
+    const targetPage = actionIndexToPage.get(this.selectedIndex);
+    if (this._pendingEnsureSelectionVisible && typeof targetPage === 'number') {
+      this.pageIndex = targetPage;
+      this.manualPageOverride = false;
+      this._pendingEnsureSelectionVisible = false;
+    } else if (!this.manualPageOverride && typeof targetPage === 'number') {
+      this.pageIndex = targetPage;
+    }
+
+    this.pageIndex = Math.max(0, Math.min(this.pageCount - 1, this.pageIndex));
+
+    const pageRows = pages[this.pageIndex] ?? [];
     let cursorY = y;
     const selected = this.actionEntries[this.selectedIndex] ?? null;
 
-    ctx.font = this.style.list.sectionFont;
-    ctx.fillStyle = this.style.list.sectionColor;
-
-    for (const section of this.sections) {
-      const neededHeight = lineHeight * (section.actions.length + 1) + 12;
-      if (cursorY + neededHeight > y + height) {
-        break;
+    for (const row of pageRows) {
+      if (row.type === 'spacer') {
+        cursorY += row.height;
+        continue;
       }
 
-      ctx.fillText(section.title, x, cursorY);
-      cursorY += lineHeight;
-
-      ctx.font = this.style.list.itemFont;
-      for (const entry of section.actions) {
-        const isSelected = selected && selected.action === entry.action;
-        const isCapturing = this.capturing && this.captureAction === entry.action;
-        if (isSelected) {
-          ctx.fillStyle = isCapturing
-            ? this.style.list.captureBackground
-            : this.style.list.selectionBackground;
-          ctx.globalAlpha = this.fadeAlpha;
-          this.roundRect(ctx, x - 10, cursorY - 4, width + 14, lineHeight + 6, 6);
-          ctx.fill();
-        }
-
+      if (row.type === 'section' || row.type === 'group') {
+        ctx.font = this.style.list.sectionFont;
+        ctx.fillStyle = this.style.list.sectionColor;
         ctx.globalAlpha = this.fadeAlpha;
-        ctx.fillStyle = isSelected ? this.style.list.selectionColor : this.style.list.itemColor;
-        ctx.fillText(entry.label, x, cursorY);
-
-        const keys = entry.labels.length ? entry.labels.join(' / ') : 'Unassigned';
-        ctx.fillStyle = entry.labels.length ? this.style.list.itemMuted : this.style.detail.warningColor;
-        ctx.textAlign = 'right';
-        ctx.fillText(keys, x + width - 8, cursorY);
-
-        ctx.textAlign = 'left';
+        ctx.fillText(row.title, x, cursorY);
         cursorY += lineHeight;
+        continue;
       }
 
-      ctx.font = this.style.list.sectionFont;
-      ctx.fillStyle = this.style.list.sectionColor;
-      cursorY += 12;
+      if (row.type === 'message') {
+        ctx.font = this.style.list.itemFont;
+        ctx.fillStyle = this.style.detail.infoColor;
+        ctx.globalAlpha = this.fadeAlpha;
+        ctx.fillText(row.text, x, cursorY);
+        cursorY += lineHeight;
+        continue;
+      }
+
+      if (row.type !== 'action') {
+        continue;
+      }
+
+      const entry = row.entry;
+      const isSelected = selected && selected.action === entry.action;
+      const isCapturing = this.capturing && this.captureAction === entry.action;
+
+      if (isSelected) {
+        ctx.fillStyle = isCapturing
+          ? this.style.list.captureBackground
+          : this.style.list.selectionBackground;
+        ctx.globalAlpha = this.fadeAlpha;
+        this.roundRect(ctx, x - 10, cursorY - 4, width + 14, lineHeight + 6, 6);
+        ctx.fill();
+      }
+
+      ctx.globalAlpha = this.fadeAlpha;
+      ctx.font = this.style.list.itemFont;
+      ctx.fillStyle = isSelected ? this.style.list.selectionColor : this.style.list.itemColor;
+      ctx.textAlign = 'left';
+      ctx.fillText(entry.label, x, cursorY);
+
+      const keys = entry.labels.length ? entry.labels.join(' / ') : 'Unassigned';
+      ctx.fillStyle = entry.labels.length ? this.style.list.itemMuted : this.style.detail.warningColor;
+      ctx.textAlign = 'right';
+      ctx.fillText(keys, x + width - 8, cursorY);
+
+      ctx.textAlign = 'left';
+      cursorY += lineHeight;
     }
+
+    this._pendingEnsureSelectionVisible = false;
   }
 
   renderDetailPanel(ctx, x, y, width, height) {
@@ -538,6 +841,15 @@ export class ControlBindingsOverlay {
       this.wrapText(ctx, this.captureMessage, x, detailY, width, 18);
       detailY += 24;
     }
+
+    const safePageCount = Math.max(1, this.pageCount);
+    const safePageIndex = Math.min(this.pageIndex + 1, safePageCount);
+    const viewInfoBaseY = y + height - 122;
+    ctx.font = this.style.detail.infoFont;
+    ctx.fillStyle = this.style.detail.infoColor;
+    ctx.fillText(`List view: ${this.getListModeLabel()}`, x, viewInfoBaseY);
+    this.wrapText(ctx, this.getListModeDescription(), x, viewInfoBaseY + 18, width, 18);
+    ctx.fillText(`Page ${safePageIndex} of ${safePageCount}`, x, viewInfoBaseY + 54);
 
     ctx.strokeStyle = this.style.detail.dividerColor;
     ctx.lineWidth = 1;
@@ -596,6 +908,8 @@ export class ControlBindingsOverlay {
     this.selectedIndex = nextIndex;
     this.captureMessage = null;
     this.captureStatus = null;
+    this.manualPageOverride = false;
+    this._pendingEnsureSelectionVisible = true;
   }
 
   beginCapture() {
@@ -702,6 +1016,52 @@ export class ControlBindingsOverlay {
         this.captureMessage = `${entry.label} reset to defaults.`;
         this.captureStatus = 'success';
       }
+    }
+
+    if (event.code === 'BracketRight') {
+      event.preventDefault();
+      this.cycleListMode(1);
+      return;
+    }
+
+    if (event.code === 'BracketLeft') {
+      event.preventDefault();
+      this.cycleListMode(-1);
+      return;
+    }
+
+    if (event.code === 'PageDown') {
+      event.preventDefault();
+      this.changePage(1);
+      this.captureMessage = `Viewing page ${Math.min(this.pageIndex + 1, Math.max(1, this.pageCount))}/${Math.max(1, this.pageCount)}.`;
+      this.captureStatus = null;
+      return;
+    }
+
+    if (event.code === 'PageUp') {
+      event.preventDefault();
+      this.changePage(-1);
+      this.captureMessage = `Viewing page ${Math.min(this.pageIndex + 1, Math.max(1, this.pageCount))}/${Math.max(1, this.pageCount)}.`;
+      this.captureStatus = null;
+      return;
+    }
+
+    if (event.code === 'Home') {
+      event.preventDefault();
+      this.manualPageOverride = true;
+      this.setPage(0);
+      this.captureMessage = 'Jumped to first page.';
+      this.captureStatus = null;
+      return;
+    }
+
+    if (event.code === 'End') {
+      event.preventDefault();
+      this.manualPageOverride = true;
+      this.setPage(this.pageCount - 1);
+      this.captureMessage = 'Jumped to last page.';
+      this.captureStatus = null;
+      return;
     }
   }
 

@@ -8,6 +8,7 @@
  */
 import { emitOverlayVisibility } from './helpers/overlayEvents.js';
 import { buildQuestListByStatus, buildQuestViewModel, summarizeQuestProgress } from './helpers/questViewModel.js';
+import { getBindingLabels } from '../utils/controlBindingPrompts.js';
 
 function humanizeIdentifier(value) {
   if (!value) {
@@ -308,6 +309,9 @@ export class QuestLogUI {
     ctx.textBaseline = 'top';
     ctx.fillText('Quest Log', this.x + this.style.padding, this.y + this.style.padding);
 
+    // Draw binding hints
+    this._renderBindingHints(ctx);
+
     // Draw tabs
     this._renderTabs(ctx);
 
@@ -318,6 +322,46 @@ export class QuestLogUI {
     this._renderQuestDetails(ctx);
 
     ctx.restore();
+  }
+
+  _renderBindingHints(ctx) {
+    const hintFontSize = Math.max(12, this.style.fontSize - 1);
+    ctx.font = `${hintFontSize}px ${this.style.fontFamily}`;
+    ctx.fillStyle = this.style.subtleTextColor ?? this.style.dimmedColor;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+
+    const hintBaseline = this.y + this.style.padding;
+    const candidates = [
+      { label: 'Close', action: 'quest', fallback: 'Q' },
+      { label: 'Case File', action: 'caseFile', fallback: 'Tab' },
+      { label: 'Inventory', action: 'inventory', fallback: 'I' },
+    ];
+
+    const parts = candidates.map(({ label, action, fallback }) => {
+      const display = this._getBindingLabel(action, fallback);
+      return `${label}: ${display}`;
+    });
+
+    const maxWidth = this.width - this.style.padding * 2;
+    let text = parts.join('  ·  ');
+    while (parts.length > 1 && ctx.measureText(text).width > maxWidth) {
+      parts.pop();
+      text = parts.join('  ·  ');
+    }
+
+    ctx.fillText(text, this.x + this.width - this.style.padding, hintBaseline);
+  }
+
+  _getBindingLabel(action, fallback) {
+    const labels = getBindingLabels(action, { fallbackLabel: fallback });
+    if (Array.isArray(labels) && labels.length > 0) {
+      return labels.join(' / ');
+    }
+    if (typeof fallback === 'string' && fallback.length) {
+      return fallback;
+    }
+    return '—';
   }
 
   /**
