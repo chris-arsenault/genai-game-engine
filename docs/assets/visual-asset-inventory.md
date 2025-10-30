@@ -77,6 +77,10 @@
 - Updated `Act2CrossroadsArtConfig` colours and alpha weights to match the brighter overlays (conduit now uses warm amber `#ffd27a`, checkpoint columns adopt gold-tinted washes, safehouse columns shift to luminous cyan) and recorded the new `overlayAverageAlpha` metadata for the preview tooling.
 - Reran `scripts/art/previewCrossroadsLighting.js`, producing an updated report where all evaluable segments pass the preset thresholds (9 “ok”, 2 “skipped”), clearing the previous under-luminance warnings prior to RenderOps sign-off.
 
+## Session 115 Updates
+- Generated neon-noir placeholder atlas set for AR-001 through AR-005 via `python scripts/art/generate_ar_placeholders.py`; outputs reside in `assets/generated/ar-placeholders/` and cover deduction board UI, evidence icons, player/NPC sprites, and the four district tilesets.
+- Advanced `assets/images/requests.json` entries to `placeholder-generated`, recording Session 115 provenance so gameplay/UI teams can iterate with internally licensed placeholders while awaiting bespoke art or AI reruns.
+
 ## Next Actions
 1. Circulate the refreshed lighting preview report to RenderOps for approval and capture any follow-up tweaks once the in-engine review is complete.
-2. Run the queued AR-001–AR-005 generation batch, evaluate outputs against gameplay/narrative briefs, and replace provisional licensing metadata with final selections in `assets/images/requests.json`.
+2. Review the Session 115 placeholders with art/narrative direction, then schedule bespoke renders (AI or commissioned) to replace them before content lock; update manifests with final licensing once approved.
