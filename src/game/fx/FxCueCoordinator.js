@@ -38,6 +38,18 @@ export class FxCueCoordinator {
       inventoryOverlayReveal: 620,
       inventoryOverlayDismiss: 360,
       inventoryItemFocus: 420,
+      saveInspectorOverlayReveal: 640,
+      saveInspectorOverlayDismiss: 360,
+      saveInspectorOverlayRefresh: 520,
+      controlBindingsOverlayReveal: 620,
+      controlBindingsOverlayDismiss: 360,
+      controlBindingsSelectionFocus: 420,
+      controlBindingsCaptureStart: 520,
+      controlBindingsCaptureCancel: 380,
+      controlBindingsCaptureApplied: 540,
+      controlBindingsBindingReset: 480,
+      controlBindingsListModeChange: 520,
+      controlBindingsPageChange: 480,
       default: 500,
     };
 
@@ -53,6 +65,14 @@ export class FxCueCoordinator {
       dialogueOverlayReveal: 1,
       inventoryOverlayReveal: 1,
       inventoryOverlayDismiss: 1,
+      saveInspectorOverlayReveal: 1,
+      saveInspectorOverlayDismiss: 1,
+      saveInspectorOverlayRefresh: 1,
+      controlBindingsOverlayReveal: 1,
+      controlBindingsOverlayDismiss: 1,
+      controlBindingsCaptureStart: 1,
+      controlBindingsCaptureApplied: 1,
+      controlBindingsBindingReset: 1,
     };
 
     this.options = {

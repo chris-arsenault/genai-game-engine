@@ -175,6 +175,102 @@ const DEFAULT_PRESETS = Object.freeze({
     lifespanMs: [240, 420],
     spread: [24, 90],
   },
+  'save-inspector-overlay-reveal': {
+    anchor: { x: 0.88, y: 0.78 },
+    color: 'rgba(205, 255, 235, 0.82)',
+    speed: [24, 56],
+    size: [6, 14],
+    lifespanMs: [260, 440],
+    spread: [22, 88],
+  },
+  'save-inspector-overlay-dismiss': {
+    anchor: { x: 0.88, y: 0.78 },
+    color: 'rgba(180, 220, 235, 0.72)',
+    speed: [20, 48],
+    size: [5, 12],
+    lifespanMs: [220, 360],
+    spread: [20, 82],
+  },
+  'save-inspector-overlay-refresh': {
+    anchor: { x: 0.88, y: 0.78 },
+    color: 'rgba(225, 255, 245, 0.86)',
+    speed: [26, 64],
+    size: [6, 14],
+    lifespanMs: [240, 420],
+    spread: [24, 92],
+  },
+  'control-bindings-overlay-reveal': {
+    anchor: { x: 0.5, y: 0.52 },
+    color: 'rgba(185, 240, 255, 0.84)',
+    speed: [28, 68],
+    size: [7, 16],
+    lifespanMs: [280, 460],
+    spread: [26, 100],
+  },
+  'control-bindings-overlay-dismiss': {
+    anchor: { x: 0.5, y: 0.52 },
+    color: 'rgba(160, 210, 235, 0.74)',
+    speed: [24, 58],
+    size: [6, 14],
+    lifespanMs: [220, 380],
+    spread: [24, 84],
+  },
+  'control-bindings-selection': {
+    anchor: { x: 0.5, y: 0.5 },
+    color: 'rgba(205, 255, 225, 0.86)',
+    speed: [26, 64],
+    size: [6, 14],
+    lifespanMs: [240, 420],
+    spread: [24, 86],
+  },
+  'control-bindings-capture-start': {
+    anchor: { x: 0.5, y: 0.5 },
+    color: 'rgba(255, 235, 185, 0.88)',
+    speed: [30, 72],
+    size: [8, 18],
+    lifespanMs: [320, 520],
+    spread: [28, 110],
+  },
+  'control-bindings-capture-applied': {
+    anchor: { x: 0.5, y: 0.5 },
+    color: 'rgba(200, 255, 210, 0.9)',
+    speed: [32, 76],
+    size: [8, 18],
+    lifespanMs: [320, 540],
+    spread: [30, 120],
+  },
+  'control-bindings-capture-cancel': {
+    anchor: { x: 0.5, y: 0.5 },
+    color: 'rgba(255, 210, 170, 0.74)',
+    speed: [24, 56],
+    size: [6, 14],
+    lifespanMs: [240, 400],
+    spread: [22, 90],
+  },
+  'control-bindings-binding-reset': {
+    anchor: { x: 0.5, y: 0.5 },
+    color: 'rgba(200, 240, 255, 0.82)',
+    speed: [26, 60],
+    size: [6, 14],
+    lifespanMs: [260, 440],
+    spread: [24, 92],
+  },
+  'control-bindings-list-mode': {
+    anchor: { x: 0.5, y: 0.52 },
+    color: 'rgba(190, 235, 255, 0.82)',
+    speed: [24, 58],
+    size: [6, 14],
+    lifespanMs: [240, 420],
+    spread: [24, 88],
+  },
+  'control-bindings-page-change': {
+    anchor: { x: 0.5, y: 0.52 },
+    color: 'rgba(175, 225, 255, 0.78)',
+    speed: [24, 58],
+    size: [6, 14],
+    lifespanMs: [240, 420],
+    spread: [24, 84],
+  },
   'forensic-scan-pulse': {
     anchor: { x: 0.5, y: 0.36 },
     color: 'rgba(120, 200, 255, 0.86)',
@@ -227,9 +323,9 @@ export class ParticleEmitterRuntime {
 
     this.options = {
       eventName: 'fx:particle_emit',
-      maxEmitters: 18,
-      maxParticlesPerEmitter: 36,
-      globalMaxParticles: 420,
+      maxEmitters: 14,
+      maxParticlesPerEmitter: 32,
+      globalMaxParticles: 320,
       presets: DEFAULT_PRESETS,
       getNow: () => (typeof performance !== 'undefined' && performance.now)
         ? performance.now()
@@ -242,6 +338,8 @@ export class ParticleEmitterRuntime {
     this._particlePool = [];
     this._activeParticleCount = 0;
     this._unsubscribe = null;
+    this._throttledSpawns = 0;
+    this._suppressedEmitters = 0;
   }
 
   attach() {
@@ -336,6 +434,10 @@ export class ParticleEmitterRuntime {
       pooledEmitters: this._emitterPool.length,
       activeParticles: this._activeParticleCount,
       pooledParticles: this._particlePool.length,
+      throttledSpawns: this._throttledSpawns,
+      suppressedEmitters: this._suppressedEmitters,
+      maxParticlesPerEmitter: this.options.maxParticlesPerEmitter,
+      globalMaxParticles: this.options.globalMaxParticles,
     };
   }
 
@@ -350,8 +452,96 @@ export class ParticleEmitterRuntime {
       return;
     }
 
+    const allocation = this._calculateSpawnAllocation(descriptor);
+    if (!allocation || allocation.toSpawn <= 0) {
+      this._suppressedEmitters += 1;
+      this._emitterPool.push(emitter);
+      return;
+    }
+
+    if (allocation.throttled) {
+      emitter.durationMs = Math.max(120, Math.round(emitter.durationMs * 0.85));
+      emitter.intensity = Math.max(0.35, emitter.intensity * 0.88);
+      this._throttledSpawns += allocation.throttledAmount;
+    }
+
     this.emitters.push(emitter);
-    this._spawnParticles(emitter, descriptor, preset);
+    this._spawnParticles(emitter, descriptor, preset, allocation);
+  }
+
+  _calculateSpawnAllocation(descriptor) {
+    const spawnBudgetRaw = Number(descriptor?.spawnCount ?? 1);
+    const spawnBudget = Math.max(1, Math.round(spawnBudgetRaw));
+    const maxPerEmitter = Math.max(1, Number(this.options.maxParticlesPerEmitter));
+    const allowed = Math.min(spawnBudget, maxPerEmitter);
+
+    const rawGlobalLimit = Number(this.options.globalMaxParticles);
+    const globalLimit = Number.isFinite(rawGlobalLimit) && rawGlobalLimit > 0
+      ? Math.max(rawGlobalLimit, allowed)
+      : Infinity;
+
+    const availableGlobal = globalLimit === Infinity
+      ? allowed
+      : Math.max(0, globalLimit - this._activeParticleCount);
+
+    let toSpawn = Math.min(allowed, availableGlobal);
+    let throttledAmount = 0;
+    let throttled = false;
+    let throttleReason = null;
+
+    if (toSpawn <= 0) {
+      return {
+        spawnBudget,
+        allowed,
+        toSpawn: 0,
+        throttled: true,
+        throttledAmount: spawnBudget,
+        throttleReason: availableGlobal <= 0 ? 'global_capacity' : 'per_emitter',
+        globalLimit,
+        availableGlobal,
+      };
+    }
+
+    if (allowed < spawnBudget) {
+      throttled = true;
+      throttledAmount += spawnBudget - allowed;
+      throttleReason = 'per_emitter';
+    }
+
+    if (toSpawn < allowed) {
+      throttled = true;
+      throttledAmount += allowed - toSpawn;
+      throttleReason = 'global_capacity';
+    }
+
+    if (globalLimit !== Infinity && globalLimit > 0) {
+      const projected = this._activeParticleCount + toSpawn;
+      const loadFactor = projected / globalLimit;
+      if (loadFactor >= 0.92) {
+        const reduced = Math.max(1, Math.floor(toSpawn * 0.5));
+        throttledAmount += toSpawn - reduced;
+        toSpawn = reduced;
+        throttled = true;
+        throttleReason = 'load_factor';
+      } else if (loadFactor >= 0.8) {
+        const reduced = Math.max(1, Math.floor(toSpawn * 0.7));
+        throttledAmount += toSpawn - reduced;
+        toSpawn = reduced;
+        throttled = true;
+        throttleReason = 'load_factor';
+      }
+    }
+
+    return {
+      spawnBudget,
+      allowed,
+      toSpawn,
+      throttled,
+      throttledAmount,
+      throttleReason,
+      globalLimit,
+      availableGlobal,
+    };
   }
 
   _resolvePreset(descriptor) {
@@ -391,19 +581,8 @@ export class ParticleEmitterRuntime {
     };
   }
 
-  _spawnParticles(emitter, descriptor, preset) {
-    const spawnBudget = Math.max(1, Math.round(Number(descriptor?.spawnCount ?? 1)));
-    const maxPerEmitter = Math.max(1, Number(this.options.maxParticlesPerEmitter));
-    const allowed = Math.min(spawnBudget, maxPerEmitter);
-
-    const rawGlobalLimit = Number(this.options.globalMaxParticles);
-    const globalLimit = Number.isFinite(rawGlobalLimit) && rawGlobalLimit > 0
-      ? Math.max(rawGlobalLimit, allowed)
-      : Infinity;
-    const availableGlobal = globalLimit === Infinity
-      ? allowed
-      : Math.max(0, globalLimit - this._activeParticleCount);
-    const toSpawn = Math.min(allowed, availableGlobal);
+  _spawnParticles(emitter, descriptor, preset, allocation) {
+    const toSpawn = Math.max(0, Math.round(allocation?.toSpawn ?? 0));
     if (toSpawn <= 0) {
       return;
     }

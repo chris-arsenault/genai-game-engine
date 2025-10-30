@@ -291,4 +291,63 @@ describe('ControlBindingsOverlay', () => {
 
     overlay.cleanup();
   });
+
+  it('emits FX cues for overlay reveal, selection, capture, and dismissal', () => {
+    const canvas = createMockCanvas();
+    const emitted = [];
+    const eventBus = {
+      emit: jest.fn((eventType, payload) => {
+        emitted.push({ eventType, payload });
+      }),
+      on: jest.fn(),
+      off: jest.fn(),
+    };
+
+    const overlay = new ControlBindingsOverlay(canvas, eventBus);
+    overlay.init();
+
+    overlay.show('fx-test');
+
+    const revealEvents = emitted.filter(
+      (evt) => evt.eventType === 'fx:overlay_cue' && evt.payload?.effectId === 'controlBindingsOverlayReveal'
+    );
+    expect(revealEvents.length).toBeGreaterThan(0);
+
+    const initialSelection = emitted.find(
+      (evt) => evt.eventType === 'fx:overlay_cue' && evt.payload?.effectId === 'controlBindingsSelectionFocus'
+    );
+    expect(initialSelection).toBeDefined();
+    expect(initialSelection.payload.context.reason).toBe('show');
+
+    emitted.length = 0;
+    overlay.moveSelection(1);
+    const moveSelection = emitted.find(
+      (evt) => evt.eventType === 'fx:overlay_cue' && evt.payload?.effectId === 'controlBindingsSelectionFocus'
+    );
+    expect(moveSelection).toBeDefined();
+    expect(moveSelection.payload.context.reason).toBe('move');
+
+    emitted.length = 0;
+    overlay.beginCapture();
+    const captureStart = emitted.find(
+      (evt) => evt.eventType === 'fx:overlay_cue' && evt.payload?.effectId === 'controlBindingsCaptureStart'
+    );
+    expect(captureStart).toBeDefined();
+
+    emitted.length = 0;
+    overlay.cancelCapture('input:cancel');
+    const captureCancel = emitted.find(
+      (evt) => evt.eventType === 'fx:overlay_cue' && evt.payload?.effectId === 'controlBindingsCaptureCancel'
+    );
+    expect(captureCancel).toBeDefined();
+
+    emitted.length = 0;
+    overlay.hide('fx-hide');
+    const dismissEvent = emitted.find(
+      (evt) => evt.eventType === 'fx:overlay_cue' && evt.payload?.effectId === 'controlBindingsOverlayDismiss'
+    );
+    expect(dismissEvent).toBeDefined();
+
+    overlay.cleanup();
+  });
 });

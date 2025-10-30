@@ -2806,6 +2806,19 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
 - Updated `FxCueCoordinator`, `FxOverlay`, `CompositeCueParticleBridge`, and `ParticleEmitterRuntime` to recognise the new cue identifiers, including duration tables, per-effect limits, presets, and render treatments.
 - Added Jest coverage across dialogue, inventory, and bridge suites to lock in the new cue emissions and particle preset mappings.
 
+### Session #145 Backlog Updates
+
+#### FX-240: Particle Emitter Runtime Integration
+- Tuned emitter limits and spawn allocation to throttle high-intensity bursts, preventing global particle saturation without dropping frames (`src/game/fx/ParticleEmitterRuntime.js`).
+- Added targeted stress coverage to verify throttling behaviour and budget enforcement in `tests/game/fx/ParticleEmitterRuntime.test.js`.
+
+#### DEBUG-275: FX Metrics HUD Panel
+- Refined the FX metrics grid for responsive layouts and added Playwright coverage to validate live sample rendering, warning banners, and focus safety (`index.html`, `tests/e2e/debug-overlay-fx-metrics.spec.js`).
+
+#### FX-239: Narrative Overlay Secondary Cues
+- Extended cue emission to `SaveInspectorOverlay` and `ControlBindingsOverlay`, wiring new identifiers through the coordinator/bridge stack with supporting Jest coverage (`src/game/ui/SaveInspectorOverlay.js`, `src/game/ui/ControlBindingsOverlay.js`).
+
+
 ---
 
 ## Closing Notes

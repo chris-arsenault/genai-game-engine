@@ -19,7 +19,7 @@ export class SaveInspectorOverlay {
     this.eventBus = eventBus;
     this.saveManager = config.saveManager ?? null;
     this.store = config.store ?? null;
-   this.visible = false;
+    this.visible = false;
 
     this.width = config.width ?? 340;
     this.height = config.height ?? 280;
@@ -30,6 +30,7 @@ export class SaveInspectorOverlay {
     this._timeSinceRefresh = 0;
     this._pendingRefresh = true;
     this._fallbackErrorLogged = false;
+    this._lastFxSummaryStamp = null;
 
     this.summary = this._buildEmptySummary();
 
@@ -116,6 +117,13 @@ export class SaveInspectorOverlay {
     this.visible = true;
     this._pendingRefresh = true;
     emitOverlayVisibility(this.eventBus, 'saveInspector', true, { source });
+    const cascadeTargets = this.summary?.cascade?.topTargets?.length ?? 0;
+    const tutorialSnapshots = this.summary?.tutorial?.recent?.length ?? 0;
+    this._emitFxCue('saveInspectorOverlayReveal', {
+      source,
+      cascadeTargets,
+      tutorialSnapshots,
+    });
   }
 
   /**
@@ -128,6 +136,7 @@ export class SaveInspectorOverlay {
     }
     this.visible = false;
     emitOverlayVisibility(this.eventBus, 'saveInspector', false, { source });
+    this._emitFxCue('saveInspectorOverlayDismiss', { source });
   }
 
   /**
@@ -158,6 +167,15 @@ export class SaveInspectorOverlay {
     this.summary = this._normalizeSummary(rawSummary);
     this._timeSinceRefresh = 0;
     this._pendingRefresh = false;
+
+    const stamp = this.summary?.generatedAt ?? Date.now();
+    if (this.visible && stamp !== this._lastFxSummaryStamp) {
+      this._emitFxCue('saveInspectorOverlayRefresh', {
+        generatedAt: stamp,
+        source: rawSummary?.source ?? 'unknown',
+      });
+    }
+    this._lastFxSummaryStamp = stamp;
   }
 
   /**
@@ -1104,11 +1122,23 @@ export class SaveInspectorOverlay {
     ctx.closePath();
   }
 
+  _emitFxCue(effectId, context = {}) {
+    if (!this.eventBus || typeof this.eventBus.emit !== 'function') {
+      return;
+    }
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId,
+      source: 'SaveInspectorOverlay',
+      context,
+    });
+  }
+
   /**
    * Cleanup overlay resources.
    */
   cleanup() {
     this.visible = false;
     this.summary = this._buildEmptySummary();
+    this._lastFxSummaryStamp = null;
   }
 }

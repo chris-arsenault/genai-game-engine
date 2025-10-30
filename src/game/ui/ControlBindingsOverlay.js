@@ -167,6 +167,7 @@ export class ControlBindingsOverlay {
     this.captureAction = null;
     this.captureMessage = null;
     this.captureStatus = null;
+    this._lastFxSelectionIndex = -1;
 
     const styleOverrides = options.styleOverrides ?? {};
     const { palette, typography, metrics } = overlayTheme;
@@ -417,6 +418,15 @@ export class ControlBindingsOverlay {
     const nextMode = this.getListMode();
     this.captureMessage = `${nextMode?.label ?? 'List'} view enabled.`;
     this.invalidateListLayout();
+    this._emitFxCue('controlBindingsListModeChange', {
+      requestedIndex: index,
+      modeId: nextMode?.id ?? null,
+      modeLabel: nextMode?.label ?? null,
+      previousModeId: previousMode?.id ?? null,
+      previousModeLabel: previousMode?.label ?? null,
+    });
+    this._lastFxSelectionIndex = -1;
+    this._emitSelectionCue('list-mode');
     this.emitNavigationTelemetry('list_mode_change', {
       requestedIndex: index,
       changed: true,
@@ -456,12 +466,23 @@ export class ControlBindingsOverlay {
       this.pageIndex = next;
     }
 
+    const changed = this.pageIndex !== previousIndex;
+    if (changed) {
+      this._emitFxCue('controlBindingsPageChange', {
+        direction: delta,
+        pageIndex: this.pageIndex,
+        pageCount: this.pageCount,
+      });
+      this._lastFxSelectionIndex = -1;
+      this._emitSelectionCue('page-change');
+    }
+
     this.emitNavigationTelemetry('page_navigate', {
       direction: delta,
       previousIndex,
       nextIndex: this.pageIndex,
       pageLimit: this.pageCount,
-      changed: this.pageIndex !== previousIndex,
+      changed,
     });
   }
 
@@ -492,6 +513,14 @@ export class ControlBindingsOverlay {
     }
     this.pageIndex = clamped;
     this._pendingEnsureSelectionVisible = false;
+    this._emitFxCue('controlBindingsPageChange', {
+      direction: clamped > previousIndex ? 1 : -1,
+      pageIndex: this.pageIndex,
+      pageCount: this.pageCount,
+      reason: 'direct-set',
+    });
+    this._lastFxSelectionIndex = -1;
+    this._emitSelectionCue('page-set');
     this.emitNavigationTelemetry('page_set', {
       requestedIndex: index,
       previousIndex,
@@ -668,6 +697,13 @@ export class ControlBindingsOverlay {
     this.manualPageOverride = false;
     this._pendingEnsureSelectionVisible = true;
     emitOverlayVisibility(this.eventBus, 'controlBindings', true, { source });
+    this._lastFxSelectionIndex = -1;
+    this._emitFxCue('controlBindingsOverlayReveal', {
+      source,
+      listMode: this.getListMode()?.id ?? 'sections',
+      totalActions: this.actionEntries.length,
+    });
+    this._emitSelectionCue('show');
   }
 
   hide(source = 'hide') {
@@ -678,6 +714,8 @@ export class ControlBindingsOverlay {
     this.targetAlpha = 0;
     this.cancelCapture(source);
     emitOverlayVisibility(this.eventBus, 'controlBindings', false, { source });
+    this._emitFxCue('controlBindingsOverlayDismiss', { source });
+    this._lastFxSelectionIndex = -1;
   }
 
   update(deltaTime) {
@@ -1016,6 +1054,7 @@ export class ControlBindingsOverlay {
       nextAction: nextEntry?.action ?? null,
       nextActionLabel: nextEntry?.label ?? null,
     });
+    this._emitSelectionCue('move');
   }
 
   beginCapture() {
@@ -1030,6 +1069,11 @@ export class ControlBindingsOverlay {
     this.emitNavigationTelemetry('capture_started', {
       action: entry.action,
       actionLabel: entry.label,
+    });
+    this._emitFxCue('controlBindingsCaptureStart', {
+      action: entry.action,
+      label: entry.label,
+      sectionId: entry.sectionId ?? null,
     });
   }
 
@@ -1051,6 +1095,11 @@ export class ControlBindingsOverlay {
       action,
       source,
     });
+    this._emitFxCue('controlBindingsCaptureCancel', {
+      action,
+      source,
+      status: this.captureStatus ?? null,
+    });
   }
 
   applyBinding(action, codes, metadata = {}) {
@@ -1063,6 +1112,11 @@ export class ControlBindingsOverlay {
       codes: Array.isArray(nextCodes) ? [...nextCodes] : [],
       metadata: metadata ?? null,
     });
+    this._emitFxCue('controlBindingsCaptureApplied', {
+      action,
+      codes: Array.isArray(nextCodes) ? [...nextCodes] : [],
+    });
+    this._emitSelectionCue('capture-success');
   }
 
   resetBinding(action) {
@@ -1070,6 +1124,10 @@ export class ControlBindingsOverlay {
       metadata: { source: 'control-bindings-overlay', command: 'reset-action' },
     });
     this.emitNavigationTelemetry('binding_reset', {
+      action,
+      codes: Array.isArray(nextCodes) ? [...nextCodes] : [],
+    });
+    this._emitFxCue('controlBindingsBindingReset', {
       action,
       codes: Array.isArray(nextCodes) ? [...nextCodes] : [],
     });
@@ -1187,6 +1245,39 @@ export class ControlBindingsOverlay {
       this.captureStatus = null;
       return;
     }
+  }
+
+  _emitSelectionCue(reason) {
+    if (!this.visible) {
+      return;
+    }
+    const entry = this.actionEntries[this.selectedIndex] ?? null;
+    if (!entry) {
+      return;
+    }
+    if (this._lastFxSelectionIndex === this.selectedIndex && reason !== 'capture-success') {
+      return;
+    }
+    this._lastFxSelectionIndex = this.selectedIndex;
+    this._emitFxCue('controlBindingsSelectionFocus', {
+      reason,
+      action: entry.action,
+      label: entry.label,
+      sectionId: entry.sectionId ?? null,
+      index: this.selectedIndex,
+      codes: Array.isArray(entry.codes) ? [...entry.codes] : [],
+    });
+  }
+
+  _emitFxCue(effectId, context = {}) {
+    if (!this.eventBus || typeof this.eventBus.emit !== 'function') {
+      return;
+    }
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId,
+      source: 'ControlBindingsOverlay',
+      context,
+    });
   }
 
   roundRect(ctx, x, y, width, height, radius) {

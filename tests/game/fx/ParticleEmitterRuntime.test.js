@@ -168,4 +168,47 @@ describe('ParticleEmitterRuntime', () => {
 
     expect(() => runtime.render()).not.toThrow();
   });
+
+  it('throttles spawn when global particle capacity is saturated', () => {
+    const canvas = createStubCanvas();
+    const eventBus = createEventBus();
+    const runtime = new ParticleEmitterRuntime(canvas, eventBus, {
+      maxEmitters: 3,
+      maxParticlesPerEmitter: 16,
+      globalMaxParticles: 32,
+      getNow: () => 0,
+    });
+
+    runtime.attach();
+
+    eventBus.emit('fx:particle_emit', {
+      preset: 'quest-milestone-wave',
+      spawnCount: 18,
+      durationMs: 480,
+      intensity: 1,
+    });
+    eventBus.emit('fx:particle_emit', {
+      preset: 'quest-milestone-wave',
+      spawnCount: 18,
+      durationMs: 480,
+      intensity: 1,
+    });
+
+    const midStats = runtime.getStats();
+    expect(midStats.activeEmitters).toBe(2);
+    expect(midStats.activeParticles).toBeLessThanOrEqual(32);
+    expect(midStats.throttledSpawns).toBeGreaterThanOrEqual(0);
+
+    eventBus.emit('fx:particle_emit', {
+      preset: 'quest-milestone-wave',
+      spawnCount: 18,
+      durationMs: 480,
+      intensity: 1,
+    });
+
+    const finalStats = runtime.getStats();
+    expect(finalStats.activeEmitters).toBeLessThanOrEqual(3);
+    expect(finalStats.activeParticles).toBeLessThanOrEqual(32);
+    expect(finalStats.throttledSpawns).toBeGreaterThan(0);
+  });
 });

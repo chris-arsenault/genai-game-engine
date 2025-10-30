@@ -147,4 +147,31 @@ describe('CompositeCueParticleBridge', () => {
       expect.objectContaining({ preset: 'inventory-item-focus' })
     );
   });
+
+  it('maps control bindings cues to dedicated presets', () => {
+    const bridge = createBridge();
+    bridge.attach();
+    const handler = listeners['fx:composite_cue'];
+
+    handler({
+      effectId: 'controlBindingsSelectionFocus',
+      coordinator: { durationMs: 420 },
+      source: 'test-suite',
+    });
+    expect(eventBus.emit).toHaveBeenLastCalledWith(
+      'fx:particle_emit',
+      expect.objectContaining({ preset: 'control-bindings-selection' })
+    );
+
+    eventBus.emit.mockClear();
+    handler({
+      effectId: 'saveInspectorOverlayRefresh',
+      coordinator: { durationMs: 520 },
+      source: 'test-suite',
+    });
+    expect(eventBus.emit).toHaveBeenLastCalledWith(
+      'fx:particle_emit',
+      expect.objectContaining({ preset: 'save-inspector-overlay-refresh' })
+    );
+  });
 });
