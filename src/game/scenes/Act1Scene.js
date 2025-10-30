@@ -315,7 +315,6 @@ function createCrimeSceneArea(entityManager, componentRegistry, eventBus) {
     isStatic: true,
     tags: ['area_trigger']
   });
-  collider.type = 'Collider';
   componentRegistry.addComponent(entityId, collider);
 
   // Add visual indicator (semi-transparent area)
@@ -367,7 +366,6 @@ function createBoundary(entityManager, componentRegistry, x, y, width, height) {
     isStatic: true,
     tags: ['boundary', 'solid']
   });
-  collider.type = 'Collider';
   componentRegistry.addComponent(entityId, collider);
 
   // Add Sprite component (visible wall)

@@ -262,7 +262,6 @@ export class LevelSpawnSystem extends System {
           isStatic: true,
           tags: [objectData.type],
         });
-        collider.type = 'Collider';
         this.componentRegistry.addComponent(entityId, collider);
       }
 

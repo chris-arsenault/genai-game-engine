@@ -100,7 +100,6 @@ export function createNPCEntity(entityManager, componentRegistry, npcData) {
     isStatic: true,
     tags: ['npc', 'solid']
   });
-  collider.type = 'Collider';
   componentRegistry.addComponent(entityId, collider);
 
   // Add InteractionZone for dialogue (if applicable)
