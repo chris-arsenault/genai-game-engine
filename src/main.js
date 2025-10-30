@@ -4,6 +4,12 @@
 import { Engine } from './engine/Engine.js';
 import { Game } from './game/Game.js';
 import { buildDialogueViewModel } from './game/ui/helpers/dialogueViewModel.js';
+import {
+  buildQuestDebugSummary,
+  buildStoryDebugSummary,
+} from './game/ui/helpers/worldStateDebugView.js';
+import { factionSlice } from './game/state/slices/factionSlice.js';
+import { tutorialSlice } from './game/state/slices/tutorialSlice.js';
 
 // Wait for DOM to load
 window.addEventListener('DOMContentLoaded', async () => {
@@ -52,6 +58,19 @@ window.addEventListener('DOMContentLoaded', async () => {
   const debugDialogueMeta = document.getElementById('debug-dialogue-meta');
   const debugDialogueControls = document.getElementById('debug-dialogue-controls');
   const debugUiOverlayList = document.getElementById('debug-ui-overlays-list');
+  const debugWorldMeta = document.getElementById('debug-world-meta');
+  const debugQuestList = document.getElementById('debug-quests-list');
+  const debugStoryList = document.getElementById('debug-story-list');
+  const debugFactionCascadeList = document.getElementById('debug-faction-cascades');
+  const debugFactionCascadeMeta = document.getElementById('debug-faction-cascade-meta');
+  const debugTutorialLatest = document.getElementById('debug-tutorial-latest');
+  const debugTutorialSnapshots = document.getElementById('debug-tutorial-snapshots');
+  const debugAudioState = document.getElementById('debug-audio-state');
+  const debugAudioHistory = document.getElementById('debug-audio-history');
+  const debugAudioBridge = document.getElementById('debug-audio-bridge');
+  const debugSfxList = document.getElementById('debug-sfx-list');
+  const debugSfxFilterInput = document.getElementById('debug-sfx-filter');
+  const debugSfxTagFilters = document.getElementById('debug-sfx-tag-filters');
 
   const formatClock = (timestamp) => {
     if (!timestamp || Number.isNaN(timestamp)) {
@@ -82,6 +101,20 @@ window.addEventListener('DOMContentLoaded', async () => {
       return `${Math.round(diff / 3600000)}h ago`;
     }
     return `${Math.round(diff / 86400000)}d ago`;
+  };
+
+  const formatDurationShort = (milliseconds) => {
+    if (!Number.isFinite(milliseconds) || milliseconds < 0) {
+      return 'n/a';
+    }
+    if (milliseconds >= 1000) {
+      const seconds = milliseconds / 1000;
+      if (seconds >= 10) {
+        return `${Math.round(seconds)}s`;
+      }
+      return `${seconds.toFixed(1)}s`;
+    }
+    return `${Math.round(milliseconds)}ms`;
   };
 
   const renderTranscriptEntries = (container, entries, { now, paused, shouldScroll }) => {
@@ -139,10 +172,123 @@ window.addEventListener('DOMContentLoaded', async () => {
   let lastTranscriptSignature = null;
   let lastOverlaySignature = null;
   let debugTranscriptNeedsScroll = true;
+  let lastWorldStateSignature = null;
+  let lastCascadeSignature = null;
+  let lastTutorialSnapshotSignature = null;
+  let lastSfxSignature = null;
+  let lastSfxTagSignature = null;
+  let sfxFilterText = '';
+  let sfxTagFilter = null;
+  let lastAudioHistorySignature = null;
+  let lastAudioBridgeSignature = null;
+  let worldStateStoreErrorLogged = false;
+  let factionCascadeSelectorErrorLogged = false;
+  let tutorialSelectorErrorLogged = false;
+  let audioBridgeErrorLogged = false;
 
   if (debugDialogueControls) {
     debugDialogueControls.textContent = 'Controls: F3 toggle overlay · F4 pause/resume transcript';
   }
+
+  function formatDebugValue(value) {
+    if (typeof value === 'boolean') {
+      return value ? 'true' : 'false';
+    }
+    if (value == null) {
+      return 'null';
+    }
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value.toString(10);
+    }
+    if (typeof value === 'string') {
+      return value;
+    }
+    return JSON.stringify(value);
+  }
+
+  function renderWorldList(container, entries, emptyLabel) {
+    if (!container) {
+      return;
+    }
+    container.innerHTML = '';
+
+    if (!entries || entries.length === 0) {
+      const row = document.createElement('div');
+      row.className = 'debug-world-row empty';
+      row.textContent = emptyLabel;
+      container.appendChild(row);
+      return;
+    }
+
+    for (const entry of entries) {
+      const row = document.createElement('div');
+      row.className = 'debug-world-row';
+      if (entry.tone) {
+        row.dataset.tone = entry.tone;
+      }
+      row.textContent = entry.text;
+      container.appendChild(row);
+    }
+  }
+
+  function formatFactionName(factionId) {
+    if (!factionId) {
+      return 'unknown';
+    }
+    try {
+      if (window.game && typeof window.game.getFactionName === 'function') {
+        const name = window.game.getFactionName(factionId);
+        if (typeof name === 'string' && name.trim().length) {
+          return name;
+        }
+      }
+    } catch (error) {
+      console.warn('[DebugOverlay] Failed to resolve faction name', factionId, error);
+    }
+    return factionId;
+  }
+
+  function updateSfxTagFilters(tagsArray, { force = false } = {}) {
+    if (!debugSfxTagFilters) {
+      return;
+    }
+    const normalized = Array.isArray(tagsArray) ? tagsArray.slice() : [];
+    const signature = `${normalized.join('|')}|${sfxTagFilter ?? 'all'}`;
+    if (!force && signature === lastSfxTagSignature) {
+      return;
+    }
+    lastSfxTagSignature = signature;
+    debugSfxTagFilters.innerHTML = '';
+
+    const options = [{ label: 'All', value: null }, ...normalized.map((tag) => ({ label: tag, value: tag }))];
+    for (const option of options) {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'debug-sfx-tag-chip';
+      if ((option.value ?? null) === (sfxTagFilter ?? null)) {
+        chip.classList.add('active');
+      }
+      chip.textContent = option.label ?? 'All';
+      chip.addEventListener('click', () => {
+        const current = sfxTagFilter ?? null;
+        const nextValue = (option.value ?? null) === current ? null : option.value ?? null;
+        sfxTagFilter = nextValue;
+        lastSfxSignature = null;
+        updateSfxTagFilters(normalized, { force: true });
+      });
+      debugSfxTagFilters.appendChild(chip);
+    }
+  }
+
+  if (debugSfxFilterInput) {
+    debugSfxFilterInput.addEventListener('input', (event) => {
+      const value = typeof event?.target?.value === 'string' ? event.target.value : '';
+      sfxFilterText = value.toLowerCase().trim();
+      lastSfxSignature = null;
+    });
+  }
+
+  updateSfxTagFilters([], { force: true });
 
   window.addEventListener('keydown', (e) => {
     if (e.key === 'F3') {
@@ -177,6 +323,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (!debugEnabled || !debugOverlay) {
       return;
     }
+
+    const now = Date.now();
 
     const fpsElement = document.getElementById('debug-fps');
     const entitiesElement = document.getElementById('debug-entities');
@@ -239,8 +387,495 @@ window.addEventListener('DOMContentLoaded', async () => {
       }
     }
 
+    if (window.worldStateStore && (debugQuestList || debugStoryList || debugWorldMeta)) {
+      let worldState = null;
+      try {
+        worldState = window.worldStateStore.getState();
+      } catch (error) {
+        if (!worldStateStoreErrorLogged) {
+          console.warn('[DebugOverlay] Failed to read world state snapshot', error);
+          worldStateStoreErrorLogged = true;
+        }
+      }
+
+      if (worldState) {
+        const questSummary = buildQuestDebugSummary(worldState.quest);
+        const storySummary = buildStoryDebugSummary(worldState.story);
+
+        const questEntriesUi = questSummary.entries.map((entry) => {
+          const parts = [`${entry.title ?? entry.questId}`, `· ${entry.status}`];
+          if (entry.summary) {
+            parts.push(`— ${entry.summary}`);
+          }
+          if (entry.updatedAt) {
+            parts.push(`(${formatRelativeTime(entry.updatedAt, now)})`);
+          }
+          return {
+            text: parts.join(' '),
+            tone: entry.tone,
+          };
+        });
+
+        const storyEntriesUi = storySummary.entries.map((entry) => {
+          const parts = [`${entry.flagId}: ${formatDebugValue(entry.value)}`];
+          if (entry.updatedAt) {
+            parts.push(`(${formatRelativeTime(entry.updatedAt, now)})`);
+          }
+          return {
+            text: parts.join(' '),
+            tone: entry.tone,
+          };
+        });
+
+        const signature = JSON.stringify({
+          quest: questEntriesUi.map((entry) => `${entry.tone}:${entry.text}`),
+          story: storyEntriesUi.map((entry) => `${entry.tone}:${entry.text}`),
+          meta: {
+            active: questSummary.stats.active,
+            completed: questSummary.stats.completed,
+            failed: questSummary.stats.failed,
+            flags: storySummary.stats.total,
+          },
+        });
+
+        if (signature !== lastWorldStateSignature) {
+          if (debugQuestList) {
+            renderWorldList(debugQuestList, questEntriesUi, 'No quest data');
+          }
+          if (debugStoryList) {
+            renderWorldList(debugStoryList, storyEntriesUi, 'No story flags');
+          }
+          if (debugWorldMeta) {
+            debugWorldMeta.textContent = [
+              `Quests: ${questSummary.stats.active} active`,
+              `${questSummary.stats.completed} completed`,
+              `${questSummary.stats.failed} failed`,
+              `Flags: ${storySummary.stats.total}`,
+            ].join(' · ');
+          }
+          lastWorldStateSignature = signature;
+        }
+      }
+    }
+
+    if (debugFactionCascadeList && window.worldStateStore) {
+      let cascadeSummary = null;
+      try {
+        cascadeSummary = window.worldStateStore.select(factionSlice.selectors.selectFactionCascadeSummary);
+      } catch (error) {
+        if (!factionCascadeSelectorErrorLogged) {
+          console.warn('[DebugOverlay] Failed to read faction cascade summary', error);
+          factionCascadeSelectorErrorLogged = true;
+        }
+      }
+
+      const cascadeTargets = Array.isArray(cascadeSummary?.cascadeTargets)
+        ? cascadeSummary.cascadeTargets.map((target) => ({
+            factionId: target.factionId,
+            cascadeCount: target.cascadeCount ?? 0,
+            lastCascade: target.lastCascade ? { ...target.lastCascade } : null,
+            sources: Array.isArray(target.sources) ? [...target.sources] : [],
+          }))
+        : [];
+
+      cascadeTargets.sort((a, b) => {
+        const timeA = Number.isFinite(a.lastCascade?.occurredAt) ? a.lastCascade.occurredAt : 0;
+        const timeB = Number.isFinite(b.lastCascade?.occurredAt) ? b.lastCascade.occurredAt : 0;
+        if (timeA === timeB) {
+          return (b.cascadeCount ?? 0) - (a.cascadeCount ?? 0);
+        }
+        return timeB - timeA;
+      });
+
+      const cascadeSignature = JSON.stringify({
+        last: cascadeSummary?.lastCascadeEvent?.occurredAt ?? null,
+        targets: cascadeTargets.map((target) => ({
+          id: target.factionId,
+          count: target.cascadeCount ?? 0,
+          last: target.lastCascade?.occurredAt ?? null,
+          sources: target.sources.slice().sort(),
+        })),
+      });
+
+      if (cascadeSignature !== lastCascadeSignature) {
+        const topTargets = cascadeTargets.slice(0, 5);
+        const cascadeEntries = topTargets.map((target) => {
+          const displayName = formatFactionName(target.factionId);
+          const sourceNames = target.sources.map((sourceId) => formatFactionName(sourceId));
+          const lastCascade = target.lastCascade;
+          const lastFrom = lastCascade?.sourceFactionName ?? (lastCascade?.sourceFactionId ? formatFactionName(lastCascade.sourceFactionId) : null);
+          const lastOccurred = Number.isFinite(lastCascade?.occurredAt)
+            ? formatRelativeTime(lastCascade.occurredAt, now)
+            : null;
+          const parts = [`${displayName}: cascades ${target.cascadeCount ?? 0}`];
+          if (lastFrom) {
+            parts.push(`last from ${lastFrom}${lastOccurred ? ` (${lastOccurred})` : ''}`);
+          } else if (lastOccurred) {
+            parts.push(`last ${lastOccurred}`);
+          }
+          if (sourceNames.length) {
+            parts.push(`sources ${sourceNames.join(', ')}`);
+          }
+          return {
+            text: parts.join(' · '),
+            tone: 'cascade',
+          };
+        });
+
+        renderWorldList(debugFactionCascadeList, cascadeEntries, 'No cascade data');
+
+        if (debugFactionCascadeMeta) {
+          const lastCascadeEvent = cascadeSummary?.lastCascadeEvent ?? null;
+          if (lastCascadeEvent && Number.isFinite(lastCascadeEvent.occurredAt)) {
+            const sourceName =
+              lastCascadeEvent.sourceFactionName ??
+              (lastCascadeEvent.sourceFactionId ? formatFactionName(lastCascadeEvent.sourceFactionId) : 'unknown');
+            const targetName =
+              lastCascadeEvent.targetFactionName ??
+              (lastCascadeEvent.targetFactionId ? formatFactionName(lastCascadeEvent.targetFactionId) : 'unknown');
+            const attitude = lastCascadeEvent.newAttitude ?? 'unknown';
+            const relative = formatRelativeTime(lastCascadeEvent.occurredAt, now);
+            debugFactionCascadeMeta.textContent = `Last cascade: ${sourceName} → ${targetName} (${attitude}) · ${relative}`;
+          } else {
+            debugFactionCascadeMeta.textContent = 'Last cascade: n/a';
+          }
+        }
+
+        lastCascadeSignature = cascadeSignature;
+      }
+    }
+
+    if ((debugTutorialSnapshots || debugTutorialLatest) && window.worldStateStore) {
+      let tutorialSnapshots = [];
+      let latestSnapshot = null;
+      try {
+        tutorialSnapshots = window.worldStateStore.select(tutorialSlice.selectors.selectPromptHistorySnapshots);
+        latestSnapshot = window.worldStateStore.select(tutorialSlice.selectors.selectLatestPromptSnapshot);
+      } catch (error) {
+        if (!tutorialSelectorErrorLogged) {
+          console.warn('[DebugOverlay] Failed to read tutorial snapshot timeline', error);
+          tutorialSelectorErrorLogged = true;
+        }
+      }
+
+      const snapshotSignature = [
+        latestSnapshot?.timestamp ?? 'none',
+        ...tutorialSnapshots.map((snapshot) => [
+          snapshot.timestamp ?? '0',
+          snapshot.event ?? 'event',
+          snapshot.stepId ?? 'step',
+        ].join(':')),
+      ].join('|');
+
+      if (snapshotSignature !== lastTutorialSnapshotSignature) {
+        if (debugTutorialSnapshots) {
+          const recentSnapshots = tutorialSnapshots.slice(-6).reverse();
+          const entries = recentSnapshots.map((snapshot) => {
+            const eventLabel = snapshot.event ?? 'event';
+            const hasIndex = Number.isFinite(snapshot.stepIndex) && snapshot.stepIndex >= 0;
+            const totalSteps = Number.isFinite(snapshot.totalSteps) ? snapshot.totalSteps : null;
+            const stepLabel = hasIndex
+              ? `Step ${snapshot.stepIndex + 1}${totalSteps ? `/${totalSteps}` : ''}`
+              : snapshot.stepId
+              ? `Step ${snapshot.stepId}`
+              : 'Step ?';
+            const completedCount = Array.isArray(snapshot.completedSteps) ? snapshot.completedSteps.length : 0;
+            const historyCount = Array.isArray(snapshot.promptHistory) ? snapshot.promptHistory.length : 0;
+            const timeLabel = Number.isFinite(snapshot.timestamp)
+              ? formatRelativeTime(snapshot.timestamp, now)
+              : 'time n/a';
+            const parts = [
+              `[${eventLabel}]`,
+              stepLabel,
+              `completed ${completedCount}`,
+              `history ${historyCount}`,
+              timeLabel,
+            ];
+
+            return {
+              text: parts.join(' · '),
+              tone: eventLabel,
+            };
+          });
+
+          renderWorldList(debugTutorialSnapshots, entries, 'No tutorial snapshots');
+        }
+
+        if (debugTutorialLatest) {
+          if (latestSnapshot) {
+            const eventLabel = latestSnapshot.event ?? 'event';
+            const hasIndex = Number.isFinite(latestSnapshot.stepIndex) && latestSnapshot.stepIndex >= 0;
+            const totalSteps = Number.isFinite(latestSnapshot.totalSteps) ? latestSnapshot.totalSteps : null;
+            const stepLabel = hasIndex
+              ? `step ${latestSnapshot.stepIndex + 1}${totalSteps ? `/${totalSteps}` : ''}`
+              : latestSnapshot.stepId
+              ? `step ${latestSnapshot.stepId}`
+              : 'step n/a';
+            const timeLabel = Number.isFinite(latestSnapshot.timestamp)
+              ? formatRelativeTime(latestSnapshot.timestamp, now)
+              : 'time n/a';
+            debugTutorialLatest.textContent = `Latest snapshot: ${eventLabel} · ${stepLabel} · ${timeLabel}`;
+          } else {
+            debugTutorialLatest.textContent = 'Latest snapshot: n/a';
+          }
+        }
+
+        lastTutorialSnapshotSignature = snapshotSignature;
+      }
+    }
+
+    if (debugAudioState && window.game?.getAdaptiveAudioTelemetry) {
+      let telemetry = null;
+      try {
+        telemetry = window.game.getAdaptiveAudioTelemetry();
+      } catch (error) {
+        console.warn('[DebugOverlay] Failed to read adaptive audio telemetry', error);
+        telemetry = null;
+      }
+
+      const currentState = telemetry?.currentState ?? 'n/a';
+      debugAudioState.textContent = `State: ${currentState ?? 'n/a'}`;
+      const historySource = Array.isArray(telemetry?.history) ? telemetry.history : [];
+      const trimmed = historySource.slice(-6).reverse();
+
+      const signature = trimmed
+        .map(
+          (entry) =>
+            `${entry?.from ?? ''}->${entry?.to ?? ''}@${typeof entry?.timestamp === 'number' ? entry.timestamp : 0}`
+        )
+        .join('|');
+
+      if (signature !== lastAudioHistorySignature) {
+        lastAudioHistorySignature = signature;
+        debugAudioHistory.innerHTML = '';
+
+        if (!trimmed.length) {
+          const row = document.createElement('div');
+          row.className = 'debug-sfx-empty';
+          row.textContent = 'No transitions recorded';
+          debugAudioHistory.appendChild(row);
+        } else {
+          for (const entry of trimmed) {
+            const row = document.createElement('div');
+            row.className = 'debug-audio-history-entry';
+            const label = document.createElement('span');
+            label.textContent = `${entry?.from ?? '∅'} → ${entry?.to ?? '∅'}`;
+            const time = document.createElement('span');
+            const ts = typeof entry?.timestamp === 'number' ? entry.timestamp : null;
+            time.textContent = ts ? formatRelativeTime(ts, now) : '';
+            row.appendChild(label);
+            row.appendChild(time);
+            debugAudioHistory.appendChild(row);
+          }
+        }
+      }
+    }
+
+    if (debugAudioBridge && window.game?.getGameplayAdaptiveBridgeTelemetry) {
+      let bridgeState = null;
+      try {
+        bridgeState = window.game.getGameplayAdaptiveBridgeTelemetry();
+      } catch (error) {
+        if (!audioBridgeErrorLogged) {
+          console.warn('[DebugOverlay] Failed to read adaptive bridge telemetry', error);
+          audioBridgeErrorLogged = true;
+        }
+        bridgeState = null;
+      }
+
+      const rows = [];
+      if (!bridgeState) {
+        rows.push({
+          label: 'Bridge',
+          value: 'disabled',
+          tone: 'muted',
+        });
+      } else {
+        const suspicion = Number.isFinite(bridgeState.suspicion) ? bridgeState.suspicion : 0;
+        rows.push({
+          label: 'Suspicion',
+          value: suspicion.toFixed(1),
+          tone: suspicion >= 60 ? 'combat' : suspicion >= 25 ? 'alert' : 'calm',
+        });
+        rows.push({
+          label: 'Alert',
+          value: bridgeState.alertActive ? 'active' : 'calm',
+          tone: bridgeState.alertActive ? 'alert' : 'muted',
+        });
+        rows.push({
+          label: 'Combat',
+          value: bridgeState.combatEngaged ? 'engaged' : 'idle',
+          tone: bridgeState.combatEngaged ? 'combat' : 'muted',
+        });
+        rows.push({
+          label: 'Scrambler',
+          value: bridgeState.scramblerActive
+            ? `active · ${formatDurationShort(bridgeState.scramblerExpiresInMs)}`
+            : 'inactive',
+          tone: bridgeState.scramblerActive ? 'scrambler' : 'muted',
+        });
+        rows.push({
+          label: 'Mood hint',
+          value: bridgeState.moodHint
+            ? `${bridgeState.moodHint}${
+                bridgeState.moodHintSource ? ` (${bridgeState.moodHintSource})` : ''
+              }${
+                Number.isFinite(bridgeState.moodHintExpiresInMs)
+                  ? ` · ${formatDurationShort(bridgeState.moodHintExpiresInMs)}`
+                  : ''
+              }`
+            : 'none',
+          tone: bridgeState.moodHint ? 'hint' : 'muted',
+        });
+        if (bridgeState.playerEntityId != null) {
+          rows.push({
+            label: 'Player',
+            value: `entity ${bridgeState.playerEntityId}`,
+            tone: 'muted',
+          });
+        }
+      }
+
+      const signature = rows.map((row) => `${row.label}:${row.value}:${row.tone ?? ''}`).join('|');
+      if (signature !== lastAudioBridgeSignature) {
+        lastAudioBridgeSignature = signature;
+        debugAudioBridge.innerHTML = '';
+
+        for (const row of rows) {
+          const rowEl = document.createElement('div');
+          rowEl.className = 'debug-audio-bridge-row';
+          if (row.tone) {
+            rowEl.dataset.tone = row.tone;
+          }
+
+          const labelEl = document.createElement('span');
+          labelEl.className = 'label';
+          labelEl.textContent = row.label;
+          const valueEl = document.createElement('span');
+          valueEl.className = 'value';
+          valueEl.textContent = row.value;
+
+          rowEl.appendChild(labelEl);
+          rowEl.appendChild(valueEl);
+          debugAudioBridge.appendChild(rowEl);
+        }
+      }
+    }
+
+    if (debugSfxList && window.game?.getSfxCatalogEntries) {
+      let catalogEntries = [];
+      try {
+        catalogEntries = window.game.getSfxCatalogEntries() || [];
+      } catch (error) {
+        console.warn('[DebugOverlay] Failed to read SFX catalog entries', error);
+        catalogEntries = [];
+      }
+
+      const entries = Array.isArray(catalogEntries) ? catalogEntries : [];
+      const availableTags = new Set();
+      for (const entry of entries) {
+        if (Array.isArray(entry.tags)) {
+          for (const tag of entry.tags) {
+            if (typeof tag === 'string' && tag.trim()) {
+              availableTags.add(tag.trim());
+            }
+          }
+        }
+      }
+      const sortedTags = Array.from(availableTags).sort((a, b) => a.localeCompare(b));
+      updateSfxTagFilters(sortedTags);
+
+      const textFilter = sfxFilterText;
+      const filteredEntries = entries.filter((entry) => {
+        const matchesTag =
+          !sfxTagFilter ||
+          (Array.isArray(entry.tags) && entry.tags.some((tag) => typeof tag === 'string' && tag === sfxTagFilter));
+        if (!matchesTag) {
+          return false;
+        }
+        if (!textFilter) {
+          return true;
+        }
+        const haystack = [
+          entry.id,
+          entry.description,
+          entry.file,
+          ...(Array.isArray(entry.tags) ? entry.tags : []),
+        ]
+          .filter((value) => typeof value === 'string' && value.length)
+          .map((value) => value.toLowerCase());
+        return haystack.some((value) => value.includes(textFilter));
+      });
+
+      const baseSignature = entries
+        .map((entry) => `${entry.id}:${Array.isArray(entry.tags) ? entry.tags.join(',') : ''}`)
+        .join('|');
+      const filteredSignature = filteredEntries.map((entry) => entry.id).join('|');
+      const signature = `${baseSignature}|filtered=${filteredSignature}|q=${textFilter}|tag=${sfxTagFilter ?? ''}`;
+
+      if (signature !== lastSfxSignature) {
+        lastSfxSignature = signature;
+        debugSfxList.innerHTML = '';
+
+        if (!entries.length) {
+          const row = document.createElement('div');
+          row.className = 'debug-sfx-empty';
+          row.textContent = 'Catalog not loaded';
+          debugSfxList.appendChild(row);
+        } else if (!filteredEntries.length) {
+          const row = document.createElement('div');
+          row.className = 'debug-sfx-empty';
+          row.textContent = 'No entries match current filter';
+          debugSfxList.appendChild(row);
+        } else {
+          for (const entry of filteredEntries) {
+            const row = document.createElement('div');
+            row.className = 'debug-sfx-row';
+
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.textContent = '▶';
+            button.title = `Preview ${entry.id}`;
+            button.addEventListener('click', () => {
+              try {
+                window.game?.previewSfx?.(entry.id);
+              } catch (error) {
+                console.warn('[DebugOverlay] Failed to preview SFX', entry.id, error);
+              }
+            });
+
+            const details = document.createElement('div');
+            details.className = 'debug-sfx-details';
+
+            const titleRow = document.createElement('div');
+            const volumeSuffix =
+              typeof entry.baseVolume === 'number' ? ` · v${entry.baseVolume.toFixed(2)}` : '';
+            titleRow.textContent = `${entry.id}${volumeSuffix}`;
+
+            const descRow = document.createElement('div');
+            descRow.textContent = entry.description || entry.file || '';
+
+            const tagsRow = document.createElement('div');
+            tagsRow.className = 'debug-sfx-tags';
+            if (Array.isArray(entry.tags) && entry.tags.length > 0) {
+              tagsRow.textContent = entry.tags.join(', ');
+            } else {
+              tagsRow.textContent = 'no tags';
+            }
+
+            details.appendChild(titleRow);
+            details.appendChild(descRow);
+            details.appendChild(tagsRow);
+
+            row.appendChild(button);
+            row.appendChild(details);
+            debugSfxList.appendChild(row);
+          }
+        }
+      }
+    }
+
     if (window.worldStateStore && debugDialogueStatus) {
-      const now = Date.now();
       let view = buildDialogueViewModel(window.worldStateStore.getState());
 
       if (!debugPaused) {

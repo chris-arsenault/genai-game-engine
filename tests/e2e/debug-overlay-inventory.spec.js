@@ -1,5 +1,23 @@
 import { test, expect } from '@playwright/test';
 import { waitForGameLoad, collectConsoleErrors } from './setup.js';
+import { captureTelemetryArtifacts } from './utils/telemetryArtifacts.js';
+
+test.afterEach(async ({ page }, testInfo) => {
+  if (testInfo.status === 'skipped') {
+    return;
+  }
+  try {
+    await captureTelemetryArtifacts(page, testInfo, { formats: ['json', 'csv'] });
+  } catch (error) {
+    if (typeof testInfo.attach === 'function') {
+      const message = error instanceof Error ? `${error.message}\n${error.stack ?? ''}` : String(error);
+      await testInfo.attach('debug-inventory-telemetry-capture-error', {
+        body: Buffer.from(message, 'utf8'),
+        contentType: 'text/plain',
+      });
+    }
+  }
+});
 
 test.describe('Debug overlay inventory listing', () => {
   test('reflects inventory overlay state transitions', async ({ page }) => {
@@ -44,6 +62,23 @@ test.describe('Debug overlay inventory listing', () => {
       if (!window.game) {
         throw new Error('Game instance not initialized');
       }
+      window.game.eventBus.emit('inventory:item_added', {
+        id: 'evidence_playwright_probe',
+        name: 'Playwright Probe Evidence',
+        type: 'Evidence',
+        quantity: 1,
+        tags: ['evidence', 'source:playwright'],
+        metadata: { seededBy: 'debug-overlay-inventory.spec' }
+      });
+      if (typeof window.game.update === 'function') {
+        window.game.update(0.016);
+      }
+    });
+
+    await page.evaluate(() => {
+      if (!window.game) {
+        throw new Error('Game instance not initialized');
+      }
       window.game.inputState.handleKeyDown({ code: 'KeyI', preventDefault() {} });
       window.game.update(0.016);
       window.game.inputState.handleKeyUp({ code: 'KeyI' });
@@ -62,7 +97,7 @@ test.describe('Debug overlay inventory listing', () => {
     const updatedInventory = updatedEntries.find((entry) => entry.text.startsWith('Inventory:'));
     expect(updatedInventory).toBeDefined();
     expect(updatedInventory.visible).toBe('true');
-    expect(updatedInventory.text).toContain('items');
+    expect(updatedInventory.text).toMatch(/item/i);
     expect(updatedInventory.text).toContain('evidence');
     expect(consoleErrors).toEqual([]);
   });

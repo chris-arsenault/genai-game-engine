@@ -95,6 +95,7 @@
 
     #debug-overlay.visible {
       display: block;
+      pointer-events: auto;
     }
 
     #debug-overlay.paused {
@@ -128,6 +129,259 @@
 
     .debug-overlay-row.empty {
       color: rgba(255, 255, 255, 0.55);
+    }
+
+    #debug-world-state {
+      margin-top: 8px;
+      border-top: 1px solid rgba(0, 255, 255, 0.35);
+      padding-top: 6px;
+      max-width: 320px;
+    }
+
+    .debug-meta {
+      font-size: 11px;
+      margin-bottom: 4px;
+      color: #9be7ff;
+    }
+
+    .debug-world-section {
+      margin-bottom: 4px;
+    }
+
+    .debug-subtitle {
+      font-weight: bold;
+      font-size: 11px;
+      margin-bottom: 2px;
+      color: #66ffff;
+    }
+
+    .debug-world-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-size: 11px;
+      line-height: 1.35;
+      color: #c6f8ff;
+    }
+
+    .debug-world-row {
+      color: #c6f8ff;
+    }
+
+    .debug-world-row[data-tone="active"] {
+      color: #8ef9d3;
+    }
+
+    .debug-world-row[data-tone="completed"] {
+      color: #9dd3ff;
+    }
+
+    .debug-world-row[data-tone="failed"] {
+      color: #ff9d9d;
+    }
+
+    .debug-world-row[data-tone="flag-active"] {
+      color: #fbc2ff;
+    }
+
+    .debug-world-row[data-tone="flag-inactive"] {
+      color: rgba(200, 200, 200, 0.72);
+    }
+
+    .debug-world-row.empty {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    #debug-audio {
+      margin-top: 8px;
+      border-top: 1px solid rgba(0, 255, 255, 0.35);
+      padding-top: 6px;
+      max-width: 320px;
+    }
+
+    #debug-tutorial {
+      margin-top: 8px;
+      border-top: 1px solid rgba(0, 255, 255, 0.35);
+      padding-top: 6px;
+      max-width: 320px;
+    }
+
+    .debug-audio-section {
+      margin-bottom: 6px;
+    }
+
+    .debug-audio-meta {
+      font-size: 11px;
+      color: #9be7ff;
+      margin-bottom: 4px;
+    }
+
+    .debug-audio-history {
+      font-size: 11px;
+      line-height: 1.3;
+      color: #c6f8ff;
+      max-height: 80px;
+      overflow-y: auto;
+      border: 1px solid rgba(102, 255, 255, 0.2);
+      padding: 4px;
+      border-radius: 4px;
+    }
+
+    .debug-audio-history-entry {
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .debug-audio-history-entry + .debug-audio-history-entry {
+      margin-top: 3px;
+    }
+
+    .debug-audio-bridge {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .debug-audio-bridge-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      padding: 4px 6px;
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.35);
+      color: rgba(255, 255, 255, 0.82);
+    }
+
+    .debug-audio-bridge-row .label {
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      opacity: 0.72;
+    }
+
+    .debug-audio-bridge-row .value {
+      font-weight: 600;
+    }
+
+    .debug-audio-bridge-row[data-tone="alert"] {
+      color: #f4b35a;
+    }
+
+    .debug-audio-bridge-row[data-tone="combat"] {
+      color: #ff6b6b;
+    }
+
+    .debug-audio-bridge-row[data-tone="scrambler"] {
+      color: #4dd0e1;
+    }
+
+    .debug-audio-bridge-row[data-tone="hint"] {
+      color: #b388ff;
+    }
+
+    .debug-audio-bridge-row[data-tone="muted"] {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .debug-sfx-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin: 6px 0;
+    }
+
+    .debug-sfx-filter {
+      flex: 1 1 160px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      padding: 4px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      outline: none;
+    }
+
+    .debug-sfx-filter::placeholder {
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .debug-sfx-tag-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .debug-sfx-tag-chip {
+      background: rgba(102, 255, 204, 0.2);
+      border: 1px solid rgba(102, 255, 204, 0.4);
+      border-radius: 12px;
+      color: #66ffcc;
+      font-size: 11px;
+      padding: 2px 8px;
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+
+    .debug-sfx-tag-chip.active {
+      background: rgba(102, 255, 204, 0.45);
+      border-color: rgba(102, 255, 204, 0.85);
+    }
+
+    .debug-sfx-tag-chip:hover {
+      background: rgba(102, 255, 204, 0.6);
+    }
+
+    .debug-sfx-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    .debug-sfx-row {
+      display: flex;
+      gap: 6px;
+      align-items: stretch;
+      background: rgba(10, 40, 50, 0.35);
+      border: 1px solid rgba(102, 255, 255, 0.2);
+      border-radius: 4px;
+      padding: 4px;
+    }
+
+    .debug-sfx-row button {
+      background: rgba(102, 255, 255, 0.2);
+      border: 1px solid rgba(102, 255, 255, 0.5);
+      color: #aefbff;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .debug-sfx-row button:hover {
+      background: rgba(102, 255, 255, 0.35);
+    }
+
+    .debug-sfx-details {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-size: 11px;
+      color: #c6f8ff;
+      flex: 1;
+    }
+
+    .debug-sfx-tags {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .debug-sfx-empty {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.6);
     }
 
     #debug-dialogue {
@@ -216,6 +470,72 @@
         <div class="debug-title">UI Overlays</div>
         <div id="debug-ui-overlays-list" class="debug-overlays-list">
           <div class="debug-overlay-row empty">No overlay state</div>
+        </div>
+      </div>
+      <div id="debug-world-state">
+        <div class="debug-title">World State</div>
+        <div id="debug-world-meta" class="debug-meta">Quests: n/a · Flags: n/a</div>
+        <div class="debug-world-section">
+          <div class="debug-subtitle">Quests</div>
+          <div id="debug-quests-list" class="debug-world-list">
+            <div class="debug-world-row empty">No quest data</div>
+          </div>
+        </div>
+        <div class="debug-world-section">
+          <div class="debug-subtitle">Story Flags</div>
+          <div id="debug-story-list" class="debug-world-list">
+            <div class="debug-world-row empty">No story flags</div>
+          </div>
+        </div>
+        <div class="debug-world-section">
+          <div class="debug-subtitle">Faction Cascades</div>
+          <div id="debug-faction-cascades" class="debug-world-list">
+            <div class="debug-world-row empty">No cascade data</div>
+          </div>
+          <div id="debug-faction-cascade-meta" class="debug-meta">Last cascade: n/a</div>
+        </div>
+      </div>
+      <div id="debug-tutorial">
+        <div class="debug-title">Tutorial</div>
+        <div id="debug-tutorial-latest" class="debug-meta">Latest snapshot: n/a</div>
+        <div class="debug-subtitle">Snapshot Timeline</div>
+        <div id="debug-tutorial-snapshots" class="debug-world-list">
+          <div class="debug-world-row empty">No tutorial snapshots</div>
+        </div>
+      </div>
+      <div id="debug-audio">
+        <div class="debug-title">Audio</div>
+        <div class="debug-audio-section">
+          <div class="debug-subtitle">Adaptive State</div>
+          <div id="debug-audio-state" class="debug-audio-meta">State: n/a</div>
+          <div id="debug-audio-history" class="debug-audio-history">
+            <div class="debug-sfx-empty">No transitions recorded</div>
+          </div>
+        </div>
+        <div class="debug-audio-section">
+          <div class="debug-subtitle">Gameplay Bridge</div>
+          <div id="debug-audio-bridge" class="debug-audio-bridge">
+            <div class="debug-audio-bridge-row" data-tone="muted">
+              <span class="label">Bridge</span>
+              <span class="value">initializing…</span>
+            </div>
+          </div>
+        </div>
+        <div class="debug-audio-section">
+          <div class="debug-subtitle">SFX Catalog</div>
+          <div class="debug-sfx-controls">
+            <input
+              type="search"
+              id="debug-sfx-filter"
+              class="debug-sfx-filter"
+              placeholder="Filter by id, description, or tag"
+              autocomplete="off"
+            />
+            <div id="debug-sfx-tag-filters" class="debug-sfx-tag-filters"></div>
+          </div>
+          <div id="debug-sfx-list" class="debug-sfx-list">
+            <div class="debug-sfx-empty">Catalog not loaded</div>
+          </div>
         </div>
       </div>
       <div id="debug-dialogue">

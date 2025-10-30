@@ -24,6 +24,8 @@ import { Transform } from './src/game/components/Transform.js';
 import { Velocity } from './src/game/components/Velocity.js';
 import { Collider } from './src/game/components/Collider.js';
 import { Sprite } from './src/game/components/Sprite.js';
+import { EventBus } from './src/engine/events/EventBus.js';
+import { AmbientSceneAudioController } from './src/game/audio/AmbientSceneAudioController.js';
 
 /**
  * Memory tracking utilities
@@ -73,6 +75,44 @@ class MemoryTracker {
   clear() {
     this.snapshots = [];
     this.gcEvents = [];
+  }
+}
+
+class BenchmarkAdaptiveController {
+  constructor(eventBus) {
+    this.eventBus = eventBus;
+    this.currentState = 'ambient';
+    this.history = [];
+  }
+
+  async init() {
+    return true;
+  }
+
+  setState(state) {
+    if (state === this.currentState) {
+      return false;
+    }
+    const previous = this.currentState;
+    this.currentState = state;
+    const payload = {
+      from: previous,
+      to: state,
+      timestamp: Date.now(),
+    };
+    this.history.push(payload);
+    if (this.eventBus && typeof this.eventBus.emit === 'function') {
+      this.eventBus.emit('audio:adaptive:state_changed', payload);
+    }
+    return true;
+  }
+
+  getState() {
+    return this.currentState;
+  }
+
+  dispose() {
+    this.history = [];
   }
 }
 
@@ -200,8 +240,8 @@ async function benchmarkECS(runner) {
 
       for (let i = 0; i < 1000; i++) {
         const entity = entityManager.createEntity();
-        componentRegistry.addComponent(entity, new Transform(i, i));
-        componentRegistry.addComponent(entity, new Velocity(0, 0));
+        componentRegistry.addComponent(entity, 'Transform', new Transform(i, i));
+        componentRegistry.addComponent(entity, 'Velocity', new Velocity(0, 0));
       }
     },
     { iterations: 10, warmup: 2, memorySnapshot: true }
@@ -217,16 +257,16 @@ async function benchmarkECS(runner) {
       // Create 1000 entities with Transform
       for (let i = 0; i < 1000; i++) {
         const entity = entityManager.createEntity();
-        componentRegistry.addComponent(entity, new Transform(i, i));
+        componentRegistry.addComponent(entity, 'Transform', new Transform(i, i));
 
         // 70% also have Velocity
         if (i % 10 < 7) {
-          componentRegistry.addComponent(entity, new Velocity(0, 0));
+          componentRegistry.addComponent(entity, 'Velocity', new Velocity(0, 0));
         }
 
         // 30% also have Collider
         if (i % 10 < 3) {
-          componentRegistry.addComponent(entity, new Collider({ width: 32, height: 32 }));
+          componentRegistry.addComponent(entity, 'Collider', new Collider({ width: 32, height: 32 }));
         }
       }
 
@@ -252,9 +292,9 @@ async function benchmarkECS(runner) {
 
         for (let i = 0; i < count; i++) {
           const entity = entityManager.createEntity();
-          componentRegistry.addComponent(entity, new Transform(i, i));
+          componentRegistry.addComponent(entity, 'Transform', new Transform(i, i));
           if (i % 2 === 0) {
-            componentRegistry.addComponent(entity, new Velocity(0, 0));
+            componentRegistry.addComponent(entity, 'Velocity', new Velocity(0, 0));
           }
         }
 
@@ -279,7 +319,7 @@ async function benchmarkECS(runner) {
       const entities = [];
       for (let i = 0; i < 1000; i++) {
         const entity = entityManager.createEntity();
-        componentRegistry.addComponent(entity, new Transform(i, i));
+        componentRegistry.addComponent(entity, 'Transform', new Transform(i, i));
         entities.push(entity);
       }
 
@@ -312,8 +352,8 @@ async function benchmarkPhysics(runner) {
         const entities = [];
         for (let i = 0; i < count; i++) {
           const entity = entityManager.createEntity();
-          componentRegistry.addComponent(entity, new Transform(i, i));
-          componentRegistry.addComponent(entity, new Velocity(10, 10));
+          componentRegistry.addComponent(entity, 'Transform', new Transform(i, i));
+          componentRegistry.addComponent(entity, 'Velocity', new Velocity(10, 10));
           entities.push(entity);
         }
 
@@ -347,8 +387,8 @@ async function benchmarkPhysics(runner) {
           const y = Math.floor(i / gridSize) * 40;
 
           const entity = entityManager.createEntity();
-          componentRegistry.addComponent(entity, new Transform(x, y));
-          componentRegistry.addComponent(entity, new Collider({
+          componentRegistry.addComponent(entity, 'Transform', new Transform(x, y));
+          componentRegistry.addComponent(entity, 'Collider', new Collider({
             width: 32,
             height: 32,
             isStatic: i % 5 === 0, // 20% static
@@ -364,6 +404,61 @@ async function benchmarkPhysics(runner) {
       { iterations: 20, warmup: 3 }
     );
   }
+}
+
+async function benchmarkAdaptiveAudio(runner) {
+  console.log('\n━━━ ADAPTIVE AUDIO BENCHMARKS ━━━');
+
+  const audioManagerStub = {
+    loadMusic: async () => {},
+    playMusic: () => {},
+    setMusicVolume: () => {},
+    stopMusic: () => {},
+  };
+
+  const eventBus = new EventBus();
+  const transitions = [];
+  eventBus.on('audio:adaptive:state_changed', (payload) => {
+    transitions.push({
+      from: payload.from,
+      to: payload.to,
+      timestamp: payload.timestamp,
+    });
+  });
+
+  const controller = new AmbientSceneAudioController(audioManagerStub, eventBus, {
+    createAdaptiveController: () => new BenchmarkAdaptiveController(eventBus),
+  });
+
+  await controller.init();
+
+  let lastTransitionSummary = [];
+
+  await runner.runBenchmark(
+    'adaptive-audio-infiltration',
+    () => {
+      transitions.length = 0;
+
+      eventBus.emit('disguise:equipped', { factionId: 'cipher_collective' });
+      eventBus.emit('disguise:suspicion_raised', { suspicionLevel: 65 });
+      eventBus.emit('combat:initiated', { source: 'benchmark' });
+      eventBus.emit('combat:resolved', { source: 'benchmark' });
+      eventBus.emit('disguise:suspicion_cleared', { suspicionLevel: 0 });
+      eventBus.emit('disguise:removed', { factionId: 'cipher_collective' });
+
+      lastTransitionSummary = transitions.map((entry) => ({ ...entry }));
+    },
+    { iterations: 100, warmup: 10 }
+  );
+
+  controller.dispose();
+
+  const bench = runner.getResults().benchmarks['adaptive-audio-infiltration'];
+  bench.transitionSample = lastTransitionSummary;
+  bench.transitionCount = lastTransitionSummary.length;
+  bench.context = {
+    stateSequence: lastTransitionSummary.map((entry) => entry.to),
+  };
 }
 
 /**
@@ -524,12 +619,12 @@ async function benchmarkGameLoop(runner) {
           const y = Math.floor(i / gridSize) * 40;
 
           const entity = entityManager.createEntity();
-          componentRegistry.addComponent(entity, new Transform(x, y));
-          componentRegistry.addComponent(entity, new Velocity(10, 10));
+          componentRegistry.addComponent(entity, 'Transform', new Transform(x, y));
+          componentRegistry.addComponent(entity, 'Velocity', new Velocity(10, 10));
 
           // 50% have colliders
           if (i % 2 === 0) {
-            componentRegistry.addComponent(entity, new Collider({
+            componentRegistry.addComponent(entity, 'Collider', new Collider({
               width: 32,
               height: 32,
             }));
@@ -562,8 +657,8 @@ async function benchmarkMemory(runner) {
       for (let cycle = 0; cycle < 1000; cycle++) {
         // Create entity
         const entity = entityManager.createEntity();
-        componentRegistry.addComponent(entity, new Transform(0, 0));
-        componentRegistry.addComponent(entity, new Velocity(0, 0));
+        componentRegistry.addComponent(entity, 'Transform', new Transform(0, 0));
+        componentRegistry.addComponent(entity, 'Velocity', new Velocity(0, 0));
 
         // Destroy entity
         componentRegistry.removeAllComponents(entity);
@@ -583,8 +678,8 @@ async function benchmarkMemory(runner) {
       const entities = [];
       for (let i = 0; i < 10000; i++) {
         const entity = entityManager.createEntity();
-        componentRegistry.addComponent(entity, new Transform(i, i));
-        componentRegistry.addComponent(entity, new Velocity(i % 10, i % 10));
+        componentRegistry.addComponent(entity, 'Transform', new Transform(i, i));
+        componentRegistry.addComponent(entity, 'Velocity', new Velocity(i % 10, i % 10));
         entities.push(entity);
       }
 
@@ -612,6 +707,7 @@ async function main() {
   try {
     await benchmarkECS(runner);
     await benchmarkPhysics(runner);
+    await benchmarkAdaptiveAudio(runner);
     await benchmarkRendering(runner);
     await benchmarkAssetLoading(runner);
     await benchmarkGameLoop(runner);
@@ -664,6 +760,20 @@ function printSummary(results) {
 
   const collision500 = benchmarks['physics-collision-500-entities'];
   console.log(`  • Collision (500 entities, 5 frames): ${collision500.timing.mean.toFixed(2)}ms (target: <4ms/frame)`);
+
+  // Adaptive Audio Summary
+  const adaptiveAudio = benchmarks['adaptive-audio-infiltration'];
+  if (adaptiveAudio) {
+    console.log('\n🔹 Adaptive Audio:');
+    console.log(
+      `  • Infiltration transition batch: ${adaptiveAudio.timing.mean.toFixed(3)}ms (target: track <2ms batch)`
+    );
+    if (adaptiveAudio.context?.stateSequence?.length) {
+      console.log(
+        `  • State sequence sample: ${adaptiveAudio.context.stateSequence.join(' → ')}`
+      );
+    }
+  }
 
   // Rendering Summary
   console.log('\n🔹 Rendering Performance:');

@@ -12,9 +12,16 @@
  * - Error handling and recovery
  */
 
+import { factionSlice } from '../state/slices/factionSlice.js';
+import { tutorialSlice } from '../state/slices/tutorialSlice.js';
+import { createInspectorExportArtifacts } from '../telemetry/inspectorTelemetryExporter.js';
+import { TelemetryArtifactWriterAdapter } from '../telemetry/TelemetryArtifactWriterAdapter.js';
+import { buildTutorialTranscript } from '../tutorial/serializers/tutorialTranscriptSerializer.js';
+
 export class SaveManager {
   constructor(eventBus, managers = {}) {
-    this.events = eventBus;
+    this.eventBus = eventBus;
+    this.events = eventBus; // Legacy alias maintained for compatibility
 
     // Manager references
     this.storyFlagManager = managers.storyFlagManager;
@@ -27,6 +34,7 @@ export class SaveManager {
       (typeof globalThis !== 'undefined' && globalThis.localStorage
         ? globalThis.localStorage
         : null);
+    this.tutorialTranscriptRecorder = managers.tutorialTranscriptRecorder ?? null;
 
     // Save state
     this.autosaveEnabled = true;
@@ -42,6 +50,15 @@ export class SaveManager {
       maxSaveSlots: 10,
       verifyWorldStateParity: true,
     };
+
+    // Telemetry export integration
+    const telemetryAdapterCandidate = managers.telemetryAdapter;
+    this._telemetryAdapter =
+      telemetryAdapterCandidate && typeof telemetryAdapterCandidate.writeArtifacts === 'function'
+        ? telemetryAdapterCandidate
+        : null;
+    const telemetryWriters = Array.isArray(managers.telemetryWriters) ? [...managers.telemetryWriters] : null;
+    this._telemetrySeedWriters = telemetryWriters;
 
     // Event unsubscriber references
     this._offQuestCompleted = null;
@@ -70,13 +87,13 @@ export class SaveManager {
    */
   subscribeToAutosaveEvents() {
     // Autosave on quest completion
-    this._offQuestCompleted = this.events.on('quest:completed', (data) => {
+    this._offQuestCompleted = this.eventBus.on('quest:completed', (data) => {
       console.log(`[SaveManager] Quest completed (${data.questId}), autosaving...`);
       this.saveGame('autosave');
     });
 
     // Autosave on major objectives only (optional - can be configured)
-    this._offObjectiveCompleted = this.events.on('objective:completed', (data) => {
+    this._offObjectiveCompleted = this.eventBus.on('objective:completed', (data) => {
       // Only autosave on major objectives (not every single objective)
       // You can add logic here to determine "major" objectives
       if (this.isMajorObjective(data.objectiveId)) {
@@ -86,13 +103,13 @@ export class SaveManager {
     });
 
     // Autosave when entering new areas
-    this._offAreaEntered = this.events.on('area:entered', (data) => {
+    this._offAreaEntered = this.eventBus.on('area:entered', (data) => {
       console.log(`[SaveManager] Entered area (${data.areaId}), autosaving...`);
       this.saveGame('autosave');
     });
 
     // Autosave when case is completed
-    this._offCaseCompleted = this.events.on('case:completed', (data) => {
+    this._offCaseCompleted = this.eventBus.on('case:completed', (data) => {
       console.log(`[SaveManager] Case completed (${data.caseId}), autosaving...`);
       this.saveGame('autosave');
     });
@@ -112,9 +129,9 @@ export class SaveManager {
       this.saveGame('autosave');
     };
 
-    this._offInventoryAdded = this.events.on('inventory:item_added', inventoryAutosave);
-    this._offInventoryUpdated = this.events.on('inventory:item_updated', inventoryAutosave);
-    this._offInventoryRemoved = this.events.on('inventory:item_removed', inventoryAutosave);
+    this._offInventoryAdded = this.eventBus.on('inventory:item_added', inventoryAutosave);
+    this._offInventoryUpdated = this.eventBus.on('inventory:item_updated', inventoryAutosave);
+    this._offInventoryRemoved = this.eventBus.on('inventory:item_removed', inventoryAutosave);
   }
 
   /**
@@ -180,7 +197,7 @@ export class SaveManager {
       this.updateSaveMetadata(slot, saveData);
 
       // Emit success event
-      this.events.emit('game:saved', {
+      this.eventBus.emit('game:saved', {
         slot,
         timestamp: saveData.timestamp,
         playtime: saveData.playtime,
@@ -191,7 +208,7 @@ export class SaveManager {
       return true;
     } catch (error) {
       console.error('[SaveManager] Failed to save game:', error);
-      this.events.emit('game:save_failed', {
+      this.eventBus.emit('game:save_failed', {
         slot,
         error: error.message,
       });
@@ -242,7 +259,7 @@ export class SaveManager {
       this.gameStartTime = Date.now() - saveData.playtime;
 
       // Emit success event
-      this.events.emit('game:loaded', {
+      this.eventBus.emit('game:loaded', {
         slot,
         timestamp: saveData.timestamp,
         playtime: saveData.playtime,
@@ -252,7 +269,7 @@ export class SaveManager {
       return true;
     } catch (error) {
       console.error('[SaveManager] Failed to load game:', error);
-      this.events.emit('game:load_failed', {
+      this.eventBus.emit('game:load_failed', {
         slot,
         error: error.message,
       });
@@ -370,6 +387,152 @@ export class SaveManager {
       this.saveGame('autosave');
       this.lastAutosaveTime = currentTime;
     }
+  }
+
+  /**
+   * Provide aggregated telemetry for SaveManager inspector tooling.
+   * @returns {Object}
+   */
+  getInspectorSummary() {
+    const generatedAt = Date.now();
+    if (!this.worldStateStore || typeof this.worldStateStore.select !== 'function') {
+      return {
+        generatedAt,
+        source: 'unavailable',
+        factions: {
+          lastCascadeEvent: null,
+          cascadeTargets: [],
+        },
+        tutorial: {
+          latestSnapshot: null,
+          snapshots: [],
+          transcript: [],
+        },
+      };
+    }
+
+    let cascadeSummary = {
+      lastCascadeEvent: null,
+      cascadeTargets: [],
+    };
+    let tutorialSnapshots = [];
+    let latestSnapshot = null;
+    let tutorialTranscript = [];
+
+    try {
+      cascadeSummary = this.worldStateStore.select(factionSlice.selectors.selectFactionCascadeSummary);
+    } catch (error) {
+      console.warn('[SaveManager] Failed to gather faction cascade summary for inspector', error);
+    }
+
+    try {
+      tutorialSnapshots = this.worldStateStore.select(tutorialSlice.selectors.selectPromptHistorySnapshots);
+      latestSnapshot = this.worldStateStore.select(tutorialSlice.selectors.selectLatestPromptSnapshot);
+    } catch (error) {
+      console.warn('[SaveManager] Failed to gather tutorial snapshots for inspector', error);
+    }
+
+    if (this.tutorialTranscriptRecorder?.getTranscript) {
+      try {
+        const rawTranscript = this.tutorialTranscriptRecorder.getTranscript();
+        tutorialTranscript = buildTutorialTranscript(rawTranscript);
+      } catch (error) {
+        console.warn('[SaveManager] Failed to build tutorial transcript for inspector', error);
+      }
+    }
+
+    return {
+      generatedAt,
+      source: 'worldStateStore',
+      factions: cascadeSummary ?? { lastCascadeEvent: null, cascadeTargets: [] },
+      tutorial: {
+        latestSnapshot: latestSnapshot ?? null,
+        snapshots: Array.isArray(tutorialSnapshots) ? tutorialSnapshots : [],
+        transcript: Array.isArray(tutorialTranscript) ? tutorialTranscript : [],
+      },
+    };
+  }
+
+  /**
+   * Produce JSON/CSV export artifacts capturing inspector telemetry.
+   * Optionally invokes a writer callback for each artifact produced.
+   * @param {Object} options
+   * @param {Function} [options.writer] - Receives artifact descriptors `{ filename, content, mimeType, type }`
+   * @param {string|string[]} [options.formats] - 'json', 'csv', 'transcript-csv', 'transcript-md'
+   * @param {string} [options.prefix] - File prefix override
+   * @returns {{summary: Object, artifacts: Array}}
+   */
+  async exportInspectorSummary(options = {}) {
+    const summary = this.getInspectorSummary();
+    const { summary: sanitizedSummary, artifacts } = createInspectorExportArtifacts(summary, options);
+
+    const prefix = options.prefix ?? 'save-inspector';
+    const context = {
+      prefix,
+      formats: Array.from(
+        new Set(
+          artifacts.map((artifact) => artifact.type).filter((type) => typeof type === 'string')
+        )
+      ),
+      artifactCount: artifacts.length,
+      source: sanitizedSummary.source,
+      ...(options.context ?? {}),
+      ...(options.writerContext ?? {}),
+    };
+
+    this.eventBus?.emit?.('telemetry:export_started', {
+      artifactCount: artifacts.length,
+      context,
+    });
+
+    let metrics = null;
+
+    try {
+      const writer = options.writer;
+      if (typeof writer === 'function') {
+        for (const artifact of artifacts) {
+          try {
+            await Promise.resolve(writer({ ...artifact }, context));
+          } catch (error) {
+            console.warn('[SaveManager] Telemetry export writer failed', error);
+            this.eventBus?.emit?.('telemetry:artifact_failed', {
+              writerId: 'legacy-writer',
+              filename: artifact.filename,
+              errorMessage: error instanceof Error ? error.message : String(error),
+              context,
+            });
+          }
+        }
+      } else {
+        const adapter =
+          options.writerAdapter ??
+          this._telemetryAdapter ??
+          this._instantiateTelemetryAdapter();
+
+        if (adapter) {
+          metrics = await adapter.writeArtifacts(artifacts, context);
+        }
+      }
+
+      this.eventBus?.emit?.('telemetry:export_completed', {
+        artifactCount: artifacts.length,
+        context,
+        metrics,
+      });
+    } catch (error) {
+      this.eventBus?.emit?.('telemetry:export_failed', {
+        artifactCount: artifacts.length,
+        context,
+        errorMessage: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+
+    return {
+      summary: sanitizedSummary,
+      artifacts,
+      metrics,
+    };
   }
 
   // ==================== Data Collection Methods ====================
@@ -586,6 +749,20 @@ export class SaveManager {
   disableAutosave() {
     this.autosaveEnabled = false;
     console.log('[SaveManager] Autosave disabled');
+  }
+
+  _instantiateTelemetryAdapter() {
+    if (this._telemetryAdapter) {
+      return this._telemetryAdapter;
+    }
+
+    const seedWriters = Array.isArray(this._telemetrySeedWriters) ? [...this._telemetrySeedWriters] : [];
+    this._telemetryAdapter = new TelemetryArtifactWriterAdapter({
+      eventBus: this.eventBus,
+      writers: seedWriters,
+    });
+    this._telemetrySeedWriters = null;
+    return this._telemetryAdapter;
   }
 
   /**

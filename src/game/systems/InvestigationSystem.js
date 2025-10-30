@@ -34,6 +34,9 @@ export class InvestigationSystem extends System {
     this.evidenceCache = new Map(); // entityId -> Evidence component
     this.lastCacheUpdate = 0;
     this.promptVisible = false;
+
+    this._offAbilityUnlocked = null;
+    this._offKnowledgeLearned = null;
   }
 
   /**
@@ -44,12 +47,24 @@ export class InvestigationSystem extends System {
     this.playerAbilities.add('basic_observation');
 
     // Listen for ability unlocks from external sources (e.g., quest rewards, scenes)
-    this.eventBus.on('ability:unlocked', (data) => {
+    this._offAbilityUnlocked = this.eventBus.on('ability:unlocked', (data = {}) => {
       // Add ability directly without re-emitting (to avoid recursion)
       if (!this.playerAbilities.has(data.abilityId)) {
         this.playerAbilities.add(data.abilityId);
         console.log(`[InvestigationSystem] Ability unlocked via event: ${data.abilityId}`);
       }
+    });
+
+    this._offKnowledgeLearned = this.eventBus.on('knowledge:learned', (data = {}) => {
+      const knowledgeId = data.knowledgeId;
+      if (typeof knowledgeId !== 'string' || knowledgeId.length === 0) {
+        return;
+      }
+      if (this.playerKnowledge.has(knowledgeId)) {
+        return;
+      }
+      this.playerKnowledge.add(knowledgeId);
+      console.log(`[InvestigationSystem] Knowledge registered via event: ${knowledgeId}`);
     });
 
     console.log('[InvestigationSystem] Initialized');
@@ -65,9 +80,12 @@ export class InvestigationSystem extends System {
     this.updateDetectiveVision(deltaTime);
 
     // Find player entity
-    const player = entities.find(id => {
-      const entity = this.componentRegistry.entityManager.getEntity(id);
-      return entity && entity.hasTag && entity.hasTag('player');
+    const player = entities.find((id) => {
+      const tag =
+        this.componentRegistry.entityManager.getTag(id) ??
+        this.componentRegistry.entityManager.getEntity(id)?.tag ??
+        null;
+      return tag === 'player';
     });
 
     if (!player) return;
@@ -157,7 +175,12 @@ export class InvestigationSystem extends System {
       if (!transform) continue;
 
       // Check if in range
-      if (!zone.isInRange(playerTransform, transform)) continue;
+      if (!zone.isInRange(playerTransform, transform)) {
+        if (zone.type === 'trigger' && zone.triggered && !zone.oneShot) {
+          zone.triggered = false;
+        }
+        continue;
+      }
 
       // Handle interaction based on type
       if (zone.type === 'evidence') {
@@ -313,6 +336,12 @@ export class InvestigationSystem extends System {
     this.detectiveVisionActive = true;
     this.detectiveVisionTimer = GameConfig.player.detectiveVisionDuration / 1000;
 
+    this.eventBus.emit('ability:activated', {
+      abilityId: 'detective_vision',
+      source: 'InvestigationSystem',
+      timestamp: Date.now()
+    });
+
     this.eventBus.emit('detective_vision:activated', {
       duration: this.detectiveVisionTimer
     });
@@ -404,6 +433,16 @@ export class InvestigationSystem extends System {
   cleanup() {
     this.collectedEvidence.clear();
     this.discoveredClues.clear();
+
+    if (typeof this._offAbilityUnlocked === 'function') {
+      this._offAbilityUnlocked();
+      this._offAbilityUnlocked = null;
+    }
+
+    if (typeof this._offKnowledgeLearned === 'function') {
+      this._offKnowledgeLearned();
+      this._offKnowledgeLearned = null;
+    }
   }
 
   /**

@@ -1,6 +1,6 @@
 # Test Status Report
 
-**Last Updated**: 2025-10-27 (Sprint 7)
+**Last Updated**: 2025-10-30 (Sprint 8)
 **Test Suite Version**: Jest 29.x + Playwright 1.x
 
 ---
@@ -11,14 +11,22 @@
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
-| **Pass Rate** | 99.9% | 95%+ | ✅ EXCELLENT |
-| **Tests Passing** | 1,743 / 1,744 | - | ✅ |
-| **Tests Failing** | 1 | 0 | ⚠️ MINOR |
-| **Test Suites Passing** | 48 / 51 | - | ✅ |
-| **Test Suites Failing** | 3 | 0 | ⚠️ MINOR |
+| **Pass Rate** | 100% | 95%+ | ✅ EXCELLENT |
+| **Tests Passing** | 1,962 / 1,962 | - | ✅ |
+| **Tests Failing** | 0 | 0 | ✅ |
+| **Test Suites Passing** | 89 / 89 | - | ✅ |
+| **Test Suites Failing** | 0 | 0 | ✅ |
 | **Engine Coverage** | 82% | 80%+ | ✅ |
 | **Game Coverage** | 68% | 60%+ | ✅ |
-| **Total Test Time** | 28.3s | <60s | ✅ |
+| **Total Test Time** | 27.8s | <60s | ✅ |
+
+---
+
+## Sprint 8 Additions
+
+- Expanded `tests/engine/ecs/SystemManager.test.js` to cover numeric/option registration overrides, deferred initialization, and the legacy `events` alias wiring.
+- Hardened `tests/game/Game.systemRegistration.test.js` to assert gameplay systems receive the shared EventBus via both `eventBus` and `events` handles.
+- Added explicit alias coverage for SaveManager (`tests/game/managers/SaveManager.test.js`), TutorialOverlay (`tests/game/ui/TutorialOverlay.test.js`), and InventoryOverlay (`tests/game/ui/InventoryOverlay.vendorSummary.test.js`).
 
 ---
 
@@ -353,8 +361,9 @@ tests/game/
 
 **CI Integration Notes**:
 - Install browsers on runners before execution: `npx playwright install --with-deps`.
-- Export `PLAYWRIGHT_JUNIT_OUTPUT_NAME=playwright-report.xml` and run `npx playwright test --reporter=line,junit` to capture pass/fail telemetry for dashboards.
-- Persist `test-results/` and `playwright-report/` directories as artifacts; they contain failure videos, traces, and quest/dialogue overlays for regression triage.
+- Use the default config (`npx playwright test`)—`playwright.config.js` now emits `line`, `junit`, and `html` reporters automatically, honours `PLAYWRIGHT_JUNIT_OUTPUT_NAME`, and keeps artifacts under `test-results/`.
+- Failure telemetry (screenshots, video, traces) is retained on every failure via config (`retain-on-failure`) and uploaded from `test-results/` + `playwright-report/`; adjust `PLAYWRIGHT_OUTPUT_DIR`/`PLAYWRIGHT_HTML_REPORT` if CI paths differ.
+- GitHub Actions uploads the HTML report, traces, and media under the `playwright-artifacts` bundle for 14 days (`retention-days: 14` in `.github/workflows/ci.yml`).
 - Set `BROWSER=chromium` (or override via `PLAYWRIGHT_BROWSER`) on CI agents—local dev uses `wslview`, but headless Chromium keeps pipelines deterministic.
 - Record suite duration and flake rate in build metrics; target <90s runtime for smoke pack and alert if retries trigger (`CI=1` enables single retry).
 

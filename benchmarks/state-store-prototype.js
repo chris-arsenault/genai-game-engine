@@ -105,6 +105,7 @@ function createWorldStateSeed() {
   const questsRaw = createQuestData();
   const storyFlagsRaw = createStoryFlags();
   const factionsRaw = createFactionData();
+  const now = Date.now();
 
   const questSnapshot = {
     byId: {},
@@ -160,9 +161,20 @@ function createWorldStateSeed() {
 
   const factions = {
     byId: Object.fromEntries(
-      Object.entries(factionsRaw).map(([factionId, data]) => {
+      Object.entries(factionsRaw).map(([factionId, data], index) => {
         const fame = Math.max(0, 100 + data.reputation);
         const infamy = Math.max(0, 100 - data.reputation);
+        const changeTimestamp = now - index * 2500;
+        const lastAttitudeChange = {
+          factionId,
+          factionName: `Faction ${factionId}`,
+          newAttitude: data.attitude,
+          oldAttitude: data.attitude === 'hostile' ? 'neutral' : 'friendly',
+          cascade: false,
+          sourceFactionId: null,
+          sourceFactionName: null,
+          occurredAt: changeTimestamp,
+        };
         return [
           factionId,
           {
@@ -171,10 +183,18 @@ function createWorldStateSeed() {
             infamy,
             attitude: data.attitude,
             lastReason: 'benchmark_seed',
+            updatedAt: changeTimestamp,
+            lastDelta: { fame: 0, infamy: 0 },
+            lastAttitudeChange,
+            attitudeHistory: [lastAttitudeChange],
+            lastCascade: null,
+            cascadeCount: 0,
+            cascadeSources: [],
           },
         ];
       })
     ),
+    lastCascadeEvent: null,
   };
 
   const dialogue = {
@@ -205,6 +225,13 @@ function createWorldStateSeed() {
       completedSteps: [],
       skipped: false,
       totalSteps: 5,
+      promptHistory: [],
+      promptHistoryLimit: 5,
+      promptHistorySnapshots: [],
+      promptHistorySnapshotLimit: 10,
+      currentPrompt: null,
+      currentStep: null,
+      currentStepIndex: -1,
     },
     tutorialComplete: false,
     dialogue,
@@ -478,7 +505,10 @@ function runEcsIntegratedBenchmark() {
  */
 function runWorldStateStoreBenchmark() {
   const eventBus = new EventBus();
-  const store = new WorldStateStore(eventBus, { enableDebug: false });
+  const store = new WorldStateStore(eventBus, {
+    enableDebug: false,
+    tutorialPromptSnapshotLimit: 12,
+  });
   store.init();
 
   const seed = createWorldStateSeed();
@@ -486,7 +516,7 @@ function runWorldStateStoreBenchmark() {
 
   const updateIterations = 500;
   const updateTiming = timeIterations((i) => {
-    const step = i % 5;
+    const step = i % 6;
 
     if (step === 0) {
       const questId = `quest_${(i % 120).toString().padStart(3, '0')}`;
@@ -524,6 +554,34 @@ function runWorldStateStoreBenchmark() {
         },
       });
     } else if (step === 3) {
+      const factionId = `faction_${(i % 12).toString().padStart(2, '0')}`;
+      const sourceFactionId = `faction_${((i + 5) % 12).toString().padStart(2, '0')}`;
+      const cascade = i % 2 === 0;
+      store.dispatch({
+        type: 'FACTION_ATTITUDE_CHANGED',
+        domain: 'faction',
+        payload: {
+          factionId,
+          factionName: `Faction ${factionId}`,
+          newAttitude: ['hostile', 'unfriendly', 'neutral', 'friendly', 'allied'][i % 5],
+          oldAttitude: ['neutral', 'hostile', 'friendly', 'neutral', 'unfriendly'][i % 5],
+          cascade,
+          source: cascade ? sourceFactionId : null,
+          sourceFactionName: cascade ? `Faction ${sourceFactionId}` : null,
+        },
+      });
+
+      if (i % 60 === 0) {
+        store.dispatch({
+          type: 'FACTION_REPUTATION_RESET',
+          domain: 'faction',
+          payload: {
+            reason: 'benchmark_reset',
+            initiatedBy: 'benchmark_harness',
+          },
+        });
+      }
+    } else if (step === 4) {
       const stepId = `step_${i % 5}`;
       const stepIndex = i % 5;
       store.dispatch({
@@ -616,7 +674,10 @@ function runWorldStateStoreBenchmark() {
     const activeQuests = store.select(questSlice.selectors.selectActiveQuests);
     const currentAct = store.select(storySlice.selectors.selectCurrentAct);
     const factionOverview = store.select(factionSlice.selectors.selectFactionOverview);
+    const factionCascadeSummary = store.select(factionSlice.selectors.selectFactionCascadeSummary);
     const tutorialProgress = store.select(tutorialSlice.selectors.selectTutorialProgress);
+    const tutorialSnapshots = store.select(tutorialSlice.selectors.selectPromptHistorySnapshots);
+    const latestPromptSnapshot = store.select(tutorialSlice.selectors.selectLatestPromptSnapshot);
     const dialogueActive = store.select(dialogueSlice.selectors.selectActiveDialogue);
     const dialogueTranscript = store.select(
       dialogueSlice.selectors.selectDialogueTranscript,
@@ -627,7 +688,10 @@ function runWorldStateStoreBenchmark() {
       activeQuests,
       currentAct,
       factionOverview,
+      factionCascadeSummary,
       tutorialProgress,
+      tutorialSnapshots,
+      latestPromptSnapshot,
       dialogueActive,
       dialogueTranscript,
     };
@@ -641,12 +705,17 @@ function runWorldStateStoreBenchmark() {
 
   store.destroy();
 
+  const dispatchThreshold = 0.25;
+  const dispatchThresholdMet = updateTiming.mean <= dispatchThreshold;
+
   return {
     approach: 'WorldStateStore (hybrid event-sourced)',
     updateTiming,
     queryTiming,
     snapshotTiming,
     stateBytes: Buffer.byteLength(serialized),
+    dispatchThreshold,
+    dispatchThresholdMet,
   };
 }
 
@@ -669,6 +738,14 @@ function runBenchmarks() {
     console.log(formatTiming('Query ×200', result.queryTiming));
     console.log(formatTiming('Snapshot ×50', result.snapshotTiming));
     console.log(`Serialized size: ${(result.stateBytes / 1024).toFixed(2)} KB`);
+    if (typeof result.dispatchThreshold === 'number') {
+      const status = result.dispatchThresholdMet ? 'PASS' : 'FAIL';
+      console.log(
+        `Dispatch latency ${result.updateTiming.mean.toFixed(4)}ms (threshold ${result.dispatchThreshold.toFixed(
+          2
+        )}ms): ${status}`
+      );
+    }
   }
 
   const summary = {

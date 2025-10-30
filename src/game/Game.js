@@ -18,6 +18,10 @@ import { TutorialSystem } from './systems/TutorialSystem.js';
 import { NPCMemorySystem } from './systems/NPCMemorySystem.js';
 import { DisguiseSystem } from './systems/DisguiseSystem.js';
 import { QuestSystem } from './systems/QuestSystem.js';
+import { FirewallScramblerSystem } from './systems/FirewallScramblerSystem.js';
+import { ForensicSystem } from './systems/ForensicSystem.js';
+import { DeductionSystem } from './systems/DeductionSystem.js';
+import { TutorialTranscriptRecorder } from './tutorial/TutorialTranscriptRecorder.js';
 
 // State
 import { WorldStateStore } from './state/WorldStateStore.js';
@@ -39,17 +43,26 @@ import { QuestNotification } from './ui/QuestNotification.js';
 import { InteractionPromptOverlay } from './ui/InteractionPromptOverlay.js';
 import { MovementIndicatorOverlay } from './ui/MovementIndicatorOverlay.js';
 import { QuestLogUI } from './ui/QuestLogUI.js';
+import { CaseFileUI } from './ui/CaseFileUI.js';
+import { DeductionBoard } from './ui/DeductionBoard.js';
 import { InventoryOverlay } from './ui/InventoryOverlay.js';
 import { AudioFeedbackController } from './audio/AudioFeedbackController.js';
+import { SFXCatalogLoader } from './audio/SFXCatalogLoader.js';
+import { AdaptiveMoodEmitter } from './audio/AdaptiveMoodEmitter.js';
+import { SuspicionMoodMapper } from './audio/SuspicionMoodMapper.js';
+import { GameplayAdaptiveAudioBridge } from './audio/GameplayAdaptiveAudioBridge.js';
+import { SaveInspectorOverlay } from './ui/SaveInspectorOverlay.js';
 
 // Managers
 import { FactionManager } from './managers/FactionManager.js';
 import { QuestManager } from './managers/QuestManager.js';
 import { StoryFlagManager } from './managers/StoryFlagManager.js';
+import { CaseManager } from './managers/CaseManager.js';
 import { SaveManager } from './managers/SaveManager.js';
 
 // Quest data
 import { registerAct1Quests } from './data/quests/act1Quests.js';
+import { tutorialCase } from './data/cases/tutorialCase.js';
 
 // Dialogue data
 import { registerAct1Dialogues } from './data/dialogues/Act1Dialogues.js';
@@ -61,6 +74,7 @@ import { createNPCEntity } from './entities/NPCEntity.js';
 
 // Scenes
 import { loadAct1Scene } from './scenes/Act1Scene.js';
+import { loadMemoryParlorScene } from './scenes/MemoryParlorScene.js';
 
 // Configuration
 import { GameConfig } from './config/GameConfig.js';
@@ -70,6 +84,30 @@ import { InputState } from './config/Controls.js';
 import { Transform } from './components/Transform.js';
 import { Collider } from './components/Collider.js';
 import { Sprite } from './components/Sprite.js';
+import { TriggerSystem } from '../engine/physics/TriggerSystem.js';
+
+const ACT1_RETURN_SPAWN = { x: 220, y: 360 };
+const DEFAULT_FORENSIC_TOOL_LABELS = Object.freeze({
+  basic_magnifier: 'Basic Magnifier',
+  fingerprint_kit: 'Fingerprint Kit',
+  memory_analyzer: 'Memory Analyzer',
+  document_scanner: 'Document Scanner',
+});
+const DEFAULT_FORENSIC_SKILL_LABELS = Object.freeze({
+  forensic_skill_1: 'Forensic Skill I',
+  forensic_skill_2: 'Forensic Skill II',
+  forensic_skill_3: 'Forensic Skill III',
+});
+const DEFAULT_FORENSIC_TYPE_LABELS = Object.freeze({
+  fingerprint: 'Fingerprint Analysis',
+  document: 'Document Analysis',
+  memory_trace: 'Memory Trace Analysis',
+});
+const FORENSIC_DIFFICULTY_DESCRIPTORS = Object.freeze({
+  1: 'Routine',
+  2: 'Challenging',
+  3: 'Expert',
+});
 
 /**
  * Game coordinator class
@@ -87,6 +125,17 @@ export class Game {
     this.audioManager = typeof engine.getAudioManager === 'function'
       ? engine.getAudioManager()
       : engine.audioManager || null;
+    this.sfxCatalogLoader = null;
+    this._sfxCatalogSummary = null;
+    this.audioTelemetry = { currentState: null, history: [] };
+    this._audioTelemetryUnbind = null;
+    this.adaptiveMusic = null;
+    this._adaptiveMusicReady = false;
+    this._adaptiveMoodHandlers = [];
+    this._activeAmbientController = null;
+    this.suspicionMoodMapper = null;
+    this.adaptiveMoodEmitter = null;
+    this.gameplayAdaptiveAudioBridge = null;
 
     // Game state
     this.inputState = new InputState(engine.eventBus);
@@ -97,20 +146,26 @@ export class Game {
     this.factionManager = null;
     this.questManager = null;
     this.storyFlagManager = null;
+    this.caseManager = null;
     this.saveManager = null;
     this.worldStateStore = null;
+    this.tutorialTranscriptRecorder = null;
 
     // Game systems (game-specific, not engine)
     this.gameSystems = {
       playerMovement: null,
+      deduction: null,
       investigation: null,
+      forensic: null,
       factionReputation: null,
       knowledgeProgression: null,
       dialogue: null,
       cameraFollow: null,
       tutorial: null,
       npcMemory: null,
+      firewallScrambler: null,
       disguise: null,
+      trigger: null,
       quest: null,
       render: null  // RenderSystem (engine system managed by game)
     };
@@ -129,6 +184,17 @@ export class Game {
     this.caseFileUI = null;
     this.deductionBoard = null;
     this.audioFeedback = null;
+    this.saveInspectorOverlay = null;
+
+    // Forensic prompt plumbing
+    this._forensicPromptQueue = [];
+    this._activeForensicPrompt = null;
+    const forensicLocalization = GameConfig.localization?.forensic ?? {};
+    this._forensicLabels = {
+      tools: { ...DEFAULT_FORENSIC_TOOL_LABELS, ...(forensicLocalization.toolLabels ?? {}) },
+      skills: { ...DEFAULT_FORENSIC_SKILL_LABELS, ...(forensicLocalization.skillLabels ?? {}) },
+      types: { ...DEFAULT_FORENSIC_TYPE_LABELS, ...(forensicLocalization.typeLabels ?? {}) },
+    };
 
     // Input handlers
     this._handleDialogueInput = null;
@@ -138,6 +204,19 @@ export class Game {
 
     // Engine frame hook cleanup
     this._detachFrameHooks = null;
+
+    // Scene bookkeeping
+    this.playerEntityId = null;
+    this.activeScene = {
+      id: null,
+      entities: [],
+      cleanup: null,
+      metadata: {}
+    };
+    this._memoryParlorSceneLoaded = false;
+    this._sceneTransitionInFlight = false;
+
+    this.handleObjectiveCompleted = this.handleObjectiveCompleted.bind(this);
   }
 
   /**
@@ -155,7 +234,7 @@ export class Game {
     // Initialize UI overlays
     this.initializeUIOverlays();
     // Initialize audio integrations that respond to UI/gameplay feedback
-    this.initializeAudioIntegrations();
+    await this.initializeAudioIntegrations();
 
     if (typeof this.engine.setFrameHooks === 'function') {
       this._detachFrameHooks = this.engine.setFrameHooks({
@@ -203,6 +282,11 @@ export class Game {
     this.storyFlagManager.init();
     console.log('[Game] StoryFlagManager initialized');
 
+    // Initialize CaseManager (register tutorial case and set active)
+    this.caseManager = new CaseManager(this.eventBus);
+    this.caseManager.registerCase(tutorialCase, { activate: true });
+    console.log('[Game] CaseManager initialized with tutorial case');
+
     // Initialize QuestManager (required by QuestSystem)
     this.questManager = new QuestManager(
       this.eventBus,
@@ -216,6 +300,10 @@ export class Game {
     registerAct1Quests(this.questManager);
     console.log('[Game] Act 1 quests registered');
 
+    // Initialize TutorialTranscriptRecorder prior to SaveManager wiring
+    this.tutorialTranscriptRecorder = new TutorialTranscriptRecorder(this.eventBus);
+    console.log('[Game] TutorialTranscriptRecorder initialized');
+
     // Initialize SaveManager (after all other managers)
     this.saveManager = new SaveManager(this.eventBus, {
       storyFlagManager: this.storyFlagManager,
@@ -223,16 +311,25 @@ export class Game {
       factionManager: this.factionManager,
       tutorialSystem: null, // Will be set after tutorial system is created
       worldStateStore: this.worldStateStore,
+      tutorialTranscriptRecorder: this.tutorialTranscriptRecorder,
     });
     this.saveManager.init();
     console.log('[Game] SaveManager initialized');
+
+    // Begin capturing tutorial transcript events for runtime sessions
+    this.tutorialTranscriptRecorder.start();
+    console.log('[Game] TutorialTranscriptRecorder started');
 
     // Create investigation system (needed by other systems)
     this.gameSystems.investigation = new InvestigationSystem(
       this.componentRegistry,
       this.eventBus
     );
-    this.gameSystems.investigation.init();
+    // Create forensic system (processes analysis queues after investigation)
+    this.gameSystems.forensic = new ForensicSystem(
+      this.componentRegistry,
+      this.eventBus
+    );
 
     // Create player movement system
     this.gameSystems.playerMovement = new PlayerMovementSystem(
@@ -240,7 +337,6 @@ export class Game {
       this.eventBus,
       this.inputState
     );
-    this.gameSystems.playerMovement.init();
 
     // Create faction reputation system (now receives FactionManager)
     this.gameSystems.factionReputation = new FactionReputationSystem(
@@ -248,7 +344,6 @@ export class Game {
       this.eventBus,
       this.factionManager
     );
-    this.gameSystems.factionReputation.init();
 
     // Create knowledge progression system
     this.gameSystems.knowledgeProgression = new KnowledgeProgressionSystem(
@@ -256,7 +351,6 @@ export class Game {
       this.eventBus,
       this.gameSystems.investigation
     );
-    this.gameSystems.knowledgeProgression.init();
 
     // Create dialogue system (now receives FactionManager)
     this.gameSystems.dialogue = new DialogueSystem(
@@ -266,7 +360,6 @@ export class Game {
       this.factionManager,
       this.worldStateStore
     );
-    this.gameSystems.dialogue.init();
 
     // Register Act 1 dialogues
     registerAct1Dialogues(this.gameSystems.dialogue);
@@ -278,14 +371,12 @@ export class Game {
       this.eventBus,
       this.camera
     );
-    this.gameSystems.cameraFollow.init();
 
     // Create tutorial system
     this.gameSystems.tutorial = new TutorialSystem(
       this.componentRegistry,
       this.eventBus
     );
-    this.gameSystems.tutorial.init();
 
     // Link tutorial system to SaveManager
     if (this.saveManager) {
@@ -298,7 +389,13 @@ export class Game {
       this.eventBus,
       this.factionManager
     );
-    this.gameSystems.npcMemory.init();
+
+    // Create firewall scrambler system (bridges infiltration gadget to stealth systems)
+    this.gameSystems.firewallScrambler = new FirewallScramblerSystem(
+      this.componentRegistry,
+      this.eventBus,
+      this.storyFlagManager
+    );
 
     // Create disguise system (requires FactionManager)
     this.gameSystems.disguise = new DisguiseSystem(
@@ -306,7 +403,12 @@ export class Game {
       this.eventBus,
       this.factionManager
     );
-    this.gameSystems.disguise.init();
+
+    // Create trigger system (engine physics layer for area triggers)
+    this.gameSystems.trigger = new TriggerSystem(
+      this.componentRegistry,
+      this.eventBus
+    );
 
     // Create quest system (requires QuestManager)
     this.gameSystems.quest = new QuestSystem(
@@ -314,7 +416,14 @@ export class Game {
       this.eventBus,
       this.questManager
     );
-    this.gameSystems.quest.init();
+
+    // Create deduction system (links case manager to deduction board UI)
+    this.gameSystems.deduction = new DeductionSystem(
+      this.componentRegistry,
+      this.eventBus,
+      this.caseManager,
+      null
+    );
 
     // Create render system (engine system, runs last after all logic)
     this.gameSystems.render = new RenderSystem(
@@ -323,21 +432,33 @@ export class Game {
       this.renderer.layeredRenderer,
       this.camera
     );
-    this.gameSystems.render.init();
 
-    // Register systems with engine SystemManager
-    // Priority order: Tutorial (5), PlayerMovement (10), NPCMemory (20), Disguise (22), Faction (25), Quest (27), Investigation (30), Knowledge (35), Dialogue (40), Camera (90), Render (100)
-    this.systemManager.registerSystem(this.gameSystems.tutorial, 5);
-    this.systemManager.registerSystem(this.gameSystems.playerMovement, 10);
-    this.systemManager.registerSystem(this.gameSystems.npcMemory, 20);
-    this.systemManager.registerSystem(this.gameSystems.disguise, 22);
-    this.systemManager.registerSystem(this.gameSystems.factionReputation, 25);
-    this.systemManager.registerSystem(this.gameSystems.quest, 27);
-    this.systemManager.registerSystem(this.gameSystems.investigation, 30);
-    this.systemManager.registerSystem(this.gameSystems.knowledgeProgression, 35);
-    this.systemManager.registerSystem(this.gameSystems.dialogue, 40);
-    this.systemManager.registerSystem(this.gameSystems.cameraFollow, 90);
-    this.systemManager.registerSystem(this.gameSystems.render, 100);  // Render last
+    // Register systems with engine SystemManager (priorities come from each system definition)
+    const systemRegistrationOrder = [
+      ['tutorial', this.gameSystems.tutorial],
+      ['playerMovement', this.gameSystems.playerMovement],
+      ['npcMemory', this.gameSystems.npcMemory],
+      ['firewallScrambler', this.gameSystems.firewallScrambler],
+      ['disguise', this.gameSystems.disguise],
+      ['trigger', this.gameSystems.trigger],
+      ['factionReputation', this.gameSystems.factionReputation],
+      ['quest', this.gameSystems.quest],
+      ['deduction', this.gameSystems.deduction],
+      ['investigation', this.gameSystems.investigation],
+      ['forensic', this.gameSystems.forensic],
+      ['knowledgeProgression', this.gameSystems.knowledgeProgression],
+      ['dialogue', this.gameSystems.dialogue],
+      ['cameraFollow', this.gameSystems.cameraFollow],
+      ['render', this.gameSystems.render],
+    ];
+
+    for (const [systemName, systemInstance] of systemRegistrationOrder) {
+      if (!systemInstance) {
+        console.warn(`[Game] Skipping registration for system "${systemName}" (not instantiated)`);
+        continue;
+      }
+      this.systemManager.registerSystem(systemInstance, { name: systemName });
+    }
 
     console.log('[Game] Game systems initialized');
   }
@@ -373,9 +494,13 @@ export class Game {
     // Create reputation UI
     this.reputationUI = new ReputationUI(300, 500, {
       eventBus: this.eventBus,
+      store: this.worldStateStore,
       x: 20,
       y: 80
     });
+    if (this.reputationUI.init) {
+      this.reputationUI.init();
+    }
 
     // Create disguise UI
     this.disguiseUI = new DisguiseUI(350, 450, {
@@ -403,15 +528,44 @@ export class Game {
     });
     this.questTrackerHUD.init();
 
+    const canvasWidth = this.engine.canvas.width;
+    const canvasHeight = this.engine.canvas.height;
+
     // Create quest log UI
     this.questLogUI = new QuestLogUI(700, 500, {
       eventBus: this.eventBus,
       questManager: this.questManager,
       worldStateStore: this.worldStateStore,
-      x: (this.engine.canvas.width - 700) / 2,
-      y: (this.engine.canvas.height - 500) / 2
+      x: (canvasWidth - 700) / 2,
+      y: (canvasHeight - 500) / 2
     });
     this.questLogUI.init();
+
+    // Create case file UI (anchored near right edge)
+    this.caseFileUI = new CaseFileUI(420, 520, {
+      eventBus: this.eventBus,
+      x: canvasWidth - 440,
+      y: 80,
+      onClose: () => {
+        if (this.caseFileUI) {
+          this.caseFileUI.hide('close_button');
+        }
+      }
+    });
+    this._loadActiveCaseIntoUI();
+
+    // Create deduction board UI (centered)
+    this.deductionBoard = new DeductionBoard(720, 520, {
+      eventBus: this.eventBus,
+      onClose: () => {
+        if (this.deductionBoard) {
+          this.deductionBoard.hide('close_button');
+        }
+      }
+    });
+    if (this.gameSystems.deduction) {
+      this.gameSystems.deduction.setDeductionBoard(this.deductionBoard);
+    }
 
     // Create inventory overlay (operates on world state inventory slice)
     this.inventoryOverlay = new InventoryOverlay(
@@ -431,6 +585,7 @@ export class Game {
       this.camera
     );
     this.interactionPromptOverlay.init();
+    this._bindForensicPromptHandlers();
 
     // Create player movement indicator overlay
     this.movementIndicatorOverlay = new MovementIndicatorOverlay(
@@ -440,13 +595,30 @@ export class Game {
     );
     this.movementIndicatorOverlay.init();
 
+    // Create SaveManager inspector overlay (bottom-right)
+    this.saveInspectorOverlay = new SaveInspectorOverlay(
+      this.engine.canvas,
+      this.eventBus,
+      {
+        saveManager: this.saveManager,
+        store: this.worldStateStore,
+        width: 360,
+        height: 240,
+        x: this.engine.canvas.width - 380,
+        y: this.engine.canvas.height - 280,
+      }
+    );
+    if (this.saveInspectorOverlay.init) {
+      this.saveInspectorOverlay.init();
+    }
+
     console.log('[Game] UI overlays initialized');
   }
 
   /**
    * Initialize audio feedback hooks for player prompts and interactions.
    */
-  initializeAudioIntegrations() {
+  async initializeAudioIntegrations() {
     if (this.audioFeedback || !this.eventBus) {
       return;
     }
@@ -456,29 +628,125 @@ export class Game {
       return;
     }
 
+    if (!this.sfxCatalogLoader) {
+      this.sfxCatalogLoader = new SFXCatalogLoader(this.audioManager, {});
+    }
+
+    try {
+      this._sfxCatalogSummary = await this.sfxCatalogLoader.load();
+      if (this._sfxCatalogSummary.failed > 0) {
+        console.warn('[Game] SFX catalog preload had failures:', this._sfxCatalogSummary);
+      }
+    } catch (error) {
+      console.warn('[Game] Failed to load SFX catalog:', error);
+    }
+
     this.audioFeedback = new AudioFeedbackController(this.eventBus, this.audioManager, {
       movementCooldown: 0.28,
       promptCooldown: 0.45
     });
     this.audioFeedback.init();
+    if (!this._audioTelemetryUnbind && typeof this.eventBus?.on === 'function') {
+      const unbind = this.eventBus.on('audio:adaptive:state_changed', (payload) =>
+        this._handleAdaptiveStateChanged(payload)
+      );
+      if (typeof unbind === 'function') {
+        this._audioTelemetryUnbind = unbind;
+      }
+    }
     console.log('[Game] Audio feedback controller initialized');
+
+    this._ensureAdaptiveMoodHandlers();
+
+    if (!this.suspicionMoodMapper) {
+      this.suspicionMoodMapper = new SuspicionMoodMapper({
+        defaultMood: GameConfig?.audio?.memoryParlorAmbient?.defaultAdaptiveState ?? 'ambient',
+        thresholds: {
+          stealth: 8,
+          alert: 25,
+          combat: 60,
+          calm: 5,
+        },
+      });
+    }
+
+    if (!this.adaptiveMoodEmitter) {
+      this.adaptiveMoodEmitter = new AdaptiveMoodEmitter(this.eventBus, {
+        defaultSource: 'gameplay',
+        moodMapper: this.suspicionMoodMapper,
+      });
+    }
+
+    const audioConfig = GameConfig?.audio ?? {};
+    const bridgeEnabled = audioConfig.enableGameplayEmitters !== false;
+    const bridgeOptions = {
+      componentRegistry: this.componentRegistry,
+      updateIntervalMs: audioConfig.gameplayMoodBridge?.updateIntervalMs,
+      moodHintDurationMs: audioConfig.gameplayMoodBridge?.moodHintDurationMs,
+      enabled: bridgeEnabled,
+    };
+    if (!this.gameplayAdaptiveAudioBridge && bridgeEnabled) {
+      this.gameplayAdaptiveAudioBridge = new GameplayAdaptiveAudioBridge(
+        this.eventBus,
+        this.adaptiveMoodEmitter,
+        bridgeOptions
+      );
+      this.gameplayAdaptiveAudioBridge.attach();
+    } else if (this.gameplayAdaptiveAudioBridge) {
+      this.gameplayAdaptiveAudioBridge.componentRegistry = this.componentRegistry;
+      this.gameplayAdaptiveAudioBridge.setMoodEmitter(this.adaptiveMoodEmitter);
+      this.gameplayAdaptiveAudioBridge.enabled = bridgeEnabled;
+      if (bridgeEnabled) {
+        this.gameplayAdaptiveAudioBridge.attach();
+      }
+    }
   }
 
   /**
    * Load Act 1 scene (The Hollow Case)
    */
-  async loadAct1Scene() {
+  async loadAct1Scene(options = {}) {
     console.log('[Game] Loading Act 1 scene...');
+
+    // Clear any existing scene entities before loading new layout
+    this._destroySceneEntities();
 
     // Load the Act 1 scene with all required entities
     const sceneData = await loadAct1Scene(
       this.entityManager,
       this.componentRegistry,
-      this.eventBus
+      this.eventBus,
+      {
+        reusePlayerId: options.reusePlayerId ?? null,
+      }
     );
 
+    this.playerEntityId = sceneData.playerId;
+    this.activeScene = {
+      id: sceneData.sceneName || 'act1_hollow_case',
+      entities: Array.isArray(sceneData.sceneEntities) ? [...sceneData.sceneEntities] : [],
+      cleanup: typeof sceneData.cleanup === 'function' ? sceneData.cleanup : null,
+      metadata: sceneData.metadata || {}
+    };
+    this._memoryParlorSceneLoaded = false;
+
+    const spawnPoint = options.spawnPoint
+      || sceneData.spawnPoint
+      || { x: 150, y: 300 };
+    const playerTransform = this.componentRegistry.getComponent(this.playerEntityId, 'Transform');
+    if (playerTransform) {
+      playerTransform.x = spawnPoint.x;
+      playerTransform.y = spawnPoint.y;
+    }
+
+    const playerController = this.componentRegistry.getComponent(this.playerEntityId, 'PlayerController');
+    if (playerController) {
+      playerController.velocityX = 0;
+      playerController.velocityY = 0;
+    }
+
     // Snap camera to player spawn position
-    this.gameSystems.cameraFollow.snapTo(sceneData.spawnPoint.x, sceneData.spawnPoint.y);
+    this.gameSystems.cameraFollow.snapTo(spawnPoint.x, spawnPoint.y);
 
     // Subscribe to game events for logging
     this.subscribeToGameEvents();
@@ -487,6 +755,209 @@ export class Game {
     this.startGame();
 
     console.log('[Game] Act 1 scene loaded');
+  }
+
+  /**
+   * Destroy a single entity safely, removing all associated components first.
+   * @param {number} entityId
+   * @private
+   */
+  _destroyEntity(entityId) {
+    if (entityId == null) {
+      return;
+    }
+
+    if (!this.entityManager || typeof this.entityManager.hasEntity !== 'function') {
+      return;
+    }
+
+    if (!this.entityManager.hasEntity(entityId)) {
+      return;
+    }
+
+    if (this.componentRegistry && typeof this.componentRegistry.removeAllComponents === 'function') {
+      this.componentRegistry.removeAllComponents(entityId);
+    }
+
+    if (typeof this.entityManager.destroyEntity === 'function') {
+      this.entityManager.destroyEntity(entityId);
+    }
+  }
+
+  /**
+   * Clears the currently active scene entities and invokes cleanup handlers.
+   * @private
+   */
+  _destroySceneEntities() {
+    if (!this.activeScene) {
+      return;
+    }
+
+    if (typeof this.activeScene.cleanup === 'function') {
+      try {
+        this.activeScene.cleanup();
+      } catch (error) {
+        console.error('[Game] Scene cleanup handler failed', error);
+      }
+    }
+
+    if (Array.isArray(this.activeScene.entities)) {
+      for (const entityId of this.activeScene.entities) {
+        this._destroyEntity(entityId);
+      }
+    }
+
+    this.activeScene.entities = [];
+    this.activeScene.cleanup = null;
+    this.activeScene.metadata = {};
+    this._activeAmbientController = null;
+    this._registerAdaptiveMusic(null, { reason: 'scene_unloaded' });
+  }
+
+  /**
+   * Transition into the Memory Parlor infiltration scene.
+   * Reuses the existing player entity and repositions them at the returned spawn point.
+   *
+   * @param {Object} options - Optional transition options
+   * @returns {Promise<string|null>} Scene identifier or null if transition skipped
+   */
+  async loadMemoryParlorScene(options = {}) {
+    if (this._sceneTransitionInFlight) {
+      return null;
+    }
+
+    if (this.playerEntityId == null) {
+      console.warn('[Game] Cannot load Memory Parlor scene before player is initialized');
+      return null;
+    }
+
+    if (this._memoryParlorSceneLoaded && !options.force) {
+      return this.activeScene?.id || null;
+    }
+
+    this._sceneTransitionInFlight = true;
+
+    try {
+      this._destroySceneEntities();
+
+      const sceneData = await loadMemoryParlorScene(
+        this.entityManager,
+        this.componentRegistry,
+        this.eventBus,
+        {
+          ...options,
+          audioManager: this.audioManager,
+        }
+      );
+
+      this.activeScene = {
+        id: sceneData.sceneName || 'memory_parlor_infiltration',
+        entities: Array.isArray(sceneData.sceneEntities) ? [...sceneData.sceneEntities] : [],
+        cleanup: typeof sceneData.cleanup === 'function' ? sceneData.cleanup : null,
+        metadata: sceneData.metadata || {}
+      };
+
+      this._activeAmbientController = this.activeScene.metadata?.ambientAudioController || null;
+      if (this._activeAmbientController &&
+        typeof this._activeAmbientController.getAdaptiveMusic === 'function') {
+        this._registerAdaptiveMusic(
+          this._activeAmbientController.getAdaptiveMusic(),
+          { source: this.activeScene.id }
+        );
+      } else {
+        this._registerAdaptiveMusic(null, { reason: 'scene_without_ambient' });
+      }
+
+      const spawnPoint = sceneData.spawnPoint || { x: 160, y: 320 };
+      const playerTransform = this.componentRegistry.getComponent(this.playerEntityId, 'Transform');
+      if (playerTransform) {
+        playerTransform.x = spawnPoint.x;
+        playerTransform.y = spawnPoint.y;
+      }
+
+      const playerController = this.componentRegistry.getComponent(this.playerEntityId, 'PlayerController');
+      if (playerController) {
+        playerController.velocityX = 0;
+        playerController.velocityY = 0;
+      }
+
+      this.gameSystems.cameraFollow.snapTo(spawnPoint.x, spawnPoint.y);
+      this._memoryParlorSceneLoaded = true;
+
+      this.eventBus.emit('scene:loaded', {
+        sceneId: this.activeScene.id,
+        spawnPoint,
+        reason: options.reason || 'manual'
+      });
+
+      return this.activeScene.id;
+    } finally {
+      this._sceneTransitionInFlight = false;
+    }
+  }
+
+  /**
+   * Return the player to Act 1 after completing the Memory Parlor escape.
+   * @param {Object} options
+   * @returns {Promise<string|null>}
+   */
+  async returnToAct1FromMemoryParlor(options = {}) {
+    if (this._sceneTransitionInFlight) {
+      return null;
+    }
+
+    if (this.playerEntityId == null) {
+      console.warn('[Game] Cannot return to Act 1 without an active player entity');
+      return null;
+    }
+
+    this._sceneTransitionInFlight = true;
+    const spawnPoint = options.spawnPoint || ACT1_RETURN_SPAWN;
+
+    try {
+      await this.loadAct1Scene({
+        reusePlayerId: this.playerEntityId,
+        spawnPoint,
+      });
+
+      this.eventBus.emit('scene:loaded', {
+        sceneId: this.activeScene?.id || 'act1_hollow_case',
+        spawnPoint,
+        reason: options.reason || 'quest_return',
+      });
+
+      return this.activeScene?.id || null;
+    } finally {
+      this._sceneTransitionInFlight = false;
+    }
+  }
+
+  /**
+   * Objective completion hook for quest-driven scene transitions.
+   * @param {Object} payload
+   */
+  handleObjectiveCompleted(payload = {}) {
+    const { questId, objectiveId } = payload;
+    if (!questId || !objectiveId) {
+      return;
+    }
+
+    if (
+      questId === 'case_003_memory_parlor' &&
+      objectiveId === 'obj_locate_parlor' &&
+      !this._memoryParlorSceneLoaded
+    ) {
+      void this.loadMemoryParlorScene({ reason: 'quest_transition' });
+      return;
+    }
+
+    if (
+      questId === 'case_003_memory_parlor' &&
+      objectiveId === 'obj_escape_parlor' &&
+      this._memoryParlorSceneLoaded
+    ) {
+      void this.returnToAct1FromMemoryParlor({ reason: 'quest_return' });
+    }
   }
 
   /**
@@ -557,8 +1028,11 @@ export class Game {
       disguise: 'Disguise UI',
       interactionPrompt: 'Interaction Prompt',
       questLog: 'Quest Log',
+      caseFile: 'Case File',
+      deductionBoard: 'Deduction Board',
       reputation: 'Reputation UI',
       tutorial: 'Tutorial Overlay',
+      saveInspector: 'Save Inspector',
     };
 
     this._offGameEventHandlers.push(this.eventBus.on('ui:overlay_visibility_changed', (data) => {
@@ -585,9 +1059,18 @@ export class Game {
       console.log(`[UI] Overlay ${stateLabel}: ${label}${suffix}`);
     }));
 
+    this._offGameEventHandlers.push(this.eventBus.on('input:caseFile:pressed', () => {
+      if (!this.caseFileUI) {
+        return;
+      }
+      this._loadActiveCaseIntoUI();
+      this.caseFileUI.toggle('input:caseFile');
+    }));
+
     // Evidence events
     this._offGameEventHandlers.push(this.eventBus.on('evidence:collected', (data) => {
       console.log(`[Game] Evidence collected: ${data.evidenceId}`);
+      this._loadActiveCaseIntoUI();
     }));
 
     this._offGameEventHandlers.push(this.eventBus.on('evidence:detected', () => {
@@ -597,7 +1080,21 @@ export class Game {
     // Clue events
     this._offGameEventHandlers.push(this.eventBus.on('clue:derived', (data) => {
       console.log(`[Game] New clue: ${data.clueId} from ${data.evidenceId}`);
+      this._loadActiveCaseIntoUI();
     }));
+
+    const caseEventsForRefresh = [
+      'case:created',
+      'case:activated',
+      'case:objective_completed',
+      'case:objectives_complete',
+      'case:solved'
+    ];
+    for (const eventName of caseEventsForRefresh) {
+      this._offGameEventHandlers.push(this.eventBus.on(eventName, () => {
+        this._loadActiveCaseIntoUI();
+      }));
+    }
 
     // Reputation events
     this._offGameEventHandlers.push(this.eventBus.on('reputation:changed', (data) => {
@@ -653,14 +1150,46 @@ export class Game {
           }
 
           inventoryPayload.tags = mergedTags;
+          const transactionTimestamp = Number.isFinite(data.timestamp)
+            ? Math.trunc(data.timestamp)
+            : Date.now();
+          let transactionCost = null;
+          if (data.cost && typeof data.cost === 'object') {
+            transactionCost = {};
+            if (Number.isFinite(data.cost.credits) && data.cost.credits !== 0) {
+              transactionCost.credits = Math.trunc(data.cost.credits);
+            }
+            if (data.cost.currencies && typeof data.cost.currencies === 'object') {
+              const currencies = {};
+              for (const [currencyId, value] of Object.entries(data.cost.currencies)) {
+                if (Number.isFinite(value) && value !== 0) {
+                  currencies[currencyId] = Math.trunc(value);
+                }
+              }
+              if (Object.keys(currencies).length) {
+                transactionCost.currencies = currencies;
+              }
+            }
+            if (!Object.keys(transactionCost).length) {
+              transactionCost = null;
+            }
+          }
+          const transactionContext = data.context && typeof data.context === 'object'
+            ? { ...data.context }
+            : {};
+
           inventoryPayload.metadata = {
             ...(inventoryPayload.metadata || {}),
             vendorId,
             vendorName,
             vendorFaction,
             transactionId: data.transactionId ?? null,
+            transactionTimestamp,
+            transactionCost,
+            transactionContext,
             source: 'vendor_purchase',
           };
+          inventoryPayload.lastSeenAt = transactionTimestamp;
 
           this.eventBus.emit('inventory:item_added', inventoryPayload);
           console.log(`[Vendor] Purchase completed: ${vendorName} sold ${inventoryPayload.id}`);
@@ -687,10 +1216,517 @@ export class Game {
       }
     }));
 
+    // Scene transitions
+    this._offGameEventHandlers.push(this.eventBus.on('objective:completed', this.handleObjectiveCompleted));
+
+    this._offGameEventHandlers.push(this.eventBus.on('scene:load:memory_parlor', (data = {}) => {
+      void this.loadMemoryParlorScene({
+        reason: data.reason || 'event_bus',
+        force: Boolean(data.force),
+        spawnPoint: data.spawnPoint || undefined
+      });
+    }));
+
     // Player movement
     this._offGameEventHandlers.push(this.eventBus.on('player:moved', () => {
       // Could add footstep sounds here
     }));
+
+    // Rebind forensic prompt listeners after resetting event subscriptions
+    this._bindForensicPromptHandlers();
+  }
+
+  /**
+   * Sync the currently active case into the case file UI.
+   * @private
+   */
+  _loadActiveCaseIntoUI() {
+    if (!this.caseFileUI) {
+      return;
+    }
+
+    if (!this.caseManager) {
+      this.caseFileUI.loadCase(null);
+      return;
+    }
+
+    const activeCase = this.caseManager.getActiveCase();
+    if (activeCase) {
+      this.caseFileUI.loadCase(activeCase);
+    } else {
+      this.caseFileUI.loadCase(null);
+    }
+  }
+
+  /**
+   * Wire forensic analysis prompts into the general interaction overlay.
+   * @private
+   */
+  _bindForensicPromptHandlers() {
+    if (!this.eventBus) {
+      return;
+    }
+
+    this._clearForensicPromptState({ hidePrompt: true });
+
+    const offAvailable = this.eventBus.on('forensic:available', (payload) => {
+      this._handleForensicAvailable(payload);
+    });
+    if (typeof offAvailable === 'function') {
+      this._offGameEventHandlers.push(offAvailable);
+    }
+
+    const offQueued = this.eventBus.on('forensic:queued', (payload) => {
+      this._handleForensicQueueAdvance(payload);
+    });
+    if (typeof offQueued === 'function') {
+      this._offGameEventHandlers.push(offQueued);
+    }
+
+    const offStarted = this.eventBus.on('forensic:started', (payload) => {
+      this._handleForensicQueueAdvance(payload);
+    });
+    if (typeof offStarted === 'function') {
+      this._offGameEventHandlers.push(offStarted);
+    }
+
+    const offComplete = this.eventBus.on('forensic:complete', (payload) => {
+      this._handleForensicCompletion(payload);
+    });
+    if (typeof offComplete === 'function') {
+      this._offGameEventHandlers.push(offComplete);
+    }
+
+    const offCancelled = this.eventBus.on('forensic:cancelled', () => {
+      this._clearForensicPromptState({ hidePrompt: true });
+    });
+    if (typeof offCancelled === 'function') {
+      this._offGameEventHandlers.push(offCancelled);
+    }
+
+    const offFailed = this.eventBus.on('forensic:failed', (payload) => {
+      this._handleForensicFailure(payload);
+    });
+    if (typeof offFailed === 'function') {
+      this._offGameEventHandlers.push(offFailed);
+    }
+
+    const offInput = this.eventBus.on('input:forensicAnalysis:pressed', () => {
+      this._handleForensicInput();
+    });
+    if (typeof offInput === 'function') {
+      this._offGameEventHandlers.push(offInput);
+    }
+
+    const offCaseSolved = this.eventBus.on('case:solved', () => {
+      this._clearForensicPromptState({ hidePrompt: true });
+    });
+    if (typeof offCaseSolved === 'function') {
+      this._offGameEventHandlers.push(offCaseSolved);
+    }
+  }
+
+  _handleForensicAvailable(payload) {
+    if (!payload || typeof payload.evidenceId !== 'string') {
+      return;
+    }
+
+    const promptData = {
+      ...payload,
+      timestamp: Date.now(),
+      lastError: null
+    };
+
+    this._forensicPromptQueue.push(promptData);
+
+    if (!this._activeForensicPrompt) {
+      this._activateNextForensicPrompt();
+    }
+  }
+
+  _handleForensicQueueAdvance(payload) {
+    if (!payload || typeof payload.evidenceId !== 'string') {
+      return;
+    }
+
+    if (
+      this._activeForensicPrompt &&
+      this._activeForensicPrompt.evidenceId === payload.evidenceId
+    ) {
+      this._activeForensicPrompt = null;
+      this._activateNextForensicPrompt();
+      return;
+    }
+
+    this._removeQueuedForensicPrompt(payload.evidenceId);
+  }
+
+  _handleForensicCompletion(payload) {
+    if (payload && typeof payload.evidenceId === 'string') {
+      if (
+        this._activeForensicPrompt &&
+        this._activeForensicPrompt.evidenceId === payload.evidenceId
+      ) {
+        this._activeForensicPrompt = null;
+      }
+      this._removeQueuedForensicPrompt(payload.evidenceId);
+    }
+    this._activateNextForensicPrompt();
+  }
+
+  _handleForensicFailure(payload) {
+    if (
+      !payload ||
+      typeof payload.evidenceId !== 'string' ||
+      !this._activeForensicPrompt ||
+      this._activeForensicPrompt.evidenceId !== payload.evidenceId
+    ) {
+      return;
+    }
+
+    this._activeForensicPrompt.lastError = payload;
+    this._renderActiveForensicPrompt();
+  }
+
+  _handleForensicInput() {
+    if (!this._activeForensicPrompt) {
+      return;
+    }
+
+    const evidenceId = this._activeForensicPrompt.evidenceId;
+    const started = this._beginForensicAnalysis(evidenceId);
+
+    if (!started) {
+      this._activeForensicPrompt.lastError = { reason: 'start_failed' };
+      this._renderActiveForensicPrompt();
+    }
+  }
+
+  _activateNextForensicPrompt() {
+    if (!Array.isArray(this._forensicPromptQueue) || this._forensicPromptQueue.length === 0) {
+      this._activeForensicPrompt = null;
+      this._hideForensicPrompt();
+      return;
+    }
+
+    this._activeForensicPrompt = this._forensicPromptQueue.shift();
+    this._renderActiveForensicPrompt();
+  }
+
+  _renderActiveForensicPrompt() {
+    if (!this._activeForensicPrompt) {
+      this._hideForensicPrompt();
+      return;
+    }
+
+    const text = this._buildForensicPromptText(this._activeForensicPrompt);
+    const promptPayload = {
+      text,
+      source: 'forensic_prompt'
+    };
+
+    const worldPosition = this._getEvidenceWorldPosition(this._activeForensicPrompt.evidenceId);
+    if (worldPosition) {
+      promptPayload.position = worldPosition;
+    }
+
+    this.eventBus.emit('ui:show_prompt', promptPayload);
+  }
+
+  _buildForensicPromptText(promptData) {
+    const evidenceId = promptData?.evidenceId;
+    const requirements = promptData?.requirements || null;
+    const forensicType = promptData?.forensicType || null;
+    const evidenceDefinition = this.caseManager?.getEvidenceDefinition?.(evidenceId) || null;
+    const evidenceTitle = evidenceDefinition?.title || evidenceDefinition?.name || evidenceId || 'evidence';
+
+    const requirementText = this._formatForensicRequirements(requirements);
+    let forensicLabel = '';
+    if (forensicType) {
+      const label = this._humanizeForensicType(forensicType);
+      if (label) {
+        forensicLabel = ` (${label})`;
+      }
+    }
+
+    const lines = [
+      `Press F to run forensic analysis${forensicLabel}: ${evidenceTitle}`
+    ];
+
+    if (requirementText) {
+      lines.push(`Requires ${requirementText}`);
+    }
+
+    if (promptData?.lastError) {
+      const failureText = this._formatForensicFailureMessage(promptData.lastError);
+      if (failureText) {
+        lines.push(`⚠ ${failureText}`);
+      }
+    }
+
+    return lines.join('\n');
+  }
+
+  _formatForensicRequirements(requirements) {
+    if (!requirements || typeof requirements !== 'object') {
+      return '';
+    }
+
+    const parts = [];
+    const toolCandidates = new Set();
+    if (typeof requirements.tool === 'string') {
+      toolCandidates.add(requirements.tool);
+    }
+    if (typeof requirements.requiredTool === 'string') {
+      toolCandidates.add(requirements.requiredTool);
+    }
+    if (Array.isArray(requirements.tools)) {
+      for (const toolId of requirements.tools) {
+        if (typeof toolId === 'string') {
+          toolCandidates.add(toolId);
+        }
+      }
+    }
+    for (const toolId of toolCandidates) {
+      const toolLabel = this._humanizeForensicTool(toolId);
+      if (toolLabel) {
+        parts.push(`Tool: ${toolLabel}`);
+      }
+    }
+
+    const skillCandidates = new Set();
+    const singleSkill =
+      requirements.requiredSkill ??
+      requirements.skill ??
+      null;
+    if (typeof singleSkill === 'string') {
+      skillCandidates.add(singleSkill);
+    }
+    if (Array.isArray(requirements.skills)) {
+      for (const skillId of requirements.skills) {
+        if (typeof skillId === 'string') {
+          skillCandidates.add(skillId);
+        }
+      }
+    }
+    for (const skillId of skillCandidates) {
+      const skillLabel = this._humanizeForensicSkill(skillId);
+      if (skillLabel) {
+        parts.push(`Skill: ${skillLabel}`);
+      }
+    }
+
+    const difficultyValue =
+      typeof requirements.minimumDifficulty === 'number'
+        ? requirements.minimumDifficulty
+        : typeof requirements.difficulty === 'number'
+          ? requirements.difficulty
+          : null;
+
+    if (typeof difficultyValue === 'number' && difficultyValue > 0) {
+      parts.push(`Difficulty: ${this._formatForensicDifficulty(difficultyValue)}`);
+    }
+
+    return parts.join(' · ');
+  }
+
+  _formatForensicFailureMessage(payload) {
+    if (!payload || typeof payload.reason !== 'string') {
+      return '';
+    }
+
+    switch (payload.reason) {
+      case 'not_collected':
+        return 'Collect the evidence before analyzing.';
+      case 'already_analyzed':
+        return 'Evidence already analyzed.';
+      case 'missing_requirements': {
+        const missing = [];
+        const requiredTools = new Set();
+        if (typeof payload.requiredTool === 'string') {
+          requiredTools.add(payload.requiredTool);
+        }
+        if (Array.isArray(payload.requiredTools)) {
+          for (const toolId of payload.requiredTools) {
+            if (typeof toolId === 'string') {
+              requiredTools.add(toolId);
+            }
+          }
+        }
+        for (const toolId of requiredTools) {
+          const label = this._humanizeForensicTool(toolId);
+          if (label) {
+            missing.push(`Tool: ${label}`);
+          }
+        }
+
+        const requiredSkills = new Set();
+        if (typeof payload.requiredSkill === 'string') {
+          requiredSkills.add(payload.requiredSkill);
+        }
+        if (Array.isArray(payload.requiredSkills)) {
+          for (const skillId of payload.requiredSkills) {
+            if (typeof skillId === 'string') {
+              requiredSkills.add(skillId);
+            }
+          }
+        }
+        for (const skillId of requiredSkills) {
+          const label = this._humanizeForensicSkill(skillId);
+          if (label) {
+            missing.push(`Skill: ${label}`);
+          }
+        }
+        return missing.length > 0
+          ? `Missing ${missing.join(' & ')}`
+          : 'Missing forensic requirements.';
+      }
+      case 'start_failed':
+        return 'Unable to start forensic analysis right now.';
+      default:
+        return 'Forensic analysis unavailable.';
+    }
+  }
+
+  _humanizeForensicTool(toolId) {
+    if (typeof toolId !== 'string' || toolId.length === 0) {
+      return '';
+    }
+    const label = this._forensicLabels?.tools?.[toolId];
+    if (label) {
+      return label;
+    }
+    return this._humanizeIdentifier(toolId);
+  }
+
+  _humanizeForensicSkill(skillId) {
+    if (typeof skillId !== 'string' || skillId.length === 0) {
+      return '';
+    }
+    const label = this._forensicLabels?.skills?.[skillId];
+    if (label) {
+      return label;
+    }
+    if (/^forensic_skill_(\d+)$/i.test(skillId)) {
+      const [, levelStr] = skillId.match(/^forensic_skill_(\d+)$/i) || [];
+      const level = parseInt(levelStr, 10);
+      if (!Number.isNaN(level)) {
+        const roman = this._romanizeDifficulty(level);
+        return `Forensic Skill ${roman}`;
+      }
+    }
+    return this._humanizeIdentifier(skillId);
+  }
+
+  _humanizeForensicType(typeId) {
+    if (typeof typeId !== 'string' || typeId.length === 0) {
+      return '';
+    }
+    const label = this._forensicLabels?.types?.[typeId];
+    if (label) {
+      return label;
+    }
+    return this._humanizeIdentifier(typeId);
+  }
+
+  _formatForensicDifficulty(value) {
+    const descriptor = FORENSIC_DIFFICULTY_DESCRIPTORS[value] ?? `Tier ${value}`;
+    const roman = this._romanizeDifficulty(value);
+    return `${descriptor} (${roman})`;
+  }
+
+  _romanizeDifficulty(value) {
+    const romanMap = {
+      1: 'I',
+      2: 'II',
+      3: 'III',
+      4: 'IV',
+      5: 'V',
+    };
+    return romanMap[value] ?? `${value}`;
+  }
+
+  _humanizeIdentifier(identifier) {
+    if (typeof identifier !== 'string' || identifier.length === 0) {
+      return '';
+    }
+    return identifier
+      .split('_')
+      .filter(Boolean)
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+  }
+
+  _hideForensicPrompt() {
+    this.eventBus.emit('ui:hide_prompt', { source: 'forensic_prompt' });
+  }
+
+  _getEvidenceWorldPosition(evidenceId) {
+    const entityId = this._findEvidenceEntityId(evidenceId);
+    if (entityId == null) {
+      return null;
+    }
+    const transform = this.componentRegistry.getComponent(entityId, 'Transform');
+    if (!transform) {
+      return null;
+    }
+    return { x: transform.x, y: transform.y };
+  }
+
+  _removeQueuedForensicPrompt(evidenceId) {
+    if (!Array.isArray(this._forensicPromptQueue) || this._forensicPromptQueue.length === 0) {
+      return;
+    }
+
+    this._forensicPromptQueue = this._forensicPromptQueue.filter(
+      (prompt) => prompt?.evidenceId !== evidenceId
+    );
+  }
+
+  _clearForensicPromptState(options = {}) {
+    if (!Array.isArray(this._forensicPromptQueue)) {
+      this._forensicPromptQueue = [];
+    } else {
+      this._forensicPromptQueue.length = 0;
+    }
+    this._activeForensicPrompt = null;
+    if (options.hidePrompt) {
+      this._hideForensicPrompt();
+    }
+  }
+
+  _beginForensicAnalysis(evidenceId) {
+    if (!this.gameSystems?.forensic || typeof evidenceId !== 'string') {
+      return false;
+    }
+
+    const entityId = this._findEvidenceEntityId(evidenceId);
+    if (entityId == null) {
+      console.warn('[Game] Unable to start forensic analysis, entity not found', evidenceId);
+      return false;
+    }
+
+    return this.gameSystems.forensic.initiateAnalysis(entityId, evidenceId);
+  }
+
+  _findEvidenceEntityId(evidenceId) {
+    if (!this.componentRegistry || typeof this.componentRegistry.queryEntities !== 'function') {
+      return null;
+    }
+
+    const evidenceEntities = this.componentRegistry.queryEntities('Evidence');
+    if (!Array.isArray(evidenceEntities)) {
+      return null;
+    }
+
+    for (const entityId of evidenceEntities) {
+      const evidenceComponent = this.componentRegistry.getComponent(entityId, 'Evidence');
+      if (evidenceComponent && evidenceComponent.id === evidenceId) {
+        return entityId;
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -702,6 +1738,12 @@ export class Game {
 
     // Game systems are updated by SystemManager automatically
     // This method is for game-level logic only
+
+    if (this.gameplayAdaptiveAudioBridge) {
+      this.gameplayAdaptiveAudioBridge.update(deltaTime);
+    }
+
+    this._updateAdaptiveMusic(deltaTime);
 
     // Update interval-based autosave
     if (this.saveManager) {
@@ -749,6 +1791,9 @@ export class Game {
     if (this.interactionPromptOverlay) {
       this.interactionPromptOverlay.update(deltaTime);
     }
+    if (this.saveInspectorOverlay) {
+      this.saveInspectorOverlay.update(deltaTime);
+    }
 
     // Check for pause input
     if (this.inputState.wasJustPressed('pause')) {
@@ -773,6 +1818,11 @@ export class Game {
     if (this.inventoryOverlay && this.inputState.wasJustPressed('inventory')) {
       this.inventoryOverlay.toggle('input:inventory');
     }
+
+    if (this.saveInspectorOverlay && this.inputState.wasJustPressed('saveInspector')) {
+      this.saveInspectorOverlay.toggle('input:saveInspector');
+    }
+
   }
 
   /**
@@ -1016,6 +2066,314 @@ export class Game {
     return overlays;
   }
 
+  _updateAdaptiveMusic(deltaTime = 0) {
+    if (!this.adaptiveMusic || typeof this.adaptiveMusic.update !== 'function') {
+      return;
+    }
+    try {
+      this.adaptiveMusic.update(deltaTime);
+    } catch (error) {
+      console.warn('[Game] Adaptive music update failed', error);
+    }
+  }
+
+  _ensureAdaptiveMoodHandlers() {
+    if (!this.eventBus || typeof this.eventBus.on !== 'function') {
+      return;
+    }
+    if (Array.isArray(this._adaptiveMoodHandlers) && this._adaptiveMoodHandlers.length > 0) {
+      return;
+    }
+
+    const handlers = [];
+
+    handlers.push(
+      this.eventBus.on('audio:adaptive:set_mood', (payload = {}) => {
+        const mood = typeof payload?.mood === 'string' ? payload.mood.trim() : '';
+        if (!mood) {
+          return;
+        }
+        const options = typeof payload?.options === 'object' && payload.options !== null
+          ? payload.options
+          : {};
+        const applied = this.setAdaptiveMood(mood, options);
+        if (!applied && payload?.silent !== true) {
+          console.warn('[Game] Failed to apply adaptive mood request', mood);
+        }
+      })
+    );
+
+    handlers.push(
+      this.eventBus.on('audio:adaptive:define_mood', (payload = {}) => {
+        const mood = typeof payload?.mood === 'string' ? payload.mood.trim() : '';
+        if (!mood || typeof payload?.definition !== 'object' || payload.definition === null) {
+          return;
+        }
+        this.defineAdaptiveMood(mood, payload.definition);
+      })
+    );
+
+    handlers.push(
+      this.eventBus.on('audio:adaptive:reset', (payload = {}) => {
+        const fallback = typeof payload?.mood === 'string' ? payload.mood : (this.adaptiveMusic?.defaultMood || null);
+        if (!fallback) {
+          return;
+        }
+        this.setAdaptiveMood(fallback, {
+          fadeDuration: payload?.fadeDuration,
+          force: payload?.force,
+        });
+      })
+    );
+
+    this._adaptiveMoodHandlers = handlers;
+  }
+
+  _cleanupAdaptiveMoodHandlers() {
+    if (!Array.isArray(this._adaptiveMoodHandlers)) {
+      this._adaptiveMoodHandlers = [];
+      return;
+    }
+    for (const off of this._adaptiveMoodHandlers) {
+      try {
+        if (typeof off === 'function') {
+          off();
+        }
+      } catch (error) {
+        console.warn('[Game] Failed to remove adaptive mood handler', error);
+      }
+    }
+    this._adaptiveMoodHandlers.length = 0;
+  }
+
+  _registerAdaptiveMusic(adaptiveInstance, meta = {}) {
+    if (adaptiveInstance === this.adaptiveMusic) {
+      return;
+    }
+
+    this.adaptiveMusic = adaptiveInstance || null;
+    this._adaptiveMusicReady = Boolean(this.adaptiveMusic);
+
+    if (!this.adaptiveMusic) {
+      return;
+    }
+
+    if (typeof this.adaptiveMusic.init === 'function' && meta?.skipInit !== true) {
+      try {
+        void this.adaptiveMusic.init();
+      } catch (error) {
+        console.warn('[Game] Adaptive music init failed during registration', error);
+      }
+    }
+
+    this._ensureAdaptiveMoodHandlers();
+  }
+
+  setAdaptiveMood(mood, options = {}) {
+    if (!this.adaptiveMusic || typeof this.adaptiveMusic.setMood !== 'function') {
+      return false;
+    }
+    if (!options?.force && typeof this.adaptiveMusic.currentMood === 'string') {
+      if (this.adaptiveMusic.currentMood === mood) {
+        return true;
+      }
+    }
+    try {
+      const result = this.adaptiveMusic.setMood(mood, options);
+      return result !== false;
+    } catch (error) {
+      console.warn('[Game] Adaptive mood change failed', mood, error);
+      return false;
+    }
+  }
+
+  defineAdaptiveMood(mood, definition) {
+    if (!this.adaptiveMusic || typeof this.adaptiveMusic.defineMood !== 'function') {
+      return false;
+    }
+    try {
+      this.adaptiveMusic.defineMood(mood, definition);
+      return true;
+    } catch (error) {
+      console.warn('[Game] Adaptive mood definition failed', mood, error);
+      return false;
+    }
+  }
+
+  getAdaptiveMusic() {
+    return this.adaptiveMusic;
+  }
+
+  _handleAdaptiveStateChanged(payload = {}) {
+    if (!this.audioTelemetry) {
+      this.audioTelemetry = { currentState: null, history: [] };
+    }
+    const entry = {
+      from: payload?.from ?? null,
+      to: payload?.to ?? null,
+      timestamp: typeof payload?.timestamp === 'number' ? payload.timestamp : Date.now(),
+    };
+    this.audioTelemetry.currentState = entry.to;
+    const history = Array.isArray(this.audioTelemetry.history)
+      ? this.audioTelemetry.history.slice()
+      : [];
+    history.push(entry);
+    while (history.length > 8) {
+      history.shift();
+    }
+    this.audioTelemetry.history = history;
+  }
+
+  /**
+   * Retrieve adaptive music telemetry snapshot for debug overlay.
+   * @returns {{currentState: string|null, history: Array}}
+   */
+  getAdaptiveAudioTelemetry() {
+    if (!this.audioTelemetry) {
+      return { currentState: null, history: [] };
+    }
+    return {
+      currentState: this.audioTelemetry.currentState ?? null,
+      history: Array.isArray(this.audioTelemetry.history)
+        ? this.audioTelemetry.history.slice()
+        : [],
+    };
+  }
+
+  /**
+   * Retrieve gameplay adaptive mood emitter diagnostics.
+   * @returns {{ emitter: object|null, thresholds: object|null }}
+   */
+  getAdaptiveMoodEmitterStats() {
+    const emitterState =
+      this.adaptiveMoodEmitter && typeof this.adaptiveMoodEmitter.getState === 'function'
+        ? this.adaptiveMoodEmitter.getState()
+        : null;
+    const thresholds =
+      this.suspicionMoodMapper && typeof this.suspicionMoodMapper.getThresholds === 'function'
+        ? this.suspicionMoodMapper.getThresholds()
+        : null;
+    return {
+      emitter: emitterState,
+      thresholds,
+    };
+  }
+
+  /**
+   * Retrieve gameplay adaptive audio bridge diagnostics for debug overlays.
+   * @returns {{
+   *  suspicion: number,
+   *  alertActive: boolean,
+   *  combatEngaged: boolean,
+   *  scramblerActive: boolean,
+   *  scramblerExpiresInMs: number|null,
+   *  moodHint: string|null,
+   *  moodHintSource: string|null,
+   *  moodHintExpiresInMs: number|null,
+   *  playerEntityId: number|null
+   * }|null}
+   */
+  getGameplayAdaptiveBridgeTelemetry() {
+    if (
+      !this.gameplayAdaptiveAudioBridge ||
+      typeof this.gameplayAdaptiveAudioBridge.getState !== 'function'
+    ) {
+      return null;
+    }
+
+    const snapshot = this.gameplayAdaptiveAudioBridge.getState();
+    if (!snapshot || typeof snapshot !== 'object') {
+      return null;
+    }
+
+    const now = Date.now();
+    const computeRemaining = (timestamp) => {
+      if (!Number.isFinite(timestamp) || timestamp <= 0) {
+        return null;
+      }
+      return Math.max(0, timestamp - now);
+    };
+
+    const suspicion = Number.isFinite(snapshot.suspicion) ? snapshot.suspicion : 0;
+    const moodHintRaw = typeof snapshot.moodHint === 'string' ? snapshot.moodHint.trim() : '';
+    const moodHintSourceRaw =
+      typeof snapshot.moodHintSource === 'string' ? snapshot.moodHintSource.trim() : '';
+
+    return {
+      suspicion,
+      alertActive: Boolean(snapshot.alertActive),
+      combatEngaged: Boolean(snapshot.combatEngaged),
+      scramblerActive: Boolean(snapshot.scramblerActive),
+      scramblerExpiresInMs: computeRemaining(snapshot.scramblerExpireAt),
+      moodHint: moodHintRaw || null,
+      moodHintSource: moodHintSourceRaw || null,
+      moodHintExpiresInMs: computeRemaining(snapshot.moodHintExpireAt),
+      playerEntityId: Number.isFinite(snapshot.playerEntityId) ? snapshot.playerEntityId : null,
+    };
+  }
+
+  /**
+   * Expose SFX catalog entries for debug tooling and designer previews.
+   * @returns {Array<object>} Array of SFX descriptors
+   */
+  getSfxCatalogEntries() {
+    if (!this.sfxCatalogLoader || typeof this.sfxCatalogLoader.getCatalog !== 'function') {
+      return [];
+    }
+    let catalog;
+    try {
+      catalog = this.sfxCatalogLoader.getCatalog();
+    } catch (error) {
+      console.warn('[Game] Failed to read SFX catalog', error);
+      return [];
+    }
+    if (!catalog || !Array.isArray(catalog.items)) {
+      return [];
+    }
+    return catalog.items.map((item) => ({
+      id: item.id,
+      file: item.file,
+      description: item.description || '',
+      tags: Array.isArray(item.tags) ? item.tags.slice() : [],
+      baseVolume: typeof item.baseVolume === 'number' ? item.baseVolume : null,
+    }));
+  }
+
+  /**
+   * Request immediate SFX playback for preview/debug purposes.
+   * @param {string} soundId
+   * @param {object} [options]
+   * @returns {boolean} True if playback requested
+   */
+  previewSfx(soundId, options = {}) {
+    if (!soundId || !this.eventBus) {
+      return false;
+    }
+    const entry =
+      typeof this.sfxCatalogLoader?.getEntry === 'function'
+        ? this.sfxCatalogLoader.getEntry(soundId)
+        : null;
+    const volume =
+      typeof options.volume === 'number'
+        ? options.volume
+        : typeof entry?.baseVolume === 'number'
+          ? entry.baseVolume
+          : 1;
+
+    try {
+      this.eventBus.emit('audio:sfx:play', {
+        id: soundId,
+        volume,
+        source: options.source ?? 'debug_preview',
+        tags: entry?.tags ?? [],
+      });
+      return true;
+    } catch (error) {
+      console.warn('[Game] Failed to emit SFX preview request', error);
+      return false;
+    }
+  }
+
   /**
    * Render game overlays (called after main render)
    * @param {CanvasRenderingContext2D} ctx - Canvas context
@@ -1052,6 +2410,14 @@ export class Game {
       this.questLogUI.render(ctx);
     }
 
+    if (this.caseFileUI) {
+      this.caseFileUI.render(ctx);
+    }
+
+    if (this.deductionBoard) {
+      this.deductionBoard.render(ctx);
+    }
+
     // Render dialogue box above HUD but below tutorial overlay for clarity
     if (this.dialogueBox) {
       this.dialogueBox.render(this.engine.canvas.width, this.engine.canvas.height);
@@ -1063,6 +2429,10 @@ export class Game {
 
     if (this.interactionPromptOverlay) {
       this.interactionPromptOverlay.render(ctx);
+    }
+
+    if (this.saveInspectorOverlay) {
+      this.saveInspectorOverlay.render();
     }
 
     // Render tutorial overlay (kept highest priority)
@@ -1097,6 +2467,8 @@ export class Game {
       this._detachFrameHooks = null;
     }
 
+    this._clearForensicPromptState({ hidePrompt: true });
+
     // Cleanup UI overlays
     if (this.tutorialOverlay && this.tutorialOverlay.cleanup) {
       this.tutorialOverlay.cleanup();
@@ -1109,6 +2481,15 @@ export class Game {
     }
     if (this.questLogUI && this.questLogUI.cleanup) {
       this.questLogUI.cleanup();
+    }
+    if (this.caseFileUI) {
+      this.caseFileUI.hide('cleanup');
+    }
+    if (this.deductionBoard) {
+      this.deductionBoard.hide('cleanup');
+    }
+    if (this.gameSystems.deduction && typeof this.gameSystems.deduction.setDeductionBoard === 'function') {
+      this.gameSystems.deduction.setDeductionBoard(null);
     }
     if (this.questTrackerHUD && this.questTrackerHUD.cleanup) {
       this.questTrackerHUD.cleanup();
@@ -1124,6 +2505,9 @@ export class Game {
     }
     if (this.questNotification && this.questNotification.cleanup) {
       this.questNotification.cleanup();
+    }
+    if (this.saveInspectorOverlay && this.saveInspectorOverlay.cleanup) {
+      this.saveInspectorOverlay.cleanup();
     }
     if (this.dialogueBox && this.dialogueBox.cleanup) {
       this.dialogueBox.cleanup();
@@ -1143,6 +2527,11 @@ export class Game {
       this.saveManager.cleanup();
     }
 
+    if (this.tutorialTranscriptRecorder) {
+      this.tutorialTranscriptRecorder.stop();
+      this.tutorialTranscriptRecorder = null;
+    }
+
     if (this._offGameEventHandlers.length) {
       this._offGameEventHandlers.forEach((off) => {
         if (typeof off === 'function') {
@@ -1150,6 +2539,10 @@ export class Game {
         }
       });
       this._offGameEventHandlers.length = 0;
+    }
+
+    if (this.caseManager && typeof this.caseManager.cleanup === 'function') {
+      this.caseManager.cleanup();
     }
 
     if (this.questManager && typeof this.questManager.cleanup === 'function') {
@@ -1162,6 +2555,27 @@ export class Game {
         system.cleanup();
       }
     });
+
+    if (typeof this._audioTelemetryUnbind === 'function') {
+      try {
+        this._audioTelemetryUnbind();
+      } catch (error) {
+        console.warn('[Game] Failed to remove audio telemetry listener', error);
+      }
+      this._audioTelemetryUnbind = null;
+    }
+    this.audioTelemetry = { currentState: null, history: [] };
+    this._cleanupAdaptiveMoodHandlers();
+    this._registerAdaptiveMusic(null, { reason: 'cleanup' });
+    if (this.adaptiveMoodEmitter) {
+      this.adaptiveMoodEmitter.dispose();
+      this.adaptiveMoodEmitter = null;
+    }
+    if (this.gameplayAdaptiveAudioBridge) {
+      this.gameplayAdaptiveAudioBridge.dispose();
+      this.gameplayAdaptiveAudioBridge = null;
+    }
+    this.suspicionMoodMapper = null;
 
     // Reset input state
     this.inputState.reset();

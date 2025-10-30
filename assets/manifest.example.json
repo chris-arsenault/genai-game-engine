@@ -63,6 +63,48 @@
       "type": "audio",
       "group": "effects",
       "priority": "optional"
+    },
+    {
+      "id": "music-memory-parlor-ambient-001",
+      "url": "/music/memory-parlor/goodnightmare.mp3",
+      "type": "audio",
+      "group": "memory-parlor",
+      "priority": "district"
+    },
+    {
+      "id": "music-memory-parlor-tension-001",
+      "url": "/music/memory-parlor/goodnightmare-tension.wav",
+      "type": "audio",
+      "group": "memory-parlor",
+      "priority": "district"
+    },
+    {
+      "id": "music-memory-parlor-combat-001",
+      "url": "/music/memory-parlor/goodnightmare-combat.wav",
+      "type": "audio",
+      "group": "memory-parlor",
+      "priority": "district"
+    },
+    {
+      "id": "sfx-ui-movement-pulse",
+      "url": "/sfx/ui/ui-movement-pulse.ogg",
+      "type": "audio",
+      "group": "critical",
+      "priority": "critical"
+    },
+    {
+      "id": "sfx-ui-prompt-chime",
+      "url": "/sfx/ui/ui-prompt-chime.ogg",
+      "type": "audio",
+      "group": "critical",
+      "priority": "critical"
+    },
+    {
+      "id": "sfx-evidence-collect",
+      "url": "/sfx/ui/evidence-collect.ogg",
+      "type": "audio",
+      "group": "critical",
+      "priority": "critical"
     }
   ],
   "groups": {
@@ -77,6 +119,10 @@
     "effects": {
       "description": "Optional visual and audio enhancements",
       "targetLoadTime": "background"
+    },
+    "memory-parlor": {
+      "description": "Memory Parlor specific ambient audio and visuals",
+      "targetLoadTime": "1000ms"
     }
   }
 }

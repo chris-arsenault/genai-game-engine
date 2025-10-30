@@ -9,16 +9,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Adaptive music layering stack (`AdaptiveMusicLayerController`) powering Memory Parlor scrambler transitions with ambient/alert/combat mixes.
+- Declarative SFX catalog bootstrap with CC0 Kenney UI cues and automated preload via `SFXCatalogLoader`.
+- Procedural tension/combat stems for Memory Parlor infiltration (`goodnightmare-tension.wav`, `goodnightmare-combat.wav`) with manifest wiring and loop metadata.
+- Investigation-focused SFX cues plus debug overlay preview controls so designers can audition catalog entries in-browser.
+- Adaptive audio telemetry feed in the debug overlay showing recent state transitions.
+- Combat/disguise adaptive routing including stealth mix support and Playwright coverage of in-game triggers.
+- Debug overlay SFX catalog search box and tag chips for rapid filtering during audio design sessions.
+- Telemetry fallback monitoring: `CiArtifactPublisher` now records per-provider fallbackSummary metrics and `npm run telemetry:fallback-report` aggregates repeated fallback usage for CI operators.
+- Authored template manifest now covers detective offices and alley hubs with multi-edge seam metadata for variant-aware corridor painting.
+- Lightweight performance snapshot telemetry (`npm run telemetry:performance`) capturing forensic analysis, faction cascade, and BSP generation timings for CI dashboards.
+
 ### Changed
 - Migrated gameplay systems, managers, and UI overlays to use `EventBus.on`/`off` with stored unsubscribe handles, eliminating deprecated API warnings and ensuring clean teardown during `Game.cleanup`.
+- AmbientSceneAudioController now orchestrates adaptive states instead of direct bus fades, with graceful fallback when Web Audio is unavailable.
+- Game initialization preloads SFX catalog entries so AudioFeedbackController plays real cues instead of logging stubs.
+- Game debug overlay now surfaces adaptive mix state history and SFX preview buttons for rapid iteration.
+- CI pipeline writes a Playwright job summary linking to HTML reports and trace bundles for faster triage.
+- Adaptive audio state priorities now ensure combat overrides alert/stealth, while stealth transitions fall back gracefully when scrambler windows lapse.
+- Memory Parlor infiltration scene attaches registry-backed quest triggers via `TriggerMigrationToolkit`, keeping objective metadata and adaptive audio hints aligned with the centralized registry.
 
 ### Fixed
 - Resolved EventBus deprecation logs by providing a backward-compatible `subscribe` shim while aligning all runtime code with the modern API.
 - Ensured `QuestManager`, `SaveManager`, and tutorial/UI layers unregister their listeners on cleanup to prevent duplicate event handling in long sessions.
+- Fixed tutorial progression hang at step 3 by spawning evidence entities through the ECS factory so investigation detection events fire and prompts advance correctly.
 
 ### Testing
+- Added unit coverage for adaptive music layering controller, catalog loader, and refreshed ambient controller integration.
+- Added coverage for Game audio telemetry stream + SFX preview controls (`tests/game/audio/GameAudioTelemetry.test.js`, extended `Game.uiOverlays.test.js`).
 - Added EventBus regression coverage for the deprecated `subscribe` shim and new QuestManager cleanup behavior.
 - Updated quest/story manager tests to exercise the new event lifecycle and validated UI overlay toggle stability.
+- Introduced telemetry stress harness for adaptive state churn plus Playwright coverage of SFX overlay filtering and mix transitions.
+- Added manifest regression coverage for detective office / alley hub variants and seam metadata propagation (`tests/game/procedural/TilemapInfrastructure.test.js`).
+- Added Memory Parlor scene trigger migration coverage (`tests/game/scenes/MemoryParlorScene.triggers.test.js`) to ensure registry definitions attach quest metadata.
+- Relaxed high-variance performance thresholds in jsdom-based suites while documenting expected real-browser budgets.
+- Added `TutorialScene` integration test ensuring evidence detection integrates with the investigation system (`tests/game/scenes/TutorialScene.test.js`).
+- Added coverage for telemetry fallbackSummary metrics and analyzer utilities (`tests/game/telemetry/CiArtifactPublisher.test.js`, `tests/scripts/telemetry/analyzeFallbackUsage.test.js`).
 
 ## [0.1.0] - 2025-10-26
 

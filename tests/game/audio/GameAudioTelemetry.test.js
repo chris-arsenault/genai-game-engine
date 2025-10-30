@@ -1,0 +1,308 @@
+import { Game } from '../../../src/game/Game.js';
+import { EventBus } from '../../../src/engine/events/EventBus.js';
+import { GameConfig } from '../../../src/game/config/GameConfig.js';
+import { TriggerMigrationToolkit } from '../../../src/game/quests/TriggerMigrationToolkit.js';
+import { QuestTriggerRegistry } from '../../../src/game/quests/QuestTriggerRegistry.js';
+import { QUEST_001_HOLLOW_CASE } from '../../../src/game/data/quests/act1Quests.js';
+
+function createMockCanvas() {
+  return {
+    width: 1280,
+    height: 720,
+    getContext: jest.fn(() => ({
+      clearRect: jest.fn(),
+      save: jest.fn(),
+      restore: jest.fn(),
+      translate: jest.fn(),
+      rotate: jest.fn(),
+      beginPath: jest.fn(),
+      closePath: jest.fn(),
+      stroke: jest.fn(),
+      fill: jest.fn(),
+      fillRect: jest.fn(),
+      strokeRect: jest.fn(),
+      lineWidth: 0,
+      strokeStyle: '',
+      fillStyle: '',
+    })),
+  };
+}
+
+function createEngineStub(eventBus) {
+  const canvas = createMockCanvas();
+  const rendererStub = {
+    getCamera: jest.fn(() => ({
+      worldToScreen: jest.fn(() => ({ x: 0, y: 0 })),
+      screenToWorld: jest.fn(() => ({ x: 0, y: 0 })),
+    })),
+    ctx: canvas.getContext(),
+  };
+
+  return {
+    canvas,
+    eventBus,
+    entityManager: {},
+    componentRegistry: {},
+    systemManager: {
+      registerSystem: jest.fn(),
+      init: jest.fn(),
+      update: jest.fn(),
+      cleanup: jest.fn(),
+    },
+    renderer: rendererStub,
+    getAudioManager: jest.fn(() => null),
+  };
+}
+
+describe('Game audio telemetry integration', () => {
+  let eventBus;
+  let engine;
+  let game;
+  let originalBridgeConfig;
+  let originalEnableEmitters;
+
+  beforeEach(() => {
+    eventBus = new EventBus();
+    jest.spyOn(eventBus, 'on');
+    engine = createEngineStub(eventBus);
+    game = new Game(engine);
+    game.audioManager = {
+      playSFX: jest.fn(),
+      init: jest.fn(() => Promise.resolve(true)),
+    };
+    game.sfxCatalogLoader = {
+      load: jest.fn(() => Promise.resolve({ loaded: 0, failed: 0, results: [] })),
+      getCatalog: jest.fn(() => ({ items: [] })),
+      getEntry: jest.fn(() => null),
+    };
+
+    originalBridgeConfig = { ...GameConfig.audio.gameplayMoodBridge };
+    originalEnableEmitters = GameConfig.audio.enableGameplayEmitters;
+    GameConfig.audio.enableGameplayEmitters = true;
+    GameConfig.audio.gameplayMoodBridge.updateIntervalMs = 0;
+  });
+
+  afterEach(() => {
+    if (game) {
+      game.cleanup();
+      game = null;
+    }
+    Object.assign(GameConfig.audio.gameplayMoodBridge, originalBridgeConfig);
+    GameConfig.audio.enableGameplayEmitters = originalEnableEmitters;
+  });
+
+  it('records adaptive music state transitions emitted on the event bus', async () => {
+    await game.initializeAudioIntegrations();
+
+    expect(eventBus.on).toHaveBeenCalledWith(
+      'audio:adaptive:state_changed',
+      expect.any(Function)
+    );
+
+    eventBus.emit('audio:adaptive:state_changed', {
+      from: 'ambient',
+      to: 'alert',
+      timestamp: 12345,
+    });
+
+    const telemetry = game.getAdaptiveAudioTelemetry();
+    expect(telemetry.currentState).toBe('alert');
+    expect(telemetry.history).toHaveLength(1);
+    expect(telemetry.history[0]).toEqual(
+      expect.objectContaining({ from: 'ambient', to: 'alert', timestamp: 12345 })
+    );
+
+    // Emits another event to ensure history trims appropriately
+    eventBus.emit('audio:adaptive:state_changed', {
+      from: 'alert',
+      to: 'combat',
+      timestamp: 22345,
+    });
+
+    const updated = game.getAdaptiveAudioTelemetry();
+    expect(updated.currentState).toBe('combat');
+    expect(updated.history).toHaveLength(2);
+    expect(updated.history[1].to).toBe('combat');
+  });
+
+  it('keeps telemetry history bounded under rapid state churn', async () => {
+    await game.initializeAudioIntegrations();
+
+    const baseTimestamp = Date.now();
+    const states = ['ambient', 'alert', 'stealth', 'combat'];
+    for (let i = 0; i < 24; i++) {
+      const from = states[i % states.length];
+      const to = states[(i + 1) % states.length];
+      eventBus.emit('audio:adaptive:state_changed', {
+        from,
+        to,
+        timestamp: baseTimestamp + i * 10,
+      });
+    }
+
+    const telemetry = game.getAdaptiveAudioTelemetry();
+    expect(telemetry.history.length).toBeLessThanOrEqual(8);
+    expect(telemetry.currentState).toBe('ambient'); // wraps every 4 iterations
+
+    const historyTimestamps = telemetry.history.map((entry) => entry.timestamp);
+    for (let i = 1; i < historyTimestamps.length; i++) {
+      expect(historyTimestamps[i]).toBeGreaterThanOrEqual(historyTimestamps[i - 1]);
+    }
+  });
+
+  it('routes adaptive mood requests through the orchestrator and event bus', () => {
+    const adaptiveStub = {
+      init: jest.fn(() => Promise.resolve(true)),
+      setMood: jest.fn((mood) => {
+        adaptiveStub.currentMood = mood;
+        return true;
+      }),
+      defineMood: jest.fn(),
+      update: jest.fn(),
+      dispose: jest.fn(),
+      currentMood: 'ambient',
+      defaultMood: 'ambient'
+    };
+
+    game._registerAdaptiveMusic(adaptiveStub, { skipInit: true });
+    game._ensureAdaptiveMoodHandlers();
+
+    expect(game.setAdaptiveMood('stealth')).toBe(true);
+    expect(adaptiveStub.setMood).toHaveBeenCalledWith('stealth', {});
+
+    eventBus.emit('audio:adaptive:set_mood', {
+      mood: 'alert',
+      options: { duration: 2, revertTo: 'ambient' }
+    });
+
+    expect(adaptiveStub.setMood).toHaveBeenCalledWith('alert', { duration: 2, revertTo: 'ambient' });
+
+    eventBus.emit('audio:adaptive:define_mood', {
+      mood: 'tension',
+      definition: { ambient_base: 0.5, tension_layer: 0.8 }
+    });
+    expect(adaptiveStub.defineMood).toHaveBeenCalledWith('tension', { ambient_base: 0.5, tension_layer: 0.8 });
+
+    game.loaded = true;
+    game.update(0.5);
+    expect(adaptiveStub.update).toHaveBeenCalledWith(0.5);
+
+    eventBus.emit('audio:adaptive:reset', { mood: 'ambient', fadeDuration: 1.2 });
+    expect(adaptiveStub.setMood).toHaveBeenCalledWith(
+      'ambient',
+      expect.objectContaining({ fadeDuration: 1.2 })
+    );
+  });
+
+  it('exposes gameplay adaptive bridge telemetry snapshot', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2025-10-31T00:00:00Z'));
+
+    await game.initializeAudioIntegrations();
+    expect(game.gameplayAdaptiveAudioBridge).toBeTruthy();
+
+    try {
+      eventBus.emit('disguise:suspicious_action', { totalSuspicion: 42 });
+      eventBus.emit('disguise:alert_started', { suspicionLevel: 42 });
+      eventBus.emit('firewall:scrambler_activated', { durationSeconds: 5 });
+      eventBus.emit('area:entered', {
+        areaId: 'crime_scene_entry',
+        metadata: { moodHint: 'investigation_peak' },
+      });
+
+      const bridgeTelemetry = game.getGameplayAdaptiveBridgeTelemetry();
+      expect(bridgeTelemetry).toEqual(
+        expect.objectContaining({
+          suspicion: 42,
+          alertActive: true,
+          combatEngaged: false,
+          scramblerActive: true,
+          moodHint: 'investigation_peak',
+          moodHintSource: 'crime_scene_entry',
+        })
+      );
+      expect(bridgeTelemetry.scramblerExpiresInMs).toBe(5000);
+      expect(bridgeTelemetry.moodHintExpiresInMs).toBe(6000);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('captures quest trigger mood hints and reports expiry countdown', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2025-11-01T12:00:00Z'));
+
+    const vendorTriggerId = 'act1_vendor_corner';
+    const moodHint = 'market_intrigue';
+
+    QuestTriggerRegistry.registerDefinition({
+      id: vendorTriggerId,
+      questId: QUEST_001_HOLLOW_CASE.id,
+      objectiveId: 'obj_interview_witness',
+      areaId: 'market_vendor_corner',
+      radius: 110,
+      once: false,
+      metadata: {
+        moodHint,
+        narrativeBeat: 'act1_vendor_briefing',
+      },
+    });
+
+    GameConfig.audio.gameplayMoodBridge.moodHintDurationMs = 6000;
+
+    await game.initializeAudioIntegrations();
+    game.loaded = true;
+
+    const toolkit = new TriggerMigrationToolkit(
+      { addComponent: jest.fn() },
+      eventBus,
+      { registry: QuestTriggerRegistry }
+    );
+
+    const triggerComponent = toolkit.createQuestTrigger(501, vendorTriggerId);
+
+    eventBus.emit('area:entered', {
+      areaId: triggerComponent.data.areaId,
+      triggerId: 'test-trigger',
+      data: triggerComponent.data,
+      metadata: triggerComponent.data.metadata,
+    });
+
+    game.update(0.016);
+
+    let telemetry = game.getGameplayAdaptiveBridgeTelemetry();
+    expect(telemetry).toEqual(
+      expect.objectContaining({
+        moodHint,
+        moodHintSource: 'market_vendor_corner',
+        moodHintExpiresInMs: 6000,
+      })
+    );
+
+    jest.advanceTimersByTime(4000);
+    game.update(0.016);
+
+    telemetry = game.getGameplayAdaptiveBridgeTelemetry();
+    expect(telemetry).toEqual(
+      expect.objectContaining({
+        moodHint,
+        moodHintSource: 'market_vendor_corner',
+        moodHintExpiresInMs: 2000,
+      })
+    );
+
+    jest.advanceTimersByTime(2500);
+    game.update(0.016);
+
+    telemetry = game.getGameplayAdaptiveBridgeTelemetry();
+    expect(telemetry).toEqual(
+      expect.objectContaining({
+        moodHint: null,
+        moodHintSource: null,
+        moodHintExpiresInMs: null,
+      })
+    );
+
+    jest.useRealTimers();
+  });
+});

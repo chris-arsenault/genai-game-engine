@@ -15,14 +15,95 @@ import { createPlayerEntity } from '../entities/PlayerEntity.js';
 import { createEvidenceEntity } from '../entities/EvidenceEntity.js';
 import { createNPCEntity } from '../entities/NPCEntity.js';
 import { Transform } from '../components/Transform.js';
-import { InteractionZone } from '../components/InteractionZone.js';
 import { Collider } from '../components/Collider.js';
 import { Sprite } from '../components/Sprite.js';
+import { tutorialCase, tutorialEvidence } from '../data/cases/tutorialCase.js';
+import { QUEST_001_HOLLOW_CASE } from '../data/quests/act1Quests.js';
+import { TriggerMigrationToolkit } from '../quests/TriggerMigrationToolkit.js';
+import { QuestTriggerRegistry } from '../quests/QuestTriggerRegistry.js';
 
 const SCENE_CENTER_X = 400;
 const SCENE_CENTER_Y = 300;
 const CRIME_SCENE_WIDTH = 560;
 const CRIME_SCENE_HEIGHT = 360;
+const CRIME_SCENE_TRIGGER_ID = 'crime_scene_entry';
+const VENDOR_TRIGGER_IDS = Object.freeze({
+  WITNESS: 'act1_vendor_witness_trigger',
+  BLACK_MARKET: 'act1_black_market_trigger',
+  QUARTERMASTER: 'act1_cipher_quartermaster_trigger',
+});
+
+const existingCrimeSceneDefinition = QuestTriggerRegistry.getTriggerDefinition(CRIME_SCENE_TRIGGER_ID);
+if (!existingCrimeSceneDefinition) {
+  QuestTriggerRegistry.registerDefinition({
+    id: CRIME_SCENE_TRIGGER_ID,
+    questId: QUEST_001_HOLLOW_CASE.id,
+    objectiveId: 'obj_arrive_scene',
+    areaId: 'crime_scene_alley',
+    radius: 150,
+    once: true,
+    prompt: 'Crime Scene Perimeter',
+    triggerType: 'crime_scene',
+    metadata: {
+      moodHint: 'investigation_peak',
+      narrativeBeat: 'act1_arrival_scene',
+    },
+  });
+}
+
+const vendorTriggerDefinitions = [
+  {
+    id: VENDOR_TRIGGER_IDS.WITNESS,
+    questId: QUEST_001_HOLLOW_CASE.id,
+    objectiveId: 'obj_interview_witness',
+    areaId: 'market_vendor_corner',
+    radius: 96,
+    once: false,
+    prompt: 'Interview the witness',
+    triggerType: 'npc_vendor_dialogue',
+    metadata: {
+      moodHint: 'market_intrigue',
+      narrativeBeat: 'act1_vendor_briefing',
+      npcId: 'witness_street_vendor',
+    },
+  },
+  {
+    id: VENDOR_TRIGGER_IDS.BLACK_MARKET,
+    questId: QUEST_001_HOLLOW_CASE.id,
+    objectiveId: 'obj_consult_black_market_broker',
+    areaId: 'black_market_exchange',
+    radius: 96,
+    once: false,
+    prompt: 'Consult the black market broker',
+    triggerType: 'npc_vendor_dialogue',
+    metadata: {
+      moodHint: 'underground_pressure',
+      narrativeBeat: 'act1_broker_lead',
+      npcId: 'black_market_broker',
+    },
+  },
+  {
+    id: VENDOR_TRIGGER_IDS.QUARTERMASTER,
+    questId: QUEST_001_HOLLOW_CASE.id,
+    objectiveId: 'obj_contact_cipher_quartermaster',
+    areaId: 'cipher_quartermaster_bay',
+    radius: 96,
+    once: false,
+    prompt: 'Acquire Cipher scrambler charge',
+    triggerType: 'npc_vendor_dialogue',
+    metadata: {
+      moodHint: 'cipher_preparation',
+      narrativeBeat: 'act1_cipher_supply',
+      npcId: 'cipher_quartermaster',
+    },
+  },
+];
+
+for (const definition of vendorTriggerDefinitions) {
+  if (!QuestTriggerRegistry.getTriggerDefinition(definition.id)) {
+    QuestTriggerRegistry.registerDefinition(definition);
+  }
+}
 
 /**
  * Load Act 1 scene
@@ -31,14 +112,27 @@ const CRIME_SCENE_HEIGHT = 360;
  * @param {Object} eventBus - Event bus instance
  * @returns {Object} Scene data with playerId and entity IDs
  */
-export async function loadAct1Scene(entityManager, componentRegistry, eventBus) {
+export async function loadAct1Scene(entityManager, componentRegistry, eventBus, options = {}) {
   console.log('[Act1Scene] Loading Act 1 scene...');
 
   const sceneEntities = [];
+  const cleanupHandlers = [];
+  const questTriggerToolkit = new TriggerMigrationToolkit(componentRegistry, eventBus);
 
   // 1. Create player at spawn point
-  const playerId = createPlayerEntity(entityManager, componentRegistry, 150, 300);
-  console.log(`[Act1Scene] Player created: ${playerId}`);
+  const reusePlayerId = options.reusePlayerId ?? null;
+  const canReusePlayer = reusePlayerId != null
+    && typeof entityManager.hasEntity === 'function'
+    && entityManager.hasEntity(reusePlayerId);
+
+  let playerId;
+  if (canReusePlayer) {
+    playerId = reusePlayerId;
+    console.log(`[Act1Scene] Reusing existing player entity: ${playerId}`);
+  } else {
+    playerId = createPlayerEntity(entityManager, componentRegistry, 150, 300);
+    console.log(`[Act1Scene] Player created: ${playerId}`);
+  }
 
   // 1b. Dress the crime scene ground decal, caution markers, and ambient props
   const visualSetPieces = createCrimeSceneVisuals(entityManager, componentRegistry);
@@ -51,77 +145,31 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus) 
   sceneEntities.push(areaTriggerId);
   console.log(`[Act1Scene] Crime scene area created: ${areaTriggerId}`);
 
-  // 3. Create evidence items
-  // 3 visible evidence (objectives 2, 3) + 2 hidden evidence (objective 6)
-  const evidenceItems = [
-    {
-      x: 300,
-      y: 250,
-      id: 'evidence_fingerprint',
-      type: 'forensic',
-      category: 'fingerprint',
-      title: 'Fingerprint',
-      description: 'A partial fingerprint found on the neural extractor device.',
-      caseId: 'case_001_hollow_case',
-      hidden: false,
-      derivedClues: ['clue_fingerprint_match']
-    },
-    {
-      x: 400,
-      y: 200,
-      id: 'evidence_bloodstain',
-      type: 'forensic',
-      category: 'biological',
-      title: 'Bloodstain',
-      description: "A small bloodstain pattern near Alex's body.",
-      caseId: 'case_001_hollow_case',
-      hidden: false,
-      derivedClues: ['clue_struggle']
-    },
-    {
-      x: 500,
-      y: 280,
-      id: 'evidence_memory_chip',
-      type: 'digital',
-      category: 'memory_chip',
-      title: 'Memory Chip',
-      description: 'A NeuroSync memory chip found at the scene.',
-      caseId: 'case_001_hollow_case',
-      hidden: false,
-      derivedClues: ['clue_neurosynch_connection']
-    },
-    {
-      x: 320,
-      y: 350,
-      id: 'evidence_hidden_note',
-      type: 'physical',
-      category: 'document',
-      title: 'Hidden Note',
-      description: 'A cryptic note hidden under debris. Requires Detective Vision.',
-      caseId: 'case_001_hollow_case',
-      hidden: true,
-      derivedClues: ['clue_eraser_signature']
-    },
-    {
-      x: 450,
-      y: 320,
-      id: 'evidence_neural_extractor',
-      type: 'physical',
-      category: 'device',
-      title: 'Neural Extractor',
-      description: 'The device used to extract consciousness. Hidden in shadows.',
-      caseId: 'case_001_hollow_case',
-      hidden: true,
-      requires: 'detective_vision',
-      derivedClues: ['clue_extraction_tech', 'clue_serial_number']
-    }
-  ];
+  // 3. Create evidence items based on tutorial case definitions
+  for (const evidenceDefinition of tutorialEvidence) {
+    const { position = { x: 0, y: 0 } } = evidenceDefinition;
+    const requiresAbility = Array.isArray(evidenceDefinition.requires)
+      ? evidenceDefinition.requires[0] ?? null
+      : evidenceDefinition.requires ?? null;
 
-  for (const evidenceData of evidenceItems) {
-    const evidenceId = createEvidenceEntity(entityManager, componentRegistry, evidenceData);
+    const evidenceId = createEvidenceEntity(entityManager, componentRegistry, {
+      x: position.x,
+      y: position.y,
+      id: evidenceDefinition.id,
+      type: evidenceDefinition.type,
+      category: evidenceDefinition.category,
+      title: evidenceDefinition.title,
+      description: evidenceDefinition.description,
+      caseId: tutorialCase.id,
+      hidden: Boolean(evidenceDefinition.hidden),
+      requires: requiresAbility,
+      derivedClues: evidenceDefinition.derivedClues || [],
+      prompt: evidenceDefinition.interactionPrompt || null,
+      forensic: evidenceDefinition.forensic || null,
+    });
     sceneEntities.push(evidenceId);
   }
-  console.log(`[Act1Scene] Created ${evidenceItems.length} evidence items`);
+  console.log(`[Act1Scene] Created ${tutorialEvidence.length} evidence items`);
 
   // 4. Create witness NPC (Street Vendor)
   // This NPC completes objective 4: "Interview the witness"
@@ -136,8 +184,37 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus) 
   });
   sceneEntities.push(witnessId);
   console.log(`[Act1Scene] Witness NPC created: ${witnessId}`);
+  attachQuestTriggerToEntity(questTriggerToolkit, witnessId, VENDOR_TRIGGER_IDS.WITNESS);
 
-  // 5. Create Captain Reese NPC (for objective 9)
+  // 5. Create black market broker NPC (optional memory parlor lead)
+  const brokerId = createNPCEntity(entityManager, componentRegistry, {
+    x: 720,
+    y: 360,
+    id: 'black_market_broker',
+    name: 'Black Market Broker',
+    faction: 'criminals',
+    hasDialogue: true,
+    dialogueId: 'black_market_broker'
+  });
+  sceneEntities.push(brokerId);
+  console.log(`[Act1Scene] Black market broker NPC created: ${brokerId}`);
+  attachQuestTriggerToEntity(questTriggerToolkit, brokerId, VENDOR_TRIGGER_IDS.BLACK_MARKET);
+
+  // 6. Create Cipher Collective quartermaster (sells infiltration gadget)
+  const quartermasterId = createNPCEntity(entityManager, componentRegistry, {
+    x: 660,
+    y: 420,
+    id: 'cipher_quartermaster',
+    name: 'Cipher Quartermaster',
+    faction: 'cipher_collective',
+    hasDialogue: true,
+    dialogueId: 'cipher_quartermaster'
+  });
+  sceneEntities.push(quartermasterId);
+  console.log(`[Act1Scene] Cipher quartermaster NPC created: ${quartermasterId}`);
+  attachQuestTriggerToEntity(questTriggerToolkit, quartermasterId, VENDOR_TRIGGER_IDS.QUARTERMASTER);
+
+  // 7. Create Captain Reese NPC (for objective 9)
   // Position at precinct entrance
   const captainId = createNPCEntity(entityManager, componentRegistry, {
     x: 200,
@@ -151,7 +228,7 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus) 
   sceneEntities.push(captainId);
   console.log(`[Act1Scene] Captain Reese NPC created: ${captainId}`);
 
-  // 6. Create boundary walls
+  // 8. Create boundary walls
   const boundaries = [
     { x: 0, y: 0, width: 800, height: 20 }, // Top
     { x: 0, y: 580, width: 800, height: 20 }, // Bottom
@@ -172,13 +249,13 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus) 
   }
   console.log('[Act1Scene] Boundary walls created');
 
-  // 7. Set up Detective Vision tutorial trigger
+  // 9. Set up Detective Vision tutorial trigger
   // After collecting 3 evidence, unlock Detective Vision (objective 5)
   let evidenceCollectedCount = 0;
   const requiredEvidenceForVision = 3;
 
-  eventBus.on('evidence:collected', (data) => {
-    if (data.caseId === 'case_001_hollow_case') {
+  const offEvidenceCollected = eventBus.on('evidence:collected', (data) => {
+    if (data.caseId === tutorialCase.id) {
       evidenceCollectedCount++;
       console.log(
         `[Act1Scene] Evidence collected: ${evidenceCollectedCount}/${requiredEvidenceForVision}`
@@ -193,6 +270,7 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus) 
       }
     }
   });
+  cleanupHandlers.push(offEvidenceCollected);
 
   console.log('[Act1Scene] Act 1 scene loaded successfully');
 
@@ -200,7 +278,14 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus) 
     playerId,
     sceneEntities,
     sceneName: 'act1_hollow_case',
-    spawnPoint: { x: 150, y: 300 }
+    spawnPoint: { x: 150, y: 300 },
+    cleanup: () => {
+      for (const off of cleanupHandlers) {
+        if (typeof off === 'function') {
+          off();
+        }
+      }
+    }
   };
 }
 
@@ -219,21 +304,8 @@ function createCrimeSceneArea(entityManager, componentRegistry, eventBus) {
   const transform = new Transform(SCENE_CENTER_X, SCENE_CENTER_Y - 40, 0, 1, 1);
   componentRegistry.addComponent(entityId, 'Transform', transform);
 
-  // Add InteractionZone component (automatic trigger, no input required)
-  const interactionZone = new InteractionZone({
-    id: 'crime_scene_alley',
-    type: 'trigger',
-    radius: 150, // 300x300 area (radius = 150)
-    requiresInput: false, // Automatic trigger
-    prompt: 'Crime Scene',
-    active: true,
-    oneShot: true, // Only trigger once
-    data: {
-      areaId: 'crime_scene_alley'
-    }
-  });
-  interactionZone.type = 'InteractionZone';
-  componentRegistry.addComponent(entityId, interactionZone);
+  const triggerToolkit = new TriggerMigrationToolkit(componentRegistry, eventBus);
+  triggerToolkit.createQuestTrigger(entityId, CRIME_SCENE_TRIGGER_ID);
 
   // Add trigger collider
   const collider = new Collider({
@@ -315,6 +387,18 @@ function createBoundary(entityManager, componentRegistry, x, y, width, height) {
   return entityId;
 }
 
+function attachQuestTriggerToEntity(toolkit, entityId, triggerId) {
+  if (!toolkit || typeof toolkit.createQuestTrigger !== 'function') {
+    return null;
+  }
+  try {
+    return toolkit.createQuestTrigger(entityId, triggerId);
+  } catch (error) {
+    console.warn(`[Act1Scene] Failed to attach quest trigger "${triggerId}"`, error);
+    return null;
+  }
+}
+
 /**
  * Unload Act 1 scene (cleanup)
  * @param {Object} entityManager
@@ -346,6 +430,8 @@ function createCrimeSceneVisuals(entityManager, componentRegistry) {
 
   return entities;
 }
+
+export { createCrimeSceneArea };
 
 function createGroundDecal(entityManager, componentRegistry) {
   const entityId = entityManager.createEntity('crime_scene_ground');

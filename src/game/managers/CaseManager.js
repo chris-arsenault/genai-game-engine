@@ -43,6 +43,78 @@ export class CaseManager {
   }
 
   /**
+   * Register full case data (definitions + case file) and optionally activate it.
+   * @param {Object} caseData - Case configuration including evidence/clue definitions
+   * @param {Object} [options]
+   * @param {boolean} [options.activate=false] - Whether to set the case active after registration
+   * @param {boolean} [options.overwrite=false] - Overwrite existing definitions if they exist
+   * @returns {string} Case ID
+   */
+  registerCase(caseData = {}, options = {}) {
+    const { activate = false, overwrite = false } = options;
+
+    if (!caseData || typeof caseData.id !== 'string' || caseData.id.length === 0) {
+      throw new Error('CaseManager.registerCase requires case data with a valid id');
+    }
+
+    const {
+      evidence: evidenceDefinitions = [],
+      clues: clueDefinitions = [],
+      solution = null,
+      ...caseDefinition
+    } = caseData;
+
+    if (Array.isArray(evidenceDefinitions)) {
+      for (const evidence of evidenceDefinitions) {
+        if (!evidence || typeof evidence.id !== 'string' || evidence.id.length === 0) {
+          continue;
+        }
+        if (!overwrite && this.evidenceDatabase.has(evidence.id)) {
+          continue;
+        }
+        this.evidenceDatabase.set(evidence.id, evidence);
+      }
+    }
+
+    if (Array.isArray(clueDefinitions)) {
+      for (const clue of clueDefinitions) {
+        if (!clue || typeof clue.id !== 'string' || clue.id.length === 0) {
+          continue;
+        }
+        if (!overwrite && this.clueDatabase.has(clue.id)) {
+          continue;
+        }
+        this.clueDatabase.set(clue.id, clue);
+      }
+    }
+
+    if (solution && typeof solution === 'object') {
+      if (solution.rewards && !caseDefinition.rewards) {
+        caseDefinition.rewards = solution.rewards;
+      }
+      if (
+        typeof solution.minAccuracy === 'number' &&
+        Number.isFinite(solution.minAccuracy) &&
+        solution.minAccuracy > 0
+      ) {
+        caseDefinition.accuracyThreshold = caseDefinition.accuracyThreshold ?? solution.minAccuracy;
+      }
+    }
+
+    const caseId = this.createCase(caseDefinition);
+
+    if (caseDefinition.theoryGraph) {
+      this.theoryGraphs.set(caseId, caseDefinition.theoryGraph);
+    }
+
+    if ((activate || options.setActive) && caseId) {
+      this.setActiveCase(caseId);
+    }
+
+    return caseId;
+  }
+
+  /**
    * Create a new case
    * @param {Object} caseData - Case configuration
    * @returns {string} Case ID
@@ -131,6 +203,18 @@ export class CaseManager {
 
     console.log(`[CaseManager] Activated case: ${caseFile.title}`);
     return true;
+  }
+
+  /**
+   * Retrieve evidence definition by id.
+   * @param {string} evidenceId
+   * @returns {Object|null}
+   */
+  getEvidenceDefinition(evidenceId) {
+    if (typeof evidenceId !== 'string' || evidenceId.length === 0) {
+      return null;
+    }
+    return this.evidenceDatabase.get(evidenceId) || null;
   }
 
   /**
@@ -396,6 +480,13 @@ export class CaseManager {
       accuracy,
       timeTaken: caseFile.solveTime,
       evidenceCollected: caseFile.collectedEvidence.size,
+      rewards: caseFile.rewards
+    });
+
+    this.eventBus.emit('case:completed', {
+      caseId,
+      title: caseFile.title,
+      accuracy,
       rewards: caseFile.rewards
     });
 

@@ -1,5 +1,7 @@
 import { SaveManager } from '../../../src/game/managers/SaveManager.js';
 import { EventBus } from '../../../src/engine/events/EventBus.js';
+import { factionSlice } from '../../../src/game/state/slices/factionSlice.js';
+import { tutorialSlice } from '../../../src/game/state/slices/tutorialSlice.js';
 
 describe('SaveManager', () => {
   let saveManager;
@@ -75,6 +77,7 @@ describe('SaveManager', () => {
     });
 
     test('should initialize with eventBus', () => {
+      expect(saveManager.eventBus).toBe(eventBus);
       expect(saveManager.events).toBe(eventBus);
     });
 
@@ -1200,6 +1203,283 @@ describe('SaveManager', () => {
       expect(consoleSpy).toHaveBeenCalledWith('[SaveManager] Autosave disabled');
 
       consoleSpy.mockRestore();
+    });
+  });
+
+  // ==================== INSPECTOR SUMMARY TESTS ====================
+
+  describe('Inspector Summary', () => {
+    test('should return unavailable summary when worldStateStore missing', () => {
+      saveManager.worldStateStore = null;
+
+      const summary = saveManager.getInspectorSummary();
+
+      expect(summary.source).toBe('unavailable');
+      expect(summary.factions).toEqual({
+        lastCascadeEvent: null,
+        cascadeTargets: [],
+      });
+      expect(summary.tutorial).toEqual({
+        latestSnapshot: null,
+        snapshots: [],
+        transcript: [],
+      });
+      expect(summary.generatedAt).toEqual(expect.any(Number));
+    });
+
+    test('should surface selectors when worldStateStore available', () => {
+      const cascadeSummary = {
+        lastCascadeEvent: {
+          sourceFactionId: 'cipher_collective',
+          targetFactionId: 'wraith_network',
+          occurredAt: 123456,
+          newAttitude: 'neutral',
+        },
+        cascadeTargets: [
+          {
+            factionId: 'wraith_network',
+            cascadeCount: 3,
+            lastCascade: {
+              sourceFactionId: 'cipher_collective',
+              occurredAt: 123456,
+              newAttitude: 'neutral',
+            },
+            sources: ['cipher_collective'],
+          },
+        ],
+      };
+
+      const tutorialSnapshots = [
+        {
+          event: 'step_completed',
+          timestamp: 111,
+          stepId: 'open_case_file',
+          stepIndex: 1,
+          totalSteps: 5,
+          completedSteps: ['intro'],
+          promptHistory: [],
+        },
+      ];
+
+      const latestSnapshot = {
+        event: 'tutorial_completed',
+        timestamp: 222,
+        stepId: 'finish',
+        stepIndex: 4,
+        totalSteps: 5,
+        completedSteps: ['intro', 'open_case_file'],
+        promptHistory: [],
+      };
+
+      const store = {
+        select: jest.fn((selector) => {
+          if (selector === factionSlice.selectors.selectFactionCascadeSummary) {
+            return cascadeSummary;
+          }
+          if (selector === tutorialSlice.selectors.selectPromptHistorySnapshots) {
+            return tutorialSnapshots;
+          }
+          if (selector === tutorialSlice.selectors.selectLatestPromptSnapshot) {
+            return latestSnapshot;
+          }
+          return null;
+        }),
+      };
+
+      mockManagers.worldStateStore = store;
+      saveManager = new SaveManager(eventBus, mockManagers);
+
+      const summary = saveManager.getInspectorSummary();
+
+      expect(summary.source).toBe('worldStateStore');
+      expect(summary.factions).toEqual(cascadeSummary);
+      expect(summary.tutorial.snapshots).toEqual(tutorialSnapshots);
+      expect(summary.tutorial.latestSnapshot).toEqual(latestSnapshot);
+      expect(summary.tutorial.transcript).toEqual([]);
+      expect(store.select).toHaveBeenCalledTimes(3);
+    });
+
+    test('should include tutorial transcript when recorder provided', () => {
+      const store = {
+        select: jest.fn(() => []),
+      };
+
+      const transcriptRecorder = {
+        getTranscript: jest.fn(() => [
+          {
+            event: 'tutorial_step_started',
+            promptId: 'intro',
+            promptText: 'Introduction',
+            actionTaken: 'step_started',
+            timestamp: 1000,
+            metadata: { stepIndex: 0 },
+          },
+        ]),
+      };
+
+      mockManagers.worldStateStore = store;
+      mockManagers.tutorialTranscriptRecorder = transcriptRecorder;
+      saveManager = new SaveManager(eventBus, mockManagers);
+
+      const summary = saveManager.getInspectorSummary();
+
+      expect(transcriptRecorder.getTranscript).toHaveBeenCalled();
+      expect(summary.tutorial.transcript).toHaveLength(1);
+      expect(summary.tutorial.transcript[0]).toEqual(
+        expect.objectContaining({ promptId: 'intro', sequence: 0 })
+      );
+
+      mockManagers.worldStateStore = null;
+      mockManagers.tutorialTranscriptRecorder = null;
+    });
+  });
+
+  // ==================== INSPECTOR EXPORT TESTS ====================
+
+  describe('Inspector Export', () => {
+    test('should build export artifacts and invoke writer callback', async () => {
+      const cascadeSummary = {
+        lastCascadeEvent: {
+          targetFactionId: 'luminari_syndicate',
+          targetFactionName: 'The Luminari Syndicate',
+          sourceFactionId: 'vanguard_prime',
+          sourceFactionName: 'Vanguard Prime',
+          newAttitude: 'friendly',
+          occurredAt: Date.UTC(2025, 9, 30, 17, 0, 0),
+        },
+        cascadeTargets: [
+          {
+            factionId: 'luminari_syndicate',
+            cascadeCount: 3,
+            lastCascade: {
+              sourceFactionId: 'vanguard_prime',
+              sourceFactionName: 'Vanguard Prime',
+              newAttitude: 'friendly',
+              occurredAt: Date.UTC(2025, 9, 30, 17, 0, 0),
+            },
+            sources: ['vanguard_prime'],
+          },
+        ],
+      };
+
+      const tutorialSnapshots = [
+        {
+          event: 'tutorial_completed',
+          timestamp: Date.UTC(2025, 9, 30, 17, 5, 0),
+          stepId: 'tutorial_complete',
+          totalSteps: 4,
+          completedSteps: ['intro'],
+        },
+      ];
+
+      const store = {
+        select: jest.fn((selector) => {
+          if (selector === factionSlice.selectors.selectFactionCascadeSummary) {
+            return cascadeSummary;
+          }
+          if (selector === tutorialSlice.selectors.selectPromptHistorySnapshots) {
+            return tutorialSnapshots;
+          }
+          if (selector === tutorialSlice.selectors.selectLatestPromptSnapshot) {
+            return tutorialSnapshots[0];
+          }
+          return null;
+        }),
+      };
+
+      mockManagers.worldStateStore = store;
+      saveManager = new SaveManager(eventBus, mockManagers);
+
+      const writer = jest.fn().mockResolvedValue();
+      const result = await saveManager.exportInspectorSummary({ writer, prefix: 'ci-artifact' });
+
+      expect(result.summary.source).toBe('worldStateStore');
+      expect(result.artifacts.length).toBe(3);
+      expect(writer).toHaveBeenCalledTimes(3);
+      expect(writer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filename: expect.stringContaining('ci-artifact'),
+        }),
+        expect.objectContaining({
+          prefix: 'ci-artifact',
+        })
+      );
+    });
+
+    test('should continue when writer throws', async () => {
+      mockManagers.worldStateStore = {
+        select: jest.fn((selector) => {
+          if (selector === factionSlice.selectors.selectFactionCascadeSummary) {
+            return { lastCascadeEvent: null, cascadeTargets: [] };
+          }
+          if (selector === tutorialSlice.selectors.selectPromptHistorySnapshots) {
+            return [];
+          }
+          if (selector === tutorialSlice.selectors.selectLatestPromptSnapshot) {
+            return null;
+          }
+          return null;
+        }),
+      };
+
+      saveManager = new SaveManager(eventBus, mockManagers);
+
+      const writer = jest.fn().mockImplementation(() => {
+        throw new Error('filesystem unavailable');
+      });
+
+      const eventSpy = jest.spyOn(eventBus, 'emit');
+
+      const result = await saveManager.exportInspectorSummary({ writer });
+
+      expect(result.artifacts.length).toBe(3);
+      expect(writer).toHaveBeenCalled();
+      expect(eventSpy).toHaveBeenCalledWith(
+        'telemetry:artifact_failed',
+        expect.objectContaining({
+          writerId: 'legacy-writer',
+          filename: expect.any(String),
+        })
+      );
+    });
+
+    test('should delegate to telemetry adapter when writer not provided', async () => {
+      const adapter = {
+        writeArtifacts: jest.fn().mockResolvedValue({
+          artifactsAttempted: 3,
+          artifactsWritten: 3,
+          failures: [],
+          writerSummaries: [],
+          durationMs: 1,
+        }),
+      };
+
+      mockManagers.telemetryAdapter = adapter;
+      saveManager = new SaveManager(eventBus, mockManagers);
+
+      const eventSpy = jest.spyOn(eventBus, 'emit');
+      const result = await saveManager.exportInspectorSummary({ prefix: 'adapter-test' });
+
+      expect(adapter.writeArtifacts).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ filename: expect.stringContaining('adapter-test') }),
+        ]),
+        expect.objectContaining({
+          prefix: 'adapter-test',
+        })
+      );
+      expect(result.metrics).toEqual(
+        expect.objectContaining({
+          artifactsAttempted: 3,
+          artifactsWritten: 3,
+        })
+      );
+      expect(eventSpy).toHaveBeenCalledWith(
+        'telemetry:export_completed',
+        expect.objectContaining({
+          metrics: expect.objectContaining({ artifactsWritten: 3 }),
+        })
+      );
     });
   });
 

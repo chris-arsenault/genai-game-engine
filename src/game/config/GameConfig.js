@@ -84,6 +84,29 @@ export const GameConfig = {
     dialogueTimeout: 30000 // auto-close after 30 seconds
   },
 
+  stealth: {
+    firewallScrambler: {
+      knowledgeId: 'cipher_scrambler_access',
+      itemId: 'gadget_cipher_scrambler_charge',
+      activationAreaId: 'memory_parlor_interior',
+      firewallAreaId: 'memory_parlor_firewall',
+      durationSeconds: 30,
+      detectionMultiplier: 0.35,
+      suspicionDecayBonusPerSecond: 12,
+      cooldownSeconds: 5
+    },
+    visuals: {
+      memoryParlor: {
+        dangerColor: '#ff3f7c',
+        safeColor: '#31f5c9',
+        baseAlpha: 0.22,
+        highlightAlpha: 0.45,
+        safeBaseAlpha: 0.28,
+        safeHighlightAlpha: 0.5
+      }
+    }
+  },
+
   camera: {
     // Follow behavior
     followSpeed: 0.1, // lerp factor (0.0-1.0), lower = smoother
@@ -125,15 +148,72 @@ export const GameConfig = {
     musicVolume: 0.7,
     sfxVolume: 0.9,
     ambienceVolume: 0.5,
+    enableGameplayEmitters: true,
+    gameplayMoodBridge: {
+      updateIntervalMs: 250,
+      moodHintDurationMs: 6000,
+    },
+
+    memoryParlorAmbient: {
+      trackId: 'music-memory-parlor-ambient-001',
+      trackUrl: '/music/memory-parlor/goodnightmare.mp3',
+      baseVolume: 0.55,
+      scramblerBoost: 0.25,
+      fadeDuration: 1.2,
+      scramblerFadeDuration: 0.6,
+      loopStart: 0,
+      loopEnd: 232, // Goodnightmare loop point (approx 3:52)
+      tensionTrackId: 'music-memory-parlor-tension-001',
+      tensionTrackUrl: '/music/memory-parlor/goodnightmare-tension.wav',
+      tensionBaseVolume: 0.82,
+      tensionLoopStart: 0,
+      tensionLoopEnd: null,
+      combatTrackId: 'music-memory-parlor-combat-001',
+      combatTrackUrl: '/music/memory-parlor/goodnightmare-combat.wav',
+      combatBaseVolume: 0.95,
+      combatLoopStart: 0,
+      combatLoopEnd: null,
+      defaultAdaptiveState: 'ambient',
+      states: {
+        ambient: {
+          ambient_base: 0.95,
+          tension_layer: 0,
+          combat_layer: 0,
+        },
+        stealth: {
+          ambient_base: 0.65,
+          tension_layer: 0.4,
+          combat_layer: 0,
+        },
+        alert: {
+          ambient_base: 0.55,
+          tension_layer: 0.9,
+          combat_layer: 0.15,
+        },
+        combat: {
+          ambient_base: 0.35,
+          tension_layer: 0.75,
+          combat_layer: 1,
+        },
+      },
+    },
 
     // Adaptive music
     layerTransitionTime: 1.5, // seconds
     musicStates: {
-      exploration: { ambient: 1.0, tension: 0.0, combat: 0.0 },
-      investigation: { ambient: 0.6, tension: 0.4, combat: 0.0 },
-      stealth: { ambient: 0.3, tension: 0.7, combat: 0.0 },
-      combat: { ambient: 0.2, tension: 0.3, combat: 1.0 }
-    }
+      exploration: { ambient_base: 0.95, tension_layer: 0.0, combat_layer: 0.0 },
+      stealth: { ambient_base: 0.65, tension_layer: 0.4, combat_layer: 0.0 },
+      alert: { ambient_base: 0.55, tension_layer: 0.9, combat_layer: 0.15 },
+      combat: { ambient_base: 0.35, tension_layer: 0.75, combat_layer: 1.0 }
+    },
+  },
+
+  localization: {
+    forensic: {
+      toolLabels: {},
+      skillLabels: {},
+      typeLabels: {},
+    },
   },
 
   debug: {

@@ -177,6 +177,331 @@ export const DIALOGUE_WITNESS_VENDOR = new DialogueTree({
 });
 
 /**
+ * Black Market Broker - Memory Parlor Intel Vendor (Act 1 Optional Lead)
+ */
+export const DIALOGUE_BLACK_MARKET_VENDOR = new DialogueTree({
+  id: 'black_market_broker',
+  title: 'Black Market Broker',
+  npcId: 'black_market_broker',
+  startNode: 'start',
+  nodes: {
+    start: {
+      speaker: 'Black Market Broker',
+      text: 'You are far from the precinct, Detective. Credits on the table or keep walking.',
+      choices: [
+        {
+          text: 'I need a map through the transit tunnels.',
+          nextNode: 'intel_offer'
+        },
+        {
+          text: 'Maybe later.',
+          nextNode: 'dismiss'
+        }
+      ]
+    },
+    intel_offer: {
+      speaker: 'Black Market Broker',
+      text: 'Routes into the underground parlors are expensive. Eighty credits expensive. Unless you brought something juicy to trade.',
+      choices: [
+        {
+          text: 'Here. Transfer the routes.',
+          nextNode: 'purchase_full_price',
+          conditions: [{ type: 'hasItem', item: 'credits', amount: 80 }]
+        },
+        {
+          text: 'I have testimony from a street vendor. Interested?',
+          nextNode: 'trade_offer',
+          conditions: [
+            { type: 'hasItem', item: 'intel_vendor_testimony_neon_street', amount: 1 }
+          ]
+        },
+        {
+          text: 'That price is steep.',
+          nextNode: 'no_deal'
+        }
+      ]
+    },
+    trade_offer: {
+      speaker: 'Black Market Broker',
+      text: 'Neon Street testimony? That puts you closer than half this district. I can drop the price to forty and take that intel off your hands.',
+      choices: [
+        {
+          text: 'Deal. Take the testimony and the credits.',
+          nextNode: 'purchase_discounted',
+          conditions: [{ type: 'hasItem', item: 'credits', amount: 40 }]
+        },
+        {
+          text: 'On second thought, no trade.',
+          nextNode: 'intel_offer'
+        }
+      ]
+    },
+    purchase_full_price: {
+      speaker: 'Black Market Broker',
+      text: 'Pleasure doing business. Try not to die down there.',
+      consequences: {
+        vendorTransaction: {
+          vendorId: 'black_market_broker',
+          vendorName: 'Black Market Broker',
+          vendorFaction: 'smugglers',
+          cost: { credits: 80 },
+          items: [
+            {
+              id: 'intel_parlor_transit_routes',
+              name: 'Underground Transit Routes',
+              description: 'Smuggler-grade map showing access shafts into the illicit memory parlors beneath Neon Street.',
+              type: 'Intel',
+              rarity: 'rare',
+              quantity: 1,
+              tags: [
+                'intel',
+                'lead:memory_parlors',
+                'vendor:black_market_broker',
+                'source:black_market'
+              ],
+              metadata: {
+                knowledgeId: 'black_market_transit_routes',
+                acquisition: 'purchase_full_price'
+              }
+            }
+          ]
+        },
+        events: ['knowledge:learned'],
+        data: {
+          knowledgeId: 'black_market_transit_routes',
+          npcId: 'black_market_broker'
+        },
+        setFlags: ['black_market_routes_acquired']
+      },
+      nextNode: 'wrap_up'
+    },
+    purchase_discounted: {
+      speaker: 'Black Market Broker',
+      text: 'Smart trade. Routes are yours, and I\'ll make use of that testimony.',
+      consequences: {
+        removeItem: {
+          item: 'intel_vendor_testimony_neon_street',
+          amount: 1
+        },
+        vendorTransaction: {
+          vendorId: 'black_market_broker',
+          vendorName: 'Black Market Broker',
+          vendorFaction: 'smugglers',
+          cost: { credits: 40 },
+          items: [
+            {
+              id: 'intel_parlor_transit_routes',
+              name: 'Underground Transit Routes',
+              description: 'Smuggler-grade map showing access shafts into the illicit memory parlors beneath Neon Street.',
+              type: 'Intel',
+              rarity: 'rare',
+              quantity: 1,
+              tags: [
+                'intel',
+                'lead:memory_parlors',
+                'vendor:black_market_broker',
+                'source:black_market'
+              ],
+              metadata: {
+                knowledgeId: 'black_market_transit_routes',
+                acquisition: 'purchase_discounted'
+              }
+            }
+          ]
+        },
+        events: ['knowledge:learned'],
+        data: {
+          knowledgeId: 'black_market_transit_routes',
+          npcId: 'black_market_broker'
+        },
+        setFlags: ['black_market_routes_acquired', 'street_vendor_intel_traded']
+      },
+      nextNode: 'wrap_up'
+    },
+    wrap_up: {
+      speaker: 'Black Market Broker',
+      text: 'Keep that map close. Memory dealers guard their secrets with more than guns.',
+      nextNode: null
+    },
+    no_deal: {
+      speaker: 'Black Market Broker',
+      text: 'Then you are wasting my time. Come back with credits or leverage.',
+      nextNode: null
+    },
+    dismiss: {
+      speaker: 'Black Market Broker',
+      text: 'Then don\'t linger. Every second out here paints a target on your back.',
+      nextNode: null
+    }
+  }
+});
+
+/**
+ * Cipher Collective Quartermaster - Provides stealth gear for parlor infiltration
+ */
+export const DIALOGUE_CIPHER_QUARTERMASTER = new DialogueTree({
+  id: 'cipher_quartermaster',
+  title: 'Cipher Quartermaster',
+  npcId: 'cipher_quartermaster',
+  startNode: 'start',
+  nodes: {
+    start: {
+      speaker: 'Cipher Quartermaster',
+      text: 'The Collective does not open the locker for badge-carrying detectives. State your need or move along.',
+      choices: [
+        {
+          text: 'I need a scrambler to bypass parlor firewalls.',
+          nextNode: 'offer'
+        },
+        {
+          text: 'Relax. I am leaving.',
+          nextNode: 'dismiss'
+        }
+      ]
+    },
+    offer: {
+      speaker: 'Cipher Quartermaster',
+      text: 'Scrambler charges are scarce. One use buys you thirty seconds against a memory parlor firewall.',
+      choices: [
+        {
+          text: 'Credits ready. Hand over the scrambler.',
+          nextNode: 'purchase_full_price',
+          conditions: [{ type: 'hasCurrency', currency: 'credits', amount: 120 }]
+        },
+        {
+          text: 'I brought transit routes intel—interested?',
+          nextNode: 'trade_offer',
+          conditions: [
+            { type: 'hasItem', item: 'intel_parlor_transit_routes', amount: 1 }
+          ]
+        },
+        {
+          text: 'I will circle back later.',
+          nextNode: 'no_deal'
+        }
+      ]
+    },
+    trade_offer: {
+      speaker: 'Cipher Quartermaster',
+      text: 'Transit tunnels in exchange? Useful leverage. Price drops if I log those routes.',
+      choices: [
+        {
+          text: 'Deal. Take the routes intel and the credits.',
+          nextNode: 'purchase_discounted',
+          conditions: [{ type: 'hasCurrency', currency: 'credits', amount: 60 }]
+        },
+        {
+          text: 'On second thought, I need those routes.',
+          nextNode: 'offer'
+        }
+      ]
+    },
+    purchase_full_price: {
+      speaker: 'Cipher Quartermaster',
+      text: 'Charge is yours. Do not stay in one place when it fires.',
+      consequences: {
+        vendorTransaction: {
+          vendorId: 'cipher_quartermaster',
+          vendorName: 'Cipher Quartermaster',
+          vendorFaction: 'cipher_collective',
+          cost: { credits: 120 },
+          items: [
+            {
+              id: 'gadget_cipher_scrambler_charge',
+              name: 'Cipher Scrambler Charge',
+              description: 'Single-use device that destabilizes parlor firewall nodes for thirty seconds.',
+              type: 'Gadget',
+              rarity: 'rare',
+              quantity: 1,
+              tags: [
+                'gadget',
+                'lead:parlor_infiltration',
+                'vendor:cipher_quartermaster',
+                'faction:cipher_collective'
+              ],
+              metadata: {
+                knowledgeId: 'cipher_scrambler_access',
+                gearId: 'cipher_scrambler_charge',
+                acquisition: 'purchase_full_price'
+              }
+            }
+          ]
+        },
+        events: ['knowledge:learned'],
+        data: {
+          knowledgeId: 'cipher_scrambler_access',
+          npcId: 'cipher_quartermaster'
+        },
+        setFlags: ['cipher_scrambler_acquired']
+      },
+      nextNode: 'wrap_up'
+    },
+    purchase_discounted: {
+      speaker: 'Cipher Quartermaster',
+      text: 'Intelligence traded. The Collective thanks you for the leverage. Keep the scrambler close.',
+      consequences: {
+        removeItem: {
+          item: 'intel_parlor_transit_routes',
+          amount: 1
+        },
+        vendorTransaction: {
+          vendorId: 'cipher_quartermaster',
+          vendorName: 'Cipher Quartermaster',
+          vendorFaction: 'cipher_collective',
+          cost: { credits: 60 },
+          items: [
+            {
+              id: 'gadget_cipher_scrambler_charge',
+              name: 'Cipher Scrambler Charge',
+              description: 'Single-use device that destabilizes parlor firewall nodes for thirty seconds.',
+              type: 'Gadget',
+              rarity: 'rare',
+              quantity: 1,
+              tags: [
+                'gadget',
+                'lead:parlor_infiltration',
+                'vendor:cipher_quartermaster',
+                'faction:cipher_collective'
+              ],
+              metadata: {
+                knowledgeId: 'cipher_scrambler_access',
+                gearId: 'cipher_scrambler_charge',
+                acquisition: 'purchase_discounted'
+              }
+            }
+          ]
+        },
+        events: ['knowledge:learned'],
+        data: {
+          knowledgeId: 'cipher_scrambler_access',
+          npcId: 'cipher_quartermaster'
+        },
+        setFlags: [
+          'cipher_scrambler_acquired',
+          'routes_intel_traded_to_cipher'
+        ]
+      },
+      nextNode: 'wrap_up'
+    },
+    wrap_up: {
+      speaker: 'Cipher Quartermaster',
+      text: 'Scrambler hum peaks after five seconds. Trigger it then move like your neural mesh depends on it.',
+      nextNode: null
+    },
+    no_deal: {
+      speaker: 'Cipher Quartermaster',
+      text: 'Then the locker stays sealed. Bring currency or leverage next time.',
+      nextNode: null
+    },
+    dismiss: {
+      speaker: 'Cipher Quartermaster',
+      text: 'Then walk away before a Cipher spotter tags your badge.',
+      nextNode: null
+    }
+  }
+});
+
+/**
  * Informant Jax - Building the Network (Case 004)
  */
 export const DIALOGUE_JAX_INTRO = new DialogueTree({
@@ -455,6 +780,8 @@ export const DIALOGUE_REESE_CONCLUSION = new DialogueTree({
 export const ACT1_DIALOGUES = [
   DIALOGUE_REESE_BRIEFING,
   DIALOGUE_WITNESS_VENDOR,
+  DIALOGUE_BLACK_MARKET_VENDOR,
+  DIALOGUE_CIPHER_QUARTERMASTER,
   DIALOGUE_JAX_INTRO,
   DIALOGUE_ERASER_CIPHER,
   DIALOGUE_REESE_CONCLUSION
@@ -468,5 +795,5 @@ export function registerAct1Dialogues(dialogueSystem) {
   for (const dialogue of ACT1_DIALOGUES) {
     dialogueSystem.registerDialogueTree(dialogue);
   }
-  console.log('[Act1Dialogues] Registered 5 Act 1 dialogue trees');
+  console.log(`[Act1Dialogues] Registered ${ACT1_DIALOGUES.length} Act 1 dialogue trees`);
 }

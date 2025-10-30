@@ -65,35 +65,43 @@ Perform comprehensive validation when systems are registered with `SystemManager
 
 ```javascript
 // SystemManager.js
-registerSystem(system, name = null) {
+registerSystem(system, nameOrOptions = null, priorityOverride = null) {
+  const options = this._normalizeRegistrationOptions(nameOrOptions, priorityOverride);
+
   // VALIDATION PHASE
-  const validation = this._validateSystem(system, name);
+  const validation = this._validateSystem(system, options.name);
   if (!validation.valid) {
-    throw new Error(this._formatValidationError(validation, name));
+    throw new Error(this._formatValidationError(validation, options.name));
   }
 
   // Check for duplicate name
-  if (name && this.systemsByName.has(name)) {
-    throw new Error(`System with name "${name}" already registered`);
+  if (options.name && this.systemsByName.has(options.name)) {
+    throw new Error(`System with name "${options.name}" already registered`);
   }
 
   // Inject dependencies
   system.componentRegistry = this.componentRegistry;
   system.eventBus = this.eventBus;
 
+  if (typeof options.priority === 'number') {
+    system.priority = options.priority;
+  }
+
   // Add to systems list
   this.systems.push(system);
 
   // Store by name if provided
-  if (name) {
-    this.systemsByName.set(name, system);
+  if (options.name) {
+    this.systemsByName.set(options.name, system);
   }
 
   // Sort by priority
   this.systems.sort((a, b) => a.priority - b.priority);
 
   // Initialize system
-  system.init();
+  if (options.autoInit !== false) {
+    system.init();
+  }
 }
 
 /**
@@ -1140,7 +1148,9 @@ export class RenderSystem extends System {
 }
 
 // SystemManager.registerSystem() checks dependencies
-registerSystem(system, name = null) {
+registerSystem(system, nameOrOptions = null, priorityOverride = null) {
+  const options = this._normalizeRegistrationOptions(nameOrOptions, priorityOverride);
+
   // ... validation ...
 
   // Check dependencies are registered

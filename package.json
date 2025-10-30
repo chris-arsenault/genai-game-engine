@@ -4,17 +4,20 @@
   "description": "A 2D Detective Metroidvania built with vanilla JavaScript and Canvas API",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --open=false",
     "build": "vite build",
     "preview": "vite preview",
     "test": "jest",
+    "export-telemetry": "node scripts/telemetry/exportInspectorTelemetry.js",
+    "telemetry:fallback-report": "node scripts/telemetry/analyzeFallbackUsage.js",
+    "telemetry:performance": "node scripts/telemetry/performanceSnapshot.js",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:e2e": "playwright test",
+    "test:e2e": "./run_playwright.sh test",
     "lint": "eslint src --ext .js",
     "lint:fix": "eslint src --ext .js --fix",
     "format": "prettier --write \"src/**/*.js\"",
-    "profile": "node --prof src/benchmark.js"
+    "profile": "node --prof benchmark.js"
   },
   "keywords": [
     "game",
@@ -86,6 +89,9 @@
       "^@/(.*)$": "<rootDir>/src/$1",
       "^(\\.{1,2}/.*)\\.js$": "$1"
     },
+    "testPathIgnorePatterns": [
+      "<rootDir>/tests/e2e/"
+    ],
     "transform": {
       "^.+\\.js$": [
         "babel-jest",
@@ -105,6 +111,7 @@
     }
   },
   "dependencies": {
+    "@actions/artifact": "^2.2.1",
     "playwright": "^1.56.1"
   }
 }

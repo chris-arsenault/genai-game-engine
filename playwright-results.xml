@@ -1,0 +1,49 @@
+<testsuites id="" name="" tests="1" failures="1" skipped="0" errors="0" time="1.480378">
+<testsuite name="hud-telemetry.spec.js" timestamp="2025-10-29T17:58:26.648Z" hostname="" tests="1" failures="1" skipped="0" time="0.515" errors="0">
+<testcase name="HUD telemetry overlays › reputation UI and save inspector surface cascade/tutorial data" classname="hud-telemetry.spec.js" time="0.515">
+<failure message="hud-telemetry.spec.js:5:3 reputation UI and save inspector surface cascade/tutorial data" type="FAILURE">
+<![CDATA[  hud-telemetry.spec.js:5:3 › HUD telemetry overlays › reputation UI and save inspector surface cascade/tutorial data 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      81 |     });
+      82 |
+    > 83 |     expect(reputationState?.visible).toBe(true);
+         |                                      ^
+      84 |     expect(reputationState?.lastCascade?.targetFactionId).toBe('luminari_syndicate');
+      85 |     expect(reputationState?.hotspots?.[0]?.factionId).toBe('luminari_syndicate');
+      86 |
+        at /home/tsonu/src/genai-game-engine/tests/e2e/hud-telemetry.spec.js:83:38
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/hud-telemetry-HUD-telemetr-357a5-rface-cascade-tutorial-data/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/hud-telemetry-HUD-telemetr-357a5-rface-cascade-tutorial-data/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ../../test-results/hud-telemetry-HUD-telemetr-357a5-rface-cascade-tutorial-data/trace.zip
+    Usage:
+
+        npx playwright show-trace ../../test-results/hud-telemetry-HUD-telemetr-357a5-rface-cascade-tutorial-data/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|test-results/hud-telemetry-HUD-telemetr-357a5-rface-cascade-tutorial-data/test-failed-1.png]]
+
+[[ATTACHMENT|test-results/hud-telemetry-HUD-telemetr-357a5-rface-cascade-tutorial-data/video.webm]]
+
+[[ATTACHMENT|test-results/hud-telemetry-HUD-telemetr-357a5-rface-cascade-tutorial-data/trace.zip]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+</testsuites>

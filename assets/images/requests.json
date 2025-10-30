@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "id": "image-memory-parlor-neon-001",
+    "title": "Futuristic chamber with glowing energy beam",
+    "creator": "itsiken",
+    "source": "https://unsplash.com/photos/futuristic-chamber-with-glowing-energy-beam-8ZsBU6LBfO0",
+    "license": "Unsplash License",
+    "status": "reference-selected",
+    "usage": "Memory Parlor stealth lighting reference for cover blocks and firewall glow.",
+    "notes": "Capture neon bevel edges and volumetric beam cues for future environment illustration pass."
+  }
+]

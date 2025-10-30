@@ -22,7 +22,8 @@ import {
 
 export class QuestManager {
   constructor(eventBus, factionManager, storyFlagManager) {
-    this.events = eventBus;
+    this.eventBus = eventBus;
+    this.events = eventBus; // Legacy alias maintained for compatibility
     this.factionManager = factionManager;
     this.storyFlags = storyFlagManager;
 
@@ -45,15 +46,15 @@ export class QuestManager {
   init() {
     // Subscribe to game events for objective tracking
     this._offEventHandlers = [
-      this.events.on('evidence:collected', (data) => this.onEvidenceCollected(data)),
-      this.events.on('case:solved', (data) => this.onCaseSolved(data)),
-      this.events.on('theory:validated', (data) => this.onTheoryValidated(data)),
-      this.events.on('dialogue:completed', (data) => this.onDialogueCompleted(data)),
-      this.events.on('npc:interviewed', (data) => this.onNPCInterviewed(data)),
-      this.events.on('ability:unlocked', (data) => this.onAbilityUnlocked(data)),
-      this.events.on('area:entered', (data) => this.onAreaEntered(data)),
-      this.events.on('faction:reputation:changed', (data) => this.onReputationChanged(data)),
-      this.events.on('knowledge:learned', (data) => this.onKnowledgeLearned(data))
+      this.eventBus.on('evidence:collected', (data) => this.onEvidenceCollected(data)),
+      this.eventBus.on('case:solved', (data) => this.onCaseSolved(data)),
+      this.eventBus.on('theory:validated', (data) => this.onTheoryValidated(data)),
+      this.eventBus.on('dialogue:completed', (data) => this.onDialogueCompleted(data)),
+      this.eventBus.on('npc:interviewed', (data) => this.onNPCInterviewed(data)),
+      this.eventBus.on('ability:unlocked', (data) => this.onAbilityUnlocked(data)),
+      this.eventBus.on('area:entered', (data) => this.onAreaEntered(data)),
+      this.eventBus.on('faction:reputation:changed', (data) => this.onReputationChanged(data)),
+      this.eventBus.on('knowledge:learned', (data) => this.onKnowledgeLearned(data))
     ];
 
     console.log('[QuestManager] Initialized');
@@ -84,7 +85,7 @@ export class QuestManager {
 
     console.log(`[QuestManager] Registered quest: ${questData.title} (${questData.id})`);
 
-    this.events.emit('quest:registered', {
+    this.eventBus.emit('quest:registered', {
       questId: questData.id,
       title: questData.title,
       type: questData.type,
@@ -231,7 +232,7 @@ export class QuestManager {
     this.activeQuests.set(questId, quest);
 
     // Emit event
-    this.events.emit('quest:started', {
+    this.eventBus.emit('quest:started', {
       questId,
       title: quest.title,
       type: quest.type
@@ -252,10 +253,27 @@ export class QuestManager {
         const state = quest.objectiveStates.get(objective.id);
         if (state.status === 'completed') continue;
 
-        // Check if this objective is triggered by this event
-        if (this.checkObjectiveTrigger(objective, eventType, eventData)) {
-          this.progressObjective(questId, objective.id, quest, state);
+        const triggerResult = this.checkObjectiveTrigger(objective, eventType, eventData);
+        if (!triggerResult.matched) continue;
+
+        if (triggerResult.blocked) {
+          this.eventBus.emit('objective:blocked', {
+            questId,
+            questTitle: quest.title,
+            questType: quest.type,
+            objectiveId: objective.id,
+            objectiveDescription: objective.description,
+            blockedMessage: objective.blockedMessage || null,
+            reason: triggerResult.reason,
+            requirement: triggerResult.requirement || null,
+            requirements: objective.requirements || null,
+            eventType,
+            eventData
+          });
+          continue;
         }
+
+        this.progressObjective(questId, objective.id, quest, state);
       }
     }
   }
@@ -268,21 +286,88 @@ export class QuestManager {
    * @returns {boolean}
    */
   checkObjectiveTrigger(objective, eventType, eventData) {
-    if (!objective.trigger) return false;
+    if (!objective.trigger) return { matched: false };
 
     const trigger = objective.trigger;
 
     // Event type must match
-    if (trigger.event !== eventType) return false;
+    if (trigger.event !== eventType) return { matched: false };
 
     // Check additional conditions
-    if (trigger.caseId && eventData.caseId !== trigger.caseId) return false;
-    if (trigger.theoryId && eventData.theoryId !== trigger.theoryId) return false;
-    if (trigger.npcId && eventData.npcId !== trigger.npcId) return false;
-    if (trigger.areaId && eventData.areaId !== trigger.areaId) return false;
-    if (trigger.abilityId && eventData.abilityId !== trigger.abilityId) return false;
+    if (trigger.caseId && eventData.caseId !== trigger.caseId) return { matched: false };
+    if (trigger.theoryId && eventData.theoryId !== trigger.theoryId) return { matched: false };
+    if (trigger.npcId && eventData.npcId !== trigger.npcId) return { matched: false };
+    if (trigger.areaId && eventData.areaId !== trigger.areaId) return { matched: false };
+    if (trigger.abilityId && eventData.abilityId !== trigger.abilityId) return { matched: false };
 
-    return true;
+    const requirementResult = this.evaluateObjectiveRequirements(objective.requirements, eventData);
+    if (!requirementResult.met) {
+      return {
+        matched: true,
+        blocked: true,
+        reason: requirementResult.reason,
+        requirement: requirementResult.requirement || null,
+      };
+    }
+
+    return { matched: true, blocked: false };
+  }
+
+  /**
+   * Evaluate objective requirements (story flags, access conditions, etc.)
+   * @param {Object|null} requirements
+   * @param {Object} eventData
+   * @returns {{met: boolean, reason?: string, requirement?: string}}
+   */
+  evaluateObjectiveRequirements(requirements, eventData) {
+    if (!requirements) {
+      return { met: true };
+    }
+
+    if (Array.isArray(requirements.storyFlags)) {
+      for (const flagId of requirements.storyFlags) {
+        if (!this.storyFlags.hasFlag(flagId)) {
+          return {
+            met: false,
+            reason: 'missing_story_flag',
+            requirement: flagId,
+          };
+        }
+      }
+    }
+
+    if (Array.isArray(requirements.notStoryFlags)) {
+      for (const flagId of requirements.notStoryFlags) {
+        if (this.storyFlags.hasFlag(flagId)) {
+          return {
+            met: false,
+            reason: 'forbidden_story_flag',
+            requirement: flagId,
+          };
+        }
+      }
+    }
+
+    if (requirements.requireActiveScrambler && !this.storyFlags.hasFlag('cipher_scrambler_active')) {
+      return {
+        met: false,
+        reason: 'scrambler_inactive',
+        requirement: 'cipher_scrambler_active',
+      };
+    }
+
+    if (requirements.eventAreaIds && Array.isArray(requirements.eventAreaIds)) {
+      const allowedAreas = requirements.eventAreaIds;
+      if (eventData?.areaId && !allowedAreas.includes(eventData.areaId)) {
+        return {
+          met: false,
+          reason: 'area_not_authorized',
+          requirement: eventData.areaId,
+        };
+      }
+    }
+
+    return { met: true };
   }
 
   /**
@@ -296,7 +381,7 @@ export class QuestManager {
     state.progress++;
 
     // Emit progress event
-    this.events.emit('objective:progress', {
+    this.eventBus.emit('objective:progress', {
       questId,
       objectiveId,
       progress: state.progress,
@@ -307,7 +392,7 @@ export class QuestManager {
     if (state.progress >= state.target) {
       state.status = 'completed';
 
-      this.events.emit('objective:completed', {
+      this.eventBus.emit('objective:completed', {
         questId,
         objectiveId
       });
@@ -363,7 +448,7 @@ export class QuestManager {
     }
 
     // Emit completion event
-    this.events.emit('quest:completed', {
+    this.eventBus.emit('quest:completed', {
       questId,
       title: quest.title,
       type: quest.type,
@@ -391,7 +476,7 @@ export class QuestManager {
 
     // Ability unlock
     if (rewards.abilityUnlock) {
-      this.events.emit('ability:unlocked', { abilityId: rewards.abilityUnlock });
+      this.eventBus.emit('ability:unlocked', { abilityId: rewards.abilityUnlock });
       this.storyFlags.setFlag(`ability_${rewards.abilityUnlock}`);
       console.log(`[QuestManager] Ability unlocked: ${rewards.abilityUnlock}`);
     }
@@ -419,7 +504,7 @@ export class QuestManager {
     if (Number.isFinite(rewards.credits) && rewards.credits !== 0) {
       const creditsAmount = Math.trunc(rewards.credits);
       console.log(`[QuestManager] Credits granted: ${creditsAmount}`);
-      this.events.emit('credits:earned', {
+      this.eventBus.emit('credits:earned', {
         amount: creditsAmount,
         questId,
       });
@@ -435,7 +520,7 @@ export class QuestManager {
       });
 
       if (currencyPayload) {
-        this.events.emit('inventory:item_updated', currencyPayload);
+        this.eventBus.emit('inventory:item_updated', currencyPayload);
       }
     }
 
@@ -449,7 +534,7 @@ export class QuestManager {
         });
 
         if (inventoryPayload) {
-          this.events.emit('inventory:item_added', inventoryPayload);
+          this.eventBus.emit('inventory:item_added', inventoryPayload);
           console.log(`[QuestManager] Item granted: ${inventoryPayload.id}`);
         }
       }
@@ -518,7 +603,7 @@ export class QuestManager {
     this.activeQuests.delete(questId);
     this.failedQuests.add(questId);
 
-    this.events.emit('quest:failed', {
+    this.eventBus.emit('quest:failed', {
       questId,
       title: quest.title,
       reason

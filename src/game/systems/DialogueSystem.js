@@ -438,6 +438,33 @@ export class DialogueSystem extends System {
       }
     }
 
+    if (Array.isArray(consequences.events) && consequences.events.length) {
+      const basePayload = {};
+      if (consequences.data && typeof consequences.data === 'object') {
+        Object.assign(basePayload, consequences.data);
+      }
+      if (this.activeDialogue) {
+        if (!('npcId' in basePayload)) {
+          basePayload.npcId = this.activeDialogue.npcId ?? null;
+        }
+        if (!('dialogueId' in basePayload)) {
+          basePayload.dialogueId = this.activeDialogue.dialogueId ?? null;
+        }
+        if (!('nodeId' in basePayload)) {
+          basePayload.nodeId = this.activeDialogue.currentNode ?? null;
+        }
+        if (!('choiceId' in basePayload)) {
+          basePayload.choiceId = this.lastChoice?.choiceId ?? null;
+        }
+      }
+
+      for (const eventName of consequences.events) {
+        if (typeof eventName === 'string' && eventName.trim()) {
+          this.eventBus.emit(eventName, { ...basePayload });
+        }
+      }
+    }
+
     // Emit custom consequence event
     if (consequences.customEvent) {
       this.eventBus.emit(consequences.customEvent.type, consequences.customEvent.data || {});
@@ -491,6 +518,7 @@ export class DialogueSystem extends System {
         const items = inventorySlice.selectors.getItems(inventoryState) || [];
         const itemsById = {};
         const quantities = {};
+        const currencies = {};
 
         for (const item of items) {
           if (item && typeof item.id === 'string') {
@@ -499,6 +527,15 @@ export class DialogueSystem extends System {
             if (quantity > 0) {
               quantities[item.id] = quantity;
             }
+
+            const isCurrency =
+              item.tags?.includes('currency') ||
+              String(item.type || '').toLowerCase() === 'currency' ||
+              item.id === 'credits';
+
+            if (isCurrency) {
+              currencies[item.id] = quantity;
+            }
           }
         }
 
@@ -506,7 +543,21 @@ export class DialogueSystem extends System {
           items,
           itemsById,
           quantities,
+          currencies,
         };
+
+        const storyFlags = worldState.story?.flags;
+        if (storyFlags && typeof storyFlags === 'object') {
+          const flagSet = new Set(context.flags);
+          for (const [flagId, entry] of Object.entries(storyFlags)) {
+            if (!flagId) continue;
+            const value = typeof entry === 'object' ? entry.value : entry;
+            if (value) {
+              flagSet.add(flagId);
+            }
+          }
+          context.flags = flagSet;
+        }
       } catch (error) {
         console.error('[DialogueSystem] Failed to read inventory state for dialogue context', error);
       }

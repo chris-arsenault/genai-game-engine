@@ -86,6 +86,10 @@ describe('inventorySlice', () => {
             focus: 'evidence_polaroid',
           },
           lastUpdatedAt: 999,
+          selectedItemId: 'evidence_polaroid',
+          selectedIndex: 0,
+          lastSelectionAt: 1000,
+          selectionSource: 'inventoryOverlay',
         },
       },
     });
@@ -93,9 +97,16 @@ describe('inventorySlice', () => {
     expect(hydrated.items).toHaveLength(1);
     expect(hydrated.equipped.focus).toBe('evidence_polaroid');
     expect(hydrated.lastUpdatedAt).toBe(999);
+    expect(hydrated.selectedItemId).toBe('evidence_polaroid');
+    expect(hydrated.selectedIndex).toBe(0);
+    expect(hydrated.lastSelectionAt).toBe(1000);
+    expect(hydrated.selectionSource).toBe('inventoryOverlay');
 
     const snapshot = inventorySlice.serialize(hydrated);
     expect(snapshot.items[0].id).toBe('evidence_polaroid');
+    expect(snapshot.selectedItemId).toBe('evidence_polaroid');
+    expect(snapshot.selectedIndex).toBe(0);
+    expect(snapshot.selectionSource).toBe('inventoryOverlay');
   });
 
   it('applies quantity deltas and removes items when quantity reaches zero', () => {
@@ -137,5 +148,49 @@ describe('inventorySlice', () => {
     });
 
     expect(afterFullSpend.items).toHaveLength(0);
+  });
+
+  it('records inventory selection changes', () => {
+    const baseState = inventorySlice.getInitialState();
+    const withItem = inventorySlice.reducer(baseState, {
+      type: 'INVENTORY_ITEM_ADDED',
+      payload: {
+        id: 'tool_decoder_ring',
+        name: 'Decoder Ring',
+      },
+    });
+
+    const selectionChanged = inventorySlice.reducer(withItem, {
+      type: 'INVENTORY_SELECTION_CHANGED',
+      timestamp: 2000,
+      payload: {
+        itemId: 'tool_decoder_ring',
+        index: 0,
+        source: 'inventoryOverlay',
+      },
+    });
+
+    expect(selectionChanged.selectedItemId).toBe('tool_decoder_ring');
+    expect(selectionChanged.selectedIndex).toBe(0);
+    expect(selectionChanged.lastSelectionAt).toBe(2000);
+    expect(selectionChanged.selectionSource).toBe('inventoryOverlay');
+
+    const redundant = inventorySlice.reducer(selectionChanged, {
+      type: 'INVENTORY_SELECTION_CHANGED',
+      timestamp: 2100,
+      payload: {
+        itemId: 'tool_decoder_ring',
+        index: 0,
+        source: 'inventoryOverlay',
+      },
+    });
+
+    // No change because selection identical
+    expect(redundant).toBe(selectionChanged);
+
+    const selectionInfo = inventorySlice.selectors.getSelectionInfo(selectionChanged);
+    expect(selectionInfo.itemId).toBe('tool_decoder_ring');
+    expect(selectionInfo.index).toBe(0);
+    expect(selectionInfo.lastSelectionAt).toBe(2000);
   });
 });

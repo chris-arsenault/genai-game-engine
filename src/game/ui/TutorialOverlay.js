@@ -13,7 +13,8 @@ export class TutorialOverlay {
   constructor(canvas, eventBus, config = {}) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
-    this.events = eventBus;
+    this.eventBus = eventBus;
+    this.events = eventBus; // Legacy alias maintained for compatibility
     const { store = null } = config;
     this.store = store;
     const styleOverrides = config.styleOverrides ?? {};
@@ -69,6 +70,22 @@ export class TutorialOverlay {
         borderWidth: 3,
         pulseSpeed: 2, // Hz
       }, styleOverrides.highlight),
+      telemetry: withOverlayTheme({
+        backgroundColor: palette.backgroundSurface,
+        borderColor: palette.outlineSoft,
+        borderWidth: 2,
+        borderRadius: metrics.overlayCornerRadius,
+        padding: 14,
+        width: Math.min(metrics.hudMaxWidth, 320),
+        lineHeight: 18,
+        titleFont: typography.title,
+        bodyFont: typography.small,
+        textColor: palette.textPrimary,
+        subtitleColor: palette.textSecondary,
+        accentColor: palette.accent,
+        timelineBullet: '•',
+        maxTimelineEntries: 4,
+      }, styleOverrides.telemetry),
     };
 
     // Animation state
@@ -76,8 +93,213 @@ export class TutorialOverlay {
     this.highlightEntities = [];
     this.highlight = null;
 
+    this.telemetry = {
+      latestSnapshot: null,
+      timeline: [],
+    };
+
     this.unsubscribe = null;
     this._offHandlers = [];
+  }
+
+  /**
+   * Determine if telemetry panel should render.
+   * @returns {boolean}
+   */
+  hasTelemetry() {
+    if (!this.telemetry) {
+      return false;
+    }
+    const hasLatest = Boolean(this.telemetry.latestSnapshot);
+    const timelineEntries = Array.isArray(this.telemetry.timeline) ? this.telemetry.timeline : [];
+    return hasLatest || timelineEntries.length > 0;
+  }
+
+  /**
+   * Render telemetry panel with latest tutorial snapshot information.
+   */
+  renderTelemetryPanel() {
+    const style = this.style.telemetry ?? {};
+    const timeline = Array.isArray(this.telemetry?.timeline) ? this.telemetry.timeline : [];
+    const latest = this.telemetry?.latestSnapshot ?? null;
+
+    if (!latest && timeline.length === 0) {
+      return;
+    }
+
+    const ctx = this.ctx;
+    const { metrics } = overlayTheme;
+    const padding = style.padding ?? 12;
+    const width = style.width ?? Math.min(metrics.hudMaxWidth, 320);
+    const lineHeight = style.lineHeight ?? 18;
+    const radius = style.borderRadius ?? metrics.overlayCornerRadius;
+    const maxTimelineEntries = Math.max(1, style.maxTimelineEntries ?? 4);
+    const timelineEntries = timeline.slice(0, maxTimelineEntries);
+    const timelineBullet = style.timelineBullet ?? '•';
+
+    const lines = [];
+    lines.push({
+      text: 'Tutorial Telemetry',
+      color: style.accentColor ?? style.textColor,
+      font: style.titleFont ?? overlayTheme.typography.title,
+      maxLength: 48,
+    });
+
+    if (latest) {
+      lines.push({
+        text: `Latest: ${this.formatSnapshotEvent(latest)}`,
+        color: style.textColor,
+        font: style.bodyFont ?? overlayTheme.typography.small,
+        maxLength: 70,
+      });
+      lines.push({
+        text: `When: ${this.formatRelativeTime(latest.timestamp)}`,
+        color: style.subtitleColor ?? style.textColor,
+        font: style.bodyFont ?? overlayTheme.typography.small,
+        maxLength: 64,
+      });
+    } else {
+      lines.push({
+        text: 'Latest: No snapshots recorded',
+        color: style.subtitleColor ?? style.textColor,
+        font: style.bodyFont ?? overlayTheme.typography.small,
+        maxLength: 64,
+      });
+    }
+
+    lines.push({
+      text: 'Timeline',
+      color: style.accentColor ?? style.textColor,
+      font: style.bodyFont ?? overlayTheme.typography.small,
+      maxLength: 48,
+    });
+
+    if (!timelineEntries.length) {
+      lines.push({
+        text: 'No tutorial events yet',
+        color: style.subtitleColor ?? style.textColor,
+        font: style.bodyFont ?? overlayTheme.typography.small,
+        maxLength: 64,
+      });
+    } else {
+      for (const entry of timelineEntries) {
+        lines.push({
+          text: `${timelineBullet} ${this.formatSnapshotEvent(entry)} — ${this.formatRelativeTime(entry.timestamp)}`,
+          color: style.textColor,
+          font: style.bodyFont ?? overlayTheme.typography.small,
+          maxLength: 78,
+        });
+      }
+    }
+
+    const height = padding * 2 + lineHeight * lines.length;
+    const x = this.canvas.width - (metrics.overlayMargin + width);
+    const y = metrics.overlayMargin;
+
+    ctx.fillStyle = style.backgroundColor ?? overlayTheme.palette.backgroundSurface;
+    this.roundRect(ctx, x, y, width, height, radius);
+    ctx.fill();
+
+    ctx.strokeStyle = style.borderColor ?? overlayTheme.palette.outlineSoft;
+    ctx.lineWidth = style.borderWidth ?? 2;
+    this.roundRect(ctx, x, y, width, height, radius);
+    ctx.stroke();
+
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    let currentY = y + padding;
+
+    for (const line of lines) {
+      ctx.font = line.font ?? style.bodyFont ?? overlayTheme.typography.small;
+      ctx.fillStyle = line.color ?? style.textColor ?? overlayTheme.palette.textPrimary;
+      const text = this.truncateTelemetryText(line.text, line.maxLength ?? 72);
+      ctx.fillText(text, x + padding, currentY);
+      currentY += lineHeight;
+    }
+  }
+
+  /**
+   * Format tutorial snapshot event label with optional step info.
+   * @param {Object|null} snapshot
+   * @returns {string}
+   */
+  formatSnapshotEvent(snapshot) {
+    if (!snapshot) {
+      return 'No data';
+    }
+    const event = snapshot.event ?? 'event';
+    const labelMap = {
+      step_started: 'Step Started',
+      step_completed: 'Step Completed',
+      tutorial_started: 'Tutorial Started',
+      tutorial_completed: 'Tutorial Completed',
+      tutorial_skipped: 'Tutorial Skipped',
+      prompt_shown: 'Prompt Shown',
+    };
+    const eventLabel = labelMap[event] ?? event.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+    const stepInfo = this.formatStepInfo(snapshot);
+    return stepInfo ? `${eventLabel} ${stepInfo}` : eventLabel;
+  }
+
+  /**
+   * Convert tutorial step info into readable string.
+   * @param {Object} snapshot
+   * @returns {string}
+   * @private
+   */
+  formatStepInfo(snapshot) {
+    const stepIndex = typeof snapshot?.stepIndex === 'number' ? snapshot.stepIndex : null;
+    const totalSteps = typeof snapshot?.totalSteps === 'number' ? snapshot.totalSteps : null;
+    if (stepIndex == null || totalSteps == null || totalSteps <= 0) {
+      return '';
+    }
+    const currentStep = Math.max(1, stepIndex + 1);
+    return `(Step ${currentStep}/${totalSteps})`;
+  }
+
+  /**
+   * Format relative time string for telemetry entries.
+   * @param {number|null} timestamp
+   * @returns {string}
+   */
+  formatRelativeTime(timestamp) {
+    if (typeof timestamp !== 'number' || Number.isNaN(timestamp)) {
+      return 'timestamp unavailable';
+    }
+    const now = Date.now();
+    const diff = Math.max(0, now - timestamp);
+    if (diff < 1000) {
+      return 'just now';
+    }
+    if (diff < 60000) {
+      return `${(diff / 1000).toFixed(1)}s ago`;
+    }
+    if (diff < 3600000) {
+      return `${Math.round(diff / 60000)}m ago`;
+    }
+    if (diff < 86400000) {
+      return `${Math.round(diff / 3600000)}h ago`;
+    }
+    return `${Math.round(diff / 86400000)}d ago`;
+  }
+
+  /**
+   * Truncate telemetry text to avoid overflow.
+   * @param {string} text
+   * @param {number} maxLength
+   * @returns {string}
+   */
+  truncateTelemetryText(text, maxLength) {
+    if (typeof text !== 'string') {
+      return '';
+    }
+    if (text.length <= maxLength) {
+      return text;
+    }
+    if (maxLength <= 1) {
+      return text.slice(0, maxLength);
+    }
+    return `${text.slice(0, maxLength - 1)}…`;
   }
 
   /**
@@ -93,24 +315,24 @@ export class TutorialOverlay {
     }
 
     // Subscribe to tutorial events
-    this._offHandlers.push(this.events.on('tutorial:started', () => {
+    this._offHandlers.push(this.eventBus.on('tutorial:started', () => {
       this.show();
     }));
 
-    this._offHandlers.push(this.events.on('tutorial:step_started', (data) => {
+    this._offHandlers.push(this.eventBus.on('tutorial:step_started', (data) => {
       this.showPrompt(data);
     }));
 
-    this._offHandlers.push(this.events.on('tutorial:step_completed', () => {
+    this._offHandlers.push(this.eventBus.on('tutorial:step_completed', () => {
       // Brief fade before next step
       this.targetAlpha = 0.5;
     }));
 
-    this._offHandlers.push(this.events.on('tutorial:completed', () => {
+    this._offHandlers.push(this.eventBus.on('tutorial:completed', () => {
       this.hide();
     }));
 
-    this._offHandlers.push(this.events.on('tutorial:skipped', () => {
+    this._offHandlers.push(this.eventBus.on('tutorial:skipped', () => {
       this.hide();
     }));
   }
@@ -122,6 +344,18 @@ export class TutorialOverlay {
   handleStoreUpdate(state) {
     const overlay = buildTutorialOverlayView(state);
     this.progressInfo = overlay.progress;
+    const telemetryConfig = this.style.telemetry ?? {};
+    const rawSnapshots = Array.isArray(overlay.telemetry?.snapshots)
+      ? overlay.telemetry.snapshots.slice()
+      : [];
+    rawSnapshots.sort((a, b) => {
+      const aTime = typeof a?.timestamp === 'number' ? a.timestamp : -Infinity;
+      const bTime = typeof b?.timestamp === 'number' ? b.timestamp : -Infinity;
+      return bTime - aTime;
+    });
+    const maxTimelineEntries = Math.max(1, telemetryConfig.maxTimelineEntries ?? 4);
+    this.telemetry.latestSnapshot = overlay.telemetry?.latestSnapshot ?? null;
+    this.telemetry.timeline = rawSnapshots.slice(0, maxTimelineEntries);
 
     if (overlay.visible && overlay.prompt) {
       this.show();
@@ -140,7 +374,7 @@ export class TutorialOverlay {
     this.targetAlpha = 1;
 
     if (!wasVisible) {
-      emitOverlayVisibility(this.events, 'tutorial', true, { source });
+      emitOverlayVisibility(this.eventBus, 'tutorial', true, { source });
     }
   }
 
@@ -160,7 +394,7 @@ export class TutorialOverlay {
     this.highlightEntities = [];
 
     if (wasVisible) {
-      emitOverlayVisibility(this.events, 'tutorial', false, { source });
+      emitOverlayVisibility(this.eventBus, 'tutorial', false, { source });
     }
   }
 
@@ -201,29 +435,37 @@ export class TutorialOverlay {
    * Render overlay
    */
   render() {
-    if (!this.visible && this.fadeAlpha === 0) return;
-    if (!this.currentPrompt) return;
+    const prompt = this.currentPrompt;
+    const promptActive = Boolean(prompt) && (this.visible || this.fadeAlpha > 0);
+    const telemetryActive = this.hasTelemetry();
 
-    const ctx = this.ctx;
-    const alpha = this.fadeAlpha;
-
-    ctx.save();
-
-    // Apply global alpha
-    ctx.globalAlpha = alpha;
-
-    // Render prompt box
-    this.renderPromptBox(this.currentPrompt);
-
-    // Render progress bar
-    this.renderProgress(this.currentPrompt);
-
-    // Render skip button if allowed
-    if (this.currentPrompt.canSkip) {
-      this.renderSkipButton();
+    if (!promptActive && !telemetryActive) {
+      return;
     }
 
-    ctx.restore();
+    if (promptActive && prompt) {
+      const ctx = this.ctx;
+      ctx.save();
+      ctx.globalAlpha = this.fadeAlpha;
+
+      this.renderPromptBox(prompt);
+      this.renderProgress(prompt);
+
+      if (prompt.canSkip) {
+        this.renderSkipButton();
+      }
+
+      ctx.restore();
+    }
+
+    if (telemetryActive) {
+      const ctx = this.ctx;
+      ctx.save();
+      const telemetryAlpha = promptActive ? Math.max(0.2, this.fadeAlpha) : 0.9;
+      ctx.globalAlpha = telemetryAlpha;
+      this.renderTelemetryPanel();
+      ctx.restore();
+    }
   }
 
   /**
@@ -416,6 +658,8 @@ export class TutorialOverlay {
   cleanup() {
     this.visible = false;
     this.currentPrompt = null;
+    this.telemetry.latestSnapshot = null;
+    this.telemetry.timeline = [];
     if (typeof this.unsubscribe === 'function') {
       this.unsubscribe();
       this.unsubscribe = null;

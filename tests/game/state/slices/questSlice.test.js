@@ -98,4 +98,75 @@ describe('questSlice', () => {
     expect(hydrated.byId.quest_2.status).toBe('completed');
     expect(hydrated.completedIds).toContain('quest_2');
   });
+
+  test('tracks blocked objectives and exposes selectors', () => {
+    let state = questSlice.getInitialState();
+
+    state = reduce(state, {
+      type: 'QUEST_REGISTERED',
+      domain: 'quest',
+      payload: {
+        questId: 'quest_blocked',
+        title: 'Blocked Quest',
+        type: 'main',
+        objectives: [
+          {
+            id: 'objective_access',
+            description: 'Enter restricted zone',
+          },
+        ],
+      },
+    });
+
+    state = reduce(state, {
+      type: 'QUEST_STARTED',
+      domain: 'quest',
+      payload: { questId: 'quest_blocked', title: 'Blocked Quest', type: 'main' },
+    });
+
+    state = reduce(state, {
+      type: 'OBJECTIVE_BLOCKED',
+      domain: 'quest',
+      payload: {
+        questId: 'quest_blocked',
+        questTitle: 'Blocked Quest',
+        objectiveId: 'objective_access',
+        objectiveDescription: 'Enter restricted zone',
+        reason: 'missing_disguise',
+        requirement: 'disguise_equipped',
+        blockedMessage: 'Need an appropriate disguise.',
+      },
+      timestamp: 1111,
+    });
+
+    const questState = { quest: state };
+    const blockedObjective = state.byId.quest_blocked.objectives.objective_access;
+    expect(blockedObjective.status).toBe('blocked');
+    expect(blockedObjective.blocked.reason).toBe('missing_disguise');
+    expect(blockedObjective.blocked.recordedAt).toBe(1111);
+
+    const questBlocked = questSlice.selectors.selectQuestBlockedObjectives(questState, 'quest_blocked');
+    expect(questBlocked).toHaveLength(1);
+    expect(questBlocked[0].objectiveId).toBe('objective_access');
+    expect(questBlocked[0].reason).toBe('missing_disguise');
+
+    const aggregateBlocked = questSlice.selectors.selectBlockedObjectives(questState);
+    expect(aggregateBlocked).toHaveLength(1);
+    expect(aggregateBlocked[0].questId).toBe('quest_blocked');
+
+    state = reduce(state, {
+      type: 'OBJECTIVE_PROGRESS',
+      domain: 'quest',
+      payload: {
+        questId: 'quest_blocked',
+        objectiveId: 'objective_access',
+        progress: 1,
+        target: 1,
+      },
+    });
+
+    expect(state.byId.quest_blocked.objectives.objective_access.blocked).toBeUndefined();
+    const afterUnblock = questSlice.selectors.selectQuestBlockedObjectives({ quest: state }, 'quest_blocked');
+    expect(afterUnblock).toHaveLength(0);
+  });
 });

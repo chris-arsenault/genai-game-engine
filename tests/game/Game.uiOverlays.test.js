@@ -1,6 +1,8 @@
 import { Game } from '../../src/game/Game.js';
 import { WorldStateStore } from '../../src/game/state/WorldStateStore.js';
 import { EventBus } from '../../src/engine/events/EventBus.js';
+import { CaseManager } from '../../src/game/managers/CaseManager.js';
+import { tutorialCase } from '../../src/game/data/cases/tutorialCase.js';
 
 function createMockCanvas() {
   const ctx = {
@@ -199,6 +201,29 @@ describe('Game UI overlays', () => {
     game = null;
   });
 
+  it('toggles case file UI via input events and refreshes on case progress', () => {
+    game.caseManager = new CaseManager(eventBus);
+    game.caseManager.registerCase(tutorialCase, { activate: true });
+    game.initializeUIOverlays();
+    game.loaded = true;
+    game.subscribeToGameEvents();
+
+    expect(game.caseFileUI).toBeDefined();
+    expect(game.caseFileUI.visible).toBe(false);
+
+    const loadSpy = jest.spyOn(game.caseFileUI, 'loadCase');
+    eventBus.emit('case:objective_completed', { caseId: tutorialCase.id });
+    expect(loadSpy).toHaveBeenCalled();
+    loadSpy.mockRestore();
+
+    eventBus.emit('input:caseFile:pressed', { action: 'caseFile' });
+    expect(game.caseFileUI.visible).toBe(true);
+    expect(game.caseFileUI.caseData?.id).toBe(tutorialCase.id);
+
+    eventBus.emit('input:caseFile:pressed', { action: 'caseFile' });
+    expect(game.caseFileUI.visible).toBe(false);
+  });
+
   it('toggles overlays once per key press', () => {
     game.worldStateStore = new WorldStateStore(eventBus);
     game.worldStateStore.init();
@@ -297,6 +322,46 @@ describe('Game UI overlays', () => {
         overlayId: 'disguise',
         visible: false,
         source: 'input:disguise',
+      })
+    );
+  });
+
+  it('exposes SFX catalog entries and previews via event bus', () => {
+    game.sfxCatalogLoader = {
+      getCatalog: () => ({
+        items: [
+          {
+            id: 'investigation_clue_ping',
+            file: '/sfx/investigation/investigation-clue-ping.wav',
+            description: 'Clue ping',
+            tags: ['investigation'],
+            baseVolume: 0.75,
+          },
+        ],
+      }),
+      getEntry: jest.fn(() => ({
+        id: 'investigation_clue_ping',
+        baseVolume: 0.75,
+        tags: ['investigation'],
+      })),
+    };
+
+    const entries = game.getSfxCatalogEntries();
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toEqual(
+      expect.objectContaining({
+        id: 'investigation_clue_ping',
+        file: '/sfx/investigation/investigation-clue-ping.wav',
+      })
+    );
+
+    const previewResult = game.previewSfx('investigation_clue_ping');
+    expect(previewResult).toBe(true);
+    expect(eventBus.emit).toHaveBeenCalledWith(
+      'audio:sfx:play',
+      expect.objectContaining({
+        id: 'investigation_clue_ping',
+        source: 'debug_preview',
       })
     );
   });

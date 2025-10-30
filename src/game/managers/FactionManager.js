@@ -12,7 +12,8 @@ import { getFaction, getFactionAllies, getFactionEnemies, getFactionIds } from '
 
 export class FactionManager {
   constructor(eventBus) {
-    this.events = eventBus;
+    this.eventBus = eventBus;
+    this.events = eventBus; // Legacy alias maintained for compatibility
 
     // Reputation storage: { factionId: { fame: 0-100, infamy: 0-100 } }
     this.reputation = {};
@@ -71,7 +72,7 @@ export class FactionManager {
     rep.infamy = this.clamp(rep.infamy + deltaInfamy, this.config.minReputation, this.config.maxReputation);
 
     // Emit reputation change event
-    this.events.emit('reputation:changed', {
+    this.eventBus.emit('reputation:changed', {
       factionId,
       factionName: faction.name,
       deltaFame,
@@ -89,11 +90,12 @@ export class FactionManager {
     // Check if attitude changed
     const newAttitude = this.getFactionAttitude(factionId);
     if (oldAttitude !== newAttitude) {
-      this.events.emit('faction:attitude_changed', {
+      this.eventBus.emit('faction:attitude_changed', {
         factionId,
         factionName: faction.name,
         oldAttitude,
         newAttitude,
+        sourceFactionName: null,
       });
 
       console.log(`[FactionManager] ${faction.name} attitude changed: ${oldAttitude} → ${newAttitude}`);
@@ -150,13 +152,14 @@ export class FactionManager {
         // Check attitude change
         const newAttitude = this.getFactionAttitude(allyId);
         if (oldAttitude !== newAttitude) {
-          this.events.emit('faction:attitude_changed', {
+          this.eventBus.emit('faction:attitude_changed', {
             factionId: allyId,
             factionName: allyFaction.name,
             oldAttitude,
             newAttitude,
             cascade: true,
             source: sourceFactionId,
+            sourceFactionName: sourceFaction?.name ?? null,
           });
         }
       }
@@ -195,13 +198,14 @@ export class FactionManager {
         // Check attitude change
         const newAttitude = this.getFactionAttitude(enemyId);
         if (oldAttitude !== newAttitude) {
-          this.events.emit('faction:attitude_changed', {
+          this.eventBus.emit('faction:attitude_changed', {
             factionId: enemyId,
             factionName: enemyFaction.name,
             oldAttitude,
             newAttitude,
             cascade: true,
             source: sourceFactionId,
+            sourceFactionName: sourceFaction?.name ?? null,
           });
         }
       }
@@ -344,7 +348,7 @@ export class FactionManager {
     localStorage.removeItem('faction_state');
     console.log('[FactionManager] Reputation reset to neutral');
 
-    this.events.emit('faction:reputation_reset', {});
+    this.eventBus.emit('faction:reputation_reset', {});
   }
 
   /**

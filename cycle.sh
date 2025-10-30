@@ -13,6 +13,7 @@ while true; do
 
   # Run Codex autonomous development
   codex --yolo --search exec "review AGENTS.md fetch handoff from game-mcp-server, and use result to plan and execute an autonomous development cycle"
+  sleep 15
 
   # Commit and push results
   git add -A
@@ -24,6 +25,6 @@ while true; do
   echo $sessionNum > .session
 
   # Delay before next cycle (adjust as needed)
-  sleep 5
+  sleep 15
 done
 

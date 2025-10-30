@@ -1,0 +1,87 @@
+{
+  "version": "0.1.0",
+  "updated": "2025-10-30",
+  "items": [
+    {
+      "id": "ui_movement_pulse",
+      "file": "/sfx/ui/ui-movement-pulse.ogg",
+      "tags": ["ui", "movement", "stealth"],
+      "baseVolume": 0.65,
+      "description": "Subtle UI roll-over pulse used when the player moves with stealth emphasis.",
+      "source": {
+        "name": "Kenney UI Audio - Rollover 3",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/ui-audio",
+        "license": "CC0",
+        "notes": "Derived from Audio/rollover3.ogg"
+      }
+    },
+    {
+      "id": "ui_prompt_ping",
+      "file": "/sfx/ui/ui-prompt-chime.ogg",
+      "tags": ["ui", "prompt", "dialogue"],
+      "baseVolume": 0.75,
+      "description": "Short chime to accompany interaction prompts and dialogue advances.",
+      "source": {
+        "name": "Kenney UI Audio - Switch 16",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/ui-audio",
+        "license": "CC0",
+        "notes": "Derived from Audio/switch16.ogg"
+      }
+    },
+    {
+      "id": "evidence_collect",
+      "file": "/sfx/ui/evidence-collect.ogg",
+      "tags": ["ui", "evidence", "reward"],
+      "baseVolume": 0.9,
+      "description": "Rewarding click layered as evidence shards are secured.",
+      "source": {
+        "name": "Kenney UI Audio - Click 3",
+        "author": "Kenney",
+        "url": "https://kenney.nl/assets/ui-audio",
+        "license": "CC0",
+        "notes": "Derived from Audio/click3.ogg"
+      }
+    },
+    {
+      "id": "investigation_clue_ping",
+      "file": "/sfx/investigation/investigation-clue-ping.wav",
+      "tags": ["investigation", "ui", "positive"],
+      "baseVolume": 0.72,
+      "description": "Soft investigative ping for clue reveals and data point confirmations.",
+      "source": {
+        "name": "Procedural synthesis",
+        "author": "Codex Audio Lab",
+        "license": "CC0 (original)",
+        "notes": "Generated via Node PCM synthesis (exp decay sine sweep)."
+      }
+    },
+    {
+      "id": "investigation_trace_loop",
+      "file": "/sfx/investigation/investigation-trace-loop.wav",
+      "tags": ["investigation", "analysis", "loop"],
+      "baseVolume": 0.65,
+      "description": "Short loopable trace pulse for analyzer overlays and timeline scrubbing.",
+      "source": {
+        "name": "Procedural synthesis",
+        "author": "Codex Audio Lab",
+        "license": "CC0 (original)",
+        "notes": "Generated via Node PCM synthesis (dual harmonic modulation)."
+      }
+    },
+    {
+      "id": "investigation_negative_hit",
+      "file": "/sfx/investigation/investigation-negative-hit.wav",
+      "tags": ["investigation", "negative", "ui"],
+      "baseVolume": 0.78,
+      "description": "Descending tone signaling dead-end leads or invalid deductions.",
+      "source": {
+        "name": "Procedural synthesis",
+        "author": "Codex Audio Lab",
+        "license": "CC0 (original)",
+        "notes": "Generated via Node PCM synthesis (pitch fall with exponential decay)."
+      }
+    }
+  ]
+}

@@ -5,6 +5,7 @@ import { storySlice } from '../../../src/game/state/slices/storySlice.js';
 import { factionSlice } from '../../../src/game/state/slices/factionSlice.js';
 import { tutorialSlice } from '../../../src/game/state/slices/tutorialSlice.js';
 import { dialogueSlice } from '../../../src/game/state/slices/dialogueSlice.js';
+import { inventorySlice } from '../../../src/game/state/slices/inventorySlice.js';
 
 describe('WorldStateStore', () => {
   let eventBus;
@@ -109,6 +110,9 @@ describe('WorldStateStore', () => {
     const tutorial = store.select(tutorialSlice.selectors.selectTutorialProgress);
     expect(tutorial.enabled).toBe(true);
     expect(tutorial.completedSteps).toContain('movement');
+    const tutorialSnapshots = store.select(tutorialSlice.selectors.selectPromptHistorySnapshots);
+    expect(tutorialSnapshots).toHaveLength(1);
+    expect(tutorialSnapshots[0].event).toBe('step_completed');
 
     const dialogue = store.select(dialogueSlice.selectors.selectDialogueTranscript, 'npc_alpha');
     expect(dialogue).toHaveLength(2);
@@ -149,5 +153,81 @@ describe('WorldStateStore', () => {
     expect(restoredDialogue.dialogueId).toBe('dlg_beta');
 
     restoredStore.destroy();
+  });
+
+  test('captures blocked objectives, inventory selections, and faction resets', () => {
+    eventBus.emit('quest:registered', {
+      questId: 'quest_obs',
+      title: 'Observability Quest',
+      type: 'side',
+      objectives: [
+        { id: 'obj_gate', description: 'Unlock security gate' },
+      ],
+    });
+
+    eventBus.emit('quest:started', {
+      questId: 'quest_obs',
+      title: 'Observability Quest',
+      type: 'side',
+    });
+
+    eventBus.emit('objective:blocked', {
+      questId: 'quest_obs',
+      questTitle: 'Observability Quest',
+      objectiveId: 'obj_gate',
+      objectiveDescription: 'Unlock security gate',
+      reason: 'missing_keycard',
+      requirement: 'keycard_alpha',
+    });
+
+    const blockedObjectives = store.select(questSlice.selectors.selectQuestBlockedObjectives, 'quest_obs');
+    expect(blockedObjectives).toHaveLength(1);
+    expect(blockedObjectives[0].reason).toBe('missing_keycard');
+
+    eventBus.emit('inventory:item_added', {
+      id: 'keycard_alpha',
+      name: 'Keycard Alpha',
+      quantity: 1,
+    });
+
+    eventBus.emit('inventory:selection_changed', {
+      itemId: 'keycard_alpha',
+      index: 0,
+      source: 'inventoryOverlay',
+    });
+
+    const selectionInfo = store.select(inventorySlice.selectors.getSelectionInfo);
+    expect(selectionInfo.itemId).toBe('keycard_alpha');
+    expect(selectionInfo.index).toBe(0);
+    expect(selectionInfo.source).toBe('inventoryOverlay');
+
+    eventBus.emit('faction:attitude_changed', {
+      factionId: 'faction_delta',
+      factionName: 'Faction Delta',
+      oldAttitude: 'neutral',
+      newAttitude: 'friendly',
+      cascade: true,
+      source: 'faction_alpha',
+      sourceFactionName: 'Faction Alpha',
+    });
+
+    const lastChange = store.select(factionSlice.selectors.selectFactionLastAttitudeChange, 'faction_delta');
+    expect(lastChange.sourceFactionId).toBe('faction_alpha');
+
+    const cascadeSummary = store.select(factionSlice.selectors.selectFactionCascadeSummary);
+    expect(cascadeSummary.lastCascadeEvent.targetFactionId).toBe('faction_delta');
+
+    eventBus.emit('faction:reputation_reset', {
+      reason: 'QA reset',
+      initiatedBy: 'dev_console',
+    });
+
+    const factions = store.select(factionSlice.selectors.selectFactionOverview);
+    expect(factions).toHaveLength(0);
+
+    const lastReset = store.select(factionSlice.selectors.selectFactionLastReset);
+    expect(lastReset.reason).toBe('QA reset');
+    expect(lastReset.initiatedBy).toBe('dev_console');
+    expect(store.select(factionSlice.selectors.selectFactionCascadeSummary).lastCascadeEvent).toBeNull();
   });
 });

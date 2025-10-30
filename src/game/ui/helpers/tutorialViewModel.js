@@ -5,13 +5,19 @@ const selectProgress = (state) => tutorialSlice.selectors.selectTutorialProgress
 const selectCurrentPrompt = (state) => tutorialSlice.selectors.selectCurrentPrompt(state);
 const selectAnalytics = (state) => tutorialSlice.selectors.selectTutorialAnalytics(state);
 const selectPromptHistory = (state) => tutorialSlice.selectors.selectPromptHistory(state);
+const selectSnapshotHistory = (state) =>
+  tutorialSlice.selectors.selectPromptHistorySnapshots(state);
+const selectLatestSnapshot = (state) =>
+  tutorialSlice.selectors.selectLatestPromptSnapshot(state);
 
 const tutorialOverlaySelector = createSelector(
   selectProgress,
   selectCurrentPrompt,
   selectAnalytics,
   selectPromptHistory,
-  (progress, prompt, analytics, history) => {
+  selectSnapshotHistory,
+  selectLatestSnapshot,
+  (progress, prompt, analytics, history, snapshots, latestSnapshot) => {
     const totalSteps = progress.totalSteps ?? 0;
     const completedStepsCount = Array.isArray(progress.completedSteps) ? progress.completedSteps.length : 0;
     const visible = Boolean(progress.enabled && prompt);
@@ -39,6 +45,10 @@ const tutorialOverlaySelector = createSelector(
       },
       analytics,
       history,
+      telemetry: {
+        latestSnapshot: latestSnapshot ?? null,
+        snapshots: Array.isArray(snapshots) ? snapshots : [],
+      },
     };
   }
 );

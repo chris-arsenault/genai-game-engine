@@ -29,7 +29,8 @@ export class InventoryOverlay {
 
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
-    this.events = eventBus;
+    this.eventBus = eventBus;
+    this.events = eventBus; // Legacy alias maintained for compatibility
     this.store = options.store ?? null;
 
     this.visible = false;
@@ -88,6 +89,8 @@ export class InventoryOverlay {
         muted: palette.textMuted,
         lineHeight: 20,
         tagFont: typography.small,
+        vendorColor: palette.accent,
+        timestampFont: typography.small,
       }, styleOverrides.detail),
     };
 
@@ -105,13 +108,13 @@ export class InventoryOverlay {
       this.applyInventoryState(initialState?.inventory);
     }
 
-    if (this.events) {
-      this._offMoveUp = this.events.on('input:moveUp:pressed', () => {
+    if (this.eventBus) {
+      this._offMoveUp = this.eventBus.on('input:moveUp:pressed', () => {
         if (this.visible) {
           this.changeSelection(-1);
         }
       });
-      this._offMoveDown = this.events.on('input:moveDown:pressed', () => {
+      this._offMoveDown = this.eventBus.on('input:moveDown:pressed', () => {
         if (this.visible) {
           this.changeSelection(1);
         }
@@ -185,7 +188,7 @@ export class InventoryOverlay {
     }
     this.visible = true;
     this.targetAlpha = 1;
-    emitOverlayVisibility(this.events, 'inventory', true, {
+    emitOverlayVisibility(this.eventBus, 'inventory', true, {
       source,
       count: this.items.length,
     });
@@ -200,7 +203,7 @@ export class InventoryOverlay {
     this.targetAlpha = 0;
 
     if (wasVisible) {
-      emitOverlayVisibility(this.events, 'inventory', false, {
+      emitOverlayVisibility(this.eventBus, 'inventory', false, {
         source,
       });
     }
@@ -226,8 +229,8 @@ export class InventoryOverlay {
       return;
     }
     this.selectedIndex = nextIndex;
-    if (this.events) {
-      this.events.emit('inventory:selection_changed', {
+    if (this.eventBus) {
+      this.eventBus.emit('inventory:selection_changed', {
         itemId: this.items[this.selectedIndex].id,
         index: this.selectedIndex,
       });
@@ -394,7 +397,29 @@ export class InventoryOverlay {
     ctx.font = this.style.detail.font;
     ctx.fillStyle = this.style.detail.color;
 
-    const textY = y + 70;
+    const vendorInfo = this.buildVendorInfoLines(item);
+    let textY = y + 70;
+
+    if (vendorInfo.length) {
+      ctx.font = this.style.detail.font;
+      ctx.fillStyle = this.style.detail.vendorColor;
+      for (const line of vendorInfo) {
+        ctx.fillText(line, x, textY);
+        textY += this.style.detail.lineHeight;
+      }
+
+      if (item.metadata && item.metadata.transactionTimestamp) {
+        ctx.font = this.style.detail.timestampFont;
+        ctx.fillStyle = this.style.detail.muted;
+        ctx.fillText(`@ ${this.formatTimestamp(item.metadata.transactionTimestamp)}`, x, textY);
+        textY += this.style.detail.lineHeight;
+      }
+
+      ctx.font = this.style.detail.font;
+      ctx.fillStyle = this.style.detail.color;
+      textY += 8;
+    }
+
     const wrapped = this.wrapText(ctx, item.description || 'No description available.', width);
     for (let i = 0; i < wrapped.length; i += 1) {
       ctx.fillText(wrapped[i], x, textY + i * this.style.detail.lineHeight);
@@ -406,8 +431,9 @@ export class InventoryOverlay {
   buildListLabel(item, isEquipped) {
     const quantity = item.quantity > 1 ? ` x${item.quantity}` : '';
     const evidenceMarker = item.tags.includes('evidence') ? '[EV] ' : '';
+    const vendorMarker = this.isVendorItem(item) ? '[VN] ' : '';
     const equippedMarker = isEquipped ? '[EQ] ' : '';
-    return `${equippedMarker}${evidenceMarker}${item.name}${quantity}`;
+    return `${equippedMarker}${evidenceMarker}${vendorMarker}${item.name}${quantity}`;
   }
 
   wrapText(ctx, text, maxWidth) {
@@ -458,6 +484,73 @@ export class InventoryOverlay {
     if (typeof this._offMoveDown === 'function') {
       this._offMoveDown();
       this._offMoveDown = null;
+    }
+  }
+
+  isVendorItem(item) {
+    return Boolean(item?.metadata && item.metadata.source === 'vendor_purchase');
+  }
+
+  buildVendorInfoLines(item) {
+    if (!this.isVendorItem(item)) {
+      return [];
+    }
+
+    const vendorName = item.metadata.vendorName || item.metadata.vendorId || 'Unknown vendor';
+    const vendorFaction = item.metadata.vendorFaction ? ` (${item.metadata.vendorFaction})` : '';
+    const lines = [`Vendor: ${vendorName}${vendorFaction}`];
+
+    const cost = item.metadata.transactionCost;
+    if (cost) {
+      const costParts = [];
+      if (Number.isFinite(cost.credits)) {
+        costParts.push(`${Math.abs(cost.credits)} credits`);
+      }
+      if (cost.currencies && typeof cost.currencies === 'object') {
+        for (const [currencyId, value] of Object.entries(cost.currencies)) {
+          if (Number.isFinite(value)) {
+            costParts.push(`${Math.abs(value)} ${currencyId}`);
+          }
+        }
+      }
+      if (costParts.length) {
+        lines.push(`Cost: ${costParts.join(', ')}`);
+      }
+    }
+
+    if (item.metadata.acquisition) {
+      lines.push(`Acquired via ${this.formatAcquisition(item.metadata.acquisition)}`);
+    } else if (item.metadata.transactionContext && item.metadata.transactionContext.dialogueId) {
+      lines.push(`Acquired via dialogue ${item.metadata.transactionContext.dialogueId}`);
+    }
+
+    return lines;
+  }
+
+  formatAcquisition(acquisition) {
+    const label = String(acquisition || '').replace(/[_-]+/g, ' ').trim();
+    if (!label) {
+      return 'vendor trade';
+    }
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }
+
+  formatTimestamp(timestamp) {
+    try {
+      const date = new Date(timestamp);
+      if (Number.isNaN(date.getTime())) {
+        return 'unknown';
+      }
+      return date.toLocaleString(undefined, {
+        hour12: false,
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch (error) {
+      return 'unknown';
     }
   }
 }

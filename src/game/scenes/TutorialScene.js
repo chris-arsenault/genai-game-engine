@@ -14,10 +14,10 @@
  */
 import { tutorialCase, tutorialEvidence, tutorialClues } from '../data/cases/tutorialCase.js';
 import {
-  evidenceToInventoryItem,
   currencyDeltaToInventoryUpdate,
   questRewardToInventoryItem,
 } from '../state/inventory/inventoryEvents.js';
+import { loadAct1Scene } from './Act1Scene.js';
 
 export class TutorialScene {
   /**
@@ -27,13 +27,18 @@ export class TutorialScene {
   constructor(game) {
     this.game = game;
     this.entityManager = game.entityManager;
+    this.componentRegistry = game.componentRegistry;
     this.caseManager = game.caseManager;
     this.eventBus = game.eventBus;
 
     // Scene state
     this.loaded = false;
     this.caseActive = false;
-    this.evidenceEntities = [];
+    this.evidenceEntities = new Map();
+    this.playerEntityId = null;
+    this.sceneEntities = new Set();
+    this._sceneCleanup = null;
+    this._eventHandlers = [];
 
     // Scene dimensions
     this.width = 800;
@@ -51,19 +56,39 @@ export class TutorialScene {
 
     console.log('[TutorialScene] Loading tutorial scene...');
 
+    this._cleanupSceneEntities();
+
     // Register evidence and clues in databases
     this._registerEvidenceAndClues();
+
+    // Ensure fresh scene state
+    this._teardownSceneEventHandlers();
+    this.evidenceEntities.clear();
 
     // Create the tutorial case
     this.caseManager.createCase(tutorialCase);
     this.caseManager.setActiveCase(tutorialCase.id);
     this.caseActive = true;
 
-    // Spawn evidence entities in scene
-    this._spawnEvidenceEntities();
+    const sceneData = await loadAct1Scene(
+      this.entityManager,
+      this.componentRegistry,
+      this.eventBus,
+      { reusePlayerId: null }
+    );
 
-    // Create player entity if not exists
-    this._createPlayer();
+    this.sceneEntities = new Set(
+      Array.isArray(sceneData.sceneEntities) ? sceneData.sceneEntities : []
+    );
+    this._sceneCleanup = typeof sceneData.cleanup === 'function' ? sceneData.cleanup : null;
+    this.playerEntityId = sceneData.playerId ?? null;
+    if (this.playerEntityId != null) {
+      this.sceneEntities.add(this.playerEntityId);
+    }
+
+    this._cacheEvidenceEntities();
+
+    this._registerSceneEventHandlers();
 
     this.loaded = true;
 
@@ -81,11 +106,13 @@ export class TutorialScene {
   unload() {
     if (!this.loaded) return;
 
-    // Clean up evidence entities
-    this.evidenceEntities.forEach(entity => {
-      this.entityManager.removeEntity(entity.id);
-    });
-    this.evidenceEntities = [];
+    this._teardownSceneEventHandlers();
+
+    this._cleanupSceneEntities();
+
+    this.evidenceEntities.clear();
+
+    this.playerEntityId = null;
 
     this.loaded = false;
     this.caseActive = false;
@@ -133,163 +160,121 @@ export class TutorialScene {
    * Spawn evidence entities in the scene
    * @private
    */
-  _spawnEvidenceEntities() {
-    tutorialEvidence.forEach(evidence => {
-      const entity = this._createEvidenceEntity(evidence);
-      this.evidenceEntities.push(entity);
+  _registerSceneEventHandlers() {
+    this._teardownSceneEventHandlers();
+
+    const offEvidenceCollected = this.eventBus.on('evidence:collected', (data = {}) => {
+      this._handleEvidenceCollected(data);
     });
 
-    console.log(`[TutorialScene] Spawned ${this.evidenceEntities.length} evidence entities`);
+    this._eventHandlers.push(offEvidenceCollected);
   }
 
   /**
-   * Create an evidence entity
-   * @private
-   * @param {Object} evidenceData - Evidence data
-   * @returns {Object} Created entity
-   */
-  _createEvidenceEntity(evidenceData) {
-    const entity = this.entityManager.createEntity();
-
-    // Position component
-    entity.addComponent('PositionComponent', {
-      x: evidenceData.position.x,
-      y: evidenceData.position.y
-    });
-
-    // Evidence component
-    entity.addComponent('EvidenceComponent', {
-      evidenceId: evidenceData.id,
-      caseId: tutorialCase.id,
-      collected: false,
-      title: evidenceData.title,
-      description: evidenceData.description,
-      type: evidenceData.type,
-      interactionPrompt: evidenceData.interactionPrompt || 'Examine evidence',
-      derivedClues: evidenceData.derivedClues || []
-    });
-
-    // Interactable component
-    entity.addComponent('InteractableComponent', {
-      range: 50,
-      prompt: evidenceData.interactionPrompt || 'Press E to examine',
-      onInteract: (playerEntity) => {
-        this._onEvidenceInteract(entity, playerEntity);
-      }
-    });
-
-    // Render component (simple marker for now)
-    entity.addComponent('RenderComponent', {
-      type: 'circle',
-      radius: 10,
-      color: evidenceData.collected ? '#555555' : '#ffd700', // Gold when uncollected
-      zIndex: 5
-    });
-
-    entity.addTag('evidence');
-
-    return entity;
-  }
-
-  /**
-   * Create player entity
+   * Remove any registered scene event handlers.
    * @private
    */
-  _createPlayer() {
-    // Check if player already exists
-    const existingPlayer = this.entityManager.getEntitiesWithTag('player')[0];
-    if (existingPlayer) {
-      console.log('[TutorialScene] Player already exists');
-      return existingPlayer;
-    }
-
-    const player = this.entityManager.createEntity();
-
-    // Position player at scene start
-    player.addComponent('PositionComponent', {
-      x: 100,
-      y: 300
-    });
-
-    // Velocity component
-    player.addComponent('VelocityComponent', {
-      x: 0,
-      y: 0
-    });
-
-    // Input component
-    player.addComponent('InputComponent', {
-      keys: {},
-      mouseX: 0,
-      mouseY: 0
-    });
-
-    // Render component
-    player.addComponent('RenderComponent', {
-      type: 'circle',
-      radius: 15,
-      color: '#4a9eff',
-      zIndex: 10
-    });
-
-    player.addTag('player');
-
-    console.log('[TutorialScene] Player entity created');
-    return player;
-  }
-
-  /**
-   * Handle evidence interaction
-   * @private
-   */
-  _onEvidenceInteract(evidenceEntity, playerEntity) {
-    const evidenceComp = evidenceEntity.getComponent('EvidenceComponent');
-
-    if (evidenceComp.collected) {
-      console.log('[TutorialScene] Evidence already collected');
+  _teardownSceneEventHandlers() {
+    if (!Array.isArray(this._eventHandlers)) {
+      this._eventHandlers = [];
       return;
     }
 
-    // Mark as collected
-    evidenceComp.collected = true;
-
-    // Update render color
-    const renderComp = evidenceEntity.getComponent('RenderComponent');
-    if (renderComp) {
-      renderComp.color = '#555555'; // Gray when collected
+    for (const off of this._eventHandlers) {
+      if (typeof off === 'function') {
+        off();
+      }
     }
 
-    // Emit evidence collected event
-    this.eventBus.emit('evidence:collected', {
-      caseId: evidenceComp.caseId,
-      evidenceId: evidenceComp.evidenceId
-    });
+    this._eventHandlers.length = 0;
+  }
 
-    const inventoryPayload = evidenceToInventoryItem({
-      id: evidenceComp.evidenceId,
-      title: evidenceComp.title,
-      description: evidenceComp.description,
-      type: evidenceComp.type,
-      category: evidenceComp.category,
-      caseId: evidenceComp.caseId,
-      derivedClues: evidenceComp.derivedClues,
-    }, {
-      source: 'tutorial',
-    });
+  /**
+   * Destroy any existing scene entities and invoke cleanup handlers.
+   * @private
+   */
+  _cleanupSceneEntities() {
+    if (typeof this._sceneCleanup === 'function') {
+      try {
+        this._sceneCleanup();
+      } catch (error) {
+        console.warn('[TutorialScene] Scene cleanup handler failed', error);
+      }
+    }
+    this._sceneCleanup = null;
 
-    if (inventoryPayload) {
-      this.eventBus.emit('inventory:item_added', inventoryPayload);
+    if (!(this.sceneEntities instanceof Set)) {
+      this.sceneEntities = new Set();
     }
 
-    // Derive clues from evidence
-    evidenceComp.derivedClues.forEach(clueId => {
-      this.eventBus.emit('clue:derived', {
-        caseId: evidenceComp.caseId,
-        clueId: clueId
-      });
-    });
+    const hasEntityFn = typeof this.entityManager?.hasEntity === 'function'
+      ? this.entityManager.hasEntity.bind(this.entityManager)
+      : null;
 
-    console.log(`[TutorialScene] Evidence collected: ${evidenceComp.title}`);
+    for (const entityId of this.sceneEntities) {
+      if (entityId == null) {
+        continue;
+      }
+      if (this.componentRegistry?.removeAllComponents) {
+        this.componentRegistry.removeAllComponents(entityId);
+      }
+      if (typeof this.entityManager.destroyEntity === 'function') {
+        if (!hasEntityFn || hasEntityFn(entityId)) {
+          this.entityManager.destroyEntity(entityId);
+        }
+      }
+    }
+
+    this.sceneEntities.clear();
+  }
+
+  /**
+   * Build evidence entity lookup from the current scene.
+   * @private
+   */
+  _cacheEvidenceEntities() {
+    this.evidenceEntities.clear();
+
+    const candidateEntities = [];
+
+    if (this.sceneEntities instanceof Set) {
+      for (const entityId of this.sceneEntities) {
+        candidateEntities.push(entityId);
+      }
+    }
+
+    if (candidateEntities.length === 0 && typeof this.componentRegistry?.queryEntities === 'function') {
+      const evidenceEntities = this.componentRegistry.queryEntities('Evidence');
+      if (Array.isArray(evidenceEntities)) {
+        candidateEntities.push(...evidenceEntities);
+      }
+    }
+
+    for (const entityId of candidateEntities) {
+      const evidence = this.componentRegistry.getComponent(entityId, 'Evidence');
+      if (evidence && typeof evidence.id === 'string') {
+        this.evidenceEntities.set(evidence.id, entityId);
+      }
+    }
+  }
+
+  /**
+   * Handle evidence collected event for tutorial visuals.
+   * @param {Object} data
+   * @private
+   */
+  _handleEvidenceCollected(data = {}) {
+    const { evidenceId } = data;
+    if (!evidenceId || !this.evidenceEntities.has(evidenceId)) {
+      return;
+    }
+
+    const entityId = this.evidenceEntities.get(evidenceId);
+    const sprite = this.componentRegistry?.getComponent?.(entityId, 'Sprite');
+    if (sprite) {
+      sprite.color = '#555555';
+      sprite.alpha = 0.65;
+    }
   }
 
   /**

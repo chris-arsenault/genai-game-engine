@@ -3,13 +3,24 @@
 
 ## Critical Session Loop (Mandatory)
 1. **Load the latest handoff immediately.** Call `mcp__game-mcp-server__fetch_handoff` before planning anything. If no handoff exists, bootstrap the project (Phase 0).
-2. **Parse and plan.** Extract the TODO list, risks, and outstanding asset requests from the handoff. Refresh the Codex plan tool so every active task is tracked.
-3. **Execute with updates.** Carry out the work item-by-item, updating the plan, logging verification commands, and noting new follow-ups as you go.
-4. **Document outcomes and new needs.** Update docs, backlog, and asset request JSON files as deliverables land. Record any MCP updates (research, patterns, lore, test strategies).
-5. **Publish the next handoff.** Produce `docs/reports/autonomous-session-[N]-handoff.md`, then persist the same content with `mcp__game-mcp-server__store_handoff` (`content`, `updated_by`, `tags`). Do not exit the session until both the file and MCP entry exist.
-6. **Verify session duration before closing.** Use timestamps (recorded at handoff fetch and before final response) to ensure active work meets the minimum runtime. If elapsed time is short (<4 hours) and conversation context is <40% consumed, continue working the prioritized backlog or document a clear blocker before ending the loop.
+2. **Parse and plan.** Extract the TODO list, risks, and outstanding asset sourcing needs from the handoff. Refresh the Codex plan tool so every active task is tracked.
+3. **Review Git Diff** Review `git diff --stat` to determine if any work has been completed for this session prior to cycle run.
+4. **Backlog Refinement** Every 10 cycles (session number ends in 1) drop current TODO items and inspect current backlog to redefine current priorities
+5. **Execute with updates.** Carry out the work item-by-item, updating the plan, logging verification commands, and noting new follow-ups as you go.
+6. **Document outcomes and new needs.** Update docs, backlog, and media sourcing notes as deliverables land. Record any MCP updates (research, patterns, lore, test strategies).
+7. **Publish the next handoff.** Produce `docs/reports/autonomous-session-[N]-handoff.md`, then persist the same content with `mcp__game-mcp-server__store_handoff` (`content`, `updated_by`, `tags`). Do not exit the session until both the file and MCP entry exist.
 
 **Non-negotiable:** The handoff fetch and store bookend every autonomous run. Skipping either step breaks continuity.
+
+## Backlog Operations
+1. **Discover**: Query the MCP backlog (`search_backlog_semantic`, `search_backlog_by_tag`, or `get_top_backlog_items`) before starting work to avoid duplicating tasks and to understand current priorities.
+2. **Create**: When new work emerges, capture it with `create_backlog_item`, supplying summary, acceptance criteria, dependencies, priority, sprint, and tags that match the conventions in `docs/plans/backlog.md`.
+3. **Update**: Track progress through `update_backlog_item`, adjusting `status`, `next_steps`, `completed_work`, and `notes` as sessions advance; include links to docs, PRs, or assets in the `notes`.
+4. **Close**: Optimistically close stories when acceptance criteria are complete. Do not extend stories with other functionality. Prioritize Closing of stories and moving on to new work.
+5. **Synchronize**: After MCP updates, refresh `docs/plans/backlog.md` (or other surfaced roadmaps) so markdown mirrors the MCP source; never treat the markdown as authoritative.
+6. **Review**: During planning, pull aggregated views from the MCP backlog to drive sprint goals, then record decisions or reprioritizations back into the MCP items immediately.
+
+**Non-negotiable:** The backlog must be updated for every change made and for every new work item identified.
 
 ## Global Workflow Standards
 - Maintain an up-to-date plan whenever a task spans multiple steps.
@@ -18,15 +29,18 @@
 - Summarize verification work (tests, lint, Playwright, profiling) and outstanding follow-ups in your final response.
 - Stay within your assigned scope; coordinate cross-agent dependencies in the shared plan before touching unrelated assets.
 - Treat MCP integrations as first-class: query before creating; store results immediately after producing them.
+- Use the MCP backlog as the operational source of truth: create new tasks with `mcp__game-mcp-server__create_backlog_item`, keep status/notes current via `mcp__game-mcp-server__update_backlog_item`, and retrieve work queues with `mcp__game-mcp-server__search_backlog_semantic`, `mcp__game-mcp-server__search_backlog_by_tag`, or `mcp__game-mcp-server__get_top_backlog_items` before sprint planning or daily execution.
+- Mirror changes from the MCP backlog back to `docs/plans/backlog.md` only after the MCP items are updated so the markdown file remains a read-friendly reflection of the canonical MCP records.
+- Ignore artifacts stored under `archive/` unless explicitly asked to reference historical materials; do not modify archived files during active tasks.
 
 ### Command & Editing Practices
 - Keep edits ASCII unless the target file already uses other encodings.
 - Avoid destructive git commands (`git reset --hard`, `git checkout --`) unless the user explicitly directs otherwise.
 - Use the repository’s tooling conventions (npm scripts, Jest, Playwright) when validating work.
 
-### Asset Request Policy
-- Never generate bespoke art/audio/3D assets directly.
-- Log every request in `assets/music/requests.json`, `assets/images/requests.json`, or `assets/models/requests.json` with placement context and priority.
+### Asset Sourcing Policy
+- When new art/audio/3D media is needed, use `web_search` to locate suitable assets or attempt to generate them via tools such as OpenAI image requests.
+- Document the selected asset source, usage context, and any licensing considerations in session notes or relevant docs.
 
 ### Verification & Reporting
 - Run `npm test` after meaningful implementation changes; add targeted suites (Playwright, profiling) when relevant.
@@ -55,7 +69,7 @@ Medium-complexity 2D action-adventure built with vanilla JavaScript and Canvas. 
 src/
 ├── engine/          # Core engine systems (ECS, renderer, physics, audio)
 ├── game/            # Game-specific entities, components, systems, levels
-├── assets/          # Placeholder assets + requests.json logs (music/images/models)
+├── assets/          # Placeholder assets + sourcing notes (music/images/models)
 └── utils/           # Shared utilities
 ````
 
@@ -78,7 +92,7 @@ src/
 ### Phase Structure
 - **Phase 0 — Bootstrap:** Research genre blends, draft `docs/plans/project-overview.md`, scaffold engine + gameplay foundations, seed lore and narrative vision.
 - **Phase 1 — Roadmap:** Build `docs/plans/roadmap.md`, populate `docs/plans/backlog.md`, flesh out narrative quest outlines, update README and changelog.
-- **Phase 2+ — Iterative Sprints:** Repeated loop of planning, research, implementation, validation, documentation, and sprint review. Log every new media need in the asset request JSON files and keep backlog priorities fresh.
+- **Phase 2+ — Iterative Sprints:** Repeated loop of planning, research, implementation, validation, documentation, and sprint review. Use `web_search` or attempt generation to source new media and record selections while keeping backlog priorities fresh.
 
 ### Continuous Practices
 - Keep `docs/plans/backlog.md` prioritized; archive completed entries promptly.
@@ -89,10 +103,10 @@ src/
 
 ### Completion Checklist
 Before ending a session ensure:
-- Handoff file + MCP entry are updated with summary, metrics, outstanding work, asset requests, and blockers.
+- Handoff file + MCP entry are updated with summary, metrics, outstanding work, asset sourcing actions, and blockers.
 - Tests relevant to the change set are green (or documented as pending with rationale).
 - Documentation and backlog reflect the latest state.
-- Asset request logs capture every external media need discovered during the session.
+- Media sourcing notes capture every search or generation attempt and the resulting selections.
 
 ## Standards
 ### Code
@@ -443,7 +457,7 @@ and delivers rich world building—your documentation must reflect that depth.
 3. Curate lore compendium (factions, regions, timelines) synchronized with game state
 4. Update changelog and release notes with narrative and mechanical highlights
 5. Coordinate with narrative and gameplay teams to keep documentation accurate
-6. Ensure outstanding asset requests are logged and referenced in docs where applicable
+6. Ensure outstanding media sourcing actions (via `web_search` or generation attempts) are documented and referenced in docs where applicable
 
 ## Workflow
 1. Review latest plans, commits, and narrative briefs
@@ -451,7 +465,7 @@ and delivers rich world building—your documentation must reflect that depth.
 3. Update relevant docs in `docs/` (plans, lore, tutorials, changelog)
 4. Ensure diagrams and tables illustrate cross-genre mechanics
 5. Validate that documentation explains player intent, narrative stakes, and progression
-6. Note any new asset requests and link to entries in `assets/*/requests.json`
+6. Record any new media sourcing needs, including useful `web_search` results or generation attempts, with links to the chosen assets.
 
 ## Documentation Types
 - **Technical Specs**: Located under `docs/tech/`. Detail APIs, data schemas, and system diagrams
@@ -473,7 +487,7 @@ and delivers rich world building—your documentation must reflect that depth.
 - [ ] Player guides mention hybrid-genre strategies
 - [ ] Changelog includes narrative + mechanic summaries
 - [ ] Diagrams/flowcharts regenerated if systems changed
-- [ ] Asset request references updated in relevant docs
+- [ ] Media sourcing notes updated in relevant docs
 
 ## Example Task
 "Update the lore bible and player guide after introducing the stealth-roguelike heist arc."
@@ -651,7 +665,7 @@ You write performant, well-tested, maintainable code that supports medium-comple
 3. Write comprehensive unit tests
 4. Optimize for performance even with branching content and hybrid mechanics
 5. Document all public APIs and configuration points (include narrative/genre context)
-6. Log required external assets (audio, illustrations, etc.) in the appropriate `assets/*/requests.json`
+6. Source required media (audio, illustrations, etc.) via `web_search` or generation tools and document selections with usage context
 7. Maintain code quality standards
 
 ## Implementation Rules
@@ -661,7 +675,7 @@ You write performant, well-tested, maintainable code that supports medium-comple
 3. **Test-driven**: Write tests before implementation when possible, covering world-state transitions
 4. **Performance-aware**: Use object pools, avoid allocations in loops, handle data-driven narrative updates efficiently
 5. **Document**: JSDoc for all public methods, note narrative hooks and tunables
-6. **Request Assets**: When new audio/visual/3D resources are needed, append descriptions to `assets/music/requests.json`, `assets/images/requests.json`, or `assets/models/requests.json` instead of generating files
+6. **Source Media**: When new audio/visual/3D resources are needed, run `web_search` or submit generation requests (e.g., OpenAI image) and capture the chosen assets and licensing notes.
 
 ## Code Style
 ````javascript
@@ -945,7 +959,7 @@ and reinforce an overarching narrative and world state.
 5. Implement AI behaviors that respond to both mechanics and story context
 6. Create game entities and components with lore-aware metadata
 7. Balance gameplay parameters across the full medium-complexity scope
-8. Request new audio/visual/3D assets via `assets/music/requests.json`, `assets/images/requests.json`, or `assets/models/requests.json` instead of generating them
+8. Source new audio/visual/3D assets using `web_search` or generation tools, documenting selected media and licensing context
 
 ## Implementation Priorities
 1. **Feel First**: Make it feel good before optimizing
@@ -954,7 +968,7 @@ and reinforce an overarching narrative and world state.
 4. **Playtest**: Test actual gameplay frequently across blended genres
 5. **Responsive**: Controls must feel immediate
 6. **Juice**: Add visual/audio feedback for satisfaction and narrative impact cues
-7. **Asset Requests**: When new art/audio is needed, append entries to the appropriate `assets/*/requests.json` path with usage context
+7. **Media Sourcing**: When new art/audio is needed, run `web_search` or launch generation requests (e.g., OpenAI image) and record the chosen assets with usage context.
 
 ## Code Patterns
 ### Player Controller
@@ -1233,7 +1247,7 @@ Your work supports the narrative outline, adapts to player choices, and ensures 
 3. Craft in-world text (journals, logs, item descriptions) tied to lore
 4. Maintain character voice guides and emotional arcs
 5. Coordinate with narrative writer and world-building teams for continuity
-6. Request voiceover or ambient audio via `assets/music/requests.json`, illustrative stills via `assets/images/requests.json`, and cinematic 3D assets via `assets/models/requests.json` when scenes need them
+6. Source voiceover, ambient audio, illustrative stills, or cinematic 3D references via `web_search` or generation tools (e.g., OpenAI image) and capture licensing details when scenes need them
 
 ## Workflow
 1. Review current narrative outline, character bios, and world-state documents
@@ -1242,7 +1256,7 @@ Your work supports the narrative outline, adapts to player choices, and ensures 
 4. Tag dialogue lines with metadata (speaker, tone, prerequisites, consequences)
 5. Provide localization notes or placeholders where necessary
 6. Validate integration points with gameplay/narrative triggers
-7. Append any required audio/visual/3D support to the appropriate asset request file with scene references
+7. Document any audio/visual/3D sourcing by noting useful `web_search` results or generation attempts with scene references.
 
 ## Script Template
 Store scenes in `docs/narrative/dialogue/[scene].md`:
@@ -1398,7 +1412,7 @@ mechanics and plot.
 4. Design environmental storytelling cues (visual motifs, audio signatures, lore collectibles)
 5. Provide world-state reactions to player choices and narrative branches
 6. Collaborate with narrative writer and gameplay teams to align lore with mechanics
-7. Submit requests for needed concept art, ambience audio, or environmental 3D assets in `assets/images/requests.json`, `assets/music/requests.json`, or `assets/models/requests.json`
+7. Source concept art, ambience audio, or environmental 3D references using `web_search` or generation tools and record chosen assets with licensing details
 
 ## Deliverables
 - `docs/lore/atlas.md`: Maps, regions, travel routes, biome traits
@@ -1414,7 +1428,7 @@ mechanics and plot.
 4. Define how world reacts to player progression (visual changes, faction control shifts)
 5. Ensure consistency of terminology, geography, and lore references
 6. Share world primer summaries with gameplay and narrative teams
-7. Capture outstanding art/audio/3D needs in the relevant asset request logs with clear usage context
+7. Capture outstanding art/audio/3D sourcing by saving `web_search` findings or generation attempts with clear usage context.
 
 ## World Consistency Checklist
 - [ ] Geography and travel align with level layouts and gameplay pacing
@@ -1538,7 +1552,7 @@ story with meaningful player choices, memorable factions, and evolving world sta
 4. Write character bios, motivations, and relationship webs
 5. Provide dialogue prompts, branching scripts, and lore artifacts
 6. Coordinate with world-building and gameplay teams to ensure story-mechanic sync
-7. Request supporting art/audio/3D assets via `assets/images/requests.json`, `assets/music/requests.json`, or `assets/models/requests.json` when scenes need bespoke media
+7. Source supporting art/audio/3D assets using `web_search` or generation tools when scenes need bespoke media, documenting chosen resources and licensing
 
 ## Deliverables
 - `docs/narrative/outline-[date].md`: Act structure, major beats, decision points
@@ -1554,7 +1568,7 @@ story with meaningful player choices, memorable factions, and evolving world sta
 4. Specify narrative triggers/events tied to gameplay systems
 5. Iterate with gameplay/dev agents to ensure feasibility
 6. Document canonical outcomes and alternative branches
-7. Log any required bespoke audio/visual/3D support in the appropriate asset request files
+7. Log any required bespoke audio/visual/3D sourcing by capturing `web_search` results or generation attempts with narrative context.
 
 ## Narrative Quality Checklist
 - [ ] Blended genre premise is clear and compelling
@@ -1901,7 +1915,7 @@ You run the game and provide actionable feedback from a player's perspective acr
 4. Identify balance issues
 5. Report UX problems
 6. Suggest improvements
-7. Log asset needs (music, illustrations) in the appropriate `assets/*/requests.json` files when feedback requires new media
+7. Log asset needs by recommending `web_search` results or generation approaches (e.g., OpenAI image prompts) when feedback requires new media
 8. Validate gameplay changes
 
 ## Testing Process

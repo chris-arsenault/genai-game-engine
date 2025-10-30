@@ -6,6 +6,7 @@
 
 import { ReputationUI } from '../../../src/game/ui/ReputationUI.js';
 import { EventBus } from '../../../src/engine/events/EventBus.js';
+import { factionSlice } from '../../../src/game/state/slices/factionSlice.js';
 
 describe('ReputationUI', () => {
   let reputationUI;
@@ -41,6 +42,115 @@ describe('ReputationUI', () => {
       rect: jest.fn(),
       clip: jest.fn(),
     };
+  });
+
+  describe('Cascade telemetry subscription', () => {
+    test('hydrates cascade telemetry from store', () => {
+      const cascadeSummary = {
+        lastCascadeEvent: {
+          sourceFactionId: 'vanguard_prime',
+          targetFactionId: 'luminari_syndicate',
+          sourceFactionName: 'Vanguard Prime',
+          targetFactionName: 'Luminari Syndicate',
+          newAttitude: 'friendly',
+          occurredAt: Date.now() - 1000,
+        },
+        cascadeTargets: [
+          {
+            factionId: 'luminari_syndicate',
+            cascadeCount: 2,
+            lastCascade: {
+              occurredAt: Date.now() - 500,
+              sourceFactionId: 'vanguard_prime',
+              sourceFactionName: 'Vanguard Prime',
+            },
+            sources: ['vanguard_prime'],
+          },
+        ],
+      };
+
+      const mockStore = {
+        _listener: null,
+        onUpdate(callback) {
+          this._listener = callback;
+          return () => {
+            this._listener = null;
+          };
+        },
+        select(selector) {
+          if (selector === factionSlice.selectors.selectFactionCascadeSummary) {
+            return cascadeSummary;
+          }
+          throw new Error('Unexpected selector');
+        },
+      };
+
+      const ui = new ReputationUI(300, 500, {
+        eventBus,
+        store: mockStore,
+      });
+      ui.init();
+
+      expect(ui.cascadeTelemetry.lastCascadeEvent).not.toBeNull();
+      expect(ui.cascadeTelemetry.targetsByFaction.luminari_syndicate.cascadeCount).toBe(2);
+
+      ui.cleanup();
+      expect(mockStore._listener).toBeNull();
+    });
+  });
+
+  describe('Cascade hotspots', () => {
+    test('returns sorted cascade hotspots with metadata', () => {
+      reputationUI.cascadeTelemetry.targetsByFaction = {
+        luminari_syndicate: {
+          cascadeCount: 4,
+          lastCascade: { occurredAt: Date.now() - 1500, sourceFactionId: 'vanguard_prime' },
+          sources: ['vanguard_prime', 'memory_parlor'],
+        },
+        archivists: {
+          cascadeCount: 1,
+          lastCascade: { occurredAt: Date.now() - 500 },
+          sources: ['curators'],
+        },
+      };
+
+      const hotspots = reputationUI.getCascadeHotspots(3);
+      expect(hotspots).toHaveLength(2);
+      expect(hotspots[0].factionId).toBe('luminari_syndicate');
+      expect(hotspots[0].cascadeCount).toBe(4);
+      expect(hotspots[0].sourcesCount).toBe(2);
+    });
+  });
+
+  describe('Cascade summary lines', () => {
+    test('builds summary lines with last event and hotspots', () => {
+      const now = Date.now();
+      reputationUI.cascadeTelemetry.lastCascadeEvent = {
+        sourceFactionId: 'vanguard_prime',
+        targetFactionId: 'luminari_syndicate',
+        newAttitude: 'friendly',
+        occurredAt: now - 1200,
+      };
+      reputationUI.cascadeTelemetry.targetsByFaction = {
+        luminari_syndicate: {
+          cascadeCount: 3,
+          lastCascade: { occurredAt: now - 900, sourceFactionId: 'vanguard_prime' },
+          sources: ['vanguard_prime', 'memory_keepers'],
+        },
+      };
+
+      const lines = reputationUI.buildCascadeSummaryLines();
+      expect(lines[0]).toContain('Last:');
+      expect(lines[2]).toBe('Hotspots:');
+      expect(lines[3]).toMatch(/1\. .* — 3 events/);
+    });
+
+    test('builds fallback lines when no cascade data available', () => {
+      reputationUI._resetCascadeTelemetry();
+      const lines = reputationUI.buildCascadeSummaryLines();
+      expect(lines[0]).toBe('Last: n/a');
+      expect(lines[2]).toBe('Hotspots: none recorded');
+    });
   });
 
   describe('Constructor', () => {
@@ -127,13 +237,19 @@ describe('ReputationUI', () => {
     test('toggle() should emit ui:reputation_opened event when opening', () => {
       const emitSpy = jest.spyOn(eventBus, 'emit');
       reputationUI.toggle();
-      expect(emitSpy).toHaveBeenCalledWith('ui:reputation_opened', {});
+      expect(emitSpy).toHaveBeenCalledWith('ui:reputation_opened', {
+        overlayId: 'reputation',
+        source: 'toggle',
+      });
     });
 
     test('show() should emit ui:reputation_opened event', () => {
       const emitSpy = jest.spyOn(eventBus, 'emit');
       reputationUI.show();
-      expect(emitSpy).toHaveBeenCalledWith('ui:reputation_opened', {});
+      expect(emitSpy).toHaveBeenCalledWith('ui:reputation_opened', {
+        overlayId: 'reputation',
+        source: 'show',
+      });
     });
   });
 
@@ -393,7 +509,8 @@ describe('ReputationUI', () => {
     test('should have correct config values', () => {
       expect(reputationUI.config.barWidth).toBe(180);
       expect(reputationUI.config.barHeight).toBe(14);
-      expect(reputationUI.config.headerHeight).toBe(40);
+      expect(reputationUI.config.headerHeight).toBe(60);
+      expect(reputationUI.config.summaryHeight).toBe(110);
     });
   });
 });
