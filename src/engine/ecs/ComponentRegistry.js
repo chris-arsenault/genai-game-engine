@@ -15,6 +15,9 @@ export class ComponentRegistry {
    */
   constructor(entityManager) {
     this.entityManager = entityManager;
+    if (this.entityManager?.setComponentRegistry) {
+      this.entityManager.setComponentRegistry(this);
+    }
     this.components = new Map(); // componentType -> Map<entityId, componentData>
     this.queryCache = new Map(); // Cache for query results (cleared on component changes)
   }
@@ -215,7 +218,9 @@ export class ComponentRegistry {
    * @param {number} entityId - Entity ID
    */
   removeAllComponents(entityId) {
-    const componentTypes = this.entityManager.getComponentTypes(entityId);
+    const componentTypes = Array.from(
+      this.entityManager.getComponentTypes(entityId)
+    );
 
     for (const type of componentTypes) {
       this.removeComponent(entityId, type);
@@ -248,6 +253,11 @@ export class ComponentRegistry {
    * Clears all components (used for level transitions).
    */
   clear() {
+    for (const [componentType, typeMap] of this.components.entries()) {
+      for (const entityId of typeMap.keys()) {
+        this.entityManager.removeComponentType(entityId, componentType);
+      }
+    }
     this.components.clear();
     this.queryCache.clear();
   }
@@ -258,5 +268,29 @@ export class ComponentRegistry {
    */
   getComponentTypes() {
     return Array.from(this.components.keys());
+  }
+
+  /**
+   * Returns components attached to an entity.
+   * @param {number} entityId
+   * @returns {Map<string, Component>}
+   */
+  getComponentsForEntity(entityId) {
+    const result = new Map();
+    for (const [type, typeMap] of this.components.entries()) {
+      if (typeMap.has(entityId)) {
+        result.set(type, typeMap.get(entityId));
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Returns component signature as a Set for compatibility with EntityManager pooling.
+   * @param {number} entityId
+   * @returns {Set<string>}
+   */
+  getComponentSignature(entityId) {
+    return this.entityManager.getComponentTypes(entityId);
   }
 }

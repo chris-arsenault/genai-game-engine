@@ -854,6 +854,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Priority**: P0
 - **Tags**: `engine`, `ecs`
 - **Effort**: 4 hours
+- **Status**: Completed (Session #119 – 2025-11-13)
 - **Dependencies**: M1-001
 - **Description**: Core entity lifecycle management system
 - **Files**:
@@ -871,6 +872,10 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Zero memory leaks after 1000 create/destroy cycles
   - Entity IDs never collide
   - Unit tests pass with >80% coverage
+- **Session #119 Update**:
+  - Added pooled metadata reuse with destroy listeners and component registry cleanup hooks; `queryByComponents` now bridges to registry queries or local component signatures.
+  - `forEachEntity` and `getStats()` provide iteration helpers plus instrumentation for profiling spawn/despawn waves.
+  - Jest coverage expanded with performance gates (10k create/destroy <200 ms) and pooling reuse assertions; validated via `npm test`.
 
 #### M1-003: ComponentRegistry Implementation
 - **Priority**: P0
@@ -1075,6 +1080,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Priority**: P0
 - **Tags**: `engine`, `physics`
 - **Effort**: 5 hours
+- **Status**: Completed (Session #119 – 2025-11-13)
 - **Dependencies**: M1-003
 - **Description**: Spatial partitioning for collision detection
 - **Files**:
@@ -1091,6 +1097,10 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - 1000 entities = <1000 collision checks per frame
   - 98%+ reduction vs naive approach
   - Unit tests pass with >80% coverage
+- **Session #119 Update**:
+  - Implemented per-entity cell tracking with `insert`, `update`, and `remove` to prevent phantom collisions and minimize bucket churn.
+  - Added `rebuild` + `getMetrics()` for profiling; buckets now use `Set` for O(1) removal and instrumentation counters track insert/update/remove rates.
+  - Expanded Jest suite to cover update/remove flows and performance thresholds (1000 entity queries <10 ms); validated via `npm test`.
 
 #### M1-013: Collision Detection Algorithms
 - **Priority**: P0
