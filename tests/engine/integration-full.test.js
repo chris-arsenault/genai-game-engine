@@ -82,17 +82,7 @@ class VelocityComponent extends Velocity {
   }
 }
 
-class ColliderComponent extends Collider {
-  constructor(options) {
-    super(options);
-    this.shapeType = this.type;
-    Object.defineProperty(this, 'type', {
-      value: 'Collider',
-      writable: false,
-      enumerable: true
-    });
-  }
-}
+class ColliderComponent extends Collider {}
 
 describe('Full Engine Integration - M1-024', () => {
   let canvas;

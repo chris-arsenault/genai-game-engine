@@ -369,7 +369,7 @@ const CollisionLayers = {
 
 // Collider component with layer filtering
 {
-  type: 'aabb',
+  shapeType: 'AABB',
   width: 32,
   height: 32,
   layer: CollisionLayers.PLAYER,
@@ -381,6 +381,10 @@ function shouldCollide(colliderA, colliderB) {
   return (colliderA.collidesWith & colliderB.layer) !== 0 &&
          (colliderB.collidesWith & colliderA.layer) !== 0;
 }
+
+// NOTE: Collider.type is reserved for ECS registration. Use shapeType
+//       to describe geometry ('AABB', 'circle') so registration metadata
+//       cannot clobber shape definitions.
 ```
 
 ### Pattern 2: Investigation Zone Triggers
