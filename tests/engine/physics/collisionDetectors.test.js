@@ -113,6 +113,26 @@ describe('Collision Detectors', () => {
       expect(result).not.toBeNull();
       expect(result.normalX).toBe(1); // B is to the right of A
     });
+
+    it('should expose contact point and separation vector for overlaps', () => {
+      const aabbA = { x: 0, y: 0, width: 20, height: 20 };
+      const aabbB = { x: 15, y: 5, width: 10, height: 10 };
+
+      const result = aabbVsAabb(aabbA, aabbB);
+
+      expect(result).not.toBeNull();
+      expect(result.contactX).toBeCloseTo(20, 3);
+      expect(result.contactY).toBeCloseTo(10, 3);
+      expect(result.separationX).toBeCloseTo(result.normalX * result.penetration, 5);
+      expect(result.separationY).toBeCloseTo(result.normalY * result.penetration, 5);
+    });
+
+    it('should return null when provided with invalid AABB data', () => {
+      const aabbA = { x: 0, y: 0, width: 0, height: 10 };
+      const aabbB = { x: 10, y: 10, width: 10, height: 10 };
+
+      expect(aabbVsAabb(aabbA, aabbB)).toBeNull();
+    });
   });
 
   describe('circleVsCircle', () => {
@@ -198,6 +218,25 @@ describe('Collision Detectors', () => {
 
       expect(result).not.toBeNull();
       expect(result.colliding).toBe(true);
+    });
+
+    it('should surface contact point information', () => {
+      const circleA = { x: 0, y: 0, radius: 10 };
+      const circleB = { x: 15, y: 0, radius: 10 };
+
+      const result = circleVsCircle(circleA, circleB);
+
+      expect(result).not.toBeNull();
+      expect(result.contactX).toBeCloseTo(10, 3);
+      expect(result.contactY).toBeCloseTo(0, 3);
+      expect(result.separationX).toBeCloseTo(result.normalX * result.penetration, 5);
+    });
+
+    it('should return null for invalid circle data', () => {
+      const circleA = { x: 0, y: 0, radius: 0 };
+      const circleB = { x: 1, y: 1, radius: 1 };
+
+      expect(circleVsCircle(circleA, circleB)).toBeNull();
     });
   });
 
@@ -300,6 +339,24 @@ describe('Collision Detectors', () => {
 
       expect(result).toBeNull();
     });
+
+    it('should provide contact data for interior overlap cases', () => {
+      const aabb = { x: 0, y: 0, width: 20, height: 20 };
+      const circle = { x: 15, y: 10, radius: 8 };
+
+      const result = aabbVsCircle(aabb, circle);
+
+      expect(result).not.toBeNull();
+      expect(result.contactX).toBeCloseTo(20, 3);
+      expect(result.normalX).toBeCloseTo(1, 3);
+    });
+
+    it('should return null when provided invalid circle parameters', () => {
+      const aabb = { x: 0, y: 0, width: 20, height: 20 };
+      const circle = { x: 10, y: 10, radius: -1 };
+
+      expect(aabbVsCircle(aabb, circle)).toBeNull();
+    });
   });
 
   describe('detectCollision', () => {
@@ -359,6 +416,13 @@ describe('Collision Detectors', () => {
       const result = detectCollision(shapeA, shapeB);
 
       expect(result).toBeNull();
+    });
+
+    it('should return null when shape type metadata is missing', () => {
+      const shapeA = { x: 0, y: 0, width: 20, height: 20 };
+      const shapeB = { type: 'AABB', x: 10, y: 10, width: 20, height: 20 };
+
+      expect(detectCollision(shapeA, shapeB)).toBeNull();
     });
 
     it('should flip normal when swapping Circle vs AABB', () => {

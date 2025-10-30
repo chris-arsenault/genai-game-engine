@@ -30,7 +30,7 @@
 ---
 
 ## Outstanding Work & Follow-ups
-1. `UX-410`: Execute the planned micro-playtests using the enhanced logging/exporter pipeline and capture qualitative findings for overlay refinements.
+1. Execute backlog grooming and work on the highest priority asset and gameplay features
 
 ---
 

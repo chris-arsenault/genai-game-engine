@@ -9,6 +9,7 @@ import { Evidence } from '../../../src/game/components/Evidence.js';
 import { Transform } from '../../../src/game/components/Transform.js';
 import { InteractionZone } from '../../../src/game/components/InteractionZone.js';
 import { PlayerController } from '../../../src/game/components/PlayerController.js';
+import { Investigation } from '../../../src/game/components/Investigation.js';
 import { GameConfig } from '../../../src/game/config/GameConfig.js';
 
 describe('InvestigationSystem', () => {
@@ -55,6 +56,8 @@ describe('InvestigationSystem', () => {
 
     system = new InvestigationSystem(mockComponentRegistry, mockEventBus);
     system.init();
+
+    mockComponentRegistry._components.set('1:Investigation', new Investigation());
   });
 
   describe('Initialization', () => {
@@ -93,7 +96,8 @@ describe('InvestigationSystem', () => {
       mockComponentRegistry._components.set('2:Evidence', evidence);
 
       // Update system
-      system.scanForEvidence(playerTransform, [2]);
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.scanForEvidence(playerTransform, investigation, [2]);
 
       // Should emit detected event
       expect(mockEventBus.emit).toHaveBeenCalledWith('evidence:detected',
@@ -117,7 +121,8 @@ describe('InvestigationSystem', () => {
       mockComponentRegistry._components.set('2:Transform', evidenceTransform);
       mockComponentRegistry._components.set('2:Evidence', evidence);
 
-      system.scanForEvidence(playerTransform, [2]);
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.scanForEvidence(playerTransform, investigation, [2]);
 
       expect(mockEventBus.emit).not.toHaveBeenCalledWith('evidence:detected', expect.anything());
     });
@@ -134,7 +139,8 @@ describe('InvestigationSystem', () => {
       mockComponentRegistry._components.set('2:Transform', evidenceTransform);
       mockComponentRegistry._components.set('2:Evidence', evidence);
 
-      system.scanForEvidence(playerTransform, [2]);
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.scanForEvidence(playerTransform, investigation, [2]);
 
       expect(mockEventBus.emit).not.toHaveBeenCalledWith('evidence:detected', expect.anything());
     });
@@ -155,7 +161,8 @@ describe('InvestigationSystem', () => {
       system.unlockAbility('detective_vision');
       system.activateDetectiveVision();
 
-      system.scanForEvidence(playerTransform, [2]);
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.scanForEvidence(playerTransform, investigation, [2]);
 
       expect(mockEventBus.emit).toHaveBeenCalledWith('evidence:detected',
         expect.objectContaining({
@@ -176,9 +183,59 @@ describe('InvestigationSystem', () => {
       mockComponentRegistry._components.set('2:Transform', evidenceTransform);
       mockComponentRegistry._components.set('2:Evidence', evidence);
 
-      system.scanForEvidence(playerTransform, [2]);
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.scanForEvidence(playerTransform, investigation, [2]);
 
       expect(mockEventBus.emit).not.toHaveBeenCalledWith('evidence:detected', expect.anything());
+    });
+
+    it('should respect investigation component detection radius', () => {
+      const playerTransform = new Transform(0, 0);
+      const evidenceTransform = new Transform(70, 0);
+      const evidence = new Evidence({
+        id: 'evidence_2',
+        collected: false,
+        hidden: false
+      });
+
+      mockComponentRegistry._components.set('1:Transform', playerTransform);
+      mockComponentRegistry._components.set('2:Transform', evidenceTransform);
+      mockComponentRegistry._components.set('2:Evidence', evidence);
+
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      investigation.setDetectionRadius(50);
+
+      mockEventBus.emit.mockClear();
+      system.scanForEvidence(playerTransform, investigation, [2]);
+
+      expect(mockEventBus.emit).not.toHaveBeenCalledWith('evidence:detected', expect.anything());
+    });
+
+    it('should expand detection radius with higher ability level', () => {
+      const playerTransform = new Transform(0, 0);
+      const evidenceTransform = new Transform(58, 0);
+      const evidence = new Evidence({
+        id: 'evidence_3',
+        collected: false,
+        hidden: false
+      });
+
+      mockComponentRegistry._components.set('1:Transform', playerTransform);
+      mockComponentRegistry._components.set('2:Transform', evidenceTransform);
+      mockComponentRegistry._components.set('2:Evidence', evidence);
+
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      investigation.setDetectionRadius(50);
+      investigation.abilityLevel = 3; // 20% radius increase (effective 60)
+
+      mockEventBus.emit.mockClear();
+      system.scanForEvidence(playerTransform, investigation, [2]);
+
+      expect(mockEventBus.emit).toHaveBeenCalledWith('evidence:detected',
+        expect.objectContaining({
+          evidenceId: 'evidence_3'
+        })
+      );
     });
   });
 
@@ -196,7 +253,8 @@ describe('InvestigationSystem', () => {
 
       mockComponentRegistry._components.set('2:Evidence', evidence);
 
-      system.collectEvidence(2, 'evidence_1');
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.collectEvidence(2, 'evidence_1', investigation);
 
       expect(evidence.collected).toBe(true);
       expect(mockEventBus.emit).toHaveBeenCalledWith('evidence:collected',
@@ -219,10 +277,37 @@ describe('InvestigationSystem', () => {
 
       mockComponentRegistry._components.set('2:Evidence', evidence);
 
-      system.collectEvidence(2, 'evidence_1');
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.collectEvidence(2, 'evidence_1', investigation);
 
       expect(system.collectedEvidence.has('case_1')).toBe(true);
       expect(system.collectedEvidence.get('case_1').has('evidence_1')).toBe(true);
+    });
+
+    it('should persist case file entries on the investigation component', () => {
+      const evidence = new Evidence({
+        id: 'evidence_2',
+        caseId: 'case_alpha',
+        type: 'digital',
+        category: 'terminal_logs',
+        collected: false,
+        derivedClues: []
+      });
+
+      mockComponentRegistry._components.set('2:Evidence', evidence);
+
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.collectEvidence(2, 'evidence_2', investigation);
+
+      const caseEntries = investigation.getCaseEvidence('case_alpha');
+
+      expect(Array.isArray(caseEntries)).toBe(true);
+      expect(caseEntries).toHaveLength(1);
+      expect(caseEntries[0]).toEqual(expect.objectContaining({
+        evidenceId: 'evidence_2',
+        type: 'digital',
+        category: 'terminal_logs'
+      }));
     });
 
     it('should derive clues from collected evidence', () => {
@@ -235,7 +320,8 @@ describe('InvestigationSystem', () => {
 
       mockComponentRegistry._components.set('2:Evidence', evidence);
 
-      system.collectEvidence(2, 'evidence_1');
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.collectEvidence(2, 'evidence_1', investigation);
 
       expect(mockEventBus.emit).toHaveBeenCalledWith('clue:derived',
         expect.objectContaining({
@@ -263,7 +349,8 @@ describe('InvestigationSystem', () => {
 
       mockComponentRegistry._components.set('2:Evidence', evidence);
 
-      system.collectEvidence(2, 'evidence_1');
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.collectEvidence(2, 'evidence_1', investigation);
 
       expect(evidence.collected).toBe(false);
       expect(mockEventBus.emit).toHaveBeenCalledWith('evidence:collection_failed',
@@ -285,7 +372,8 @@ describe('InvestigationSystem', () => {
       mockComponentRegistry._components.set('2:Evidence', evidence);
 
       system.unlockAbility('forensic_kit');
-      system.collectEvidence(2, 'evidence_1');
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.collectEvidence(2, 'evidence_1', investigation);
 
       expect(evidence.collected).toBe(true);
     });
@@ -299,7 +387,8 @@ describe('InvestigationSystem', () => {
       mockComponentRegistry._components.set('2:Evidence', evidence);
 
       mockEventBus.emit.mockClear();
-      system.collectEvidence(2, 'evidence_1');
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.collectEvidence(2, 'evidence_1', investigation);
 
       expect(mockEventBus.emit).not.toHaveBeenCalled();
     });
@@ -327,7 +416,8 @@ describe('InvestigationSystem', () => {
 
       mockEventBus.emit.mockClear();
 
-      system.checkInteractionZones(1, playerTransform, [1, 2]);
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.checkInteractionZones(1, playerTransform, investigation, [1, 2]);
 
       expect(mockEventBus.emit).toHaveBeenCalledWith(
         'ui:show_prompt',
@@ -359,13 +449,14 @@ describe('InvestigationSystem', () => {
       mockComponentRegistry._components.set('2:InteractionZone', interactionZone);
 
       // Prime the system so the prompt is visible
-      system.checkInteractionZones(1, playerTransform, [1, 2]);
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.checkInteractionZones(1, playerTransform, investigation, [1, 2]);
       mockEventBus.emit.mockClear();
 
       // Move player out of range
       playerTransform.setPosition(400, 400);
 
-      system.checkInteractionZones(1, playerTransform, [1, 2]);
+      system.checkInteractionZones(1, playerTransform, investigation, [1, 2]);
 
       expect(mockEventBus.emit).toHaveBeenCalledWith('ui:hide_prompt');
     });
@@ -401,12 +492,13 @@ describe('InvestigationSystem', () => {
       mockEventBus.emit.mockClear();
 
       // First frame: prompt becomes visible
-      system.checkInteractionZones(1, playerTransform, [1, 2]);
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.checkInteractionZones(1, playerTransform, investigation, [1, 2]);
 
       playerController.input.interact = true;
       mockEventBus.emit.mockClear();
 
-      system.checkInteractionZones(1, playerTransform, [1, 2]);
+      system.checkInteractionZones(1, playerTransform, investigation, [1, 2]);
 
       expect(mockEventBus.emit).toHaveBeenCalledWith('ui:hide_prompt');
       expect(mockEventBus.emit).toHaveBeenCalledWith(

@@ -33,8 +33,11 @@ export class InvestigationSystem extends System {
 
     // Performance tracking
     this.evidenceCache = new Map(); // entityId -> Evidence component
-    this.lastCacheUpdate = 0;
-    this.promptVisible = false;
+   this.lastCacheUpdate = 0;
+   this.promptVisible = false;
+
+    this.playerEntityId = null;
+    this.playerInvestigation = null;
 
     this._offAbilityUnlocked = null;
     this._offKnowledgeLearned = null;
@@ -45,13 +48,12 @@ export class InvestigationSystem extends System {
    */
   init() {
     // Default starting ability
-    this.playerAbilities.add('basic_observation');
+    this.registerAbility('basic_observation');
 
     // Listen for ability unlocks from external sources (e.g., quest rewards, scenes)
     this._offAbilityUnlocked = this.eventBus.on('ability:unlocked', (data = {}) => {
       // Add ability directly without re-emitting (to avoid recursion)
-      if (!this.playerAbilities.has(data.abilityId)) {
-        this.playerAbilities.add(data.abilityId);
+      if (this.registerAbility(data.abilityId)) {
         console.log(`[InvestigationSystem] Ability unlocked via event: ${data.abilityId}`);
       }
     });
@@ -80,6 +82,9 @@ export class InvestigationSystem extends System {
     // Update detective vision timer
     this.updateDetectiveVision(deltaTime);
 
+    this.playerEntityId = null;
+    this.playerInvestigation = null;
+
     // Find player entity
     const player = entities.find((id) => {
       const tag =
@@ -90,15 +95,23 @@ export class InvestigationSystem extends System {
     });
 
     if (!player) return;
+    this.playerEntityId = player;
 
     const playerTransform = this.getComponent(player, 'Transform');
     if (!playerTransform) return;
 
+    const playerInvestigation = this.getComponent(player, 'Investigation');
+    if (playerInvestigation) {
+      this.playerInvestigation = playerInvestigation;
+      playerInvestigation.addAbility('basic_observation');
+      this._mergeAbilitiesWithComponent(playerInvestigation);
+    }
+
     // Scan for evidence in observation radius
-    this.scanForEvidence(playerTransform, entities);
+    this.scanForEvidence(playerTransform, playerInvestigation, entities);
 
     // Check for interaction zones
-    this.checkInteractionZones(player, playerTransform, entities);
+    this.checkInteractionZones(player, playerTransform, playerInvestigation, entities);
   }
 
   /**
@@ -123,9 +136,15 @@ export class InvestigationSystem extends System {
    * @param {Transform} playerTransform
    * @param {Array} entities
    */
-  scanForEvidence(playerTransform, entities) {
-    const radius = GameConfig.player.observationRadius;
-    const radiusSq = radius * radius;
+  scanForEvidence(playerTransform, playerInvestigation, entities) {
+    const baseRadius =
+      (playerInvestigation && typeof playerInvestigation.getDetectionRadius === 'function'
+        ? playerInvestigation.getDetectionRadius()
+        : playerInvestigation?.observationRadius) ??
+      GameConfig.player.observationRadius;
+    const abilityLevel = Math.max(1, playerInvestigation?.abilityLevel ?? 1);
+    const effectiveRadius = baseRadius * (1 + 0.1 * (abilityLevel - 1));
+    const radiusSq = effectiveRadius * effectiveRadius;
 
     for (const entityId of entities) {
       const evidence = this.getComponent(entityId, 'Evidence');
@@ -161,7 +180,7 @@ export class InvestigationSystem extends System {
    * @param {Transform} playerTransform
    * @param {Array} entities - Array of entity IDs
    */
-  checkInteractionZones(playerId, playerTransform, entities) {
+  checkInteractionZones(playerId, playerTransform, playerInvestigation, entities) {
     const playerController = this.getComponent(playerId, 'PlayerController');
     if (!playerController) return;
 
@@ -186,7 +205,7 @@ export class InvestigationSystem extends System {
       // Handle interaction based on type
       if (zone.type === 'evidence') {
         if (interactPressed || !zone.requiresInput) {
-          this.collectEvidence(entityId, zone.data.evidenceId);
+          this.collectEvidence(entityId, zone.data.evidenceId, playerInvestigation);
         } else {
           if (!promptShown) {
             const promptText = this._resolveZonePrompt(zone, zone.data?.evidenceId
@@ -271,7 +290,7 @@ export class InvestigationSystem extends System {
    * @param {number} entityId - Evidence entity ID
    * @param {string} evidenceId - Evidence data ID
    */
-  collectEvidence(entityId, evidenceId) {
+  collectEvidence(entityId, evidenceId, playerInvestigation) {
     const evidence = this.getComponent(entityId, 'Evidence');
     if (!evidence || evidence.collected) return;
 
@@ -302,6 +321,15 @@ export class InvestigationSystem extends System {
       category: evidence.category,
       entityId
     });
+
+    if (playerInvestigation) {
+      playerInvestigation.recordEvidence({
+        caseId: evidence.caseId,
+        evidenceId,
+        type: evidence.type,
+        category: evidence.category
+      });
+    }
 
     const inventoryPayload = evidenceToInventoryItem(evidence, {
       source: 'investigation',
@@ -390,13 +418,63 @@ export class InvestigationSystem extends System {
   }
 
   /**
+   * Register ability without emitting events (used internally and by event handler).
+   * @param {string} abilityId
+   * @returns {boolean} True if ability added
+   */
+  registerAbility(abilityId) {
+    if (typeof abilityId !== 'string' || abilityId.length === 0) {
+      return false;
+    }
+
+    if (this.playerAbilities.has(abilityId)) {
+      return false;
+    }
+
+    this.playerAbilities.add(abilityId);
+    this._syncAbilityToComponent(abilityId);
+    return true;
+  }
+
+  _mergeAbilitiesWithComponent(investigation) {
+    if (!investigation) {
+      return;
+    }
+
+    for (const ability of this.playerAbilities) {
+      investigation.addAbility(ability);
+    }
+
+    const abilitiesFromComponent = investigation.getAbilities?.() ?? [];
+    for (const ability of abilitiesFromComponent) {
+      this.playerAbilities.add(ability);
+    }
+  }
+
+  _syncAbilityToComponent(abilityId) {
+    if (!abilityId) {
+      return;
+    }
+
+    const investigation =
+      this.playerInvestigation ||
+      (this.playerEntityId != null
+        ? this.getComponent(this.playerEntityId, 'Investigation')
+        : null);
+
+    if (investigation) {
+      investigation.addAbility(abilityId);
+    }
+  }
+
+  /**
    * Unlock new ability
    * @param {string} abilityId
    */
   unlockAbility(abilityId) {
-    if (this.playerAbilities.has(abilityId)) return;
-
-    this.playerAbilities.add(abilityId);
+    if (!this.registerAbility(abilityId)) {
+      return;
+    }
 
     this.eventBus.emit('ability:unlocked', {
       abilityId

@@ -18,6 +18,23 @@ export const tutorialCase = {
     'Your former partner Marcus Reeve has been found hollow in his apartment. ' +
     'Investigate the crime scene and uncover who is extracting memories from victims.',
 
+  scene: {
+    location: 'Neon District - Apartment 4B',
+    mapId: 'tutorial_crime_scene',
+    ambientAudio: 'ambience/neon_drizzle',
+    lightingProfile: 'noir_indoor',
+    spawnPoints: {
+      player: { x: 180, y: 360 },
+      exit: { x: 64, y: 256 }
+    },
+    cameraBounds: {
+      minX: 0,
+      maxX: 640,
+      minY: 120,
+      maxY: 480
+    }
+  },
+
   // Case objectives
   objectives: [
     {
@@ -59,6 +76,30 @@ export const tutorialCase = {
       description: 'Connect the clues and validate your theory',
       minAccuracy: 0.7,
       completed: false
+    }
+  ],
+
+  witnesses: [
+    {
+      id: 'officer_martinez',
+      name: 'Officer Martinez',
+      role: 'first_responder',
+      faction: 'police',
+      description:
+        'First responder who secured the scene. Provides insight into the extraction timeline ' +
+        'and hints about broader hollow victim patterns.',
+      position: { x: 460, y: 340 },
+      dialogueId: 'martinez_witness_interview',
+      unlocksClues: ['clue_005_systematic'],
+      prerequisites: {
+        requiredEvidence: ['ev_001_extractor'],
+        requiredObjective: 'examine_scene'
+      },
+      interaction: {
+        radius: 72,
+        prompt: 'Talk to Officer Martinez',
+        lockedPrompt: 'Collect the neural extractor before interviewing Martinez.'
+      }
     }
   ],
 
@@ -341,18 +382,24 @@ export const tutorialCase = {
       },
       {
         step: 2,
+        title: 'Interview Witness',
+        description: 'Speak with Officer Martinez to gather context about the hollowing.',
+        targetObjective: 'discover_clues'
+      },
+      {
+        step: 3,
         title: 'Review Clues',
         description: 'Evidence reveals clues. Check your case file to see what you\'ve learned',
         targetObjective: 'discover_clues'
       },
       {
-        step: 3,
+        step: 4,
         title: 'Connect the Dots',
         description: 'Press Tab to open the deduction board. Drag clues to connect them',
         targetObjective: 'solve_case'
       },
       {
-        step: 4,
+        step: 5,
         title: 'Validate Theory',
         description: 'Once connected, click Validate to test your theory',
         targetObjective: 'solve_case'

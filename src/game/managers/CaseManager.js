@@ -129,7 +129,10 @@ export class CaseManager {
       requiredClues = [],
       theoryGraph = null,
       accuracyThreshold = 0.7,
-      rewards = {}
+      rewards = {},
+      scene = null,
+      witnesses: witnessDefinitions = [],
+      tutorial: tutorialMetadata = null
     } = caseData;
 
     if (this.cases.has(id)) {
@@ -166,7 +169,18 @@ export class CaseManager {
       accuracy: 0,
 
       // Rewards
-      rewards
+      rewards,
+
+      // Scene metadata
+      scene: scene ? { ...scene } : null,
+
+      // Witness definitions (tutorial interactions)
+      witnesses: Array.isArray(witnessDefinitions)
+        ? witnessDefinitions.map((witness) => ({ ...witness }))
+        : [],
+
+      // Tutorial metadata snapshot
+      tutorial: tutorialMetadata ? { ...tutorialMetadata } : null
     };
 
     this.cases.set(id, caseFile);
