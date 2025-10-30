@@ -42,6 +42,7 @@ export class InventoryOverlay {
     this.items = [];
     this.equipped = {};
     this.selectedIndex = 0;
+    this._lastFxFocusIndex = -1;
     this.title = options.title ?? 'Evidence Locker';
 
     const { palette, typography, metrics } = overlayTheme;
@@ -228,10 +229,16 @@ export class InventoryOverlay {
 
     if (this.items.length === 0) {
       this.selectedIndex = 0;
+      this._lastFxFocusIndex = -1;
     } else if (this.selectedIndex >= this.items.length) {
       this.selectedIndex = this.items.length - 1;
     } else if (this.selectedIndex < 0) {
       this.selectedIndex = 0;
+    }
+
+    if (this.visible && this.items.length) {
+      this._lastFxFocusIndex = -1;
+      this._emitSelectionCue('state:update');
     }
   }
 
@@ -254,10 +261,18 @@ export class InventoryOverlay {
     }
     this.visible = true;
     this.targetAlpha = 1;
+    this._lastFxFocusIndex = -1;
     emitOverlayVisibility(this.eventBus, 'inventory', true, {
       source,
       count: this.items.length,
     });
+    this._emitFxCue('inventoryOverlayReveal', {
+      source,
+      count: this.items.length,
+    });
+    if (this.items.length) {
+      this._emitSelectionCue('show');
+    }
   }
 
   hide(source = 'hide') {
@@ -267,9 +282,13 @@ export class InventoryOverlay {
     const wasVisible = this.visible;
     this.visible = false;
     this.targetAlpha = 0;
+    this._lastFxFocusIndex = -1;
 
     if (wasVisible) {
       emitOverlayVisibility(this.eventBus, 'inventory', false, {
+        source,
+      });
+      this._emitFxCue('inventoryOverlayDismiss', {
         source,
       });
     }
@@ -301,6 +320,7 @@ export class InventoryOverlay {
         index: this.selectedIndex,
       });
     }
+    this._emitSelectionCue('input');
   }
 
   getSelectedItem() {
@@ -322,6 +342,37 @@ export class InventoryOverlay {
       segments.push(`${equippedCount} equipped`);
     }
     return segments.join(' · ');
+  }
+
+  _emitFxCue(effectId, context = {}) {
+    if (!this.eventBus || typeof this.eventBus.emit !== 'function') {
+      return;
+    }
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId,
+      source: 'InventoryOverlay',
+      context,
+    });
+  }
+
+  _emitSelectionCue(reason) {
+    if (!this.visible || !this.items.length) {
+      return;
+    }
+    if (this.selectedIndex < 0 || this.selectedIndex >= this.items.length) {
+      return;
+    }
+    if (this._lastFxFocusIndex === this.selectedIndex) {
+      return;
+    }
+    this._lastFxFocusIndex = this.selectedIndex;
+    const item = this.items[this.selectedIndex] || null;
+    this._emitFxCue('inventoryItemFocus', {
+      reason,
+      itemId: item?.id ?? null,
+      rarity: item?.rarity ?? null,
+      index: this.selectedIndex,
+    });
   }
 
   render(ctx) {
@@ -553,6 +604,7 @@ export class InventoryOverlay {
       this._offMoveDown();
       this._offMoveDown = null;
     }
+    this._lastFxFocusIndex = -1;
   }
 
   isVendorItem(item) {

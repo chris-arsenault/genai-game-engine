@@ -120,4 +120,31 @@ describe('CompositeCueParticleBridge', () => {
 
     expect(eventBus.emit).toHaveBeenCalledTimes(1);
   });
+
+  it('maps overlay-specific cues to their presets', () => {
+    const bridge = createBridge();
+    bridge.attach();
+    const handler = listeners['fx:composite_cue'];
+
+    handler({
+      effectId: 'dialogueOverlayReveal',
+      coordinator: { durationMs: 520 },
+      source: 'test-suite',
+    });
+    expect(eventBus.emit).toHaveBeenLastCalledWith(
+      'fx:particle_emit',
+      expect.objectContaining({ preset: 'dialogue-overlay-reveal' })
+    );
+
+    eventBus.emit.mockClear();
+    handler({
+      effectId: 'inventoryItemFocus',
+      coordinator: { durationMs: 420 },
+      source: 'test-suite',
+    });
+    expect(eventBus.emit).toHaveBeenLastCalledWith(
+      'fx:particle_emit',
+      expect.objectContaining({ preset: 'inventory-item-focus' })
+    );
+  });
 });

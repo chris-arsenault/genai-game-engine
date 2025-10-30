@@ -165,6 +165,54 @@ describe('DialogueBox', () => {
     });
   });
 
+  describe('FX cue integration', () => {
+    const fxDialogueData = {
+      speaker: 'Operator',
+      text: 'Stay sharp.',
+      choices: [
+        { id: 'c-1', text: 'Understood' },
+        { id: 'c-2', text: 'Need intel' },
+      ],
+      canAdvance: false,
+      hasChoices: true,
+      source: 'test',
+    };
+
+    it('emits overlay reveal and dismiss cues', () => {
+      dialogueBox.show(fxDialogueData);
+      const revealEvent = emittedEvents.find(
+        (entry) => entry.eventType === 'fx:overlay_cue' && entry.data?.effectId === 'dialogueOverlayReveal'
+      );
+      expect(revealEvent).toBeDefined();
+
+      dialogueBox.hide('test-hide');
+      const dismissEvent = emittedEvents.find(
+        (entry) => entry.eventType === 'fx:overlay_cue' && entry.data?.effectId === 'dialogueOverlayDismiss'
+      );
+      expect(dismissEvent).toBeDefined();
+      expect(dismissEvent.data.context.source).toBe('test-hide');
+    });
+
+    it('emits choice focus cues on show and navigation', () => {
+      dialogueBox.show(fxDialogueData);
+      const initialChoiceCue = emittedEvents.find(
+        (entry) => entry.eventType === 'fx:overlay_cue' && entry.data?.effectId === 'dialogueOverlayChoiceFocus'
+      );
+      expect(initialChoiceCue).toBeDefined();
+      dialogueBox.skipTypewriter();
+      emittedEvents.length = 0;
+
+      const arrowDownHandler = dialogueBox.keyHandlers.get('ArrowDown');
+      arrowDownHandler();
+
+      const focusCue = emittedEvents.find(
+        (entry) => entry.eventType === 'fx:overlay_cue' && entry.data?.effectId === 'dialogueOverlayChoiceFocus'
+      );
+      expect(focusCue).toBeDefined();
+      expect(focusCue.data.context.choiceId).toBe('c-2');
+    });
+  });
+
   describe('Store integration', () => {
     it('updates when world state changes', () => {
       const initialState = {

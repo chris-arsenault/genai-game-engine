@@ -110,6 +110,14 @@ window.addEventListener('DOMContentLoaded', async () => {
   const debugSystemsBudgetReset = document.getElementById('debug-systems-budget-reset');
   const debugSpatialMeta = document.getElementById('debug-spatial-meta');
   const debugSpatialList = document.getElementById('debug-spatial-list');
+  const debugFxMeta = document.getElementById('debug-fx-meta');
+  const debugFxActive = document.getElementById('debug-fx-active');
+  const debugFxQueued = document.getElementById('debug-fx-queued');
+  const debugFxThroughput = document.getElementById('debug-fx-throughput');
+  const debugFxAverage = document.getElementById('debug-fx-avg');
+  const debugFxPeakActive = document.getElementById('debug-fx-peak-active');
+  const debugFxPeakThroughput = document.getElementById('debug-fx-peak-throughput');
+  const debugFxWarning = document.getElementById('debug-fx-warning');
 
   const formatClock = (timestamp) => {
     if (!timestamp || Number.isNaN(timestamp)) {
@@ -154,6 +162,96 @@ window.addEventListener('DOMContentLoaded', async () => {
       return `${seconds.toFixed(1)}s`;
     }
     return `${Math.round(milliseconds)}ms`;
+  };
+
+  const resolveFxTimestampMs = (sample) => {
+    if (!sample || sample.timestamp == null) {
+      return null;
+    }
+    const ts = sample.timestamp;
+    if (!Number.isFinite(ts)) {
+      return null;
+    }
+    return ts > 100000000000 ? ts : ts * 1000;
+  };
+
+  const updateFxDebugPanel = (nowMs) => {
+    if (!debugFxMeta || !debugFxActive || !debugFxThroughput) {
+      return;
+    }
+
+    const hasSample = latestFxSample || displayedFxSample;
+    if (!hasSample) {
+      debugFxMeta.textContent = 'Awaiting samples…';
+      debugFxActive.textContent = '0';
+      debugFxQueued.textContent = '0';
+      debugFxThroughput.textContent = '0.0 /s';
+      debugFxAverage.textContent = '0.0 /s';
+      debugFxPeakActive.textContent = '0';
+      debugFxPeakThroughput.textContent = '0.0 /s';
+      if (debugFxWarning) {
+        debugFxWarning.textContent = 'No samples';
+        debugFxWarning.dataset.state = 'idle';
+      }
+      return;
+    }
+
+    if (!debugPaused && latestFxSample) {
+      displayedFxSample = latestFxSample;
+    }
+
+    const sample = displayedFxSample || latestFxSample;
+    if (!sample) {
+      return;
+    }
+
+    const timestampMs = resolveFxTimestampMs(sample);
+    if (timestampMs != null) {
+      const age = nowMs - timestampMs;
+      debugFxMeta.textContent = `Updated ${formatRelativeTime(timestampMs, nowMs)} (${formatClock(timestampMs)})`;
+      if (!debugPaused && age > 2500) {
+        debugFxMeta.textContent += ' · stale';
+      }
+    } else {
+      debugFxMeta.textContent = 'Updated: n/a';
+    }
+
+    debugFxActive.textContent = Math.round(sample.active ?? 0).toString();
+    debugFxQueued.textContent = Math.round(sample.queued ?? 0).toString();
+
+    const throughput = Number(sample.throughputPerSecond ?? 0);
+    debugFxThroughput.textContent = `${throughput.toFixed(1)} /s`;
+
+    const avgThroughput = Number(sample.averages?.throughput ?? 0);
+    debugFxAverage.textContent = `${avgThroughput.toFixed(1)} /s`;
+
+    debugFxPeakActive.textContent = Math.round(sample.peaks?.active ?? 0).toString();
+    const peakThroughput = Number(sample.peaks?.throughput ?? 0);
+    debugFxPeakThroughput.textContent = `${peakThroughput.toFixed(1)} /s`;
+
+    if (debugFxWarning) {
+      if (latestFxWarning && nowMs - lastFxWarningAtMs <= 6000) {
+        const reasons = latestFxWarning.reasons || {};
+        const warningParts = ['Warning'];
+        if (reasons.throughput) {
+          warningParts.push(`throughput ${Number(latestFxWarning.throughputPerSecond ?? 0).toFixed(1)} /s`);
+        }
+        if (reasons.active) {
+          warningParts.push(`active ${Math.round(latestFxWarning.active ?? 0)}`);
+        }
+        if (reasons.queued) {
+          warningParts.push(`queued ${Math.round(latestFxWarning.queued ?? 0)}`);
+        }
+        debugFxWarning.textContent = warningParts.join(' · ');
+        debugFxWarning.dataset.state = 'warning';
+      } else {
+        if (latestFxWarning && nowMs - lastFxWarningAtMs > 6000) {
+          latestFxWarning = null;
+        }
+        debugFxWarning.textContent = 'No warnings';
+        debugFxWarning.dataset.state = 'ok';
+      }
+    }
   };
 
   const renderTranscriptEntries = (container, entries, { now, paused, shouldScroll }) => {
@@ -220,6 +318,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   let lastNpcHistorySignature = null;
   let sfxFilterText = '';
   let sfxTagFilter = null;
+  let latestFxSample = null;
+  let displayedFxSample = null;
+  let latestFxWarning = null;
+  let lastFxWarningAtMs = 0;
+  let offFxSample = null;
+  let offFxWarning = null;
   let lastAudioHistorySignature = null;
   let lastAudioBridgeSignature = null;
   let worldStateStoreErrorLogged = false;
@@ -381,6 +485,19 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   updateSfxTagFilters([], { force: true });
 
+  if (game.eventBus && typeof game.eventBus.on === 'function') {
+    offFxSample = game.eventBus.on('fx:metrics_sample', (payload) => {
+      latestFxSample = payload;
+      if (!debugPaused || !displayedFxSample) {
+        displayedFxSample = payload;
+      }
+    });
+    offFxWarning = game.eventBus.on('fx:metrics_warning', (payload) => {
+      latestFxWarning = payload;
+      lastFxWarningAtMs = Date.now();
+    });
+  }
+
   window.addEventListener('keydown', (e) => {
     if (e.key === 'F3') {
       e.preventDefault();
@@ -416,6 +533,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
 
     const now = Date.now();
+    updateFxDebugPanel(now);
 
     const fpsElement = document.getElementById('debug-fps');
     const entitiesElement = document.getElementById('debug-entities');
@@ -1319,6 +1437,14 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Cleanup on page unload
   window.addEventListener('beforeunload', () => {
+    if (typeof offFxSample === 'function') {
+      offFxSample();
+      offFxSample = null;
+    }
+    if (typeof offFxWarning === 'function') {
+      offFxWarning();
+      offFxWarning = null;
+    }
     engine.cleanup();
     game.cleanup();
   });

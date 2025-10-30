@@ -2790,6 +2790,22 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
 - [ ] World state persists correctly
 - [ ] 60 FPS maintained
 
+### Session #144 Backlog Updates
+
+#### FX-240: Particle Emitter Runtime Integration
+- Authored `ParticleEmitterRuntime` to translate `fx:particle_emit` descriptors into pooled particle emitters and expose update/render hooks wired through the `Game` lifecycle.
+- Registered the runtime alongside `FxCueCoordinator` and `CompositeCueParticleBridge`, ensuring per-frame updates and canvas render passes integrate cleanly with existing HUD overlays.
+- Added Jest coverage in `tests/game/fx/ParticleEmitterRuntime.test.js` to verify descriptor handling, pooling reuse, and rendering guards.
+
+#### DEBUG-275: FX Metrics HUD Panel
+- Extended `index.html` with an FX metrics panel and warning banner, styling the grid for throughput/active/queued/peaks readouts.
+- Subscribed the developer HUD (`src/main.js`) to `fx:metrics_sample` / `fx:metrics_warning`, maintaining paused/live samples and highlighting warnings without breaking existing overlay behaviour.
+
+#### FX-241: Dialogue & Inventory Overlay Cues
+- Emitted `fx:overlay_cue` events from `DialogueBox` and `InventoryOverlay` for reveal/dismiss/item-focus transitions with guardrails against repeated emissions.
+- Updated `FxCueCoordinator`, `FxOverlay`, `CompositeCueParticleBridge`, and `ParticleEmitterRuntime` to recognise the new cue identifiers, including duration tables, per-effect limits, presets, and render treatments.
+- Added Jest coverage across dialogue, inventory, and bridge suites to lock in the new cue emissions and particle preset mappings.
+
 ---
 
 ## Closing Notes

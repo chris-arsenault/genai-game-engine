@@ -54,6 +54,7 @@ import { FxOverlay } from './ui/FxOverlay.js';
 import { FxCueCoordinator } from './fx/FxCueCoordinator.js';
 import { CompositeCueParticleBridge } from './fx/CompositeCueParticleBridge.js';
 import { FxCueMetricsSampler } from './fx/FxCueMetricsSampler.js';
+import { ParticleEmitterRuntime } from './fx/ParticleEmitterRuntime.js';
 import { AudioFeedbackController } from './audio/AudioFeedbackController.js';
 import { SFXCatalogLoader } from './audio/SFXCatalogLoader.js';
 import { AdaptiveMoodEmitter } from './audio/AdaptiveMoodEmitter.js';
@@ -229,6 +230,7 @@ export class Game {
     this.controlBindingsOverlay = null;
     this.interactionPromptOverlay = null;
     this.fxOverlay = null;
+    this.particleEmitterRuntime = null;
     this.fxCueCoordinator = null;
     this.compositeCueParticleBridge = null;
     this.fxCueMetricsSampler = null;
@@ -955,6 +957,9 @@ export class Game {
         dialogueStartPulse: 1,
         dialogueCompleteBurst: 1,
         caseSolvedBurst: 1,
+        dialogueOverlayReveal: 1,
+        inventoryOverlayReveal: 1,
+        inventoryOverlayDismiss: 1,
       },
     });
     this.fxCueCoordinator.attach();
@@ -966,6 +971,20 @@ export class Game {
       getNow: () => this.engine?.clock?.now?.() ?? Date.now(),
     });
     this.compositeCueParticleBridge.attach();
+
+    if (this.particleEmitterRuntime) {
+      this.particleEmitterRuntime.detach();
+    }
+    this.particleEmitterRuntime = new ParticleEmitterRuntime(
+      this.engine.canvas,
+      this.eventBus,
+      {
+        maxEmitters: 20,
+        maxParticlesPerEmitter: 42,
+        globalMaxParticles: 420,
+      }
+    );
+    this.particleEmitterRuntime.attach();
 
     if (this.fxCueMetricsSampler) {
       this.fxCueMetricsSampler.stop();
@@ -2496,6 +2515,9 @@ export class Game {
     if (this.fxCueMetricsSampler) {
       this.fxCueMetricsSampler.update(deltaTime);
     }
+    if (this.particleEmitterRuntime) {
+      this.particleEmitterRuntime.update(deltaTime);
+    }
     if (this.fxOverlay) {
       this.fxOverlay.update(deltaTime);
     }
@@ -3180,6 +3202,9 @@ export class Game {
     if (this.detectiveVisionOverlay) {
       this.detectiveVisionOverlay.render(ctx);
     }
+    if (this.particleEmitterRuntime) {
+      this.particleEmitterRuntime.render(ctx);
+    }
     if (this.fxOverlay) {
       this.fxOverlay.render(ctx);
     }
@@ -3335,6 +3360,10 @@ export class Game {
     if (this.compositeCueParticleBridge) {
       this.compositeCueParticleBridge.detach();
       this.compositeCueParticleBridge = null;
+    }
+    if (this.particleEmitterRuntime) {
+      this.particleEmitterRuntime.detach();
+      this.particleEmitterRuntime = null;
     }
     if (this.fxCueMetricsSampler) {
       this.fxCueMetricsSampler.stop();

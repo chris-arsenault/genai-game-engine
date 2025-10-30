@@ -152,6 +152,58 @@
       max-width: 320px;
     }
 
+    #debug-fx {
+      margin-top: 8px;
+      border-top: 1px solid rgba(0, 255, 255, 0.35);
+      padding-top: 6px;
+      max-width: 320px;
+    }
+
+    .debug-fx-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    .debug-fx-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 6px;
+      background: rgba(10, 40, 60, 0.4);
+      border: 1px solid rgba(0, 255, 255, 0.24);
+      border-radius: 3px;
+      font-size: 11px;
+      color: #c6f8ff;
+    }
+
+    .debug-fx-card .label {
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: rgba(155, 231, 255, 0.85);
+    }
+
+    .debug-fx-card .value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: #7fffd4;
+    }
+
+    .debug-fx-warning {
+      margin-top: 6px;
+      font-size: 11px;
+      color: rgba(155, 231, 255, 0.85);
+    }
+
+    .debug-fx-warning[data-state="warning"] {
+      color: #ff9d9d;
+    }
+
+    .debug-fx-warning[data-state="ok"] {
+      color: #7fffd4;
+    }
+
     .debug-meta {
       font-size: 11px;
       margin-bottom: 4px;
@@ -558,6 +610,37 @@
         <div id="debug-spatial-list" class="debug-world-list">
           <div class="debug-world-row empty">No spatial data</div>
         </div>
+      </div>
+      <div id="debug-fx">
+        <div class="debug-title">FX Metrics</div>
+        <div id="debug-fx-meta" class="debug-meta">Awaiting samples…</div>
+        <div id="debug-fx-grid" class="debug-fx-grid">
+          <div class="debug-fx-card">
+            <span class="label">Active</span>
+            <span id="debug-fx-active" class="value">0</span>
+          </div>
+          <div class="debug-fx-card">
+            <span class="label">Queued</span>
+            <span id="debug-fx-queued" class="value">0</span>
+          </div>
+          <div class="debug-fx-card">
+            <span class="label">Throughput</span>
+            <span id="debug-fx-throughput" class="value">0.0 /s</span>
+          </div>
+          <div class="debug-fx-card">
+            <span class="label">Avg Throughput</span>
+            <span id="debug-fx-avg" class="value">0.0 /s</span>
+          </div>
+          <div class="debug-fx-card">
+            <span class="label">Peak Active</span>
+            <span id="debug-fx-peak-active" class="value">0</span>
+          </div>
+          <div class="debug-fx-card">
+            <span class="label">Peak Throughput</span>
+            <span id="debug-fx-peak-throughput" class="value">0.0 /s</span>
+          </div>
+        </div>
+        <div id="debug-fx-warning" class="debug-fx-warning" data-state="idle">No samples</div>
       </div>
       <div id="debug-systems">
         <div class="debug-title">Systems</div>

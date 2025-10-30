@@ -150,9 +150,18 @@ export class FxOverlay {
       case 'dialogueIntroPulse':
         this._spawnDialogueStartEffect(payload);
         break;
+      case 'dialogueOverlayReveal':
+        this._spawnDialogueStartEffect({ ...payload, effectId: 'dialogueStartPulse' });
+        break;
+      case 'dialogueOverlayDismiss':
+        this._spawnDialogueCompleteEffect({ ...payload, effectId: 'dialogueCompleteBurst' });
+        break;
       case 'dialogueBeatPulse':
       case 'dialogueChoicePulse':
         this._spawnDialogueBeatEffect(payload);
+        break;
+      case 'dialogueOverlayChoiceFocus':
+        this._spawnDialogueBeatEffect({ ...payload, effectId: 'dialogueBeatPulse' });
         break;
       case 'dialogueCompleteBurst':
         this._spawnDialogueCompleteEffect(payload);
@@ -163,6 +172,15 @@ export class FxOverlay {
         break;
       case 'caseObjectivePulse':
         this._spawnCaseObjectiveEffect(payload);
+        break;
+      case 'inventoryOverlayReveal':
+        this._spawnCaseObjectiveEffect({ ...payload, effectId: 'caseObjectivePulse' });
+        break;
+      case 'inventoryOverlayDismiss':
+        this._spawnCaseProgressEffect({ ...payload, effectId: 'caseCluePulse' });
+        break;
+      case 'inventoryItemFocus':
+        this._spawnCaseProgressEffect({ ...payload, effectId: 'caseEvidencePulse' });
         break;
       case 'caseSolvedBurst':
         this._spawnCaseSolvedEffect(payload);

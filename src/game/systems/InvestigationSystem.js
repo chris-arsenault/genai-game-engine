@@ -183,16 +183,31 @@ export class InvestigationSystem extends System {
    * @param {Array} entities
    */
   scanForEvidence(playerTransform, playerInvestigation, entities) {
+    let investigationComponent = playerInvestigation;
+    let entityCollection = entities;
+
+    if (!entityCollection) {
+      const candidate = playerInvestigation;
+      if (candidate && typeof candidate[Symbol.iterator] === 'function' && typeof candidate.getDetectionRadius !== 'function') {
+        entityCollection = candidate;
+        investigationComponent = null;
+      }
+    }
+
+    if (!entityCollection) {
+      entityCollection = [];
+    }
+
     const baseRadius =
-      (playerInvestigation && typeof playerInvestigation.getDetectionRadius === 'function'
-        ? playerInvestigation.getDetectionRadius()
-        : playerInvestigation?.observationRadius) ??
+      (investigationComponent && typeof investigationComponent.getDetectionRadius === 'function'
+        ? investigationComponent.getDetectionRadius()
+        : investigationComponent?.observationRadius) ??
       GameConfig.player.observationRadius;
-    const abilityLevel = Math.max(1, playerInvestigation?.abilityLevel ?? 1);
+    const abilityLevel = Math.max(1, investigationComponent?.abilityLevel ?? 1);
     const effectiveRadius = baseRadius * (1 + 0.1 * (abilityLevel - 1));
     const radiusSq = effectiveRadius * effectiveRadius;
 
-    for (const entityId of entities) {
+    for (const entityId of entityCollection) {
       const evidence = this.getComponent(entityId, 'Evidence');
       if (!evidence || evidence.collected) continue;
 

@@ -21,6 +21,9 @@ export class FxCueCoordinator {
       dialogueStartPulse: 600,
       dialogueBeatPulse: 500,
       dialogueChoicePulse: 500,
+      dialogueOverlayReveal: 540,
+      dialogueOverlayDismiss: 360,
+      dialogueOverlayChoiceFocus: 420,
       dialogueCompleteBurst: 1100,
       caseEvidencePulse: 550,
       caseCluePulse: 520,
@@ -32,6 +35,9 @@ export class FxCueCoordinator {
       questLogOverlayDismiss: 420,
       questLogTabPulse: 560,
       questLogQuestSelected: 600,
+      inventoryOverlayReveal: 620,
+      inventoryOverlayDismiss: 360,
+      inventoryItemFocus: 420,
       default: 500,
     };
 
@@ -44,6 +50,9 @@ export class FxCueCoordinator {
       caseFileOverlayDismiss: 1,
       questLogOverlayReveal: 1,
       questLogOverlayDismiss: 1,
+      dialogueOverlayReveal: 1,
+      inventoryOverlayReveal: 1,
+      inventoryOverlayDismiss: 1,
     };
 
     this.options = {
