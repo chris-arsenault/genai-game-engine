@@ -28,10 +28,11 @@ zones.
 4. Update narrative tooling so dialogue/UI copy pulls from the registry prompts
    rather than hard-coded strings. (The Crossroads scene now emits `ui:show_prompt`
    and `narrative:crossroads_prompt` events directly from the registry metadata.)
-5. When bespoke art arrives, populate `GameConfig.sceneArt.act2Crossroads` with the
-   delivered segment/image definitions. `Act2CrossroadsScene` now resolves overrides,
-   primes assets through `AssetLoader`, and falls back to authored geometry when art
-   is absent so designers can drop packages without touching scene code.
+5. When bespoke art arrives, populate `assets/manifests/act2-crossroads-art.json`
+   and the `GameConfig.sceneArt.act2Crossroads` descriptor (manifest url + overrides).
+   `Act2CrossroadsScene` now resolves local manifests, primes images via `AssetLoader`,
+   and falls back to authored geometry when art is absent so designers can drop packages
+   without touching scene code.
 6. When each trigger is migrated, the toolkit will mark it as migrated and the
    outstanding report will shrink accordingly.
 
@@ -144,6 +145,16 @@ strategy and acceptance criteria.
   `tests/game/scenes/Act2BranchDialogueIntegration.test.js` locks the event flow that emits
   `interaction:dialogue` for the corporate, resistance, and personal interiors when branch objectives
   fire.
+
+## Narrative & Telemetry Review Utilities
+
+- Run `npm run narrative:export-act2-dialogues` to export a JSON summary
+  (`telemetry-artifacts/act2-branch-dialogues-summary.json`) mapping each branch
+  objective dialogue to quest metadata, telemetry tags, and the ordered line list for
+  copy approval sessions.
+- Run `npm run telemetry:dashboard -- --in=<eventLog>` to transform captured quest
+  telemetry events into `telemetry-artifacts/quest-telemetry-dashboard.json`, matching
+  the analytics warehouse schema (includes optional `--summary-only` flag to omit raw rows).
 
 ## Thread C: Personal Investigation Trigger Map
 

@@ -66,6 +66,32 @@ export class QuestTelemetryValidationHarness {
   }
 
   /**
+    * Ingest pre-recorded telemetry events without using the EventBus.
+    * @param {Array<{type?: string, eventType?: string, payload?: object, timestamp?: number|string}>} events
+    */
+  ingest(events = []) {
+    if (!Array.isArray(events)) {
+      return;
+    }
+    for (const entry of events) {
+      if (!entry) {
+        continue;
+      }
+      const type = typeof entry.type === 'string' ? entry.type : entry.eventType;
+      if (!type) {
+        continue;
+      }
+      const payload =
+        entry.payload && typeof entry.payload === 'object'
+          ? { ...entry.payload }
+          : entry.data && typeof entry.data === 'object'
+          ? { ...entry.data }
+          : {};
+      this._handle(type, payload, entry.timestamp ?? null);
+    }
+  }
+
+  /**
    * Return captured telemetry events grouped by event type.
    * @param {string} type
    * @returns {Array<object>}
@@ -306,9 +332,40 @@ export class QuestTelemetryValidationHarness {
     return report;
   }
 
-  _handle(eventType, payload = {}) {
+  generateAnalyticsDataset(options = {}) {
+    const includeRawEvents = options.includeRawEvents !== false;
+    const includeReport = options.includeReport !== false;
+    const dataset = {
+      generatedAt: new Date().toISOString(),
+      schemaVersion: '1.0.0',
+      totalEvents: this.events.length,
+      uniqueTelemetryTags: Array.from(
+        new Set(
+          this.events
+            .map((entry) => entry.payload?.telemetryTag)
+            .filter((tag) => typeof tag === 'string' && tag.length > 0)
+        )
+      ),
+    };
+
+    if (includeRawEvents) {
+      dataset.events = this.events.map((entry) => normaliseAnalyticsEvent(entry));
+    }
+
+    if (includeReport) {
+      dataset.report = this.generateDashboardReport({
+        expectedTags: options.expectedTags,
+        expectedQuestObjectives: options.expectedQuestObjectives,
+        includeIssueDetails: options.includeIssueDetails ?? true,
+      });
+    }
+
+    return dataset;
+  }
+
+  _handle(eventType, payload = {}, timestampOverride = null) {
     const clonedPayload = { ...payload };
-    const timestamp = Date.now();
+    const timestamp = normaliseTimestamp(timestampOverride);
 
     this.events.push({
       type: eventType,
@@ -365,4 +422,54 @@ export class QuestTelemetryValidationHarness {
       });
     }
   }
+}
+
+function normaliseTimestamp(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (value instanceof Date) {
+    return value.getTime();
+  }
+  if (typeof value === 'string' && value.length > 0) {
+    const parsed = Date.parse(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return Date.now();
+}
+
+function normaliseAnalyticsEvent(entry = {}) {
+  const payload = entry.payload && typeof entry.payload === 'object' ? entry.payload : {};
+  const timestamp = normaliseTimestamp(entry.timestamp ?? null);
+
+  return {
+    eventType: entry.type ?? null,
+    telemetryTag:
+      typeof payload.telemetryTag === 'string' && payload.telemetryTag.length > 0
+        ? payload.telemetryTag
+        : null,
+    questId:
+      typeof payload.questId === 'string' && payload.questId.length > 0
+        ? payload.questId
+        : null,
+    objectiveId:
+      typeof payload.objectiveId === 'string' && payload.objectiveId.length > 0
+        ? payload.objectiveId
+        : null,
+    triggerId:
+      typeof payload.triggerId === 'string' && payload.triggerId.length > 0
+        ? payload.triggerId
+        : typeof payload.areaId === 'string' && payload.areaId.length > 0
+        ? payload.areaId
+        : null,
+    sceneId:
+      typeof payload.sceneId === 'string' && payload.sceneId.length > 0 ? payload.sceneId : null,
+    source: typeof payload.source === 'string' && payload.source.length > 0 ? payload.source : null,
+    actorId: typeof payload.actorId === 'string' && payload.actorId.length > 0 ? payload.actorId : null,
+    timestamp,
+    timestampIso: new Date(timestamp).toISOString(),
+    payload: { ...payload },
+  };
 }

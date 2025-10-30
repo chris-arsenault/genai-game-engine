@@ -108,6 +108,8 @@ const TRIGGER_DEFINITIONS = Object.freeze([
   }),
 ]);
 
+export const ACT2_CORPORATE_TRIGGER_DEFINITIONS = TRIGGER_DEFINITIONS;
+
 const FLOOR_SEGMENTS = Object.freeze([
   Object.freeze({
     id: 'corporate_lobby_floor',

@@ -108,6 +108,8 @@ const TRIGGER_DEFINITIONS = Object.freeze([
   }),
 ]);
 
+export const ACT2_RESISTANCE_TRIGGER_DEFINITIONS = TRIGGER_DEFINITIONS;
+
 const FLOOR_SEGMENTS = Object.freeze([
   Object.freeze({
     id: 'resistance_lower_platform',

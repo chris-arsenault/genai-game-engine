@@ -8,7 +8,12 @@ import {
 } from '../../../src/game/data/quests/act2TriggerDefinitions.js';
 import { Act2CrossroadsScene } from '../../../src/game/scenes/Act2CrossroadsScene.js';
 import { GameConfig } from '../../../src/game/config/GameConfig.js';
-import { Act2CrossroadsArtConfig } from '../../../src/game/data/sceneArt/Act2CrossroadsArtConfig.js';
+import {
+  Act2CrossroadsArtConfig,
+  ACT2_CROSSROADS_ART_MANIFEST_URL,
+} from '../../../src/game/data/sceneArt/Act2CrossroadsArtConfig.js';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 
 describe('Act2CrossroadsScene art overrides', () => {
   let eventBus;
@@ -97,5 +102,46 @@ describe('Act2CrossroadsScene art overrides', () => {
       expect.arrayContaining([expect.objectContaining({ id: 'crossroads_floor_safehouse' })])
     );
   });
-});
 
+  it('fetches the default manifest file from the assets pipeline and merges override colours', async () => {
+    const manifestUrl = ACT2_CROSSROADS_ART_MANIFEST_URL;
+    const manifestFixturePath = path.resolve(
+      process.cwd(),
+      'assets/manifests/act2-crossroads-art.json'
+    );
+    const manifestData = JSON.parse(await readFile(manifestFixturePath, 'utf8'));
+
+    global.fetch = jest.fn(async (requestedUrl) => {
+      expect(requestedUrl).toBe(manifestUrl);
+      return {
+        ok: true,
+        json: async () => ({ ...manifestData }),
+      };
+    });
+
+    GameConfig.sceneArt.act2Crossroads = {
+      manifestUrl,
+      overrides: {
+        floors: [{ id: 'crossroads_selection_pad', color: '#abcdef', alpha: 0.88 }],
+      },
+    };
+
+    await scene.load();
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+
+    const selectionPad = scene.metadata.geometry.floors.find(
+      (segment) => segment.id === 'crossroads_selection_pad'
+    );
+
+    expect(selectionPad).toBeDefined();
+    expect(selectionPad.color).toBe('#abcdef');
+    expect(scene.metadata.artSource?.resolved?.variantId).toBe(manifestData.variantId);
+    expect(scene.metadata.artSource?.resolved?.floors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'crossroads_floor_safehouse' }),
+        expect.objectContaining({ id: 'crossroads_selection_pad', color: '#abcdef' }),
+      ])
+    );
+  });
+});

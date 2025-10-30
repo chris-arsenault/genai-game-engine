@@ -1,0 +1,87 @@
+{
+  "variantId": "act2_crossroads_placeholder_manifest_v1",
+  "updatedAt": "2025-11-07T00:00:00Z",
+  "author": "Codex Placeholder Pipeline",
+  "notes": [
+    "Mirrors the in-code placeholder palette so bespoke art drops can replace this file without touching scene logic.",
+    "Image-backed segments may specify either `imageUrl` or `assetId` once production art is available."
+  ],
+  "floors": [
+    {
+      "id": "crossroads_floor_safehouse",
+      "color": "#101b28",
+      "alpha": 0.97
+    },
+    {
+      "id": "crossroads_branch_walkway",
+      "color": "#0f2438",
+      "alpha": 0.95
+    },
+    {
+      "id": "crossroads_selection_pad",
+      "color": "#102d44",
+      "alpha": 0.9
+    },
+    {
+      "id": "crossroads_checkpoint_plaza",
+      "color": "#0b1a2a",
+      "alpha": 0.94
+    }
+  ],
+  "accents": [
+    {
+      "id": "crossroads_selection_conduit",
+      "color": "#ff9f5c",
+      "alpha": 0.42
+    },
+    {
+      "id": "crossroads_safehouse_light_arc",
+      "color": "#3b6df2",
+      "alpha": 0.26
+    }
+  ],
+  "lightColumns": [
+    {
+      "id": "crossroads_column_checkpoint_north",
+      "color": "#54c7ff",
+      "alpha": 0.46
+    },
+    {
+      "id": "crossroads_column_checkpoint_south",
+      "color": "#54c7ff",
+      "alpha": 0.46
+    },
+    {
+      "id": "crossroads_column_safehouse_left",
+      "color": "#3a4d7f",
+      "alpha": 0.5
+    },
+    {
+      "id": "crossroads_column_safehouse_right",
+      "color": "#3a4d7f",
+      "alpha": 0.5
+    }
+  ],
+  "boundaries": [
+    {
+      "id": "crossroads_boundary_west",
+      "color": "#050a12",
+      "alpha": 0.96
+    },
+    {
+      "id": "crossroads_boundary_east",
+      "color": "#050a12",
+      "alpha": 0.96
+    },
+    {
+      "id": "crossroads_boundary_north",
+      "color": "#050a12",
+      "alpha": 0.96
+    },
+    {
+      "id": "crossroads_boundary_south",
+      "color": "#050a12",
+      "alpha": 0.96
+    }
+  ]
+}

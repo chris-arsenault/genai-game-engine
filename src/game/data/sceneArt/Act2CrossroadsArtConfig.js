@@ -2,6 +2,9 @@
  * Act 2 Crossroads art override configuration.
  * Provides a placeholder palette until bespoke art lands.
  */
+export const ACT2_CROSSROADS_ART_MANIFEST_URL =
+  'assets/manifests/act2-crossroads-art.json';
+
 export const Act2CrossroadsArtConfig = Object.freeze({
   variantId: 'placeholder_v1',
   artist: 'Codex Placeholder',
@@ -77,4 +80,3 @@ export const Act2CrossroadsArtConfig = Object.freeze({
     }),
   ]),
 });
-
