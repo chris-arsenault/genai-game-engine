@@ -284,7 +284,7 @@ export const GameConfig = {
             questId: 'main-act2-archivist-alliance',
             telemetryTag: 'act2_thread_selection_resistance',
             worldFlags: ['act2_branch_resistance_selected'],
-            sceneId: 'act2_resistance_hideout_stub',
+            sceneId: 'act2_resistance_hideout',
             defaultUnlocked: true,
           },
           {

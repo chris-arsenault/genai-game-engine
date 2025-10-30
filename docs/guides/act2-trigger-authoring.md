@@ -70,6 +70,12 @@ strategy and acceptance criteria.
   coordinates. Regression coverage lives in
 `tests/game/scenes/Act2CorporateInfiltrationScene.test.js` and
 `tests/game/Game.act2ThreadScene.test.js`.
+- Session 93 extends coverage with the Archivist resistance branch: `loadAct2ResistanceHideoutScene`
+  authors the under-city hideout geometry, trigger toolkit wiring, navigation mesh metadata, and
+  quest scaffolding (`main-act2-archivist-alliance`). `Game.loadAct2ThreadScene` adds the resistance
+  loader entry and `GameConfig.narrative.act2.crossroads.threads` now points the branch to the new
+  scene; regression coverage lands in
+`tests/game/scenes/Act2ResistanceHideoutScene.test.js` alongside updated loader tests.
 
 ## Thread Authoring Tips
 
@@ -95,3 +101,19 @@ strategy and acceptance criteria.
   return value and forwarded through `scene:loaded` for UI, navigation, and analytics systems.
 - Keep registry ids stable when extending the scene (patrols, evidence, scripted beats) so
   analytics stays aligned with the branching choice and quest objectives.
+
+## Thread B: Archivist Resistance Trigger Map
+
+| Trigger ID                               | Area ID                       | Quest ID                          | Objective ID                     | Narrative Beat                            |
+| ---------------------------------------- | ----------------------------- | -------------------------------- | -------------------------------- | ----------------------------------------- |
+| `act2_resistance_contact_entry`          | `resistance_contact_entry`    | `main-act2-archivist-alliance`   | `obj_locate_resistance_contact`  | `act2_resistance_hideout_entry`           |
+| `act2_resistance_strategy_table`         | `resistance_strategy_table`   | `main-act2-archivist-alliance`   | `obj_negotiate_alliance_terms`   | `act2_resistance_strategy_session`        |
+| `act2_resistance_escape_tunnel`          | `resistance_escape_tunnel`    | `main-act2-archivist-alliance`   | `obj_secure_escape_routes`       | `act2_resistance_escape_network`          |
+
+- `loadAct2ResistanceHideoutScene` registers these definitions on load, attaches quest/trigger
+  components via `TriggerMigrationToolkit`, and mirrors corporate metadata exposure (geometry,
+  navigation mesh, trigger layout) for analytics/NPC navigation consumers.
+- Resist branch metadata emphasises faction alignment; `trigger.metadata.unlocksMechanic` feeds
+  into knowledge/faction overlays so the Archivist alliance unlock is visible to systemic listeners.
+- Keep telemetry tags (`act2_resistance_*`) stable to retain branch analytics continuity as the
+  hideout evolves (NPC schedules, evidence beats, optional stealth entries).

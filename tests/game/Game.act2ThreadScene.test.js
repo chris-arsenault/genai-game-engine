@@ -179,6 +179,59 @@ describe('Game.loadAct2ThreadScene', () => {
     expect(playerController.velocityY).toBe(0);
   });
 
+  it('loads the Resistance contact interior and wires quest metadata', async () => {
+    const cameraFollowSpy = jest.spyOn(game.gameSystems.cameraFollow, 'snapTo');
+
+    const sceneId = await game.loadAct2ThreadScene({
+      branchId: 'act2_thread_resistance_contact',
+      originQuestId: 'main-act2-crossroads',
+    });
+
+    expect(sceneId).toBe('act2_resistance_hideout');
+    expect(transitionStarts).toHaveLength(1);
+    expect(transitionStarts[0]).toMatchObject({
+      branchId: 'act2_thread_resistance_contact',
+      questId: 'main-act2-archivist-alliance',
+      originQuestId: 'main-act2-crossroads',
+    });
+
+    expect(transitionReady).toHaveLength(1);
+    expect(transitionReady[0]).toMatchObject({
+      branchId: 'act2_thread_resistance_contact',
+      questId: 'main-act2-archivist-alliance',
+      originQuestId: 'main-act2-crossroads',
+      sceneId: 'act2_resistance_hideout',
+    });
+    expect(transitionReady[0].spawnPoint).toEqual({ x: 200, y: 560 });
+
+    expect(sceneLoadedEvents).toHaveLength(1);
+    expect(sceneLoadedEvents[0]).toMatchObject({
+      sceneId: 'act2_resistance_hideout',
+      branchId: 'act2_thread_resistance_contact',
+      questId: 'main-act2-archivist-alliance',
+      originQuestId: 'main-act2-crossroads',
+    });
+    expect(sceneLoadedEvents[0].navigationMesh).toBeTruthy();
+
+    expect(game.activeScene.id).toBe('act2_resistance_hideout');
+    expect(game.activeScene.metadata).toMatchObject({
+      branchId: 'act2_thread_resistance_contact',
+      questId: 'main-act2-archivist-alliance',
+      originQuestId: 'main-act2-crossroads',
+      transitionSource: 'act2_thread',
+    });
+    expect(game.activeScene.metadata.navigationMesh?.nodes?.length).toBeGreaterThan(0);
+    expect(cameraFollowSpy).toHaveBeenCalledWith(200, 560);
+
+    const playerTransform = componentRegistry.getComponent(game.playerEntityId, 'Transform');
+    expect(playerTransform.x).toBe(200);
+    expect(playerTransform.y).toBe(560);
+
+    const playerController = componentRegistry.getComponent(game.playerEntityId, 'PlayerController');
+    expect(playerController.velocityX).toBe(0);
+    expect(playerController.velocityY).toBe(0);
+  });
+
   it('falls back to placeholder metadata when no loader is registered', async () => {
     const cameraFollowSpy = jest.spyOn(game.gameSystems.cameraFollow, 'snapTo');
 

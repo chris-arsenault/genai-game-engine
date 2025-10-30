@@ -69,6 +69,7 @@ import { SaveManager } from './managers/SaveManager.js';
 import { registerAct1Quests } from './data/quests/act1Quests.js';
 import { registerAct2CrossroadsQuest } from './data/quests/act2CrossroadsQuest.js';
 import { registerAct2NeuroSyncQuest } from './data/quests/act2NeuroSyncQuest.js';
+import { registerAct2ResistanceQuest } from './data/quests/act2ResistanceQuest.js';
 import { tutorialCase } from './data/cases/tutorialCase.js';
 
 // Dialogue data
@@ -84,6 +85,7 @@ import { createNPCEntity } from './entities/NPCEntity.js';
 import { loadAct1Scene } from './scenes/Act1Scene.js';
 import { loadMemoryParlorScene } from './scenes/MemoryParlorScene.js';
 import { loadAct2CorporateInfiltrationScene } from './scenes/Act2CorporateInfiltrationScene.js';
+import { loadAct2ResistanceHideoutScene } from './scenes/Act2ResistanceHideoutScene.js';
 
 // Configuration
 import { GameConfig } from './config/GameConfig.js';
@@ -122,6 +124,10 @@ const ACT2_THREAD_SCENE_LOADERS = Object.freeze({
   act2_thread_corporate_infiltration: Object.freeze({
     sceneId: 'act2_corporate_interior',
     loader: loadAct2CorporateInfiltrationScene,
+  }),
+  act2_thread_resistance_contact: Object.freeze({
+    sceneId: 'act2_resistance_hideout',
+    loader: loadAct2ResistanceHideoutScene,
   }),
 });
 
@@ -326,13 +332,15 @@ export class Game {
     registerAct1Quests(this.questManager);
     console.log('[Game] Act 1 quests registered');
 
-    // Register Act 2 crossroads quest scaffolding
-    registerAct2CrossroadsQuest(this.questManager);
-    console.log('[Game] Act 2 Crossroads quest registered');
-
     // Register Act 2 thread quests
     registerAct2NeuroSyncQuest(this.questManager);
     console.log('[Game] Act 2 NeuroSync quest registered');
+    registerAct2ResistanceQuest(this.questManager);
+    console.log('[Game] Act 2 Resistance quest registered');
+
+    // Register Act 2 crossroads quest scaffolding after thread quests so branch metadata resolves
+    registerAct2CrossroadsQuest(this.questManager);
+    console.log('[Game] Act 2 Crossroads quest registered');
 
     // Initialize TutorialTranscriptRecorder prior to SaveManager wiring
     this.tutorialTranscriptRecorder = new TutorialTranscriptRecorder(this.eventBus);
