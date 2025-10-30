@@ -1,15 +1,6 @@
-<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="2.231455">
-<testsuite name="debug-overlay-spatial-metrics.spec.js" timestamp="2025-10-30T13:31:03.523Z" hostname="" tests="1" failures="0" skipped="0" time="1.042" errors="0">
-<testcase name="Debug overlay spatial metrics › surfaces rolling averages when metrics window is adjusted" classname="debug-overlay-spatial-metrics.spec.js" time="1.042">
-<system-out>
-<![CDATA[
-[[ATTACHMENT|test-results/debug-overlay-spatial-metr-426b7--metrics-window-is-adjusted/attachments/pw-surfaces-rolling-averages-when-metrics-window-is-adjusted-summary-20251030T133105Z-json-b71436cff48e5cc443427687e7b904676ddf136c.json]]
-
-[[ATTACHMENT|test-results/debug-overlay-spatial-metr-426b7--metrics-window-is-adjusted/attachments/pw-surfaces-rolling-averages-when-metrics-window-is-adjusted-cascade-targets-20251030T133105Z-csv-f0351e83b79a9eccc3a8c8f9456f97a9b3fa54e0.csv]]
-
-[[ATTACHMENT|test-results/debug-overlay-spatial-metr-426b7--metrics-window-is-adjusted/attachments/pw-surfaces-rolling-averages-when-metrics-window-is-adjusted-tutorial-snapshots-20251030T133105Z-csv-f343545afa1cc1645ec5eebc8a503af03fa40aec.csv]]
-]]>
-</system-out>
+<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="2.235902">
+<testsuite name="memory-parlor-infiltration.spec.js" timestamp="2025-10-30T13:55:30.858Z" hostname="" tests="1" failures="0" skipped="0" time="1.03" errors="0">
+<testcase name="Memory Parlor infiltration › requires scrambler activation to bypass firewall and complete infiltration" classname="memory-parlor-infiltration.spec.js" time="1.03">
 </testcase>
 </testsuite>
 </testsuites>

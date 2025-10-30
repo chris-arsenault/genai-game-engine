@@ -21,7 +21,13 @@
 | PERF-214 | P1 | Pending | Browser-level performance profiling for adaptive audio + overlay interactions to confirm <16 ms frame time budget. | Run Chromium/Firefox performance audits with combat/stealth transitions, log hotspots, and file perf follow-ups as needed. |
 | UX-173 | P1 | Pending | Improve debug audio overlay ergonomics (keyboard shortcuts, focus management). | Prototype keyboard navigation + focus traps, add Jest/Playwright coverage for accessibility interactions. |
 
-**Next Session Focus**: Review spatial hash profiling to confirm the default metrics window, secure neon signage approval for the Week 1 bespoke packet, and collect RenderOps feedback on the remaining Act 2 lighting segments.
+**Next Session Focus**: Assess QuestManager NPC availability notifications for entity lifecycle logs, secure neon signage approval for the Week 1 bespoke packet, and collect RenderOps feedback on the remaining Act 2 lighting segments.
+
+### Session #123 Backlog Updates
+
+#### M1-002 / M1-012: ECS/Narrative Integrations
+- Persisted spatial hash rolling history into SaveManager inspector exports via the collision system provider, hardened exporter sanitization, and added `SpatialHash.getMetricsHistorySnapshot()` alongside refreshed Jest coverage.
+- Extended the Memory Parlor infiltration Playwright fixture with debug overlay spatial hash assertions to validate stealth density telemetry during live patrol encounters; reran targeted Playwright and full Jest suites.
 
 ### Session #122 Backlog Updates
 

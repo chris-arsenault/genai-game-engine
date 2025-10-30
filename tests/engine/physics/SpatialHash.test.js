@@ -274,6 +274,27 @@ describe('SpatialHash', () => {
       const resetMetrics = spatialHash.getMetrics({ collectSample: false });
       expect(resetMetrics.rolling.sampleCount).toBe(0);
     });
+
+    it('should snapshot metrics history with optional limit', () => {
+      spatialHash.resetMetricsHistory();
+      spatialHash.setMetricsWindow(10);
+
+      for (let i = 0; i < 6; i++) {
+        spatialHash.insert(i, i * 10, i * 10, 16, 16);
+        spatialHash.getMetrics();
+      }
+
+      const fullHistory = spatialHash.getMetricsHistorySnapshot();
+      expect(fullHistory.length).toBe(6);
+
+      const limitedHistory = spatialHash.getMetricsHistorySnapshot({ limit: 3 });
+      expect(limitedHistory.length).toBe(3);
+      expect(limitedHistory[0].timestamp).toBe(fullHistory[3].timestamp);
+
+      limitedHistory[0].cellCount = 999;
+      const freshSnapshot = spatialHash.getMetricsHistorySnapshot({ limit: 3 });
+      expect(freshSnapshot[0].cellCount).not.toBe(999);
+    });
   });
 
   describe('Clear', () => {

@@ -488,6 +488,96 @@ export class Game {
         resolveCollisions: false,
       }
     );
+    if (this.saveManager?.registerSpatialMetricsProvider) {
+      this.saveManager.registerSpatialMetricsProvider(() => {
+        const collision = this.gameSystems?.collision;
+        const spatialHash = collision?.spatialHash;
+        if (
+          !spatialHash ||
+          typeof spatialHash.getMetrics !== 'function' ||
+          typeof spatialHash.getMetricsHistorySnapshot !== 'function'
+        ) {
+          return null;
+        }
+
+        const metrics = spatialHash.getMetrics({ collectSample: false }) ?? {};
+        const history = spatialHash.getMetricsHistorySnapshot({
+          limit: spatialHash.metricsWindow,
+        });
+
+        const rolling = metrics.rolling ?? {};
+
+        const sanitizeAggregate = (aggregate) => {
+          if (!aggregate) {
+            return null;
+          }
+          const safe = (value) =>
+            Number.isFinite(value) ? value : null;
+          return {
+            average: safe(aggregate.average),
+            min: safe(aggregate.min),
+            max: safe(aggregate.max),
+          };
+        };
+
+        const sanitizeSample = (sample) => {
+          if (!sample) {
+            return null;
+          }
+          const safe = (value) =>
+            Number.isFinite(value) ? value : null;
+          return {
+            cellCount: safe(sample.cellCount),
+            maxBucketSize: safe(sample.maxBucketSize),
+            trackedEntities: safe(sample.trackedEntities),
+            timestamp: safe(sample.timestamp),
+          };
+        };
+
+        const sanitizeStats = (stats) => {
+          if (!stats || typeof stats !== 'object') {
+            return null;
+          }
+          const safe = (value) =>
+            Number.isFinite(value) ? value : 0;
+          return {
+            insertions: safe(stats.insertions),
+            updates: safe(stats.updates),
+            removals: safe(stats.removals),
+          };
+        };
+
+        const payloadBytes = (() => {
+          try {
+            return JSON.stringify(history).length;
+          } catch (error) {
+            console.warn('[Game] Failed to estimate spatial metrics payload size', error);
+            return null;
+          }
+        })();
+
+        return {
+          cellSize: Number.isFinite(spatialHash.cellSize) ? spatialHash.cellSize : null,
+          window: Number.isFinite(rolling.window)
+            ? rolling.window
+            : Number.isFinite(spatialHash.metricsWindow)
+            ? spatialHash.metricsWindow
+            : null,
+          sampleCount: Number.isFinite(rolling.sampleCount)
+            ? rolling.sampleCount
+            : history.length,
+          lastSample: sanitizeSample(rolling.lastSample ?? history[history.length - 1] ?? null),
+          aggregates: {
+            cellCount: sanitizeAggregate(rolling.cellCount),
+            maxBucketSize: sanitizeAggregate(rolling.maxBucketSize),
+            trackedEntities: sanitizeAggregate(rolling.trackedEntities),
+          },
+          stats: sanitizeStats(metrics.stats),
+          history: history.map((sample) => sanitizeSample(sample)).filter(Boolean),
+          payloadBytes,
+        };
+      });
+    }
 
     // Create trigger system (engine physics layer for area triggers)
     this.gameSystems.trigger = new TriggerSystem(

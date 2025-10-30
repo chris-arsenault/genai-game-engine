@@ -59,6 +59,10 @@ export class SaveManager {
         : null;
     const telemetryWriters = Array.isArray(managers.telemetryWriters) ? [...managers.telemetryWriters] : null;
     this._telemetrySeedWriters = telemetryWriters;
+    this._spatialMetricsProvider = null;
+    if (typeof managers.spatialMetricsProvider === 'function') {
+      this.registerSpatialMetricsProvider(managers.spatialMetricsProvider);
+    }
 
     // Event unsubscriber references
     this._offQuestCompleted = null;
@@ -409,6 +413,9 @@ export class SaveManager {
           snapshots: [],
           transcript: [],
         },
+        engine: {
+          spatialHash: null,
+        },
       };
     }
 
@@ -459,6 +466,7 @@ export class SaveManager {
         ? recentMemberRemovals
         : [],
     };
+    const spatialMetrics = this.getSpatialMetricsTelemetry();
 
     return {
       generatedAt,
@@ -468,6 +476,9 @@ export class SaveManager {
         latestSnapshot: latestSnapshot ?? null,
         snapshots: Array.isArray(tutorialSnapshots) ? tutorialSnapshots : [],
         transcript: Array.isArray(tutorialTranscript) ? tutorialTranscript : [],
+      },
+      engine: {
+        spatialHash: spatialMetrics,
       },
     };
   }
@@ -552,6 +563,42 @@ export class SaveManager {
       artifacts,
       metrics,
     };
+  }
+
+  /**
+   * Register provider for spatial metrics snapshots used in telemetry exports.
+   * @param {Function|null} provider
+   */
+  registerSpatialMetricsProvider(provider) {
+    if (typeof provider === 'function') {
+      this._spatialMetricsProvider = provider;
+      return;
+    }
+
+    if (provider === null) {
+      this._spatialMetricsProvider = null;
+    }
+  }
+
+  /**
+   * Retrieve spatial metrics snapshot for telemetry exports.
+   * @returns {Object|null}
+   */
+  getSpatialMetricsTelemetry() {
+    if (typeof this._spatialMetricsProvider !== 'function') {
+      return null;
+    }
+
+    try {
+      const snapshot = this._spatialMetricsProvider();
+      if (!snapshot || typeof snapshot !== 'object') {
+        return null;
+      }
+      return snapshot;
+    } catch (error) {
+      console.warn('[SaveManager] Failed to gather spatial hash metrics for inspector', error);
+      return null;
+    }
   }
 
   // ==================== Data Collection Methods ====================

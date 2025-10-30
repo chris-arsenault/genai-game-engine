@@ -53,6 +53,107 @@ function normalizeFormats(formats) {
   return unique.size ? Array.from(unique) : [...DEFAULT_FORMATS];
 }
 
+function sanitizeAggregate(aggregate) {
+  if (!aggregate || typeof aggregate !== 'object') {
+    return null;
+  }
+  const safe = (value) => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
+  };
+  return {
+    average: safe(aggregate.average),
+    min: safe(aggregate.min),
+    max: safe(aggregate.max),
+  };
+}
+
+function sanitizeSample(sample) {
+  if (!sample || typeof sample !== 'object') {
+    return null;
+  }
+  const safe = (value) => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
+  };
+  return {
+    cellCount: safe(sample.cellCount),
+    maxBucketSize: safe(sample.maxBucketSize),
+    trackedEntities: safe(sample.trackedEntities),
+    timestamp: safe(sample.timestamp),
+  };
+}
+
+function sanitizeStats(stats) {
+  if (!stats || typeof stats !== 'object') {
+    return null;
+  }
+  const safe = (value) => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : 0;
+  };
+  return {
+    insertions: safe(stats.insertions),
+    updates: safe(stats.updates),
+    removals: safe(stats.removals),
+  };
+}
+
+function sanitizeSpatialTelemetry(spatial) {
+  if (!spatial || typeof spatial !== 'object') {
+    return null;
+  }
+
+  const history = Array.isArray(spatial.history)
+    ? spatial.history.map(sanitizeSample).filter(Boolean)
+    : [];
+
+  const payloadBytesNumeric = Number(spatial.payloadBytes);
+  let payloadBytes = Number.isFinite(payloadBytesNumeric)
+    ? payloadBytesNumeric
+    : null;
+  if (!payloadBytes) {
+    try {
+      payloadBytes = JSON.stringify(history).length;
+    } catch (error) {
+      console.warn('[TelemetryExporter] Failed to estimate spatial history payload size', error);
+      payloadBytes = null;
+    }
+  }
+
+  const windowNumeric = Number(spatial.window);
+  const windowSize = Number.isFinite(windowNumeric)
+    ? Math.max(1, Math.floor(windowNumeric))
+    : null;
+
+  const sampleCountNumeric = Number(spatial.sampleCount);
+  const sampleCountField = Number.isFinite(sampleCountNumeric)
+    ? Math.max(0, Math.floor(sampleCountNumeric))
+    : null;
+  const sampleCount = sampleCountField ?? history.length;
+
+  const lastSample =
+    sanitizeSample(spatial.lastSample) ??
+    (history.length ? history[history.length - 1] : null);
+
+  const cellSizeNumeric = Number(spatial.cellSize);
+
+  return {
+    cellSize: Number.isFinite(cellSizeNumeric) ? cellSizeNumeric : null,
+    window: windowSize,
+    sampleCount,
+    lastSample,
+    aggregates: {
+      cellCount: sanitizeAggregate(spatial.aggregates?.cellCount),
+      maxBucketSize: sanitizeAggregate(spatial.aggregates?.maxBucketSize),
+      trackedEntities: sanitizeAggregate(spatial.aggregates?.trackedEntities),
+    },
+    stats: sanitizeStats(spatial.stats),
+    history,
+    payloadBytes,
+  };
+}
+
 function sanitizeSummary(summary) {
   const generatedAt = summary?.generatedAt ?? Date.now();
   const source = summary?.source ?? 'unavailable';
@@ -68,6 +169,9 @@ function sanitizeSummary(summary) {
   const tutorial = summary?.tutorial ?? {};
   const snapshots = Array.isArray(tutorial.snapshots) ? tutorial.snapshots : [];
   const transcript = Array.isArray(tutorial.transcript) ? tutorial.transcript : [];
+
+  const engine = summary?.engine ?? {};
+  const spatialHash = sanitizeSpatialTelemetry(engine.spatialHash);
 
   return {
     generatedAt,
@@ -103,6 +207,9 @@ function sanitizeSummary(summary) {
         snapshotCount: snapshots.length,
         transcriptCount: transcript.length,
       },
+    },
+    engine: {
+      spatialHash,
     },
   };
 }
@@ -260,6 +367,7 @@ export function createInspectorExportArtifacts(summary, options = {}) {
       source: sanitizedSummary.source,
       factions: sanitizedSummary.factions,
       tutorial: sanitizedSummary.tutorial,
+      engine: sanitizedSummary.engine,
     };
     artifacts.push({
       type: 'json',

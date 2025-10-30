@@ -239,6 +239,35 @@ export class SpatialHash {
   }
 
   /**
+   * Snapshot rolling metrics history.
+   * @param {{ limit?: number }} [options]
+   * @returns {Array<{cellCount:number,maxBucketSize:number,trackedEntities:number,timestamp:number}>}
+   */
+  getMetricsHistorySnapshot(options = {}) {
+    if (!this._metricsHistory.length) {
+      return [];
+    }
+
+    const limit = Number.isFinite(options.limit)
+      ? Math.max(0, Math.floor(options.limit))
+      : this.metricsWindow;
+
+    if (limit === 0) {
+      return [];
+    }
+
+    const startIndex = Math.max(0, this._metricsHistory.length - limit);
+    const historySlice = this._metricsHistory.slice(startIndex);
+
+    return historySlice.map((entry) => ({
+      cellCount: entry.cellCount,
+      maxBucketSize: entry.maxBucketSize,
+      trackedEntities: entry.trackedEntities,
+      timestamp: entry.timestamp,
+    }));
+  }
+
+  /**
    * Adjust rolling metrics window size.
    * @param {number} windowSize
    */

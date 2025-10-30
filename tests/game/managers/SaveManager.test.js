@@ -48,6 +48,7 @@ describe('SaveManager', () => {
       },
       worldStateStore: null,
       storage: localStorageMock,
+      spatialMetricsProvider: null,
     };
 
     eventBus = new EventBus();
@@ -1225,6 +1226,9 @@ describe('SaveManager', () => {
         snapshots: [],
         transcript: [],
       });
+      expect(summary.engine).toEqual({
+        spatialHash: null,
+      });
       expect(summary.generatedAt).toEqual(expect.any(Number));
     });
 
@@ -1282,6 +1286,29 @@ describe('SaveManager', () => {
           removedAt: 111,
         },
       ];
+      const spatialSnapshot = {
+        cellSize: 128,
+        window: 120,
+        sampleCount: 80,
+        lastSample: {
+          cellCount: 40,
+          maxBucketSize: 3,
+          trackedEntities: 42,
+          timestamp: 111111,
+        },
+        aggregates: {
+          cellCount: { average: 40.5, min: 35, max: 45 },
+          maxBucketSize: { average: 2.5, min: 2, max: 4 },
+          trackedEntities: { average: 41.5, min: 30, max: 52 },
+        },
+        stats: { insertions: 120, updates: 60, removals: 20 },
+        history: [
+          { cellCount: 38, maxBucketSize: 3, trackedEntities: 40, timestamp: 111100 },
+          { cellCount: 39, maxBucketSize: 3, trackedEntities: 41, timestamp: 111105 },
+          { cellCount: 40, maxBucketSize: 3, trackedEntities: 42, timestamp: 111111 },
+        ],
+        payloadBytes: 1024,
+      };
 
       const store = {
         select: jest.fn((selector) => {
@@ -1302,6 +1329,7 @@ describe('SaveManager', () => {
       };
 
       mockManagers.worldStateStore = store;
+      mockManagers.spatialMetricsProvider = jest.fn(() => spatialSnapshot);
       saveManager = new SaveManager(eventBus, mockManagers);
 
       const summary = saveManager.getInspectorSummary();
@@ -1314,7 +1342,9 @@ describe('SaveManager', () => {
       expect(summary.tutorial.snapshots).toEqual(tutorialSnapshots);
       expect(summary.tutorial.latestSnapshot).toEqual(latestSnapshot);
       expect(summary.tutorial.transcript).toEqual([]);
+      expect(summary.engine.spatialHash).toBe(spatialSnapshot);
       expect(store.select).toHaveBeenCalledTimes(4);
+      expect(mockManagers.spatialMetricsProvider).toHaveBeenCalledTimes(1);
     });
 
     test('should include tutorial transcript when recorder provided', () => {
@@ -1406,6 +1436,29 @@ describe('SaveManager', () => {
       };
 
       mockManagers.worldStateStore = store;
+      mockManagers.spatialMetricsProvider = jest.fn(() => ({
+        cellSize: '128',
+        window: 120.6,
+        sampleCount: '3',
+        lastSample: {
+          cellCount: '42',
+          maxBucketSize: '4',
+          trackedEntities: '40',
+          timestamp: '1700000000000',
+        },
+        aggregates: {
+          cellCount: { average: '41.2', min: '36', max: '45' },
+          maxBucketSize: { average: '3.2', min: '2', max: '5' },
+          trackedEntities: { average: '39.4', min: '30', max: '48' },
+        },
+        stats: { insertions: '120', updates: '60', removals: undefined },
+        history: [
+          { cellCount: '40', maxBucketSize: '3', trackedEntities: '38', timestamp: '1700000000000' },
+          { cellCount: '41', maxBucketSize: '4', trackedEntities: '39', timestamp: '1700000001000' },
+          { cellCount: '42', maxBucketSize: '4', trackedEntities: '40', timestamp: '1700000002000' },
+        ],
+        payloadBytes: null,
+      }));
       saveManager = new SaveManager(eventBus, mockManagers);
 
       const writer = jest.fn().mockResolvedValue();
@@ -1421,6 +1474,42 @@ describe('SaveManager', () => {
         expect.objectContaining({
           prefix: 'ci-artifact',
         })
+      );
+      expect(result.summary.engine.spatialHash).toEqual(
+        expect.objectContaining({
+          cellSize: 128,
+          window: 120,
+          sampleCount: 3,
+          lastSample: expect.objectContaining({
+            cellCount: 42,
+            maxBucketSize: 4,
+            trackedEntities: 40,
+            timestamp: 1700000000000,
+          }),
+          aggregates: expect.objectContaining({
+            cellCount: expect.objectContaining({ average: 41.2 }),
+            maxBucketSize: expect.objectContaining({ average: 3.2 }),
+            trackedEntities: expect.objectContaining({ average: 39.4 }),
+          }),
+          stats: expect.objectContaining({ insertions: 120, updates: 60 }),
+          history: expect.arrayContaining([
+            expect.objectContaining({ cellCount: 40 }),
+            expect.objectContaining({ cellCount: 42 }),
+          ]),
+          payloadBytes: expect.any(Number),
+        })
+      );
+
+      const jsonArtifactCall = writer.mock.calls.find(
+        ([artifact]) => artifact && artifact.type === 'json'
+      );
+      expect(jsonArtifactCall).toBeDefined();
+      const jsonContent = jsonArtifactCall[0].content;
+      const parsed = JSON.parse(jsonContent);
+      expect(parsed.engine.spatialHash.window).toBe(120);
+      expect(parsed.engine.spatialHash.history.length).toBe(3);
+      expect(parsed.engine.spatialHash.history[0]).toEqual(
+        expect.objectContaining({ cellCount: 40, maxBucketSize: 3 })
       );
     });
 

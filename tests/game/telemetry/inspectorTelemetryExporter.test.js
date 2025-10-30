@@ -92,6 +92,32 @@ describe('inspectorTelemetryExporter', () => {
           },
         ],
       },
+      engine: {
+        spatialHash: {
+          cellSize: '128',
+          window: 180.8,
+          sampleCount: '4',
+          lastSample: {
+            cellCount: '58',
+            maxBucketSize: '5',
+            trackedEntities: '47',
+            timestamp: '1700001004000',
+          },
+          aggregates: {
+            cellCount: { average: '52.5', min: '48', max: '60' },
+            maxBucketSize: { average: '4.2', min: '3', max: '6' },
+            trackedEntities: { average: '45.1', min: '40', max: '50' },
+          },
+          stats: { insertions: '420', updates: '280', removals: undefined },
+          history: [
+            { cellCount: '50', maxBucketSize: '4', trackedEntities: '42', timestamp: '1700001001000' },
+            { cellCount: '52', maxBucketSize: '4', trackedEntities: '43', timestamp: '1700001002000' },
+            { cellCount: '54', maxBucketSize: '5', trackedEntities: '45', timestamp: '1700001003000' },
+            { cellCount: '58', maxBucketSize: '5', trackedEntities: '47', timestamp: '1700001004000' },
+          ],
+          payloadBytes: null,
+        },
+      },
     };
 
     const { artifacts, summary: sanitized } = createInspectorExportArtifacts(summary, {
@@ -113,6 +139,18 @@ describe('inspectorTelemetryExporter', () => {
     expect(sanitized.tutorial.transcript[0]).toEqual(
       expect.objectContaining({ promptId: 'intro', sequence: 0 })
     );
+    expect(sanitized.engine.spatialHash).toEqual(
+      expect.objectContaining({
+        cellSize: 128,
+        window: 180,
+        sampleCount: 4,
+        history: expect.arrayContaining([
+          expect.objectContaining({ cellCount: 50 }),
+          expect.objectContaining({ cellCount: 58 }),
+        ]),
+        stats: expect.objectContaining({ insertions: 420, updates: 280 }),
+      })
+    );
 
     expect(artifacts).toHaveLength(5);
 
@@ -123,6 +161,10 @@ describe('inspectorTelemetryExporter', () => {
     const parsed = JSON.parse(jsonArtifact.content);
     expect(parsed.factions.cascadeTargets[0].factionId).toBe('luminari_syndicate');
     expect(parsed.factions.recentMemberRemovals[0].npcId).toBe('operative_echo');
+    expect(parsed.engine.spatialHash.sampleCount).toBe(4);
+    expect(parsed.engine.spatialHash.history[parsed.engine.spatialHash.history.length - 1]).toEqual(
+      expect.objectContaining({ cellCount: 58, trackedEntities: 47 })
+    );
 
     const cascadeCsv = artifacts.find(
       (artifact) => artifact.type === 'csv' && artifact.section === 'cascade'
@@ -165,6 +207,7 @@ describe('inspectorTelemetryExporter', () => {
     expect(summary.factions.recentMemberRemovals).toEqual([]);
     expect(summary.tutorial.snapshots).toEqual([]);
     expect(summary.tutorial.transcript).toEqual([]);
+    expect(summary.engine.spatialHash).toBeNull();
     expect(artifacts.length).toBe(3);
 
     const jsonArtifact = artifacts.find((artifact) => artifact.type === 'json');
