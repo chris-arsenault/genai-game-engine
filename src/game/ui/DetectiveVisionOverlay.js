@@ -196,6 +196,10 @@ export class DetectiveVisionOverlay {
     emitOverlayVisibility(this.eventBus, 'detectiveVision', true, {
       duration: payload?.duration ?? null,
       source: 'detectiveVisionOverlay',
+      fxCue: 'detectiveVisionActivation',
+    });
+    this._emitFxCue('detectiveVisionActivation', {
+      duration: payload?.duration ?? null,
     });
   }
 
@@ -207,6 +211,11 @@ export class DetectiveVisionOverlay {
       cooldown: payload?.cooldown ?? null,
       reason: payload?.reason ?? 'deactivated',
       source: 'detectiveVisionOverlay',
+      fxCue: 'detectiveVisionDeactivate',
+    });
+    this._emitFxCue('detectiveVisionDeactivate', {
+      cooldown: payload?.cooldown ?? null,
+      reason: payload?.reason ?? 'deactivated',
     });
   }
 
@@ -452,6 +461,19 @@ export class DetectiveVisionOverlay {
       screen.x <= this.canvas.width + margin &&
       screen.y <= this.canvas.height + margin
     );
+  }
+
+  _emitFxCue(effectId, context = {}) {
+    if (!effectId || !this.eventBus || typeof this.eventBus.emit !== 'function') {
+      return;
+    }
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId,
+      overlayId: 'detectiveVision',
+      source: 'detectiveVisionOverlay',
+      timestamp: Date.now(),
+      ...context,
+    });
   }
 
   _drawRoundedRect(ctx, x, y, width, height, radius = 6) {

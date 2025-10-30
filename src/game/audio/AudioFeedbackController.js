@@ -34,6 +34,20 @@ export class AudioFeedbackController {
       movementVolume: options.movementVolume ?? Math.min(1, baseVolume * 0.65),
       promptVolume: options.promptVolume ?? Math.min(1, baseVolume * 0.75),
       evidenceVolume: options.evidenceVolume ?? baseVolume,
+      detectiveVisionActivateId: options.detectiveVisionActivateId ?? 'investigation_clue_ping',
+      detectiveVisionActivateVolume:
+        options.detectiveVisionActivateVolume ?? Math.min(1, baseVolume * 0.9),
+      detectiveVisionLoopId: options.detectiveVisionLoopId ?? 'investigation_trace_loop',
+      detectiveVisionLoopVolume:
+        options.detectiveVisionLoopVolume ?? Math.min(1, baseVolume * 0.45),
+      detectiveVisionDeactivateId:
+        options.detectiveVisionDeactivateId ?? 'investigation_negative_hit',
+      detectiveVisionDeactivateVolume:
+        options.detectiveVisionDeactivateVolume ?? Math.min(1, baseVolume * 0.8),
+      detectiveVisionInsufficientId:
+        options.detectiveVisionInsufficientId ?? 'investigation_negative_hit',
+      detectiveVisionInsufficientVolume:
+        options.detectiveVisionInsufficientVolume ?? Math.min(1, baseVolume * 0.8),
     };
 
     this._now =
@@ -50,6 +64,7 @@ export class AudioFeedbackController {
     this._lastMovementStamp = -Infinity;
     this._lastPromptStamp = -Infinity;
     this._initialized = false;
+    this._detectiveVisionLoopInstance = null;
   }
 
   /**
@@ -66,6 +81,13 @@ export class AudioFeedbackController {
       this.eventBus.on('evidence:collected', (data) => this._onEvidenceCollected(data)),
       this.eventBus.on('ui:show_prompt', (data) => this._onPromptShown(data)),
       this.eventBus.on('audio:sfx:play', (data) => this._onSfxRequested(data)),
+      this.eventBus.on('detective_vision:activated', (data) => this._onDetectiveVisionActivated(data)),
+      this.eventBus.on('detective_vision:deactivated', (data) =>
+        this._onDetectiveVisionDeactivated(data)
+      ),
+      this.eventBus.on('ability:insufficient_resource', (data) =>
+        this._onAbilityInsufficientResource(data)
+      ),
     ];
 
     // Filter out listeners that failed to register (should rarely happen)
@@ -84,6 +106,7 @@ export class AudioFeedbackController {
       }
     }
     this._unbinders = [];
+    this._stopDetectiveVisionLoop();
     this._initialized = false;
   }
 
@@ -150,6 +173,80 @@ export class AudioFeedbackController {
   }
 
   /**
+   * Handle detective vision activation events.
+   * @param {Object} data
+   */
+  _onDetectiveVisionActivated(data = {}) {
+    const activateId = this.options.detectiveVisionActivateId;
+    if (activateId) {
+      this._triggerSFX(activateId, this.options.detectiveVisionActivateVolume);
+    }
+    this._startDetectiveVisionLoop(data);
+  }
+
+  /**
+   * Handle detective vision deactivation events.
+   * @param {Object} data
+   */
+  _onDetectiveVisionDeactivated(data = {}) {
+    this._stopDetectiveVisionLoop();
+    const deactivateId = this.options.detectiveVisionDeactivateId;
+    if (deactivateId) {
+      this._triggerSFX(deactivateId, this.options.detectiveVisionDeactivateVolume);
+    }
+  }
+
+  /**
+   * Handle insufficient resource feedback for detective vision.
+   * @param {Object} data
+   */
+  _onAbilityInsufficientResource(data = {}) {
+    if (!data || data.ability !== 'detective_vision') {
+      return;
+    }
+    const insufficientId =
+      this.options.detectiveVisionInsufficientId ?? this.options.detectiveVisionDeactivateId;
+    if (insufficientId) {
+      this._triggerSFX(
+        insufficientId,
+        this.options.detectiveVisionInsufficientVolume ??
+          this.options.detectiveVisionDeactivateVolume
+      );
+    }
+  }
+
+  _startDetectiveVisionLoop() {
+    const loopId = this.options.detectiveVisionLoopId;
+    if (!loopId) {
+      return;
+    }
+    this._stopDetectiveVisionLoop();
+    const handle = this._playSFX(loopId, {
+      volume: this.options.detectiveVisionLoopVolume,
+      loop: true,
+    });
+    if (handle && typeof handle.stop === 'function') {
+      this._detectiveVisionLoopInstance = handle;
+    } else {
+      this._detectiveVisionLoopInstance = null;
+    }
+  }
+
+  _stopDetectiveVisionLoop() {
+    if (
+      this._detectiveVisionLoopInstance &&
+      typeof this._detectiveVisionLoopInstance.stop === 'function'
+    ) {
+      try {
+        this._detectiveVisionLoopInstance.stop();
+      } catch (_) {
+        // noop
+      }
+    }
+    this._detectiveVisionLoopInstance = null;
+  }
+
+  /**
    * Internal helper to throttle and dispatch SFX.
    * @param {string} soundId
    * @param {number} volume
@@ -164,18 +261,25 @@ export class AudioFeedbackController {
   /**
    * Play an SFX clip through the audio manager or log as fallback.
    * @param {string} soundId
-   * @param {number} volume
+   * @param {number|object} options
    */
-  _playSFX(soundId, volume = 1.0) {
+  _playSFX(soundId, options = 1.0) {
     if (this.audioManager && typeof this.audioManager.playSFX === 'function') {
       try {
-        this.audioManager.playSFX(soundId, volume);
+        return this.audioManager.playSFX(soundId, options);
       } catch (error) {
         console.warn('[AudioFeedbackController] Failed to play SFX:', soundId, error);
       }
     } else {
       // Fallback logging keeps acceptance criteria testable without audio assets.
+      const volume =
+        typeof options === 'number'
+          ? options
+          : typeof options === 'object' && options !== null && options.volume != null
+          ? options.volume
+          : this.options.evidenceVolume;
       console.debug(`[AudioFeedbackController] SFX requested: ${soundId} @ ${volume}`);
     }
+    return null;
   }
 }

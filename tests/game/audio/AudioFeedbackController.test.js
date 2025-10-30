@@ -9,7 +9,7 @@ describe('AudioFeedbackController', () => {
 
   beforeEach(() => {
     eventBus = new EventBus();
-    audioManager = { playSFX: jest.fn() };
+    audioManager = { playSFX: jest.fn(() => null) };
     now = 0;
     controller = new AudioFeedbackController(eventBus, audioManager, {
       now: () => now,
@@ -65,5 +65,66 @@ describe('AudioFeedbackController', () => {
     audioManager.playSFX.mockClear();
     eventBus.emit('evidence:collected', { evidenceId: 'sample' });
     expect(audioManager.playSFX).not.toHaveBeenCalled();
+  });
+
+  it('plays detective vision activation loop and shutdown cues', () => {
+    const loopStop = jest.fn();
+    audioManager.playSFX.mockImplementation((id, payload) => {
+      if (payload && typeof payload === 'object' && payload.loop) {
+        return { stop: loopStop };
+      }
+      return null;
+    });
+
+    audioManager.playSFX.mockClear();
+    eventBus.emit('detective_vision:activated', { duration: 4 });
+
+    expect(audioManager.playSFX).toHaveBeenNthCalledWith(
+      1,
+      'investigation_clue_ping',
+      controller.options.detectiveVisionActivateVolume
+    );
+    expect(audioManager.playSFX).toHaveBeenNthCalledWith(
+      2,
+      'investigation_trace_loop',
+      expect.objectContaining({
+        loop: true,
+        volume: controller.options.detectiveVisionLoopVolume,
+      })
+    );
+
+    eventBus.emit('detective_vision:deactivated', { reason: 'manual' });
+    expect(loopStop).toHaveBeenCalledTimes(1);
+    expect(audioManager.playSFX).toHaveBeenNthCalledWith(
+      3,
+      'investigation_negative_hit',
+      controller.options.detectiveVisionDeactivateVolume
+    );
+  });
+
+  it('plays insufficient resource cue for detective vision energy warnings', () => {
+    audioManager.playSFX.mockClear();
+    eventBus.emit('ability:insufficient_resource', {
+      ability: 'detective_vision',
+      resource: 'energy',
+    });
+    expect(audioManager.playSFX).toHaveBeenCalledWith(
+      'investigation_negative_hit',
+      controller.options.detectiveVisionInsufficientVolume
+    );
+  });
+
+  it('stops detective vision loop when controller is cleaned up', () => {
+    const loopStop = jest.fn();
+    audioManager.playSFX.mockImplementation((id, payload) => {
+      if (payload && typeof payload === 'object' && payload.loop) {
+        return { stop: loopStop };
+      }
+      return null;
+    });
+
+    eventBus.emit('detective_vision:activated', {});
+    controller.cleanup();
+    expect(loopStop).toHaveBeenCalledTimes(1);
   });
 });

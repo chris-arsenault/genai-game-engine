@@ -1614,8 +1614,9 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Visual effects clear and performant
   - Energy drain balanced
   - No performance degradation
+- **Status**: ✅ Completed – Session #139 captured performance telemetry and aligned detective vision audio/FX cues with the HUD overlay.
 
-_Progress 2025-11-02 (Session #138 overlay/energy pass): DetectiveVisionOverlay now delivers neon highlight pulses for hidden evidence with control-binding-aware HUD copy, InvestigationSystem gained energy/cooldown resource logic plus status events and input toggles, and procedural spawn data carries derived clue IDs end-to-end with fresh Jest coverage. Outstanding: profile the overlay-enabled scan loop and align audio/FX feedback._
+_Progress 2025-11-09 (Session #139 audio/perf polish): Augmented performanceSnapshot telemetry to track detective vision update/render costs (<0.03 ms combined), executed and archived a fresh telemetry run, emitted FX overlay cues, and wired AudioFeedbackController activation/deactivation/insufficient-resource SFX with loop management and Jest coverage, closing the outstanding polish tasks._
 
 #### M2-003: Evidence Entity Factory
 - **Priority**: P1
