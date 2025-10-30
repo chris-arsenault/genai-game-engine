@@ -382,6 +382,12 @@ export class WorldStateStore {
             stepId: payload.stepId,
             stepIndex: payload.stepIndex,
             totalSteps: payload.totalSteps,
+            title: payload.title,
+            description: payload.description,
+            highlight: payload.highlight,
+            position: payload.position,
+            canSkip: payload.canSkip,
+            controlHint: payload.controlHint ?? null,
           },
         });
       }),

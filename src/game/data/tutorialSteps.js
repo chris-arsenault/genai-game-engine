@@ -1,9 +1,42 @@
+import { Controls } from '../config/Controls.js';
+import { formatKeyLabels } from '../utils/controlLabels.js';
+
 /**
  * Tutorial Steps for The Memory Syndicate
  *
  * Defines the step-by-step tutorial sequence that teaches players
  * all investigation mechanics through the tutorial case.
  */
+
+function buildControlHint({ actions = [], keyCodes = [], label = null, note = null, labels = [] }) {
+  const resolvedCodes = [];
+
+  for (const action of actions) {
+    const bindings = Array.isArray(Controls?.[action]) ? Controls[action] : null;
+    if (bindings && bindings.length > 0) {
+      resolvedCodes.push(bindings[0]);
+    }
+  }
+
+  if (Array.isArray(keyCodes)) {
+    resolvedCodes.push(...keyCodes);
+  }
+
+  const resolvedLabels = [
+    ...formatKeyLabels(resolvedCodes),
+    ...labels.filter((entry) => typeof entry === 'string' && entry.trim().length > 0),
+  ];
+
+  if (resolvedLabels.length === 0 && !label && !note) {
+    return null;
+  }
+
+  return {
+    label: label ?? null,
+    keys: resolvedLabels,
+    note: note ?? null,
+  };
+}
 
 export const tutorialSteps = [
   {
@@ -27,6 +60,11 @@ export const tutorialSteps = [
     id: 'movement',
     title: 'Movement Controls',
     description: 'Use WASD keys to move Kira around the crime scene. Try moving to the evidence markers.',
+    controlHint: buildControlHint({
+      actions: ['moveUp', 'moveLeft', 'moveDown', 'moveRight'],
+      label: 'Move',
+      note: 'Use WASD to reach the gold evidence markers.'
+    }),
     trigger: 'auto',
     completionCondition: (context) => {
       // Complete after 3 seconds of movement
@@ -42,6 +80,11 @@ export const tutorialSteps = [
     title: 'Evidence Detection',
     description:
       'Evidence items glow when you\'re nearby. Move close to the glowing markers to detect evidence.',
+    controlHint: buildControlHint({
+      actions: ['moveUp', 'moveLeft', 'moveDown', 'moveRight'],
+      label: 'Approach Evidence',
+      note: 'Step inside the glowing ring until the interact prompt appears.'
+    }),
     trigger: 'event:evidence:detected',
     completionCondition: (context) => {
       return context.evidenceDetected > 0;
@@ -58,6 +101,11 @@ export const tutorialSteps = [
     id: 'evidence_collection',
     title: 'Collect Evidence',
     description: 'Press E when near evidence to collect it. Collect the Neural Extractor Device.',
+    controlHint: buildControlHint({
+      actions: ['interact'],
+      label: 'Collect Evidence',
+      note: 'Stand inside the glowing marker, then press the interact key.'
+    }),
     trigger: 'auto',
     completionCondition: (context) => {
       return context.evidenceCollected > 0;
@@ -91,6 +139,11 @@ export const tutorialSteps = [
     description:
       'Press V to activate Detective Vision. This reveals hidden evidence for 5 seconds. ' +
       'Use it wisely - it has a cooldown.',
+    controlHint: buildControlHint({
+      actions: ['detectiveVision'],
+      label: 'Detective Vision',
+      note: 'Highlights hidden evidence for a short burst.'
+    }),
     trigger: 'auto',
     completionCondition: (context) => {
       return context.detectiveVisionUsed || false;
@@ -106,6 +159,11 @@ export const tutorialSteps = [
     description:
       'Press Tab to open your Case File. This shows objectives, collected evidence, and discovered clues. ' +
       'Review your progress.',
+    controlHint: buildControlHint({
+      actions: ['caseFile'],
+      label: 'Case File',
+      note: 'Check objectives, collected evidence, and clue summaries.'
+    }),
     trigger: 'auto',
     completionCondition: (context) => {
       return context.caseFileOpened || false;
@@ -123,6 +181,11 @@ export const tutorialSteps = [
     title: 'Collect All Evidence',
     description:
       'Continue investigating the scene. Collect at least 3 pieces of evidence to proceed.',
+    controlHint: buildControlHint({
+      actions: ['interact'],
+      label: 'Collect Evidence',
+      note: 'Sweep every glowing marker and press the interact key.'
+    }),
     trigger: 'auto',
     completionCondition: (context) => {
       return context.evidenceCollected >= 3;
@@ -141,6 +204,11 @@ export const tutorialSteps = [
     description:
       'Some evidence requires forensic analysis to reveal hidden clues. ' +
       'Press F when prompted to analyze evidence.',
+    controlHint: buildControlHint({
+      actions: ['forensicAnalysis'],
+      label: 'Forensic Analysis',
+      note: 'Hold onto the prompt after collecting specialized evidence.'
+    }),
     trigger: 'event:forensic:available',
     completionCondition: (context) => {
       return context.forensicAnalysisComplete > 0;
@@ -156,6 +224,11 @@ export const tutorialSteps = [
     description:
       'Press B to open the Deduction Board. This is where you connect clues to solve the case. ' +
       'Drag clues to create connections.',
+    controlHint: buildControlHint({
+      actions: ['deductionBoard'],
+      label: 'Deduction Board',
+      note: 'Review collected clues and plan your theory.'
+    }),
     trigger: 'auto',
     completionCondition: (context) => {
       return context.deductionBoardOpened || false;
@@ -174,6 +247,11 @@ export const tutorialSteps = [
     description:
       'Click and drag from one clue to another to create a connection. ' +
       'Connect clues that support each other to build your theory.',
+    controlHint: buildControlHint({
+      labels: ['Mouse drag'],
+      label: 'Link Clues',
+      note: 'Click a clue and drag to another that supports it.'
+    }),
     trigger: 'auto',
     completionCondition: (context) => {
       return context.deductionConnectionsCreated > 0;
@@ -189,6 +267,11 @@ export const tutorialSteps = [
     description:
       'Once you\'ve connected the clues, click "Validate Theory" to test your deduction. ' +
       'You need 70% accuracy to solve the case.',
+    controlHint: buildControlHint({
+      labels: ['Mouse click'],
+      label: 'Validate Theory',
+      note: 'Use the Validate button after linking the correct clues.'
+    }),
     trigger: 'auto',
     completionCondition: (context) => {
       return context.theoryValidated || false;

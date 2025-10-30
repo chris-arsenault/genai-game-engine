@@ -20,6 +20,11 @@ describe('buildTutorialOverlayView', () => {
           stepIndex: 0,
           totalSteps: 2,
           canSkip: true,
+          controlHint: {
+            label: 'Move',
+            keys: ['W', 'A', 'S', 'D'],
+            note: 'Reach the glowing marker.',
+          },
         },
         promptHistorySnapshots: [
           {
@@ -38,6 +43,7 @@ describe('buildTutorialOverlayView', () => {
     const view = buildTutorialOverlayView(state);
 
     expect(view.visible).toBe(true);
+    expect(view.prompt.controlHint.keys).toEqual(['W', 'A', 'S', 'D']);
     expect(view.telemetry.latestSnapshot).toBeDefined();
     expect(Array.isArray(view.telemetry.snapshots)).toBe(true);
     expect(view.telemetry.snapshots).toHaveLength(1);

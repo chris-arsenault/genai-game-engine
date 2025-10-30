@@ -87,6 +87,11 @@ describe('TutorialOverlay (store integration)', () => {
         totalSteps: 3,
         canSkip: true,
         highlight: { type: 'entity', entityTag: 'player' },
+        controlHint: {
+          label: 'Movement',
+          keys: ['W', 'A', 'S', 'D'],
+          note: 'Reach highlighted markers.',
+        },
       },
       promptHistorySnapshots: [
         {
@@ -108,6 +113,7 @@ describe('TutorialOverlay (store integration)', () => {
     expect(overlay.visible).toBe(true);
     expect(overlay.currentPrompt.title).toBe('First Steps');
     expect(overlay.currentPrompt.stepIndex).toBe(0);
+    expect(overlay.currentPrompt.controlHint.keys).toEqual(['W', 'A', 'S', 'D']);
     expect(overlay.highlightEntities).toContain('player');
     expect(overlay.telemetry.latestSnapshot).not.toBeNull();
     expect(Array.isArray(overlay.telemetry.timeline)).toBe(true);

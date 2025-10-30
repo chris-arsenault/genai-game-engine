@@ -11,6 +11,8 @@ import { Evidence } from '../components/Evidence.js';
 import { InteractionZone } from '../components/InteractionZone.js';
 import { Collider } from '../components/Collider.js';
 import { ForensicEvidence } from '../components/ForensicEvidence.js';
+import { Controls } from '../config/Controls.js';
+import { formatKeyLabels } from '../utils/controlLabels.js';
 
 function shouldLog() {
   if (typeof __DEV__ !== 'undefined') {
@@ -46,6 +48,7 @@ export function createEvidenceEntity(entityManager, componentRegistry, evidenceD
     derivedClues = [],
     prompt = null,
     forensic: forensicConfig = null,
+    sprite: spriteConfig = null,
   } = evidenceData;
 
   let normalizedRequires = requires;
@@ -61,15 +64,16 @@ export function createEvidenceEntity(entityManager, componentRegistry, evidenceD
   componentRegistry.addComponent(entityId, 'Transform', transform);
 
   // Add Sprite component
+  const spriteOverrides = spriteConfig && typeof spriteConfig === 'object' ? spriteConfig : {};
   const sprite = new Sprite({
-    image: null,
-    width: 24,
-    height: 24,
-    layer: 'entities',
-    zIndex: 5,
-    color: getEvidenceColor(type),
-    visible: !hidden, // Hidden evidence not visible until detective vision
-    alpha: hidden ? 0.3 : 1.0
+    image: spriteOverrides.image ?? null,
+    width: spriteOverrides.width ?? 24,
+    height: spriteOverrides.height ?? 24,
+    layer: spriteOverrides.layer ?? 'entities',
+    zIndex: spriteOverrides.zIndex ?? 5,
+    color: spriteOverrides.color ?? getEvidenceColor(type),
+    visible: spriteOverrides.visible ?? !hidden, // Hidden evidence not visible until detective vision
+    alpha: spriteOverrides.alpha ?? (hidden ? 0.3 : 1.0)
   });
   componentRegistry.addComponent(entityId, 'Sprite', sprite);
 
@@ -102,12 +106,13 @@ export function createEvidenceEntity(entityManager, componentRegistry, evidenceD
   }
 
   // Add InteractionZone component
+  const interactionPrompt = buildInteractionPrompt(prompt, title);
   const interactionZone = new InteractionZone({
     id: `interaction_${id}`,
     type: 'evidence',
     radius: 48,
     requiresInput: true,
-    prompt: prompt || `Press E to collect: ${title}`,
+    prompt: interactionPrompt,
     active: true,
     oneShot: true,
     data: {
@@ -147,4 +152,41 @@ function getEvidenceColor(type) {
     forensic: '#00FF00' // Green
   };
   return colors[type] || '#FFFFFF';
+}
+
+function buildInteractionPrompt(customPrompt, title) {
+  const basePrompt = typeof customPrompt === 'string' ? customPrompt.trim() : '';
+  if (basePrompt.length > 0 && /press\s+[^\s]+\s+to/i.test(basePrompt)) {
+    return basePrompt;
+  }
+
+  const controlLabels = getInteractControlLabels();
+  const actionText = normalizeActionText(basePrompt, title);
+  return `Press ${controlLabels} to ${actionText}`;
+}
+
+function getInteractControlLabels() {
+  const interactBindings = Array.isArray(Controls?.interact) ? Controls.interact : ['KeyE'];
+  const labels = formatKeyLabels(interactBindings);
+
+  if (labels.length === 0) {
+    return 'E';
+  }
+
+  if (labels.length === 1) {
+    return labels[0];
+  }
+
+  return labels.join(' / ');
+}
+
+function normalizeActionText(customPrompt, title) {
+  const fallback = title ? `collect ${title}` : 'interact';
+  const source = customPrompt.length > 0 ? customPrompt : fallback;
+  const trimmed = source.replace(/[.?!]+$/, '');
+  const withoutLeadingTo = trimmed.replace(/^to\s+/i, '');
+  if (withoutLeadingTo.length === 0) {
+    return 'interact';
+  }
+  return withoutLeadingTo.charAt(0).toLowerCase() + withoutLeadingTo.slice(1);
 }

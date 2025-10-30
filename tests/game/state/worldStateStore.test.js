@@ -75,6 +75,12 @@ describe('WorldStateStore', () => {
       title: 'Move',
       description: 'Move around',
       highlight: { type: 'entity', entityId: 'player' },
+      position: { x: 400, y: 120 },
+      canSkip: true,
+      controlHint: {
+        label: 'Movement',
+        keys: ['W', 'A', 'S', 'D'],
+      },
     });
     eventBus.emit('tutorial:step_completed', { stepId: 'movement', stepIndex: 0 });
 
@@ -110,6 +116,8 @@ describe('WorldStateStore', () => {
     const tutorial = store.select(tutorialSlice.selectors.selectTutorialProgress);
     expect(tutorial.enabled).toBe(true);
     expect(tutorial.completedSteps).toContain('movement');
+    const tutorialPrompt = store.select(tutorialSlice.selectors.selectCurrentPrompt);
+    expect(tutorialPrompt.controlHint.keys).toEqual(['W', 'A', 'S', 'D']);
     const tutorialSnapshots = store.select(tutorialSlice.selectors.selectPromptHistorySnapshots);
     expect(tutorialSnapshots).toHaveLength(1);
     expect(tutorialSnapshots[0].event).toBe('step_completed');

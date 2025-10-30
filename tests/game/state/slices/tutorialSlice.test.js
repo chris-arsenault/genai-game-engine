@@ -28,13 +28,24 @@ describe('tutorialSlice', () => {
         description: 'Use WASD',
         highlight: { type: 'entity', entityId: 'player' },
         canSkip: true,
+        controlHint: {
+          label: 'Movement',
+          keys: ['W', 'A', 'S', 'D'],
+          note: 'Reach the highlighted area.',
+        },
       },
       timestamp: 150,
     });
 
     expect(state.currentStep).toBe('movement');
     expect(state.currentPrompt.title).toBe('Move');
+    expect(state.currentPrompt.controlHint).toEqual({
+      label: 'Movement',
+      keys: ['W', 'A', 'S', 'D'],
+      note: 'Reach the highlighted area.',
+    });
     expect(state.promptHistory).toHaveLength(1);
+    expect(state.promptHistory[0].controlHint.keys).toEqual(['W', 'A', 'S', 'D']);
 
     state = reduce(state, {
       type: 'TUTORIAL_STEP_COMPLETED',
@@ -76,13 +87,22 @@ describe('tutorialSlice', () => {
             stepId: 'investigate',
             stepIndex: 1,
             totalSteps: 4,
-        },
+            controlHint: {
+              label: 'Investigate',
+              keys: ['E'],
+              note: 'Interact with evidence.',
+            },
+          },
           promptHistory: [
             {
               title: 'Movement',
               stepId: 'movement',
               stepIndex: 0,
               totalSteps: 4,
+              controlHint: {
+                label: 'Movement',
+                keys: ['W', 'A', 'S', 'D'],
+              },
             },
           ],
           promptHistorySnapshots: [

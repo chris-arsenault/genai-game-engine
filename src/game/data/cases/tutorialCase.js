@@ -75,8 +75,16 @@ export const tutorialCase = {
       position: { x: 250, y: 300 }, // Scene position
       hidden: false,
       requires: [], // No special abilities needed
-      interactionPrompt: 'Scan the neural extractor',
-      derivedClues: ['clue_001_hollow']
+      interactionPrompt: 'Scan the neural extractor hotspot',
+      derivedClues: ['clue_001_hollow'],
+      sprite: {
+        width: 32,
+        height: 32,
+        layer: 'effects',
+        zIndex: 8,
+        color: '#FFD447',
+        alpha: 0.95
+      }
     },
     {
       id: 'ev_002_blood',
@@ -89,7 +97,7 @@ export const tutorialCase = {
       position: { x: 200, y: 320 },
       hidden: false,
       requires: [],
-      interactionPrompt: 'Analyze blood pattern',
+      interactionPrompt: 'Analyze the blood pattern',
       derivedClues: ['clue_005_systematic'],
       forensic: {
         forensicType: 'analysis',
@@ -98,6 +106,14 @@ export const tutorialCase = {
         difficulty: 1,
         analysisTime: 1500,
         hiddenClues: ['clue_002_professional']
+      },
+      sprite: {
+        width: 32,
+        height: 32,
+        layer: 'effects',
+        zIndex: 8,
+        color: '#FF9F4A',
+        alpha: 0.9
       }
     },
     {
@@ -111,8 +127,16 @@ export const tutorialCase = {
       position: { x: 220, y: 280 },
       hidden: false,
       requires: [],
-      interactionPrompt: 'Scan neural residue',
-      derivedClues: ['clue_001_hollow']
+      interactionPrompt: 'Scan the neural residue',
+      derivedClues: ['clue_001_hollow'],
+      sprite: {
+        width: 32,
+        height: 32,
+        layer: 'effects',
+        zIndex: 8,
+        color: '#6EDBFF',
+        alpha: 0.92
+      }
     },
     {
       id: 'ev_004_badge',
@@ -125,8 +149,16 @@ export const tutorialCase = {
       position: { x: 300, y: 350 },
       hidden: false,
       requires: [],
-      interactionPrompt: 'Examine the badge',
-      derivedClues: ['clue_004_personal']
+      interactionPrompt: "Examine Marcus's badge",
+      derivedClues: ['clue_004_personal'],
+      sprite: {
+        width: 30,
+        height: 30,
+        layer: 'effects',
+        zIndex: 8,
+        color: '#FFD0E8',
+        alpha: 0.95
+      }
     },
     {
       id: 'ev_005_memory_drive',
@@ -139,8 +171,16 @@ export const tutorialCase = {
       position: { x: 280, y: 250 },
       hidden: false,
       requires: [],
-      interactionPrompt: 'Decrypt memory fragment',
-      derivedClues: ['clue_003_neurosync', 'clue_004_personal']
+      interactionPrompt: 'Decrypt the memory fragment',
+      derivedClues: ['clue_003_neurosync', 'clue_004_personal'],
+      sprite: {
+        width: 32,
+        height: 32,
+        layer: 'effects',
+        zIndex: 8,
+        color: '#C3A3FF',
+        alpha: 0.94
+      }
     }
   ],
 

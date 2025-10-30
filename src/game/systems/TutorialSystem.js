@@ -159,6 +159,7 @@ export class TutorialSystem extends System {
       highlight: step.highlight,
       position: step.position,
       canSkip: step.canSkip,
+      controlHint: step.controlHint ?? null,
       startedAt,
     });
 

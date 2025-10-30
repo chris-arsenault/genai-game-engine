@@ -6,7 +6,7 @@
 ## Document Overview
 
 **Version**: 1.2
-**Last Updated**: 2025-10-30
+**Last Updated**: 2025-10-31
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
@@ -23,6 +23,13 @@
 | UX-173 | P1 | Pending | Improve debug audio overlay ergonomics (keyboard shortcuts, focus management). | Prototype keyboard navigation + focus traps, add Jest/Playwright coverage for accessibility interactions. |
 
 **Next Session Focus**: Share the neon glow approval summary with Narrative/RenderOps to capture sign-off on the neon district tileset, fold SaveManager telemetry budget events into CI/QA monitoring, and stage the next RenderOps lighting feedback pass.
+
+### Session #129 Backlog Updates
+
+#### Tutorial Onboarding UX
+- Closed backlog item “Unclear interaction during tutorial scene” by embedding control hints in `tutorialSteps` and rendering keycaps/notes through `TutorialOverlay` so onboarding explicitly calls out the relevant inputs.
+- Evidence prompts now auto-inject the interact keybinding and tutorial hotspots use brighter sprites, giving players visual confirmation of where the inputs apply.
+- World state telemetry and Jest coverage were refreshed to persist the new guidance metadata while keeping Store/overlay integrations aligned.
 
 ### Session #124 Backlog Updates
 

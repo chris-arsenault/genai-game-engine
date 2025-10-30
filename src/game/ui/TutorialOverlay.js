@@ -486,11 +486,13 @@ export class TutorialOverlay {
     const usableWidth = Math.min(style.maxWidth, this.canvas.width - metrics.overlayMargin * 2);
     const lines = this.wrapText(prompt.description, usableWidth - style.padding * 2);
     const textHeight = lines.length * this.style.text.lineHeight;
+    const controlHint = prompt.controlHint ?? null;
+    const controlHintHeight = this.getControlHintHeight(controlHint, style);
 
     // Calculate box dimensions
     const boxWidth = usableWidth;
     const titleBlockHeight = 30;
-    const boxHeight = style.padding * 2 + titleBlockHeight + textHeight;
+    const boxHeight = style.padding * 2 + titleBlockHeight + textHeight + controlHintHeight;
     let boxX = anchorX - boxWidth / 2;
     let boxY = anchorY;
 
@@ -534,6 +536,11 @@ export class TutorialOverlay {
       lineY += this.style.text.lineHeight;
     }
 
+    if (controlHintHeight > 0) {
+      const hintStartY = lineY + style.padding;
+      this.renderControlHint(controlHint, boxX, hintStartY, boxWidth, style);
+    }
+
     // Decorative accent under title when overlay is visible
     ctx.fillStyle = palette.outlineSoft;
     ctx.fillRect(
@@ -542,6 +549,114 @@ export class TutorialOverlay {
       Math.min(boxWidth - style.padding * 2, 88),
       2
     );
+  }
+
+  getControlHintHeight(controlHint, style) {
+    if (!controlHint || typeof controlHint !== 'object') {
+      return 0;
+    }
+    const hasLabel = typeof controlHint.label === 'string' && controlHint.label.trim().length > 0;
+    const hasKeys = Array.isArray(controlHint.keys) && controlHint.keys.length > 0;
+    const hasNote = typeof controlHint.note === 'string' && controlHint.note.trim().length > 0;
+
+    if (!hasLabel && !hasKeys && !hasNote) {
+      return 0;
+    }
+
+    const lineHeight = this.style.text.lineHeight;
+    const keyRowHeight = hasKeys ? 28 : 0;
+    const baseSpacing = style.padding;
+    const labelGap = hasLabel && (hasKeys || hasNote) ? 6 : 0;
+    const keyNoteGap = hasKeys && hasNote ? 6 : 0;
+
+    return baseSpacing
+      + (hasLabel ? lineHeight : 0)
+      + labelGap
+      + keyRowHeight
+      + keyNoteGap
+      + (hasNote ? lineHeight : 0);
+  }
+
+  renderControlHint(controlHint, boxX, startY, boxWidth, style) {
+    if (!controlHint) {
+      return;
+    }
+
+    const ctx = this.ctx;
+    const { palette } = overlayTheme;
+    const availableWidth = boxWidth - style.padding * 2;
+    const textFont = this.style.text.descriptionFont;
+    const textLineHeight = this.style.text.lineHeight;
+    const hasLabel = typeof controlHint.label === 'string' && controlHint.label.trim().length > 0;
+    const keys = Array.isArray(controlHint.keys) ? controlHint.keys.filter((value) => typeof value === 'string' && value.length > 0) : [];
+    const hasKeys = keys.length > 0;
+    const hasNote = typeof controlHint.note === 'string' && controlHint.note.trim().length > 0;
+
+    let currentY = startY;
+
+    const originalAlign = ctx.textAlign;
+    const originalBaseline = ctx.textBaseline;
+    const originalFont = ctx.font;
+
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.font = textFont;
+
+    if (hasLabel) {
+      ctx.fillStyle = this.style.text.descriptionColor;
+      ctx.fillText(controlHint.label.trim(), boxX + style.padding, currentY);
+      currentY += textLineHeight + (hasKeys || hasNote ? 6 : 0);
+    }
+
+    if (hasKeys) {
+      const keyHeight = 28;
+      const keyRadius = 6;
+      const horizontalSpacing = 10;
+      const keyMetrics = keys.map((label) => {
+        const width = Math.max(28, ctx.measureText(label).width + 18);
+        return { label, width };
+      });
+      const totalKeysWidth = keyMetrics.reduce((acc, metric) => acc + metric.width, 0);
+      const rowWidth = totalKeysWidth + horizontalSpacing * (keyMetrics.length - 1);
+      const rowStartX = boxX + style.padding + Math.max(0, (availableWidth - rowWidth) / 2);
+
+      let keyX = rowStartX;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = overlayTheme.typography.small;
+
+      for (const metric of keyMetrics) {
+        this.roundRect(ctx, keyX, currentY, metric.width, keyHeight, keyRadius);
+        ctx.fillStyle = palette.backgroundPrimary;
+        ctx.fill();
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = palette.outlineSoft;
+        this.roundRect(ctx, keyX, currentY, metric.width, keyHeight, keyRadius);
+        ctx.stroke();
+
+        ctx.fillStyle = palette.textPrimary;
+        ctx.fillText(metric.label, keyX + metric.width / 2, currentY + keyHeight / 2);
+        keyX += metric.width + horizontalSpacing;
+      }
+
+      currentY += keyHeight + (hasNote ? 6 : 0);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.font = textFont;
+    }
+
+    if (hasNote) {
+      ctx.fillStyle = palette.textSecondary;
+      const noteLines = this.wrapText(controlHint.note.trim(), availableWidth);
+      for (const line of noteLines) {
+        ctx.fillText(line, boxX + style.padding, currentY);
+        currentY += textLineHeight;
+      }
+    }
+
+    ctx.textAlign = originalAlign;
+    ctx.textBaseline = originalBaseline;
+    ctx.font = originalFont;
   }
 
   /**
