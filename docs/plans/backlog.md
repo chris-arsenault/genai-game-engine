@@ -6,7 +6,7 @@
 ## Document Overview
 
 **Version**: 1.1
-**Last Updated**: 2025-10-30
+**Last Updated**: 2025-11-12
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
@@ -15,7 +15,7 @@
 
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
-| AR-050 | P0 | Pending | Visual asset sourcing pipeline for outstanding manifests. | Inventory open requests, run web_search/OpenAI sourcing attempts, update manifests with selections + licensing notes. |
+| AR-050 | P0 | In Progress | Visual asset sourcing pipeline for outstanding manifests (inventory logged). | Source CC0/CC-BY references for Act 2 Crossroads overlays, prep generation prompts for remaining AR-001–AR-005 items, update manifests with licensing notes. |
 | TUT-201 | P0 | Completed | Tutorial case blocked at step 3 (`evidence_detection`) because legacy scene entities bypassed ECS detection events. | ECS-aligned tutorial scene entities shipped Session #51; re-run tutorial smoke tests after combat audio validation. |
 | AUDIO-351 | P0 | Completed | Validate live combat/disguise trigger routing through `AmbientSceneAudioController` using real combat loop events. | Adaptive audio routing now responds to gameplay emits; telemetry verified by Jest/Playwright suites and new infiltration benchmark. |
 | PERF-214 | P1 | Pending | Browser-level performance profiling for adaptive audio + overlay interactions to confirm <16 ms frame time budget. | Run Chromium/Firefox performance audits with combat/stealth transitions, log hotspots, and file perf follow-ups as needed. |
@@ -838,6 +838,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Priority**: P0
 - **Tags**: `engine`, `ecs`
 - **Effort**: 4 hours
+- **Status**: Completed (Session #106 – 2025-11-12)
 - **Dependencies**: M1-002, M1-003
 - **Description**: System orchestration and update loop
 - **Files**:
@@ -903,6 +904,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Priority**: P0
 - **Tags**: `engine`, `rendering`
 - **Effort**: 3 hours
+- **Status**: Completed (Session #106 – 2025-11-12)
 - **Dependencies**: M1-001
 - **Description**: Canvas initialization and core rendering infrastructure
 - **Files**:

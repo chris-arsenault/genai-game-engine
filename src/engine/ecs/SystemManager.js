@@ -12,12 +12,30 @@ export class SystemManager {
    * @param {ComponentRegistry} componentRegistry - Component registry instance
    * @param {EventBus} eventBus - Event bus instance
    */
-  constructor(entityManager, componentRegistry, eventBus) {
+  constructor(entityManager, componentRegistry, eventBus, options = {}) {
     this.entityManager = entityManager;
     this.componentRegistry = componentRegistry;
     this.eventBus = eventBus;
     this.systems = [];
     this.systemsByName = new Map();
+    this.systemMetadata = new Map();
+
+    this.profileSystems = options.profileSystems !== false;
+    this.metricsHistorySize = Math.max(
+      1,
+      Number.isInteger(options.metricsHistorySize)
+        ? options.metricsHistorySize
+        : 120
+    );
+    this.metricsHistory = [];
+    this.metricsRunningTotal = 0;
+    this.averageFrameTime = 0;
+    this.lastFrameMetrics = this._createFrameMetrics(
+      0,
+      0,
+      [],
+      typeof performance !== 'undefined' ? performance.now() : 0
+    );
   }
 
   /**
@@ -129,6 +147,8 @@ export class SystemManager {
     // Sorting happens after init so systems that adjust priority inside init are respected.
     this.systems.sort((a, b) => a.priority - b.priority);
 
+    this.systemMetadata.set(system, { name: systemLabel });
+
     return system;
   }
 
@@ -154,6 +174,7 @@ export class SystemManager {
 
     // Remove from name map
     this.systemsByName.delete(name);
+    this.systemMetadata.delete(system);
 
     return true;
   }
@@ -176,6 +197,12 @@ export class SystemManager {
    * @param {number} deltaTime - Time elapsed since last frame in seconds
    */
   update(deltaTime) {
+    const profilingEnabled = this.profileSystems && typeof performance !== 'undefined';
+    const frameStart = profilingEnabled ? performance.now() : 0;
+    const systemMetrics = profilingEnabled ? [] : null;
+
+    let executedCount = 0;
+
     for (let i = 0; i < this.systems.length; i++) {
       const system = this.systems[i];
 
@@ -185,10 +212,40 @@ export class SystemManager {
       }
 
       // Query entities that match system's required components
+      const queryStart = profilingEnabled ? performance.now() : 0;
       const entities = this.componentRegistry.queryEntities(...system.requiredComponents);
+      const queryDuration = profilingEnabled ? performance.now() - queryStart : 0;
 
       // Update system with matching entities
+      const updateStart = profilingEnabled ? performance.now() : 0;
       system.update(deltaTime, entities);
+      const updateDuration = profilingEnabled ? performance.now() - updateStart : 0;
+
+      executedCount++;
+
+      if (profilingEnabled && systemMetrics) {
+        const metadata = this.systemMetadata.get(system);
+        systemMetrics.push({
+          name: metadata?.name || system.constructor.name,
+          priority: system.priority,
+          entityCount: entities.length,
+          queryTime: queryDuration,
+          updateTime: updateDuration,
+          totalTime: queryDuration + updateDuration,
+        });
+      }
+    }
+
+    if (profilingEnabled) {
+      const totalTime = performance.now() - frameStart;
+      const frameMetrics = this._createFrameMetrics(
+        totalTime,
+        deltaTime,
+        systemMetrics || [],
+        frameStart
+      );
+      frameMetrics.systemCount = executedCount;
+      this._recordFrameMetrics(frameMetrics);
     }
   }
 
@@ -268,5 +325,75 @@ export class SystemManager {
       }
     }
     return count;
+  }
+
+  /**
+   * Returns metrics for the most recent update frame.
+   * @returns {{totalTime:number, deltaTime:number, systemCount:number, systems:Array, timestamp:number}}
+   */
+  getLastFrameMetrics() {
+    return {
+      ...this.lastFrameMetrics,
+      systems: this.lastFrameMetrics.systems.map((entry) => ({ ...entry })),
+    };
+  }
+
+  /**
+   * Returns the moving average total frame time (ms) for profiled updates.
+   * @returns {number} Average frame time in milliseconds
+   */
+  getAverageFrameTime() {
+    return this.averageFrameTime;
+  }
+
+  /**
+   * Returns a shallow copy of the recent frame metrics history.
+   * @returns {Array} Array of frame metrics
+   */
+  getFrameHistory() {
+    return this.metricsHistory.map((frame) => ({
+      ...frame,
+      systems: frame.systems.map((entry) => ({ ...entry })),
+    }));
+  }
+
+  /**
+   * Creates a frame metrics object.
+   * @param {number} totalTime
+   * @param {number} deltaTime
+   * @param {Array} systems
+   * @param {number} timestamp
+   * @returns {{totalTime:number, deltaTime:number, systemCount:number, systems:Array, timestamp:number}}
+   * @private
+   */
+  _createFrameMetrics(totalTime, deltaTime, systems, timestamp) {
+    return {
+      totalTime,
+      deltaTime,
+      systemCount: systems.length,
+      systems,
+      timestamp,
+    };
+  }
+
+  /**
+   * Records frame metrics into history and updates averages.
+   * @param {Object} metrics
+   * @private
+   */
+  _recordFrameMetrics(metrics) {
+    this.lastFrameMetrics = metrics;
+    this.metricsHistory.push(metrics);
+    this.metricsRunningTotal += metrics.totalTime;
+
+    if (this.metricsHistory.length > this.metricsHistorySize) {
+      const removed = this.metricsHistory.shift();
+      this.metricsRunningTotal -= removed.totalTime;
+    }
+
+    this.averageFrameTime =
+      this.metricsHistory.length > 0
+        ? this.metricsRunningTotal / this.metricsHistory.length
+        : 0;
   }
 }

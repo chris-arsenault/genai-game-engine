@@ -450,6 +450,46 @@ describe('SystemManager', () => {
     });
   });
 
+  describe('Metrics', () => {
+    it('captures per-system timing and entity counts', () => {
+      const system = new MockSystem(['Transform'], 25);
+      systemManager.registerSystem(system, 'MetricsSystem');
+
+      const entity = entityManager.createEntity();
+      componentRegistry.addComponent(entity, new MockComponent('Transform'));
+
+      systemManager.update(0.016);
+
+      const metrics = systemManager.getLastFrameMetrics();
+      expect(metrics.deltaTime).toBeCloseTo(0.016, 5);
+      expect(metrics.systemCount).toBe(1);
+      expect(metrics.systems).toHaveLength(1);
+
+      const entry = metrics.systems[0];
+      expect(entry.name).toBe('MetricsSystem');
+      expect(entry.priority).toBe(25);
+      expect(entry.entityCount).toBe(1);
+      expect(entry.totalTime).toBeGreaterThanOrEqual(0);
+      expect(entry.queryTime).toBeGreaterThanOrEqual(0);
+      expect(entry.updateTime).toBeGreaterThanOrEqual(0);
+
+      expect(systemManager.getAverageFrameTime()).toBeGreaterThanOrEqual(0);
+    });
+
+    it('maintains bounded frame history', () => {
+      systemManager.registerSystem(new MockSystem(), 'HistorySystem');
+
+      for (let i = 0; i < 10; i++) {
+        systemManager.update(0.01);
+      }
+
+      const history = systemManager.getFrameHistory();
+      expect(history.length).toBeGreaterThan(0);
+      expect(history.length).toBeLessThanOrEqual(120);
+      expect(history[history.length - 1].systems[0].name).toBe('HistorySystem');
+    });
+  });
+
   describe('Performance', () => {
     it('should update 10 systems with 1000 entities in under 100ms', () => {
       // Register 10 systems

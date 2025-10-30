@@ -15,12 +15,46 @@ export class Renderer {
   /**
    * Creates a new renderer.
    * @param {HTMLCanvasElement} canvas - Main rendering canvas
+   * @param {Object} [options]
+   * @param {boolean} [options.responsive=true] - Resize canvas with window/client size
+   * @param {string} [options.clearColor='#000000'] - Default clear color
+   * @param {number} [options.defaultWidth=1280] - Fallback width when no client metrics
+   * @param {number} [options.defaultHeight=720] - Fallback height when no client metrics
    */
-  constructor(canvas) {
+  constructor(canvas, options = {}) {
+    if (!canvas) {
+      throw new Error('Renderer requires a canvas element');
+    }
+
+    const {
+      responsive = true,
+      clearColor = '#000000',
+      defaultWidth = 1280,
+      defaultHeight = 720,
+    } = options;
+
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d', { alpha: false });
-    this.width = canvas.width;
-    this.height = canvas.height;
+
+    if (!this.ctx) {
+      throw new Error('Renderer failed to acquire 2D rendering context');
+    }
+
+    this.options = {
+      responsive,
+      clearColor,
+      defaultWidth,
+      defaultHeight,
+    };
+
+    const { width: initialWidth, height: initialHeight } =
+      this._resolveCanvasDimensions();
+
+    this.canvas.width = initialWidth;
+    this.canvas.height = initialHeight;
+
+    this.width = initialWidth;
+    this.height = initialHeight;
 
     // Camera for world-to-screen transformation
     this.camera = new Camera(0, 0, this.width, this.height);
@@ -34,14 +68,26 @@ export class Renderer {
     this.lastFrameStart = 0;
 
     // Rendering options
-    this.clearColor = '#000000';
+    this.clearColor = clearColor;
     this.imageSmoothing = false; // Pixel art friendly
 
     // Configure context for pixel art
     this.ctx.imageSmoothingEnabled = this.imageSmoothing;
 
+    // Resize bookkeeping
+    this._handleWindowResize = this._handleWindowResize.bind(this);
+
+    if (this.options.responsive && typeof window !== 'undefined') {
+      window.addEventListener('resize', this._handleWindowResize, {
+        passive: true,
+      });
+    }
+
     // Handle canvas resize
     this._setupResizeObserver();
+
+    // Ensure initial canvas dimensions match client metrics
+    this._resizeCanvasToDisplaySize(true);
   }
 
   /**
@@ -59,6 +105,66 @@ export class Renderer {
       });
       this.resizeObserver.observe(this.canvas);
     }
+  }
+
+  /**
+   * Computes canvas dimensions derived from client metrics or defaults.
+   * @returns {{width: number, height: number}}
+   * @private
+   */
+  _resolveCanvasDimensions() {
+    const cssWidth =
+      typeof this.canvas.clientWidth === 'number' ? this.canvas.clientWidth : 0;
+    const cssHeight =
+      typeof this.canvas.clientHeight === 'number' ? this.canvas.clientHeight : 0;
+
+    const fallbackWidth =
+      cssWidth ||
+      this.canvas.width ||
+      (typeof window !== 'undefined' ? window.innerWidth : 0) ||
+      this.options.defaultWidth;
+
+    const fallbackHeight =
+      cssHeight ||
+      this.canvas.height ||
+      (typeof window !== 'undefined' ? window.innerHeight : 0) ||
+      this.options.defaultHeight;
+
+    return {
+      width: Math.max(1, Math.floor(fallbackWidth)),
+      height: Math.max(1, Math.floor(fallbackHeight)),
+    };
+  }
+
+  /**
+   * Applies client-size derived dimensions to canvas and internal state.
+   * @param {boolean} [force=false]
+   * @private
+   */
+  _resizeCanvasToDisplaySize(force = false) {
+    const { width, height } = this._resolveCanvasDimensions();
+    const needsResize =
+      force || this.canvas.width !== width || this.canvas.height !== height;
+
+    if (!needsResize) {
+      return;
+    }
+
+    this.canvas.width = width;
+    this.canvas.height = height;
+    this.handleResize();
+  }
+
+  /**
+   * Handles debounced window resize events.
+   * @private
+   */
+  _handleWindowResize() {
+    if (!this.options.responsive) {
+      return;
+    }
+
+    this._resizeCanvasToDisplaySize();
   }
 
   /**
@@ -235,6 +341,10 @@ export class Renderer {
   cleanup() {
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
+    }
+
+    if (this.options.responsive && typeof window !== 'undefined') {
+      window.removeEventListener('resize', this._handleWindowResize);
     }
   }
 }
