@@ -573,16 +573,85 @@ describe('InvestigationSystem', () => {
       system.unlockAbility('detective_vision');
       system.activateDetectiveVision();
 
-      // Wait for duration + cooldown
       const duration = GameConfig.player.detectiveVisionDuration / 1000;
       const cooldown = GameConfig.player.detectiveVisionCooldown / 1000;
-      system.updateDetectiveVision(duration + cooldown + 0.1);
+      system.updateDetectiveVision(duration + 0.1); // Drain energy and deactivate
+      system.updateDetectiveVision(cooldown + 0.1); // Regen energy and clear cooldown
 
       // Should be able to activate again
       mockEventBus.emit.mockClear();
       system.activateDetectiveVision();
 
       expect(system.detectiveVisionActive).toBe(true);
+    });
+
+    it('should drain energy while active and emit status updates', () => {
+      system.unlockAbility('detective_vision');
+      system.detectiveVisionEnergy = system.detectiveVisionEnergyMax;
+
+      mockEventBus.emit.mockClear();
+      system.activateDetectiveVision();
+      mockEventBus.emit.mockClear();
+
+      system.updateDetectiveVision(2); // Drain 2 energy units
+
+      expect(system.detectiveVisionEnergy).toBeCloseTo(
+        system.detectiveVisionEnergyMax - 2,
+        2
+      );
+
+      const statusEvents = mockEventBus.emit.mock.calls.filter(
+        ([event]) => event === 'detective_vision:status'
+      );
+      expect(statusEvents.length).toBeGreaterThan(0);
+      const lastStatus = statusEvents[statusEvents.length - 1][1];
+      expect(lastStatus.active).toBe(true);
+      expect(lastStatus.energy).toBeCloseTo(system.detectiveVisionEnergy, 2);
+    });
+
+    it('should block activation when energy below threshold', () => {
+      system.unlockAbility('detective_vision');
+      system.detectiveVisionEnergy = system.detectiveVisionMinEnergyToActivate - 0.25;
+
+      mockEventBus.emit.mockClear();
+      const activated = system.activateDetectiveVision();
+
+      expect(activated).toBe(false);
+      expect(system.detectiveVisionActive).toBe(false);
+      expect(mockEventBus.emit).toHaveBeenCalledWith(
+        'ability:insufficient_resource',
+        expect.objectContaining({
+          ability: 'detective_vision',
+          resource: 'energy',
+        })
+      );
+    });
+
+    it('should regenerate energy while inactive', () => {
+      system.unlockAbility('detective_vision');
+      system.detectiveVisionEnergy = system.detectiveVisionMinEnergyToActivate + 0.1;
+
+      system.activateDetectiveVision();
+      system.updateDetectiveVision(2); // Drain to zero and deactivate
+      expect(system.detectiveVisionActive).toBe(false);
+      expect(system.detectiveVisionEnergy).toBeCloseTo(0, 3);
+
+      mockEventBus.emit.mockClear();
+      system.updateDetectiveVision(3); // Regen energy for 3 seconds
+
+      const expectedEnergy = Math.min(
+        system.detectiveVisionEnergyMax,
+        GameConfig.player.detectiveVisionEnergyRegen * 3
+      );
+      expect(system.detectiveVisionEnergy).toBeCloseTo(expectedEnergy, 3);
+
+      const statusEvents = mockEventBus.emit.mock.calls.filter(
+        ([event]) => event === 'detective_vision:status'
+      );
+      expect(statusEvents.length).toBeGreaterThan(0);
+      const lastStatus = statusEvents[statusEvents.length - 1][1];
+      expect(lastStatus.active).toBe(false);
+      expect(lastStatus.energy).toBeCloseTo(system.detectiveVisionEnergy, 3);
     });
   });
 

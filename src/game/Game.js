@@ -48,6 +48,7 @@ import { CaseFileUI } from './ui/CaseFileUI.js';
 import { DeductionBoard } from './ui/DeductionBoard.js';
 import { CrossroadsBranchLandingOverlay } from './ui/CrossroadsBranchLandingOverlay.js';
 import { InventoryOverlay } from './ui/InventoryOverlay.js';
+import { DetectiveVisionOverlay } from './ui/DetectiveVisionOverlay.js';
 import { ControlBindingsOverlay, CONTROL_BINDINGS_NAV_EVENT } from './ui/ControlBindingsOverlay.js';
 import { AudioFeedbackController } from './audio/AudioFeedbackController.js';
 import { SFXCatalogLoader } from './audio/SFXCatalogLoader.js';
@@ -220,6 +221,7 @@ export class Game {
     this.questNotification = null;
     this.crossroadsBranchOverlay = null;
     this.inventoryOverlay = null;
+    this.detectiveVisionOverlay = null;
     this.controlBindingsOverlay = null;
     this.interactionPromptOverlay = null;
     this.movementIndicatorOverlay = null;
@@ -916,6 +918,17 @@ export class Game {
       this.camera
     );
     this.movementIndicatorOverlay.init();
+
+    this.detectiveVisionOverlay = new DetectiveVisionOverlay(
+      this.engine.canvas,
+      this.eventBus,
+      this.camera,
+      this.componentRegistry,
+      {
+        highlightRefreshInterval: 0.35
+      }
+    );
+    this.detectiveVisionOverlay.init();
 
     // Create SaveManager inspector overlay (bottom-right)
     this.saveInspectorOverlay = new SaveInspectorOverlay(
@@ -1672,6 +1685,12 @@ export class Game {
       }
     }));
 
+    this._offGameEventHandlers.push(this.eventBus.on('input:detectiveVision:pressed', () => {
+      if (this.gameSystems?.investigation) {
+        this.gameSystems.investigation.toggleDetectiveVision();
+      }
+    }));
+
     // Evidence events
     this._offGameEventHandlers.push(this.eventBus.on('evidence:collected', (data) => {
       console.log(`[Game] Evidence collected: ${data.evidenceId}`);
@@ -2416,6 +2435,9 @@ export class Game {
     if (this.movementIndicatorOverlay) {
       this.movementIndicatorOverlay.update(deltaTime);
     }
+    if (this.detectiveVisionOverlay) {
+      this.detectiveVisionOverlay.update(deltaTime);
+    }
     if (this.interactionPromptOverlay) {
       this.interactionPromptOverlay.update(deltaTime);
     }
@@ -2638,6 +2660,30 @@ export class Game {
         visible: Boolean(this.interactionPromptOverlay.visible),
         summary: truncate(this.interactionPromptOverlay.prompt?.text, 60) || 'idle',
         metadata: {},
+      });
+    }
+
+    if (this.detectiveVisionOverlay) {
+      const status = typeof this.detectiveVisionOverlay.getStatus === 'function'
+        ? this.detectiveVisionOverlay.getStatus()
+        : null;
+      overlays.push({
+        id: 'detectiveVision',
+        label: 'Detective Vision',
+        visible: Boolean(status?.active),
+        summary: status
+          ? `energy=${Math.round((status.energyPercent ?? 0) * 100)}% cooldown=${Math.round((status.cooldownPercent ?? 0) * 100)}%`
+          : 'inactive',
+        metadata: status
+          ? {
+              active: status.active,
+              energy: status.energy,
+              energyMax: status.energyMax,
+              cooldown: status.cooldown,
+              cooldownMax: status.cooldownMax,
+              canActivate: status.canActivate,
+            }
+          : {},
       });
     }
 
@@ -3070,6 +3116,10 @@ export class Game {
   renderOverlays(ctx) {
     if (!this.loaded) return;
 
+    if (this.detectiveVisionOverlay) {
+      this.detectiveVisionOverlay.render(ctx);
+    }
+
     // Render reputation UI
     if (this.reputationUI) {
       this.reputationUI.render(ctx);
@@ -3207,6 +3257,9 @@ export class Game {
     }
     if (this.movementIndicatorOverlay && this.movementIndicatorOverlay.cleanup) {
       this.movementIndicatorOverlay.cleanup();
+    }
+    if (this.detectiveVisionOverlay && this.detectiveVisionOverlay.cleanup) {
+      this.detectiveVisionOverlay.cleanup();
     }
     if (this.questNotification && this.questNotification.cleanup) {
       this.questNotification.cleanup();

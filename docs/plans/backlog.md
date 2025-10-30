@@ -1598,9 +1598,11 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Dependencies**: M2-001, M1-011
 - **Description**: Special vision mode highlighting evidence
 - **Files**:
-  - `src/game/abilities/DetectiveVision.js`
-  - `src/game/systems/DetectiveVisionSystem.js`
-  - Visual overlay rendering
+  - `src/game/systems/InvestigationSystem.js`
+  - `src/game/ui/DetectiveVisionOverlay.js`
+  - `src/game/Game.js`
+  - `tests/game/systems/InvestigationSystem.test.js`
+  - `tests/game/ui/DetectiveVisionOverlay.test.js`
 - **Implementation Requirements**:
   - Toggle ability on/off
   - Visual highlighting of evidence entities
@@ -1613,7 +1615,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Energy drain balanced
   - No performance degradation
 
-_Progress 2025-11-01 (Session #137 procedural gating): EvidenceGraph now exposes dependency metadata powering EntityPopulator to flag clue/analysis leads as hidden and ability-gated (`detective_vision`, `forensic_analysis`), with Jest integration suites protecting the flow. Visual overlays + energy tuning remain outstanding._
+_Progress 2025-11-02 (Session #138 overlay/energy pass): DetectiveVisionOverlay now delivers neon highlight pulses for hidden evidence with control-binding-aware HUD copy, InvestigationSystem gained energy/cooldown resource logic plus status events and input toggles, and procedural spawn data carries derived clue IDs end-to-end with fresh Jest coverage. Outstanding: profile the overlay-enabled scan loop and align audio/FX feedback._
 
 #### M2-003: Evidence Entity Factory
 - **Priority**: P1

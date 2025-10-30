@@ -22,6 +22,9 @@ export const GameConfig = {
     detectiveVisionDuration: 5000, // milliseconds
     detectiveVisionCooldown: 10000, // milliseconds
     detectiveVisionEnergyCost: 1, // energy per second
+    detectiveVisionEnergyMax: 5, // total energy units (seconds of uptime)
+    detectiveVisionEnergyRegen: 0.75, // energy per second while inactive
+    detectiveVisionMinEnergyToActivate: 1.5, // minimum energy threshold to toggle on
 
     // Combat (future implementation)
     maxHealth: 100,

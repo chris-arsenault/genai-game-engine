@@ -99,6 +99,16 @@ describe('EntityPopulator', () => {
           position: { x: 15, y: 15 },
         },
       ],
+      evidence: [
+        {
+          id: 'evidence_1',
+          derivedClues: ['clue_alpha'],
+        },
+        {
+          id: 'evidence_2',
+          derivedClues: ['clue_beta', 'clue_gamma'],
+        },
+      ],
     };
   });
 
@@ -109,6 +119,14 @@ describe('EntityPopulator', () => {
       expect(defaultPopulator.enemyDensity).toBe(0.5);
       expect(defaultPopulator.backgroundNPCs).toBe(true);
       expect(defaultPopulator.evidencePlacement).toBe('normal');
+    });
+
+    it('should include derived clue identifiers from case data', () => {
+      const spawnData = populator.populate(mockDistrict, mockCaseData, 1010);
+      const evidence = spawnData.evidence.find((entry) => entry.evidenceId === 'evidence_2');
+
+      expect(evidence).toBeDefined();
+      expect(evidence.derivedClues).toEqual(['clue_beta', 'clue_gamma']);
     });
 
     it('should create with custom config', () => {

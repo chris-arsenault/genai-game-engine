@@ -208,6 +208,7 @@ export class EntityPopulator {
         : [];
 
       const gating = this._deriveEvidenceGating(evidenceData, dependencies);
+      const derivedClues = this._resolveDerivedClues(placement.evidenceId, evidenceData, caseData);
 
       evidenceSpawnData.push({
         type: 'evidence',
@@ -220,7 +221,7 @@ export class EntityPopulator {
         description: evidenceData.description,
         hidden: gating.hidden,
         requires: gating.requires,
-        derivedClues: [], // Evidence can derive clues when collected
+        derivedClues,
         isSolutionFact: evidenceData.isSolutionFact || false,
       });
     }
@@ -316,6 +317,39 @@ export class EntityPopulator {
       hidden,
       requires: baseRequires,
     };
+  }
+
+  /**
+   * Resolve derived clue IDs for evidence placement.
+   * @private
+   * @param {string} evidenceId
+   * @param {object} evidenceData
+   * @param {object} caseData
+   * @returns {Array<string>}
+   */
+  _resolveDerivedClues(evidenceId, evidenceData, caseData) {
+    const clues = new Set();
+
+    if (Array.isArray(evidenceData?.derivedClues)) {
+      for (const clueId of evidenceData.derivedClues) {
+        if (typeof clueId === 'string' && clueId.length > 0) {
+          clues.add(clueId);
+        }
+      }
+    }
+
+    if (clues.size === 0 && Array.isArray(caseData?.evidence)) {
+      const definition = caseData.evidence.find((entry) => entry?.id === evidenceId);
+      if (definition && Array.isArray(definition.derivedClues)) {
+        for (const clueId of definition.derivedClues) {
+          if (typeof clueId === 'string' && clueId.length > 0) {
+            clues.add(clueId);
+          }
+        }
+      }
+    }
+
+    return Array.from(clues);
   }
 
   /**
