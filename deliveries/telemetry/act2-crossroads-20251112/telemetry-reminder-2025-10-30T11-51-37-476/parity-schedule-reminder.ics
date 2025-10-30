@@ -1,0 +1,20 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//The Memory Syndicate//Telemetry Reminder//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:telemetry-parity-20251113T110021857Z@memory-syndicate
+DTSTAMP:20251030T115137Z
+DTSTART:20251113T110021Z
+DTEND:20251113T120021Z
+SUMMARY:Telemetry Parity Check
+DESCRIPTION:Next parity checkpoint is scheduled for 2025-11-13T11:00:21.857740+00:00. Monitor incoming analytics requests and be ready to acknowledge ahead of the deadline if data changes.
+LOCATION:Remote
+BEGIN:VALARM
+TRIGGER:-PT4320M
+ACTION:DISPLAY
+DESCRIPTION:Telemetry Parity Check
+END:VALARM
+END:VEVENT
+END:VCALENDAR

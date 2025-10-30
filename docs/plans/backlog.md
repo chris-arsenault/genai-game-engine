@@ -15,22 +15,24 @@
 
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
-| AR-050 | P0 | In Progress | Visual asset sourcing pipeline now covers Act 2 Crossroads selection conduit/pad, checkpoint glow/plaza, safehouse arc, boundary walls, and column beam overlays with CC0/CC-BY references captured in manifests; Session 112 calibrated tint/alpha parameters (~0.13 columns/conduits, ~0.75 boundaries), Session 113 added a lighting preview harness plus queued the AR-001–AR-005 generation batch, Session 114 boosted conduit/glow/column luminance so previewed segments meet thresholds, Session 115 delivered placeholder atlases for AR-001–AR-005, and Session 116 layered RenderOps packet/placeholder audit automation to streamline share-outs. | Ship the RenderOps packet generated via `npm run art:package-renderops`, capture actionable feedback, and drive bespoke replacements using `reports/art/placeholder-audit.md` before locking manifests/licensing. |
+| AR-050 | P0 | In Progress | Visual asset sourcing pipeline now covers Act 2 Crossroads selection conduit/pad, checkpoint glow/plaza, safehouse arc, boundary walls, and column beam overlays with CC0/CC-BY references captured in manifests; Session 112 calibrated tint/alpha parameters (~0.13 columns/conduits, ~0.75 boundaries), Session 113 added a lighting preview harness plus queued the AR-001–AR-005 generation batch, Session 114 boosted conduit/glow/column luminance so previewed segments meet thresholds, Session 115 delivered placeholder atlases for AR-001–AR-005, Session 116 layered RenderOps packet/placeholder audit automation, Session 117 shipped prioritized replacement plans, and Session 118 produced a four-week bespoke art sprint schedule plus delivery staging CLI. | Run `npm run art:package-renderops` followed by `npm run art:stage-renderops`, share the staged ZIP + delivery manifest with RenderOps, and execute the weekly bespoke schedule from `reports/art/placeholder-replacement-schedule.md` while updating manifests/licensing. |
 | TUT-201 | P0 | Completed | Tutorial case blocked at step 3 (`evidence_detection`) because legacy scene entities bypassed ECS detection events. | ECS-aligned tutorial scene entities shipped Session #51; re-run tutorial smoke tests after combat audio validation. |
 | AUDIO-351 | P0 | Completed | Validate live combat/disguise trigger routing through `AmbientSceneAudioController` using real combat loop events. | Adaptive audio routing now responds to gameplay emits; telemetry verified by Jest/Playwright suites and new infiltration benchmark. |
 | PERF-214 | P1 | Pending | Browser-level performance profiling for adaptive audio + overlay interactions to confirm <16 ms frame time budget. | Run Chromium/Firefox performance audits with combat/stealth transitions, log hotspots, and file perf follow-ups as needed. |
 | UX-173 | P1 | Pending | Improve debug audio overlay ergonomics (keyboard shortcuts, focus management). | Prototype keyboard navigation + focus traps, add Jest/Playwright coverage for accessibility interactions. |
 
-**Next Session Focus**: Distribute the automated RenderOps packet, action the placeholder audit to schedule bespoke replacements, and run `npm run telemetry:reminder` ahead of the 2025-11-13 cadence checkpoint.
+**Next Session Focus**: Share the staged RenderOps packet, start Week 1 of the bespoke art schedule, and run/stage `npm run telemetry:reminder` + `npm run telemetry:stage-reminder` ahead of the 2025-11-13 cadence checkpoint.
 
-### Session #116 Backlog Updates
+### Session #118 Backlog Updates
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- **Enhancement**: Generated `reports/art/placeholder-replacement-schedule.(json|md)` via `scripts/art/planPlaceholderReplacements.js`, mapping AR-001 – AR-005 bespoke work into four weekly sprints (five assets per week starting 2025-11-03).
+- **Automation**: Added `scripts/art/stageRenderOpsDelivery.js` (`npm run art:stage-renderops`) to mirror packets into `deliveries/renderops/<label>/<timestamp>/` with staging-manifest + handoff README for immediate share-outs.
+- **Follow-up**: Assign art leads per scheduled slot and update `assets/images/requests.json` notes/licensing as bespoke assets land.
 
 #### TEL-021: Parity Schedule Reminder Automation
-- **Priority**: P1 (Completed)
-- **Tags**: `telemetry`, `automation`, `ops`
-- **Summary**: Delivered `evaluateTelemetrySchedule` helpers plus `scripts/telemetry/remindParitySchedule.js` (npm alias `telemetry:reminder`) to emit JSON/markdown cadence reminders, eliminating manual parity schedule polling.
-- **Verification**: `npm test -- TelemetryScheduleReminder`, `npm run telemetry:reminder`.
-- **Follow-up**: Trigger the reminder script before each analytics checkpoint to keep cadence risks visible.
+- **Enhancement**: Introduced `scripts/telemetry/stageParityReminder.js` (`npm run telemetry:stage-reminder`) to package reminder JSON/Markdown/ICS into `deliveries/telemetry/<dispatch-label>/...` with share-ready notes.
+- **Follow-up**: When running `npm run telemetry:reminder`, stage the output and circulate the `.ics`/README bundle to analytics while tracking acknowledgements in the staging manifest.
 
 ### Session #117 Backlog Updates
 
@@ -41,6 +43,15 @@
 #### TEL-021: Parity Schedule Reminder Automation
 - **Enhancement**: Reminder outputs now include alert levels, proactive messaging, and optional calendar invites (`reports/telemetry/parity-schedule-reminder.ics`) so cadence checkpoints appear on shared calendars.
 - **Action**: Distribute the ICS invite to analytics stakeholders and monitor the `alerts` payload for warning/critical escalations ahead of parity deadlines.
+
+### Session #116 Backlog Updates
+
+#### TEL-021: Parity Schedule Reminder Automation
+- **Priority**: P1 (Completed)
+- **Tags**: `telemetry`, `automation`, `ops`
+- **Summary**: Delivered `evaluateTelemetrySchedule` helpers plus `scripts/telemetry/remindParitySchedule.js` (npm alias `telemetry:reminder`) to emit JSON/markdown cadence reminders, eliminating manual parity schedule polling.
+- **Verification**: `npm test -- TelemetryScheduleReminder`, `npm run telemetry:reminder`.
+- **Follow-up**: Trigger the reminder script before each analytics checkpoint to keep cadence risks visible.
 
 _Historical session handoffs (Sessions 2–44) now live under `archive/docs/reports/` for reference._
 

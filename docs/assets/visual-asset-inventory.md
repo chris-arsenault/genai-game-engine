@@ -88,6 +88,12 @@
 - Session 117 augments the placeholder audit with a prioritized replacement plan (`reports/art/placeholder-replacement-plan.json|md`) that ranks AR-001 – AR-005 bespoke work based on missing files, asset age, and manifest notes.
 - New npm aliases `art:package-renderops` and `art:audit-placeholders` keep RenderOps delivery and bespoke replacement planning on a repeatable cadence with test coverage in place.
 
+## Session 118 Updates
+- Introduced `scripts/art/planPlaceholderReplacements.js` to translate the replacement plan into four weeks of focused art sprints (default outputs: `reports/art/placeholder-replacement-schedule.json|md`) with five assets scheduled per week starting 2025-11-03.
+- Week 1 covers AR-001 deduction UI plus the neon district tileset; Weeks 2–4 rotate through evidence props, NPC packs, and remaining district tilesets so narrative beats keep pace with art production.
+- Assign owners straight from the schedule and update `assets/images/requests.json` notes when each bespoke asset is approved to keep the plan and manifest in sync.
+- Added `scripts/art/stageRenderOpsDelivery.js` to mirror the latest packet (ZIP, manifests, summaries) into `deliveries/renderops/<label>/<timestamp>/` complete with staging-manifest and handoff README for immediate share-out.
+
 ## Next Actions
-1. Distribute the latest RenderOps packet (`npm run art:package-renderops`) and attach the generated ZIP (`*.zip`) plus `*-delivery.json` manifest when sharing with RenderOps; log feedback on actionable segments and regenerate after art tweaks.
-2. Use `reports/art/placeholder-replacement-plan.md` (and supporting JSON) to schedule bespoke replacements for AR-001 – AR-005, updating `assets/images/requests.json` with final licensing once art is approved.
+1. Distribute the latest RenderOps packet (`npm run art:package-renderops` then `npm run art:stage-renderops`) and attach the staged ZIP (`deliveries/renderops/.../*.zip`) plus `*-delivery.json` manifest when sharing with RenderOps; log feedback on actionable segments and regenerate after art tweaks.
+2. Follow `reports/art/placeholder-replacement-schedule.md` to drive weekly bespoke assignments and annotate `assets/images/requests.json` with source/licensing updates upon completion.

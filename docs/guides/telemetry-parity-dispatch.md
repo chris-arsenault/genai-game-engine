@@ -48,3 +48,8 @@ telemetry-artifacts/analytics/outbox/<label>/
 - Run `node scripts/telemetry/planQuestTelemetryParity.js --interval-days=14` (or your preferred cadence) after each acknowledgement to regenerate `telemetry-artifacts/analytics/parity-schedule.json`.
 - The schedule file records the latest dispatch/acknowledgement pair, flags pending outbox folders awaiting acknowledgement, and notes when the next check becomes overdue.
 - Reference the generated `nextCheckAt` timestamp when updating QUEST-610 so analytics knows exactly when the follow-up batch is expected.
+
+## Reminder Staging & Calendar Invites
+- Generate the latest reminder artifacts with `npm run telemetry:reminder` (JSON, Markdown, and `.ics` calendar invite).
+- Stage the share bundle for analytics using `npm run telemetry:stage-reminder`, which mirrors the reminder outputs into `deliveries/telemetry/<dispatch-label>/telemetry-reminder-<timestamp>/` alongside a handoff README and staging manifest.
+- Attach the staged folder (or link) when nudging analytics; they can import the `.ics` into shared calendars and refer to the Markdown summary for status context.

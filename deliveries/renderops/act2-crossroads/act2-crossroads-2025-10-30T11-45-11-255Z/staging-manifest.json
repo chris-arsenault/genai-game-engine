@@ -1,0 +1,42 @@
+{
+  "packetName": "act2-crossroads-2025-10-30T11-45-11-255Z",
+  "packetDir": "/home/tsonu/src/genai-game-engine/reports/art/renderops-packets/act2-crossroads-2025-10-30T11-45-11-255Z",
+  "deliveryDir": "/home/tsonu/src/genai-game-engine/deliveries/renderops/act2-crossroads/act2-crossroads-2025-10-30T11-45-11-255Z",
+  "label": "act2-crossroads",
+  "stagedAt": "2025-10-30T11:49:34.441Z",
+  "shareManifest": "share-manifest.json",
+  "deliveryManifest": "act2-crossroads-2025-10-30T11-45-11-255Z-delivery.json",
+  "archiveFile": "act2-crossroads-2025-10-30T11-45-11-255Z.zip",
+  "instructions": [
+    "Share the generated ZIP bundle with the RenderOps team via the secure art handoff channel.",
+    "Include PACKET_README.md in the communication so context and actionable segments are visible up front.",
+    "After RenderOps responds, update the placeholder audit and regenerate the packet if art tweaks were requested."
+  ],
+  "actionableSegmentCount": 2,
+  "actionableSegments": [
+    {
+      "segmentId": "crossroads_floor_safehouse",
+      "category": "floors",
+      "status": "skipped",
+      "presetId": "safehouse_idle",
+      "projected": {
+        "luminance": null,
+        "targetLuminance": null,
+        "deviation": null
+      },
+      "issues": []
+    },
+    {
+      "segmentId": "crossroads_branch_walkway",
+      "category": "floors",
+      "status": "skipped",
+      "presetId": "branch_idle",
+      "projected": {
+        "luminance": null,
+        "targetLuminance": null,
+        "deviation": null
+      },
+      "issues": []
+    }
+  ]
+}

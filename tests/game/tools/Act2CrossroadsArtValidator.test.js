@@ -21,7 +21,27 @@ describe('Act2CrossroadsArtValidator', () => {
     });
 
     expect(result.ok).toBe(true);
-    expect(result.issues).toEqual([]);
+    const expectedHotspotSegments = [
+      { segmentId: 'crossroads_selection_conduit', category: 'accents' },
+      { segmentId: 'crossroads_checkpoint_glow', category: 'accents' },
+      { segmentId: 'crossroads_column_safehouse_left', category: 'lightColumns' },
+      { segmentId: 'crossroads_column_safehouse_right', category: 'lightColumns' },
+      { segmentId: 'crossroads_column_checkpoint_north', category: 'lightColumns' },
+      { segmentId: 'crossroads_column_checkpoint_south', category: 'lightColumns' },
+    ];
+    expect(result.issues).toHaveLength(expectedHotspotSegments.length);
+    for (const expected of expectedHotspotSegments) {
+      expect(result.issues).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            severity: 'warning',
+            segmentId: expected.segmentId,
+            category: expected.category,
+            message: expect.stringContaining('luminance'),
+          }),
+        ])
+      );
+    }
     expect(result.coverage.floors.missing).toEqual([]);
     expect(result.coverage.boundaries.present).toBeGreaterThanOrEqual(4);
 
@@ -31,7 +51,18 @@ describe('Act2CrossroadsArtValidator', () => {
     expect(summary.readiness.lighting.missing).toEqual([]);
     expect(summary.readiness.lighting.ready).toBe(summary.readiness.lighting.total);
     expect(summary.readiness.collision.ready).toBe(summary.readiness.collision.total);
-    expect(summary.lighting.hotspots).toEqual([]);
+    expect(summary.lighting.hotspots).toHaveLength(expectedHotspotSegments.length);
+    for (const expected of expectedHotspotSegments) {
+      expect(summary.lighting.hotspots).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            segmentId: expected.segmentId,
+            category: expected.category,
+            status: 'hotspot',
+          }),
+        ])
+      );
+    }
     expect(summary.lighting.deviations).toEqual([]);
   });
 

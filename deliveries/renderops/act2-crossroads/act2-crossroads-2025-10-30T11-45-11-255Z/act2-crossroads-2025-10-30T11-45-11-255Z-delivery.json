@@ -1,0 +1,23 @@
+{
+  "packetId": "d6ac9e46-dbc9-4413-b5a2-e70a054661b0",
+  "label": "act2-crossroads",
+  "createdAt": "2025-10-30T11:45:11.255Z",
+  "bundle": {
+    "format": "zip",
+    "fileName": "act2-crossroads-2025-10-30T11-45-11-255Z.zip",
+    "absolutePath": "/home/tsonu/src/genai-game-engine/reports/art/renderops-packets/act2-crossroads-2025-10-30T11-45-11-255Z.zip",
+    "checksumSha256": "501868b1e35bd10c26cb92f18dddb6cceeb8e1fd5921bcf2339932267a87911d",
+    "sizeBytes": 4219
+  },
+  "shareManifestPath": "/home/tsonu/src/genai-game-engine/reports/art/renderops-packets/act2-crossroads-2025-10-30T11-45-11-255Z/share-manifest.json",
+  "summary": {
+    "total": 11,
+    "statusCounts": {
+      "skipped": 2,
+      "ok": 9
+    },
+    "metadataDriftCount": 0,
+    "skippedCount": 2
+  },
+  "actionableSegmentCount": 2
+}

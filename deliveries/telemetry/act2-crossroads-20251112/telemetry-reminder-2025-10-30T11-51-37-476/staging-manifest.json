@@ -1,0 +1,18 @@
+{
+  "label": "act2-crossroads-20251112",
+  "runId": "telemetry-reminder-2025-10-30T11-51-37-476",
+  "stagedAt": "2025-10-30T11:51:57.685Z",
+  "deliveryDir": "/home/tsonu/src/genai-game-engine/deliveries/telemetry/act2-crossroads-20251112/telemetry-reminder-2025-10-30T11-51-37-476",
+  "json": "parity-schedule-reminder.json",
+  "markdown": "parity-schedule-reminder.md",
+  "ics": "parity-schedule-reminder.ics",
+  "status": "scheduled",
+  "nextCheckAt": "2025-11-13T11:00:21.857740+00:00",
+  "dueInDays": 13.96440255787037,
+  "alertLevel": "info",
+  "alerts": [
+    "Next parity checkpoint scheduled for 2025-11-13T11:00:21.857740+00:00 (13.96 days remaining)."
+  ],
+  "recommendedAction": "Next parity checkpoint is scheduled for 2025-11-13T11:00:21.857740+00:00. Monitor incoming analytics requests and be ready to acknowledge ahead of the deadline if data changes.",
+  "warningThresholdDays": 3
+}
