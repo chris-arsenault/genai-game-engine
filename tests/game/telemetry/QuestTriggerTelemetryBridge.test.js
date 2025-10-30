@@ -1,16 +1,20 @@
 import { EventBus } from '../../../src/engine/events/EventBus.js';
 import { QuestTriggerTelemetryBridge } from '../../../src/game/telemetry/QuestTriggerTelemetryBridge.js';
+import { QuestTelemetryValidationHarness } from '../../../src/game/telemetry/QuestTelemetryValidationHarness.js';
 
 describe('QuestTriggerTelemetryBridge', () => {
   let eventBus;
   let bridge;
   let enteredEvents;
   let exitedEvents;
+  let harness;
 
   beforeEach(() => {
     eventBus = new EventBus();
     enteredEvents = [];
     exitedEvents = [];
+    harness = new QuestTelemetryValidationHarness(eventBus);
+    harness.attach();
     bridge = new QuestTriggerTelemetryBridge(eventBus, {
       source: 'test_bridge',
       getActiveScene: () => ({
@@ -28,6 +32,7 @@ describe('QuestTriggerTelemetryBridge', () => {
 
   afterEach(() => {
     bridge.dispose();
+    harness.dispose();
   });
 
   it('emits telemetry when quest triggers broadcast metadata tags', () => {
@@ -64,6 +69,7 @@ describe('QuestTriggerTelemetryBridge', () => {
     );
     expect(enteredEvents[0].triggerPosition).toEqual({ x: 120, y: 340 });
     expect(enteredEvents[0].targetPosition).toEqual({ x: 130, y: 360 });
+    expect(harness.getIssues()).toHaveLength(0);
   });
 
   it('emits exit telemetry and skips duplicate enter events once dispatched', () => {
@@ -104,5 +110,6 @@ describe('QuestTriggerTelemetryBridge', () => {
       questId: 'quest-example',
       objectiveId: 'objective-example',
     });
+    expect(harness.getIssues()).toHaveLength(0);
   });
 });

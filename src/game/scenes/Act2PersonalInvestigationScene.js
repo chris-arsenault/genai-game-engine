@@ -12,6 +12,7 @@ import { Sprite } from '../components/Sprite.js';
 import { Collider } from '../components/Collider.js';
 import { TriggerMigrationToolkit } from '../quests/TriggerMigrationToolkit.js';
 import { QuestTriggerRegistry } from '../quests/QuestTriggerRegistry.js';
+import { ACT2_BRANCH_DIALOGUE_IDS } from '../data/dialogues/Act2BranchObjectiveDialogues.js';
 
 const SCENE_ID = 'act2_personal_archive';
 const DEFAULT_QUEST_ID = 'main-act2-personal-investigation';
@@ -84,6 +85,8 @@ const TRIGGER_DEFINITIONS = Object.freeze([
       narrativeBeat: 'act2_personal_projection_analysis',
       unlocksMechanic: 'knowledge_ledger',
       telemetryTag: 'act2_personal_projection_lab',
+      dialogueId: ACT2_BRANCH_DIALOGUE_IDS.personal.projectionAnalysis,
+      dialogueNpcId: 'act2_personal_ops',
     },
   }),
   Object.freeze({
@@ -99,6 +102,8 @@ const TRIGGER_DEFINITIONS = Object.freeze([
       narrativeBeat: 'act2_personal_broadcast_commitment',
       unlocksMechanic: 'network_signal',
       telemetryTag: 'act2_personal_broadcast_terminal',
+      dialogueId: ACT2_BRANCH_DIALOGUE_IDS.personal.broadcastCommit,
+      dialogueNpcId: 'act2_personal_ops',
     },
   }),
 ]);
@@ -431,6 +436,8 @@ export async function loadAct2PersonalInvestigationScene(
   const sceneEntities = [];
   const cleanupHandlers = [];
   const questTriggerToolkit = new TriggerMigrationToolkit(componentRegistry, eventBus);
+  const definitionByAreaId = new Map(TRIGGER_DEFINITIONS.map((definition) => [definition.areaId, definition]));
+  const triggeredDialogues = new Set();
 
   for (const segment of FLOOR_SEGMENTS) {
     sceneEntities.push(createRectEntity(entityManager, componentRegistry, segment));
@@ -506,6 +513,42 @@ export async function loadAct2PersonalInvestigationScene(
       layout
     );
     sceneEntities.push(entityId);
+  }
+
+  if (eventBus && typeof eventBus.on === 'function') {
+    const offAreaEntered = eventBus.on(
+      'area:entered',
+      (payload = {}) => {
+        const areaId =
+          payload.areaId ||
+          payload.triggerId ||
+          payload?.data?.areaId ||
+          payload?.data?.triggerId ||
+          null;
+        if (!areaId) {
+          return;
+        }
+        const definition = definitionByAreaId.get(areaId);
+        const dialogueId = definition?.metadata?.dialogueId;
+        if (!definition || !dialogueId || triggeredDialogues.has(dialogueId)) {
+          return;
+        }
+        triggeredDialogues.add(dialogueId);
+        const npcId = definition.metadata?.dialogueNpcId || 'act2_personal_ops';
+        eventBus.emit('interaction:dialogue', {
+          npcId,
+          dialogueId,
+          source: 'act2_branch_objective',
+          questId: definition.questId,
+          objectiveId: definition.objectiveId,
+          areaId,
+          sceneId: SCENE_ID,
+        });
+      },
+      null,
+      18
+    );
+    cleanupHandlers.push(offAreaEntered);
   }
 
   cleanupHandlers.push(() => {

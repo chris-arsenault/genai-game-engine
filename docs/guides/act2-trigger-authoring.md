@@ -28,7 +28,11 @@ zones.
 4. Update narrative tooling so dialogue/UI copy pulls from the registry prompts
    rather than hard-coded strings. (The Crossroads scene now emits `ui:show_prompt`
    and `narrative:crossroads_prompt` events directly from the registry metadata.)
-5. When each trigger is migrated, the toolkit will mark it as migrated and the
+5. When bespoke art arrives, populate `GameConfig.sceneArt.act2Crossroads` with the
+   delivered segment/image definitions. `Act2CrossroadsScene` now resolves overrides,
+   primes assets through `AssetLoader`, and falls back to authored geometry when art
+   is absent so designers can drop packages without touching scene code.
+6. When each trigger is migrated, the toolkit will mark it as migrated and the
    outstanding report will shrink accordingly.
 
 Refer to `docs/plans/quest-trigger-migration-plan.md` for the broader migration
@@ -108,6 +112,9 @@ strategy and acceptance criteria.
   analytics stays aligned with the branching choice and quest objectives.
 - Session 95 added the encryption lab and exfiltration triggers with new navigation beats and telemetry
   tags; analytics listeners now receive normalized payloads via `QuestTriggerTelemetryBridge`.
+- Session 96 introduced branch objective dialogue triggers for the encryption lab and exfiltration
+  route, verified in `tests/game/scenes/Act2BranchObjectiveDialogues.test.js`, and leverages
+  `QuestTelemetryValidationHarness` to guarantee telemetry schema alignment.
 
 ## Thread B: Archivist Resistance Trigger Map
 
@@ -128,6 +135,9 @@ strategy and acceptance criteria.
   hideout evolves (NPC schedules, evidence beats, optional stealth entries).
 - Session 95 layered the coordination chamber and signal array beats, expanding faction analytics
   hooks and navigation nodes while feeding telemetry through the shared bridge.
+- Session 96 added branch objective dialogue triggers for the coordination chamber and signal array,
+  verified in `tests/game/scenes/Act2BranchObjectiveDialogues.test.js`, and validated telemetry flow
+  with `QuestTelemetryValidationHarness` + updated `QuestTriggerTelemetryBridge` coverage.
 
 ## Thread C: Personal Investigation Trigger Map
 
@@ -148,3 +158,6 @@ strategy and acceptance criteria.
   analytics can correlate player behaviour across multiple investigative passes.
 - Session 95 introduced projection analysis and broadcast commitment beats, extending knowledge
   ledger hooks and ensuring telemetry runs through the shared bridge for conspiracy analytics.
+- Session 96 wired the projection lab and shadow broadcast objectives into remote ops dialogue flows,
+  backed by `tests/game/scenes/Act2BranchObjectiveDialogues.test.js`, and confirmed telemetry schema
+  health with `QuestTelemetryValidationHarness`.

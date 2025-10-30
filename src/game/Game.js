@@ -77,6 +77,7 @@ import { tutorialCase } from './data/cases/tutorialCase.js';
 // Dialogue data
 import { registerAct1Dialogues } from './data/dialogues/Act1Dialogues.js';
 import { registerAct2CrossroadsDialogues } from './data/dialogues/Act2CrossroadsDialogue.js';
+import { registerAct2BranchObjectiveDialogues } from './data/dialogues/Act2BranchObjectiveDialogues.js';
 
 // Entity factories
 import { createPlayerEntity } from './entities/PlayerEntity.js';
@@ -429,6 +430,10 @@ export class Game {
     // Register Act 2 crossroads dialogue
     registerAct2CrossroadsDialogues(this.gameSystems.dialogue);
     console.log('[Game] Act 2 Crossroads dialogues registered');
+
+    // Register Act 2 branch objective dialogues
+    registerAct2BranchObjectiveDialogues(this.gameSystems.dialogue);
+    console.log('[Game] Act 2 branch objective dialogues registered');
 
     // Create camera follow system
     this.gameSystems.cameraFollow = new CameraFollowSystem(

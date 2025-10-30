@@ -13,6 +13,7 @@ import { GameConfig } from '../config/GameConfig.js';
 import { TriggerMigrationToolkit } from '../quests/TriggerMigrationToolkit.js';
 import { QuestTriggerRegistry } from '../quests/QuestTriggerRegistry.js';
 import { seedAct2CrossroadsTriggers } from '../data/quests/act2TriggerDefinitions.js';
+import { AssetLoader } from '../../engine/assets/AssetLoader.js';
 
 export const ACT2_CROSSROADS_TRIGGER_IDS = Object.freeze({
   CHECKPOINT: 'act2_crossroads_checkpoint',
@@ -310,10 +311,139 @@ function ensureAct2TriggerDefinitions() {
   seedAct2CrossroadsTriggers(QuestTriggerRegistry);
 }
 
-function cloneSegments(segments) {
-  return segments.map((segment) => ({
+function resolveAct2CrossroadsArtSegments() {
+  const artConfig = GameConfig?.sceneArt?.act2Crossroads ?? null;
+
+  if (!artConfig) {
+    return {
+      floors: cloneSegments(FLOOR_SEGMENTS),
+      accents: cloneSegments(ACCENT_SEGMENTS),
+      lightColumns: cloneSegments(LIGHT_COLUMN_SEGMENTS),
+      boundaries: cloneSegments(BOUNDARY_SEGMENTS),
+    };
+  }
+
+  return {
+    floors: mergeSegmentCollection(artConfig.floors, FLOOR_SEGMENTS, 'floor'),
+    accents: mergeSegmentCollection(artConfig.accents, ACCENT_SEGMENTS, 'accent'),
+    lightColumns: mergeSegmentCollection(
+      artConfig.lightColumns,
+      LIGHT_COLUMN_SEGMENTS,
+      'light_column'
+    ),
+    boundaries: mergeSegmentCollection(artConfig.boundaries, BOUNDARY_SEGMENTS, 'boundary'),
+  };
+}
+
+function mergeSegmentCollection(overrides, fallback, prefix) {
+  if (!Array.isArray(overrides) || overrides.length === 0) {
+    return fallback.map(cloneSegmentDetails);
+  }
+
+  const fallbackById = new Map(fallback.map((segment) => [segment.id, segment]));
+
+  return overrides.map((override, index) => {
+    const fallbackSegment =
+      (override && typeof override.id === 'string' && fallbackById.get(override.id)) ||
+      fallback[index] ||
+      null;
+    return cloneSegmentDetails(normalizeSegment(override, fallbackSegment, `${prefix}_${index}`));
+  });
+}
+
+function normalizeSegment(segment, fallback, generatedId) {
+  const base = fallback && typeof fallback === 'object' ? fallback : {};
+  const candidate = segment && typeof segment === 'object' ? segment : {};
+
+  const id =
+    typeof candidate.id === 'string' && candidate.id.length > 0
+      ? candidate.id
+      : typeof base.id === 'string' && base.id.length > 0
+      ? base.id
+      : generatedId;
+
+  const metadata =
+    candidate.metadata && typeof candidate.metadata === 'object'
+      ? { ...candidate.metadata }
+      : base.metadata && typeof base.metadata === 'object'
+      ? { ...base.metadata }
+      : undefined;
+
+  const tags = Array.isArray(candidate.tags)
+    ? [...candidate.tags]
+    : Array.isArray(base.tags)
+    ? [...base.tags]
+    : undefined;
+
+  return {
+    id,
+    x: toNumber(candidate.x, base.x ?? 0),
+    y: toNumber(candidate.y, base.y ?? 0),
+    width: toNumber(candidate.width, base.width ?? 0),
+    height: toNumber(candidate.height, base.height ?? 0),
+    rotation: toNumber(candidate.rotation, base.rotation ?? 0),
+    layer: typeof candidate.layer === 'string' ? candidate.layer : base.layer ?? 'ground',
+    zIndex: toNumber(candidate.zIndex, base.zIndex ?? 0),
+    color: typeof candidate.color === 'string' ? candidate.color : base.color ?? '#1d2c44',
+    alpha: toAlpha(candidate.alpha, base.alpha ?? 1),
+    image: isHtmlImageElement(candidate.image) ? candidate.image : base.image ?? null,
+    imageUrl:
+      typeof candidate.imageUrl === 'string'
+        ? candidate.imageUrl
+        : typeof base.imageUrl === 'string'
+        ? base.imageUrl
+        : null,
+    assetId:
+      typeof candidate.assetId === 'string'
+        ? candidate.assetId
+        : typeof base.assetId === 'string'
+        ? base.assetId
+        : null,
+    visible:
+      typeof candidate.visible === 'boolean'
+        ? candidate.visible
+        : typeof base.visible === 'boolean'
+        ? base.visible
+        : true,
+    tags,
+    metadata,
+  };
+}
+
+function toNumber(value, fallback) {
+  return Number.isFinite(value) ? value : Number.isFinite(fallback) ? fallback : 0;
+}
+
+function toAlpha(value, fallback) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.min(1, Math.max(0, value));
+  }
+  if (typeof fallback === 'number' && Number.isFinite(fallback)) {
+    return Math.min(1, Math.max(0, fallback));
+  }
+  return 1;
+}
+
+function isHtmlImageElement(value) {
+  return typeof HTMLImageElement !== 'undefined' && value instanceof HTMLImageElement;
+}
+
+function cloneSegmentDetails(segment) {
+  if (!segment || typeof segment !== 'object') {
+    return {};
+  }
+  return {
     ...segment,
-  }));
+    tags: Array.isArray(segment.tags) ? [...segment.tags] : segment.tags ?? undefined,
+    metadata:
+      segment.metadata && typeof segment.metadata === 'object'
+        ? { ...segment.metadata }
+        : segment.metadata ?? undefined,
+  };
+}
+
+function cloneSegments(segments) {
+  return segments.map((segment) => cloneSegmentDetails(segment));
 }
 
 function cloneNavigationMesh(template = ACT2_CROSSROADS_NAVIGATION_TEMPLATE) {
@@ -350,14 +480,14 @@ function createRectSpriteEntity(entityManager, componentRegistry, segment) {
     entityId,
     'Sprite',
     new Sprite({
-      image: null,
+      image: isHtmlImageElement(segment.image) ? segment.image : null,
       width: segment.width,
       height: segment.height,
-      color: segment.color,
-      alpha: segment.alpha ?? 1,
+      color: typeof segment.color === 'string' ? segment.color : '#1d2c44',
+      alpha: toAlpha(segment.alpha, 1),
       layer: segment.layer ?? 'ground',
       zIndex: segment.zIndex ?? 0,
-      visible: true,
+      visible: segment.visible !== false,
     })
   );
   return entityId;
@@ -422,11 +552,13 @@ export class Act2CrossroadsScene {
     this.sceneEntities = new Set();
     this._triggerEntities = new Set();
     this._questTriggerToolkit = null;
+    this._assetLoader = null;
     this._ambientController = null;
     this._cleanupHandlers = [];
     this._navigationMesh = null;
     this._triggerDefinitions = new Map();
     this._activePromptArea = null;
+    this._artSegments = null;
     this.metadata = {
       navigationMesh: null,
       ambientAudioController: null,
@@ -436,6 +568,7 @@ export class Act2CrossroadsScene {
         triggerId,
         ...layout,
       })),
+      artSource: null,
     };
   }
 
@@ -451,11 +584,14 @@ export class Act2CrossroadsScene {
     ensureAct2TriggerDefinitions();
 
     this._triggerDefinitions.clear();
-    this._activePromptArea = null;
+   this._activePromptArea = null;
 
     this._questTriggerToolkit = new TriggerMigrationToolkit(this.componentRegistry, this.eventBus);
 
-    const geometryEntities = this._createStaticGeometry();
+    this._artSegments = resolveAct2CrossroadsArtSegments();
+    await this._primeArtAssets(this._artSegments);
+
+    const geometryEntities = this._createStaticGeometry(this._artSegments);
     for (const id of geometryEntities) {
       this.sceneEntities.add(id);
     }
@@ -481,11 +617,12 @@ export class Act2CrossroadsScene {
     this._navigationMesh = cloneNavigationMesh();
     this.metadata.navigationMesh = this._navigationMesh;
     this.metadata.geometry = {
-      floors: cloneSegments(FLOOR_SEGMENTS),
-      accents: cloneSegments(ACCENT_SEGMENTS),
-      lightColumns: cloneSegments(LIGHT_COLUMN_SEGMENTS),
-      boundaries: cloneSegments(BOUNDARY_SEGMENTS),
+      floors: cloneSegments(this._artSegments?.floors ?? []),
+      accents: cloneSegments(this._artSegments?.accents ?? []),
+      lightColumns: cloneSegments(this._artSegments?.lightColumns ?? []),
+      boundaries: cloneSegments(this._artSegments?.boundaries ?? []),
     };
+    this.metadata.artSource = GameConfig?.sceneArt?.act2Crossroads ?? null;
 
     const ambientSummary = this._setupAmbientAudio();
     this._bindTriggerEventHandlers();
@@ -520,6 +657,7 @@ export class Act2CrossroadsScene {
     this._questTriggerToolkit = null;
     this._navigationMesh = null;
     this._ambientController = null;
+    this._artSegments = null;
     this.metadata = {
       navigationMesh: null,
       ambientAudioController: null,
@@ -529,6 +667,7 @@ export class Act2CrossroadsScene {
         triggerId,
         ...layout,
       })),
+      artSource: null,
     };
     this._triggerDefinitions.clear();
     this._activePromptArea = null;
@@ -563,26 +702,85 @@ export class Act2CrossroadsScene {
     return entityId;
   }
 
-  _createStaticGeometry() {
-    if (!this.entityManager || !this.componentRegistry) {
+  async _primeArtAssets(artSegments) {
+    if (!artSegments) {
+      return;
+    }
+
+    const categories = ['floors', 'accents', 'lightColumns'];
+    const segmentsToLoad = [];
+
+    for (const category of categories) {
+      const collection = Array.isArray(artSegments[category]) ? artSegments[category] : [];
+      for (const segment of collection) {
+        if (
+          !segment ||
+          typeof segment !== 'object' ||
+          isHtmlImageElement(segment.image) ||
+          typeof segment.imageUrl !== 'string' ||
+          segment.imageUrl.length === 0
+        ) {
+          continue;
+        }
+        segmentsToLoad.push(segment);
+      }
+    }
+
+    if (segmentsToLoad.length === 0) {
+      return;
+    }
+
+    if (!this._assetLoader) {
+      this._assetLoader = new AssetLoader({
+        maxRetries: 2,
+        retryDelay: 400,
+        timeout: 20000,
+      });
+    }
+
+    await Promise.all(
+      segmentsToLoad.map(async (segment) => {
+        try {
+          const image = await this._assetLoader.loadImage(segment.imageUrl);
+          if (image) {
+            segment.image = image;
+          }
+        } catch (error) {
+          console.warn(
+            `[Act2CrossroadsScene] Failed to load art asset for "${segment.id}" (${segment.imageUrl})`,
+            error
+          );
+          segment.image = null;
+        }
+      })
+    );
+  }
+
+  _createStaticGeometry(artSegments) {
+    if (!this.entityManager || !this.componentRegistry || !artSegments) {
       return [];
     }
 
+    const floors = Array.isArray(artSegments.floors) ? artSegments.floors : [];
+    const accents = Array.isArray(artSegments.accents) ? artSegments.accents : [];
+    const lightColumns = Array.isArray(artSegments.lightColumns) ? artSegments.lightColumns : [];
+    const boundaries = Array.isArray(artSegments.boundaries) ? artSegments.boundaries : [];
+
     const createdEntities = [];
 
-    for (const segment of FLOOR_SEGMENTS) {
+    for (const segment of floors) {
       createdEntities.push(createRectSpriteEntity(this.entityManager, this.componentRegistry, segment));
     }
 
-    for (const segment of ACCENT_SEGMENTS) {
+    for (const segment of accents) {
       createdEntities.push(createRectSpriteEntity(this.entityManager, this.componentRegistry, segment));
     }
 
-    for (const segment of LIGHT_COLUMN_SEGMENTS) {
+    for (const segment of lightColumns) {
       createdEntities.push(createRectSpriteEntity(this.entityManager, this.componentRegistry, segment));
     }
 
-    for (const segment of BOUNDARY_SEGMENTS) {
+    for (const segment of boundaries) {
       createdEntities.push(
         createBoundaryEntity(this.entityManager, this.componentRegistry, segment, {
           renderDebugSprite: false,
