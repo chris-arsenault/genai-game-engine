@@ -10,6 +10,9 @@ import { RoomInstance } from '../../engine/procedural/RoomInstance.js';
 import { TileRotationMatrix } from '../../engine/procedural/TileRotationMatrix.js';
 import TileMap, { TileType } from './TileMap.js';
 import { BSPGenerator } from './BSPGenerator.js';
+import { TemplateVariantResolver } from './TemplateVariantResolver.js';
+import { TilemapTransformer } from './TilemapTransformer.js';
+import { CorridorSeamPainter } from './CorridorSeamPainter.js';
 
 /**
  * Room type constants for semantic district generation
@@ -136,6 +139,21 @@ export class DistrictGenerator {
         ? config.rotationAngles
         : [0, 90, 180, 270],
     };
+
+    this.templateVariantResolver =
+      config.templateVariantResolver instanceof TemplateVariantResolver
+        ? config.templateVariantResolver
+        : new TemplateVariantResolver(config.templateVariantManifest || null);
+
+    this.tilemapTransformer =
+      config.tilemapTransformer instanceof TilemapTransformer
+        ? config.tilemapTransformer
+        : new TilemapTransformer();
+
+    this.corridorSeamPainter =
+      config.corridorSeamPainter instanceof CorridorSeamPainter
+        ? config.corridorSeamPainter
+        : new CorridorSeamPainter();
   }
 
   /**
@@ -720,33 +738,82 @@ export class DistrictGenerator {
     // Fill with empty/wall
     tilemap.fill(TileType.EMPTY);
 
+    const placements = [];
+
     // Copy each room's tilemap to position
     for (const room of rooms) {
       const data = roomData.get(room.id);
       if (!data || !data.tilemap) continue;
 
-      const templateWidth = data.tilemap.width;
-      const templateHeight = data.tilemap.height;
-      const rotation = TileRotationMatrix.normalizeRotation(room.rotation ?? data.rotation ?? 0);
+      const baseRotation = TileRotationMatrix.normalizeRotation(room.rotation ?? data.rotation ?? 0);
+      let variantSummary = null;
 
-      for (let y = 0; y < templateHeight; y++) {
-        for (let x = 0; x < templateWidth; x++) {
-          const tile = data.tilemap.getTile(x, y);
-          const rotated = TileRotationMatrix.rotateTileCoords(
-            x,
-            y,
-            templateWidth,
-            templateHeight,
-            rotation
-          );
-          const worldX = room.x + rotated.x;
-          const worldY = room.y + rotated.y;
+      try {
+        variantSummary = this.templateVariantResolver.resolve({
+          room,
+          template: data,
+          rotation: baseRotation,
+        });
+      } catch (error) {
+        console.warn('[DistrictGenerator] Variant resolver failed; falling back to base template', {
+          roomId: room.id,
+          error,
+        });
+      }
 
-          if (worldX >= 0 && worldX < tilemap.width && worldY >= 0 && worldY < tilemap.height) {
-            tilemap.setTile(worldX, worldY, tile);
-          }
+      const resolvedTilemap = variantSummary?.tilemap || data.tilemap;
+      if (!resolvedTilemap) {
+        continue;
+      }
+
+      const resolvedRotation = TileRotationMatrix.normalizeRotation(
+        variantSummary?.rotation ?? baseRotation
+      );
+
+      let transformResult = null;
+      try {
+        transformResult = this.tilemapTransformer.transform(resolvedTilemap, {
+          rotation: resolvedRotation,
+          metadata: {
+            roomId: room.id,
+            roomType: room.type,
+            variantId: variantSummary?.variantId ?? null,
+          },
+        });
+      } catch (error) {
+        console.warn('[DistrictGenerator] Tilemap transformation failed; using original layout', {
+          roomId: room.id,
+          error,
+        });
+        transformResult = {
+          rotation: baseRotation,
+          width: resolvedTilemap.width,
+          height: resolvedTilemap.height,
+          tiles: this._extractTilemapTiles(resolvedTilemap),
+        };
+      }
+
+      for (const entry of transformResult.tiles) {
+        const worldX = room.x + entry.x;
+        const worldY = room.y + entry.y;
+
+        if (worldX >= 0 && worldX < tilemap.width && worldY >= 0 && worldY < tilemap.height) {
+          tilemap.setTile(worldX, worldY, entry.tile);
         }
       }
+
+      placements.push({
+        roomId: room.id,
+        roomType: room.type,
+        position: { x: room.x, y: room.y },
+        size: {
+          width: transformResult.width ?? resolvedTilemap.width,
+          height: transformResult.height ?? resolvedTilemap.height,
+        },
+        rotation: transformResult.rotation ?? resolvedRotation,
+        variantId: variantSummary?.variantId ?? null,
+        metadata: variantSummary?.metadata ?? null,
+      });
     }
 
     // Carve corridors
@@ -762,7 +829,37 @@ export class DistrictGenerator {
       }
     }
 
+    this.corridorSeamPainter.apply(tilemap, {
+      rooms,
+      corridors,
+      placements,
+      roomData,
+    });
+
     return tilemap;
+  }
+
+  /**
+   * Extract tile entries from a TileMap.
+   * @private
+   * @param {TileMap} tilemap
+   * @returns {Array<{x: number, y: number, tile: number}>}
+   */
+  _extractTilemapTiles(tilemap) {
+    const tiles = [];
+    if (!tilemap || typeof tilemap.getTile !== 'function') {
+      return tiles;
+    }
+    for (let y = 0; y < tilemap.height; y++) {
+      for (let x = 0; x < tilemap.width; x++) {
+        tiles.push({
+          x,
+          y,
+          tile: tilemap.getTile(x, y),
+        });
+      }
+    }
+    return tiles;
   }
 
   /**

@@ -206,7 +206,9 @@ export class GameplayAdaptiveAudioBridge {
     return {
       ...this._state,
       moodHintSource: this._moodHintSource,
+      moodHintExpireAt: this._moodHintExpireAt,
       scramblerExpireAt: this._scramblerExpireAt,
+      playerEntityId: this._playerEntityId,
     };
   }
 

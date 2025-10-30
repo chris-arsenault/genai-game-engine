@@ -180,4 +180,38 @@ describe('Game audio telemetry integration', () => {
       expect.objectContaining({ fadeDuration: 1.2 })
     );
   });
+
+  it('exposes gameplay adaptive bridge telemetry snapshot', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2025-10-31T00:00:00Z'));
+
+    await game.initializeAudioIntegrations();
+    expect(game.gameplayAdaptiveAudioBridge).toBeTruthy();
+
+    try {
+      eventBus.emit('disguise:suspicious_action', { totalSuspicion: 42 });
+      eventBus.emit('disguise:alert_started', { suspicionLevel: 42 });
+      eventBus.emit('firewall:scrambler_activated', { durationSeconds: 5 });
+      eventBus.emit('area:entered', {
+        areaId: 'crime_scene_entry',
+        metadata: { moodHint: 'investigation_peak' },
+      });
+
+      const bridgeTelemetry = game.getGameplayAdaptiveBridgeTelemetry();
+      expect(bridgeTelemetry).toEqual(
+        expect.objectContaining({
+          suspicion: 42,
+          alertActive: true,
+          combatEngaged: false,
+          scramblerActive: true,
+          moodHint: 'investigation_peak',
+          moodHintSource: 'crime_scene_entry',
+        })
+      );
+      expect(bridgeTelemetry.scramblerExpiresInMs).toBe(5000);
+      expect(bridgeTelemetry.moodHintExpiresInMs).toBe(6000);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
 });

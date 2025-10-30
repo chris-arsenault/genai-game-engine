@@ -402,10 +402,11 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Priority**: P0
 - **Tags**: `audio`, `gameplay`, `stealth`
 - **Effort**: 3 hours
-- **Status**: 🟡 In Progress — Gameplay bridge now routes disguise/combat/scrambler events; integration coverage and telemetry polish remain.
+- **Status**: 🟡 In Progress — Gameplay bridge and telemetry are live; narrative mood hints remain before close.
 - **Summary**: Wire DisguiseSystem, Firewall Scrambler, and combat suspicion events into the adaptive music EventBus so stealth/combat transitions trigger without manual injections.
 - **Progress (Session #79)**: Added `SuspicionMoodMapper`, `AdaptiveMoodEmitter`, and Jest suites; `Game.initializeAudioIntegrations()` now instantiates the emitter for telemetry-ready mood requests.
 - **Progress (Session #80)**: Implemented `GameplayAdaptiveAudioBridge`, wired it into `Game.initializeAudioIntegrations()` behind `GameConfig.audio.enableGameplayEmitters`, and added Jest coverage (`tests/game/audio/GameplayAdaptiveAudioBridge.test.js`) for snapshot emission and mood hint handling.
+- **Progress (Session #81)**: Authored integration coverage (`tests/game/audio/GameplayAdaptiveAudioIntegration.test.js`) driving disguise/combat/scrambler events through the bridge and extended the debug audio overlay with gameplay diagnostics for designers.
 - **Acceptance Criteria**:
   - DisguiseSystem emits adaptive mood events when disguises equip, suspicion crosses thresholds, and combat triggers resolve.
   - Firewall scrambler windows emit stealth boosts with timed mood reverts aligned to scrambler lifetimes.
@@ -430,10 +431,11 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Priority**: P1
 - **Tags**: `procedural`, `rendering`, `engine`
 - **Effort**: 5 hours
-- **Status**: 🟡 In Progress — DistrictGenerator now applies rotation math; variant resolver and seam painting remain.
+- **Status**: 🟡 In Progress — Rotation pipeline scaffolding landed; variant manifests, seam painting, and benchmarks remain.
 - **Summary**: Rotate room tilemaps or select orientation variants so procedural districts render correctly when rooms are rotated; ensure corridor seams host proper door tiles.
 - **Progress (Session #79)**: Implemented `TileRotationMatrix` with coordinate transforms and Jest coverage to power upcoming tilemap transformer work.
 - **Progress (Session #80)**: Integrated `TileRotationMatrix` into `DistrictGenerator._buildFinalTilemap` and extended Jest coverage (`tests/game/procedural/DistrictGenerator.test.js`) to confirm rotated tiles land at expected coordinates.
+- **Progress (Session #81)**: Stubbed TemplateVariantResolver, TilemapTransformer, and CorridorSeamPainter, refactored `DistrictGenerator` to route room placement through the new pipeline, and added coverage in `tests/game/procedural/TilemapInfrastructure.test.js`.
 - **Acceptance Criteria**:
   - Rotated rooms display correct tile orientation without misaligned seams.
   - Corridor seam painter places door tiles matching rotation.

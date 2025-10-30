@@ -2260,6 +2260,59 @@ export class Game {
   }
 
   /**
+   * Retrieve gameplay adaptive audio bridge diagnostics for debug overlays.
+   * @returns {{
+   *  suspicion: number,
+   *  alertActive: boolean,
+   *  combatEngaged: boolean,
+   *  scramblerActive: boolean,
+   *  scramblerExpiresInMs: number|null,
+   *  moodHint: string|null,
+   *  moodHintSource: string|null,
+   *  moodHintExpiresInMs: number|null,
+   *  playerEntityId: number|null
+   * }|null}
+   */
+  getGameplayAdaptiveBridgeTelemetry() {
+    if (
+      !this.gameplayAdaptiveAudioBridge ||
+      typeof this.gameplayAdaptiveAudioBridge.getState !== 'function'
+    ) {
+      return null;
+    }
+
+    const snapshot = this.gameplayAdaptiveAudioBridge.getState();
+    if (!snapshot || typeof snapshot !== 'object') {
+      return null;
+    }
+
+    const now = Date.now();
+    const computeRemaining = (timestamp) => {
+      if (!Number.isFinite(timestamp) || timestamp <= 0) {
+        return null;
+      }
+      return Math.max(0, timestamp - now);
+    };
+
+    const suspicion = Number.isFinite(snapshot.suspicion) ? snapshot.suspicion : 0;
+    const moodHintRaw = typeof snapshot.moodHint === 'string' ? snapshot.moodHint.trim() : '';
+    const moodHintSourceRaw =
+      typeof snapshot.moodHintSource === 'string' ? snapshot.moodHintSource.trim() : '';
+
+    return {
+      suspicion,
+      alertActive: Boolean(snapshot.alertActive),
+      combatEngaged: Boolean(snapshot.combatEngaged),
+      scramblerActive: Boolean(snapshot.scramblerActive),
+      scramblerExpiresInMs: computeRemaining(snapshot.scramblerExpireAt),
+      moodHint: moodHintRaw || null,
+      moodHintSource: moodHintSourceRaw || null,
+      moodHintExpiresInMs: computeRemaining(snapshot.moodHintExpireAt),
+      playerEntityId: Number.isFinite(snapshot.playerEntityId) ? snapshot.playerEntityId : null,
+    };
+  }
+
+  /**
    * Expose SFX catalog entries for debug tooling and designer previews.
    * @returns {Array<object>} Array of SFX descriptors
    */

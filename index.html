@@ -237,6 +237,54 @@
       margin-top: 3px;
     }
 
+    .debug-audio-bridge {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .debug-audio-bridge-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      padding: 4px 6px;
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.35);
+      color: rgba(255, 255, 255, 0.82);
+    }
+
+    .debug-audio-bridge-row .label {
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      opacity: 0.72;
+    }
+
+    .debug-audio-bridge-row .value {
+      font-weight: 600;
+    }
+
+    .debug-audio-bridge-row[data-tone="alert"] {
+      color: #f4b35a;
+    }
+
+    .debug-audio-bridge-row[data-tone="combat"] {
+      color: #ff6b6b;
+    }
+
+    .debug-audio-bridge-row[data-tone="scrambler"] {
+      color: #4dd0e1;
+    }
+
+    .debug-audio-bridge-row[data-tone="hint"] {
+      color: #b388ff;
+    }
+
+    .debug-audio-bridge-row[data-tone="muted"] {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
     .debug-sfx-controls {
       display: flex;
       flex-wrap: wrap;
@@ -462,6 +510,15 @@
           <div id="debug-audio-state" class="debug-audio-meta">State: n/a</div>
           <div id="debug-audio-history" class="debug-audio-history">
             <div class="debug-sfx-empty">No transitions recorded</div>
+          </div>
+        </div>
+        <div class="debug-audio-section">
+          <div class="debug-subtitle">Gameplay Bridge</div>
+          <div id="debug-audio-bridge" class="debug-audio-bridge">
+            <div class="debug-audio-bridge-row" data-tone="muted">
+              <span class="label">Bridge</span>
+              <span class="value">initializing…</span>
+            </div>
           </div>
         </div>
         <div class="debug-audio-section">

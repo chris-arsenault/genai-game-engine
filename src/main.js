@@ -67,6 +67,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   const debugTutorialSnapshots = document.getElementById('debug-tutorial-snapshots');
   const debugAudioState = document.getElementById('debug-audio-state');
   const debugAudioHistory = document.getElementById('debug-audio-history');
+  const debugAudioBridge = document.getElementById('debug-audio-bridge');
   const debugSfxList = document.getElementById('debug-sfx-list');
   const debugSfxFilterInput = document.getElementById('debug-sfx-filter');
   const debugSfxTagFilters = document.getElementById('debug-sfx-tag-filters');
@@ -100,6 +101,20 @@ window.addEventListener('DOMContentLoaded', async () => {
       return `${Math.round(diff / 3600000)}h ago`;
     }
     return `${Math.round(diff / 86400000)}d ago`;
+  };
+
+  const formatDurationShort = (milliseconds) => {
+    if (!Number.isFinite(milliseconds) || milliseconds < 0) {
+      return 'n/a';
+    }
+    if (milliseconds >= 1000) {
+      const seconds = milliseconds / 1000;
+      if (seconds >= 10) {
+        return `${Math.round(seconds)}s`;
+      }
+      return `${seconds.toFixed(1)}s`;
+    }
+    return `${Math.round(milliseconds)}ms`;
   };
 
   const renderTranscriptEntries = (container, entries, { now, paused, shouldScroll }) => {
@@ -165,9 +180,11 @@ window.addEventListener('DOMContentLoaded', async () => {
   let sfxFilterText = '';
   let sfxTagFilter = null;
   let lastAudioHistorySignature = null;
+  let lastAudioBridgeSignature = null;
   let worldStateStoreErrorLogged = false;
   let factionCascadeSelectorErrorLogged = false;
   let tutorialSelectorErrorLogged = false;
+  let audioBridgeErrorLogged = false;
 
   if (debugDialogueControls) {
     debugDialogueControls.textContent = 'Controls: F3 toggle overlay · F4 pause/resume transcript';
@@ -650,6 +667,97 @@ window.addEventListener('DOMContentLoaded', async () => {
             row.appendChild(time);
             debugAudioHistory.appendChild(row);
           }
+        }
+      }
+    }
+
+    if (debugAudioBridge && window.game?.getGameplayAdaptiveBridgeTelemetry) {
+      let bridgeState = null;
+      try {
+        bridgeState = window.game.getGameplayAdaptiveBridgeTelemetry();
+      } catch (error) {
+        if (!audioBridgeErrorLogged) {
+          console.warn('[DebugOverlay] Failed to read adaptive bridge telemetry', error);
+          audioBridgeErrorLogged = true;
+        }
+        bridgeState = null;
+      }
+
+      const rows = [];
+      if (!bridgeState) {
+        rows.push({
+          label: 'Bridge',
+          value: 'disabled',
+          tone: 'muted',
+        });
+      } else {
+        const suspicion = Number.isFinite(bridgeState.suspicion) ? bridgeState.suspicion : 0;
+        rows.push({
+          label: 'Suspicion',
+          value: suspicion.toFixed(1),
+          tone: suspicion >= 60 ? 'combat' : suspicion >= 25 ? 'alert' : 'calm',
+        });
+        rows.push({
+          label: 'Alert',
+          value: bridgeState.alertActive ? 'active' : 'calm',
+          tone: bridgeState.alertActive ? 'alert' : 'muted',
+        });
+        rows.push({
+          label: 'Combat',
+          value: bridgeState.combatEngaged ? 'engaged' : 'idle',
+          tone: bridgeState.combatEngaged ? 'combat' : 'muted',
+        });
+        rows.push({
+          label: 'Scrambler',
+          value: bridgeState.scramblerActive
+            ? `active · ${formatDurationShort(bridgeState.scramblerExpiresInMs)}`
+            : 'inactive',
+          tone: bridgeState.scramblerActive ? 'scrambler' : 'muted',
+        });
+        rows.push({
+          label: 'Mood hint',
+          value: bridgeState.moodHint
+            ? `${bridgeState.moodHint}${
+                bridgeState.moodHintSource ? ` (${bridgeState.moodHintSource})` : ''
+              }${
+                Number.isFinite(bridgeState.moodHintExpiresInMs)
+                  ? ` · ${formatDurationShort(bridgeState.moodHintExpiresInMs)}`
+                  : ''
+              }`
+            : 'none',
+          tone: bridgeState.moodHint ? 'hint' : 'muted',
+        });
+        if (bridgeState.playerEntityId != null) {
+          rows.push({
+            label: 'Player',
+            value: `entity ${bridgeState.playerEntityId}`,
+            tone: 'muted',
+          });
+        }
+      }
+
+      const signature = rows.map((row) => `${row.label}:${row.value}:${row.tone ?? ''}`).join('|');
+      if (signature !== lastAudioBridgeSignature) {
+        lastAudioBridgeSignature = signature;
+        debugAudioBridge.innerHTML = '';
+
+        for (const row of rows) {
+          const rowEl = document.createElement('div');
+          rowEl.className = 'debug-audio-bridge-row';
+          if (row.tone) {
+            rowEl.dataset.tone = row.tone;
+          }
+
+          const labelEl = document.createElement('span');
+          labelEl.className = 'label';
+          labelEl.textContent = row.label;
+          const valueEl = document.createElement('span');
+          valueEl.className = 'value';
+          valueEl.textContent = row.value;
+
+          rowEl.appendChild(labelEl);
+          rowEl.appendChild(valueEl);
+          debugAudioBridge.appendChild(rowEl);
         }
       }
     }
