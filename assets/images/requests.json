@@ -17,9 +17,11 @@
     "creator": "Codex Placeholder Generator",
     "source": "assets/generated/ar-placeholders/image-ar-001-deduction-board-bg.png",
     "license": "Internal placeholder (Session 115)",
-    "status": "placeholder-generated",
+    "status": "bespoke-scheduled",
+    "scheduledWeek": 1,
+    "scheduledOn": "2025-11-13",
     "usage": "1024x768 deduction board backdrop for investigative UI overlay.",
-    "notes": "Needs layered neon corkboard vibe with space for clue nodes and narrative callouts. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
+    "notes": "Needs layered neon corkboard vibe with space for clue nodes and narrative callouts. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use. | Week 1 bespoke slot kicked off 2025-11-13; awaiting concept sketches.",
     "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00"
   },
   {
@@ -29,9 +31,11 @@
     "creator": "Codex Placeholder Generator",
     "source": "assets/generated/ar-placeholders/image-ar-001-clue-node-pack.png",
     "license": "Internal placeholder (Session 115)",
-    "status": "placeholder-generated",
+    "status": "bespoke-scheduled",
+    "scheduledWeek": 1,
+    "scheduledOn": "2025-11-13",
     "usage": "64x64 node sprites representing active, solved, and locked clues on deduction board.",
-    "notes": "Requires at least three variations with animated pulse option for narrative emphasis. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
+    "notes": "Requires at least three variations with animated pulse option for narrative emphasis. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use. | Week 1 bespoke slot kicked off 2025-11-13 with asset brief sent to vendor.",
     "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00"
   },
   {
@@ -41,9 +45,11 @@
     "creator": "Codex Placeholder Generator",
     "source": "assets/generated/ar-placeholders/image-ar-001-evidence-icon-set.png",
     "license": "Internal placeholder (Session 115)",
-    "status": "placeholder-generated",
+    "status": "bespoke-scheduled",
+    "scheduledWeek": 1,
+    "scheduledOn": "2025-11-13",
     "usage": "32x32 icon suite for physical, digital, testimonial, and forensic evidence categories.",
-    "notes": "Icons must read at small sizes; include monochrome and color treatments. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
+    "notes": "Icons must read at small sizes; include monochrome and color treatments. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use. | Week 1 bespoke slot kicked off 2025-11-13 with UI art brief circulated.",
     "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00"
   },
   {
@@ -65,9 +71,11 @@
     "creator": "Codex Placeholder Generator",
     "source": "assets/generated/ar-placeholders/image-ar-002-generic-marker.png",
     "license": "Internal placeholder (Session 115)",
-    "status": "placeholder-generated",
+    "status": "bespoke-scheduled",
+    "scheduledWeek": 1,
+    "scheduledOn": "2025-11-13",
     "usage": "32x32 placeholder sprite for generic evidence pickups.",
-    "notes": "Needs blank label area for procedural numbering. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
+    "notes": "Needs blank label area for procedural numbering. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use. | Week 1 bespoke slot kicked off 2025-11-13; awaiting sketch approvals.",
     "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00"
   },
   {
@@ -161,9 +169,11 @@
     "creator": "Codex Placeholder Generator",
     "source": "assets/generated/ar-placeholders/image-ar-005-tileset-neon-district.png",
     "license": "Internal placeholder (Session 115)",
-    "status": "placeholder-generated",
+    "status": "bespoke-scheduled",
+    "scheduledWeek": 1,
+    "scheduledOn": "2025-11-13",
     "usage": "16x16 tile atlas for rain-soaked neon city blocks.",
-    "notes": "Needs wet reflections, signage layers, and animated neon strips. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
+    "notes": "Needs wet reflections, signage layers, and animated neon strips. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use. | Week 1 bespoke slot kicked off 2025-11-13; art brief includes latest lighting preview metrics.",
     "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00"
   },
   {

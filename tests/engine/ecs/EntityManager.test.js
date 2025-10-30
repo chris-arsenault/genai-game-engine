@@ -76,6 +76,7 @@ describe('EntityManager', () => {
         removeAllComponents: jest.fn(),
         queryEntities: jest.fn(() => []),
         clear: jest.fn(),
+        getComponentsForEntity: jest.fn(() => new Map()),
       };
       manager.setComponentRegistry(registry);
 
@@ -96,7 +97,8 @@ describe('EntityManager', () => {
 
       expect(listener).toHaveBeenCalledWith(
         id,
-        expect.objectContaining({ id, active: false })
+        expect.objectContaining({ id, active: false }),
+        null
       );
     });
   });

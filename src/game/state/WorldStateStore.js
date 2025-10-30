@@ -314,6 +314,21 @@ export class WorldStateStore {
         });
       }),
 
+      this.eventBus.on('faction:member_removed', (payload = {}) => {
+        this.dispatch({
+          type: 'FACTION_MEMBER_REMOVED',
+          domain: 'faction',
+          payload: {
+            factionId: payload.factionId ?? null,
+            factionName: payload.factionName ?? null,
+            npcId: payload.npcId ?? null,
+            entityId: payload.entityId ?? null,
+            tag: payload.tag ?? null,
+            removedAt: payload.removedAt ?? Date.now(),
+          },
+        });
+      }),
+
       this.eventBus.on('tutorial:started', (payload) => {
         this.dispatch({
           type: 'TUTORIAL_STARTED',

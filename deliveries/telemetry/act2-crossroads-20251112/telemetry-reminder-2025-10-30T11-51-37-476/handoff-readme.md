@@ -34,3 +34,6 @@ Next parity checkpoint is scheduled for 2025-11-13T11:00:21.857740+00:00. Monito
 - Attach the JSON and Markdown summary when emailing analytics.
 - Import the ICS into shared calendars and confirm alarms align with the warning threshold.
 
+## Share Log
+
+- 2025-11-13T09:15:00Z — Reminder package sent to Analytics; parity schedule `.ics` imported into shared calendar and alarm confirmed.

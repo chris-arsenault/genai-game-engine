@@ -91,6 +91,7 @@
 ## Session 118 Updates
 - Introduced `scripts/art/planPlaceholderReplacements.js` to translate the replacement plan into four weeks of focused art sprints (default outputs: `reports/art/placeholder-replacement-schedule.json|md`) with five assets scheduled per week starting 2025-11-03.
 - Week 1 covers AR-001 deduction UI plus the neon district tileset; Weeks 2–4 rotate through evidence props, NPC packs, and remaining district tilesets so narrative beats keep pace with art production.
+- 2025-11-13: Week 1 sprint kicked off — AR-001, AR-002, and AR-005 entries now flagged `bespoke-scheduled` with briefs dispatched to art.
 - Assign owners straight from the schedule and update `assets/images/requests.json` notes when each bespoke asset is approved to keep the plan and manifest in sync.
 - Added `scripts/art/stageRenderOpsDelivery.js` to mirror the latest packet (ZIP, manifests, summaries) into `deliveries/renderops/<label>/<timestamp>/` complete with staging-manifest and handoff README for immediate share-out.
 

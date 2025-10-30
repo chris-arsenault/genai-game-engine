@@ -6,7 +6,9 @@
   "json": "parity-schedule-reminder.json",
   "markdown": "parity-schedule-reminder.md",
   "ics": "parity-schedule-reminder.ics",
-  "status": "scheduled",
+  "status": "shared",
+  "sharedAt": "2025-11-13T09:15:00.000Z",
+  "shareNotes": "Reminder package emailed to analytics; ICS imported and alarm confirmed.",
   "nextCheckAt": "2025-11-13T11:00:21.857740+00:00",
   "dueInDays": 13.96440255787037,
   "alertLevel": "info",
@@ -14,5 +16,5 @@
     "Next parity checkpoint scheduled for 2025-11-13T11:00:21.857740+00:00 (13.96 days remaining)."
   ],
   "recommendedAction": "Next parity checkpoint is scheduled for 2025-11-13T11:00:21.857740+00:00. Monitor incoming analytics requests and be ready to acknowledge ahead of the deadline if data changes.",
-  "warningThresholdDays": 3
+  "warningThresholdDays": 2
 }

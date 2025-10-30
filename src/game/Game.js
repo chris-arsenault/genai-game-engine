@@ -100,6 +100,7 @@ import { Transform } from './components/Transform.js';
 import { Collider } from './components/Collider.js';
 import { Sprite } from './components/Sprite.js';
 import { TriggerSystem } from '../engine/physics/TriggerSystem.js';
+import { CollisionSystem } from '../engine/physics/CollisionSystem.js';
 
 const ACT1_RETURN_SPAWN = { x: 220, y: 360 };
 const DEFAULT_FORENSIC_TOOL_LABELS = Object.freeze({
@@ -196,10 +197,13 @@ export class Game {
       npcMemory: null,
       firewallScrambler: null,
       disguise: null,
+      collision: null,
       trigger: null,
       quest: null,
       render: null  // RenderSystem (engine system managed by game)
     };
+
+    this._onEntityDestroyed = null;
 
     // UI overlays
     this.tutorialOverlay = null;
@@ -373,6 +377,8 @@ export class Game {
     this.tutorialTranscriptRecorder.start();
     console.log('[Game] TutorialTranscriptRecorder started');
 
+    this._registerEntityLifecycleHooks();
+
     // Create investigation system (needed by other systems)
     this.gameSystems.investigation = new InvestigationSystem(
       this.componentRegistry,
@@ -474,6 +480,15 @@ export class Game {
       this.factionManager
     );
 
+    // Broad-phase collision instrumentation (metrics only for stealth tuning)
+    this.gameSystems.collision = new CollisionSystem(
+      this.componentRegistry,
+      this.eventBus,
+      {
+        resolveCollisions: false,
+      }
+    );
+
     // Create trigger system (engine physics layer for area triggers)
     this.gameSystems.trigger = new TriggerSystem(
       this.componentRegistry,
@@ -511,6 +526,7 @@ export class Game {
       ['npcMemory', this.gameSystems.npcMemory],
       ['firewallScrambler', this.gameSystems.firewallScrambler],
       ['disguise', this.gameSystems.disguise],
+      ['collision', this.gameSystems.collision],
       ['trigger', this.gameSystems.trigger],
       ['factionReputation', this.gameSystems.factionReputation],
       ['quest', this.gameSystems.quest],
@@ -532,6 +548,102 @@ export class Game {
     }
 
     console.log('[Game] Game systems initialized');
+  }
+
+  _registerEntityLifecycleHooks() {
+    if (!this.entityManager || !this.eventBus) {
+      return;
+    }
+
+    if (this._onEntityDestroyed) {
+      this.entityManager.offEntityDestroyed(this._onEntityDestroyed);
+      this._onEntityDestroyed = null;
+    }
+
+    this._onEntityDestroyed = (entityId, metadata, componentSnapshot) => {
+      const payload = this._createEntityDestructionPayload(
+        entityId,
+        metadata,
+        componentSnapshot
+      );
+      if (payload) {
+        this.eventBus.emit('entity:destroyed', payload);
+      }
+
+      if (this.questManager?.handleEntityDestroyed) {
+        this.questManager.handleEntityDestroyed(
+          entityId,
+          metadata,
+          componentSnapshot
+        );
+      }
+
+      if (this.factionManager?.handleEntityDestroyed) {
+        this.factionManager.handleEntityDestroyed(
+          entityId,
+          metadata,
+          componentSnapshot
+        );
+      }
+    };
+
+    this.entityManager.onEntityDestroyed(this._onEntityDestroyed);
+  }
+
+  _createEntityDestructionPayload(entityId, metadata, componentSnapshot) {
+    const payload = {
+      entityId,
+      tag: metadata?.tag ?? null,
+      wasActive: Boolean(metadata?.active),
+      timestamp: Date.now(),
+      components: [],
+    };
+
+    const narrative = {};
+
+    if (componentSnapshot instanceof Map) {
+      payload.components = Array.from(componentSnapshot.keys());
+
+      const npc = componentSnapshot.get('NPC');
+      const factionMember = componentSnapshot.get('FactionMember');
+      const questComponent = componentSnapshot.get('Quest');
+
+      if (npc) {
+        if (npc.npcId) {
+          narrative.npcId = npc.npcId;
+        }
+        if (npc.name) {
+          narrative.npcName = npc.name;
+        }
+        if (npc.faction) {
+          narrative.factionId = npc.faction;
+        }
+      }
+
+      if (factionMember && !narrative.factionId && factionMember.primaryFaction) {
+        narrative.factionId = factionMember.primaryFaction;
+      }
+
+      if (questComponent) {
+        if (questComponent.questId || questComponent.startQuestId) {
+          narrative.questId = questComponent.questId || questComponent.startQuestId;
+        }
+        if (questComponent.objectiveId) {
+          narrative.objectiveId = questComponent.objectiveId;
+        }
+      }
+    } else if (componentSnapshot && typeof componentSnapshot === 'object') {
+      const snapshotNarrative = componentSnapshot.narrative;
+      if (snapshotNarrative && typeof snapshotNarrative === 'object') {
+        Object.assign(narrative, snapshotNarrative);
+      }
+    }
+
+    if (Object.keys(narrative).length > 0) {
+      payload.narrative = narrative;
+    }
+
+    return payload;
   }
 
   initializeNavigationServices() {
@@ -1634,6 +1746,11 @@ export class Game {
     }
 
     this._clearForensicPromptState({ hidePrompt: true });
+
+    if (this._onEntityDestroyed) {
+      this.entityManager.offEntityDestroyed(this._onEntityDestroyed);
+      this._onEntityDestroyed = null;
+    }
 
     const offAvailable = this.eventBus.on('forensic:available', (payload) => {
       this._handleForensicAvailable(payload);

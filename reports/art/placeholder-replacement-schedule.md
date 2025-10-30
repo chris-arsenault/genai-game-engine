@@ -9,6 +9,8 @@ Total weeks: 4
 
 **Focus Requests:** AR-001 (3), AR-002 (1), AR-005 (1)
 
+_Status Update – 2025-11-13_: Kickoff initiated; briefs sent for AR-001 clue assets, AR-002 generic marker, and AR-005 neon district tiles. Requests marked `bespoke-scheduled` in `assets/images/requests.json`.
+
 | Day | Request | Asset | Priority | Recommended Action | Due Date |
 | --- | ------- | ----- | -------- | ------------------ | -------- |
 | Sunday (Day 1) | AR-001 | image-ar-001-clue-node-pack | STANDARD (85) | Schedule bespoke art replacement and capture licensing updates once approved. Leverage the drafted prompt to queue the generation batch. | 2025-11-03 |
@@ -48,4 +50,3 @@ Total weeks: 4
 | Day | Request | Asset | Priority | Recommended Action | Due Date |
 | --- | ------- | ----- | -------- | ------------------ | -------- |
 | Sunday (Day 1) | AR-005 | image-ar-005-tileset-zenith-sector | STANDARD (55) | Schedule bespoke art replacement and capture licensing updates once approved. Leverage the drafted prompt to queue the generation batch. | 2025-11-24 |
-

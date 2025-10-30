@@ -81,6 +81,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   const debugSystemsList = document.getElementById('debug-systems-list');
   const debugSystemsBudgetInput = document.getElementById('debug-systems-budget');
   const debugSystemsBudgetReset = document.getElementById('debug-systems-budget-reset');
+  const debugSpatialMeta = document.getElementById('debug-spatial-meta');
+  const debugSpatialList = document.getElementById('debug-spatial-list');
 
   const formatClock = (timestamp) => {
     if (!timestamp || Number.isNaN(timestamp)) {
@@ -198,6 +200,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   let lastSystemMetricsSignature = null;
   let systemMetricsErrorLogged = false;
   let debugSystemBudgetOverride = DEFAULT_SYSTEM_BUDGET_MS;
+  let lastSpatialSignature = null;
+  let spatialMetricsErrorLogged = false;
 
   const applyDebugSystemBudget = (rawValue, { syncInput = true, syncGlobal = true } = {}) => {
     const resolved = resolveDebugSystemBudget(rawValue, DEFAULT_SYSTEM_BUDGET_MS);
@@ -487,6 +491,73 @@ window.addEventListener('DOMContentLoaded', async () => {
               debugSystemsList.appendChild(row);
             }
           }
+        }
+      }
+    }
+
+    if ((debugSpatialMeta || debugSpatialList) && typeof engine.getSystemManager === 'function') {
+      let spatialSignature = 'no-data';
+      try {
+        const systemManager = engine.getSystemManager();
+        const collisionSystem =
+          systemManager && typeof systemManager.getSystem === 'function'
+            ? systemManager.getSystem('collision')
+            : null;
+        let metrics = null;
+
+        if (
+          collisionSystem &&
+          collisionSystem.spatialHash &&
+          typeof collisionSystem.spatialHash.getMetrics === 'function'
+        ) {
+          metrics = collisionSystem.spatialHash.getMetrics();
+          if (metrics) {
+            metrics.cellSize = collisionSystem.spatialHash.cellSize;
+            spatialSignature = [
+              metrics.cellCount,
+              metrics.trackedEntities,
+              metrics.maxBucketSize,
+              metrics.stats?.insertions ?? 0,
+              metrics.stats?.updates ?? 0,
+              metrics.stats?.removals ?? 0,
+            ].join('|');
+          }
+        }
+
+        if (spatialSignature !== lastSpatialSignature) {
+          lastSpatialSignature = spatialSignature;
+
+          if (debugSpatialMeta) {
+            debugSpatialMeta.textContent = metrics
+              ? `Cells: ${metrics.cellCount} · Entities: ${metrics.trackedEntities} · Max bucket: ${metrics.maxBucketSize}`
+              : 'Spatial hash: n/a';
+          }
+
+          if (debugSpatialList) {
+            if (!metrics) {
+              renderWorldList(debugSpatialList, [], 'No spatial data');
+            } else {
+              const rows = [
+                {
+                  text: `Cell size: ${metrics.cellSize}px · Buckets ${metrics.cellCount}`,
+                  tone: 'muted',
+                },
+                {
+                  text: `Ops — insert ${metrics.stats?.insertions ?? 0} · update ${
+                    metrics.stats?.updates ?? 0
+                  } · remove ${metrics.stats?.removals ?? 0}`,
+                  tone: 'muted',
+                },
+              ];
+              renderWorldList(debugSpatialList, rows, 'No spatial data');
+            }
+          }
+        }
+        spatialMetricsErrorLogged = false;
+      } catch (error) {
+        if (!spatialMetricsErrorLogged) {
+          console.warn('[DebugOverlay] Failed to read spatial hash metrics', error);
+          spatialMetricsErrorLogged = true;
         }
       }
     }

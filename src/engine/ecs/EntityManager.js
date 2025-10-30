@@ -105,6 +105,16 @@ export class EntityManager {
       this.activeEntityCount -= 1;
     }
 
+    let componentSnapshot = null;
+    if (this.componentRegistry) {
+      componentSnapshot = this.componentRegistry.getComponentsForEntity(
+        entityId
+      );
+      if (componentSnapshot && componentSnapshot.size === 0) {
+        componentSnapshot = null;
+      }
+    }
+
     if (removeComponents && this.componentRegistry) {
       this.componentRegistry.removeAllComponents(entityId);
     } else {
@@ -115,7 +125,7 @@ export class EntityManager {
     this.recycledIds.push(entityId);
     this.entityStats.recycled += 1;
 
-    this.#emitEntityDestroyed(entityId, metadata);
+    this.#emitEntityDestroyed(entityId, metadata, componentSnapshot);
     this.#releaseMetadata(metadata);
 
     return true;
@@ -399,7 +409,7 @@ export class EntityManager {
 
   /**
    * Registers a destroy listener.
-   * @param {(entityId:number, metadata:object)=>void} listener
+   * @param {(entityId:number, metadata:object, components:Map<string,*>|null)=>void} listener
    */
   onEntityDestroyed(listener) {
     if (listener) {
@@ -447,13 +457,23 @@ export class EntityManager {
     this.entityPool.push(metadata);
   }
 
-  #emitEntityDestroyed(entityId, metadata) {
+  #emitEntityDestroyed(entityId, metadata, componentSnapshot) {
     if (this.entityDestroyedListeners.size === 0) {
       return;
     }
 
     for (const listener of this.entityDestroyedListeners) {
-      listener(entityId, metadata);
+      try {
+        listener(entityId, metadata, componentSnapshot);
+      } catch (error) {
+        // Listener errors should not break entity destruction flow
+        if (typeof console !== 'undefined' && console.error) {
+          console.error(
+            '[EntityManager] Error in entityDestroyed listener',
+            error
+          );
+        }
+      }
     }
   }
 }

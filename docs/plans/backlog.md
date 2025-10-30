@@ -15,13 +15,27 @@
 
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
-| AR-050 | P0 | In Progress | Visual asset sourcing pipeline now covers Act 2 Crossroads selection conduit/pad, checkpoint glow/plaza, safehouse arc, boundary walls, and column beam overlays with CC0/CC-BY references captured in manifests; Session 112 calibrated tint/alpha parameters (~0.13 columns/conduits, ~0.75 boundaries), Session 113 added a lighting preview harness plus queued the AR-001–AR-005 generation batch, Session 114 boosted conduit/glow/column luminance so previewed segments meet thresholds, Session 115 delivered placeholder atlases for AR-001–AR-005, Session 116 layered RenderOps packet/placeholder audit automation, Session 117 shipped prioritized replacement plans, and Session 118 produced a four-week bespoke art sprint schedule plus delivery staging CLI. | Run `npm run art:package-renderops` followed by `npm run art:stage-renderops`, share the staged ZIP + delivery manifest with RenderOps, and execute the weekly bespoke schedule from `reports/art/placeholder-replacement-schedule.md` while updating manifests/licensing. |
+| AR-050 | P0 | In Progress | Visual asset sourcing pipeline now covers Act 2 Crossroads selection conduit/pad, checkpoint glow/plaza, safehouse arc, boundary walls, and column beam overlays with CC0/CC-BY references captured in manifests; Session 112 calibrated tint/alpha parameters (~0.13 columns/conduits, ~0.75 boundaries), Session 113 added a lighting preview harness plus queued the AR-001–AR-005 generation batch, Session 114 boosted conduit/glow/column luminance so previewed segments meet thresholds, Session 115 delivered placeholder atlases for AR-001–AR-005, Session 116 layered RenderOps packet/placeholder audit automation, Session 117 shipped prioritized replacement plans, and Session 118 produced a four-week bespoke art sprint schedule plus delivery staging CLI. | Monitor RenderOps feedback on the shared packet, drive Week 1 bespoke assignments per `reports/art/placeholder-replacement-schedule.md`, and update `assets/images/requests.json` as approvals land. |
 | TUT-201 | P0 | Completed | Tutorial case blocked at step 3 (`evidence_detection`) because legacy scene entities bypassed ECS detection events. | ECS-aligned tutorial scene entities shipped Session #51; re-run tutorial smoke tests after combat audio validation. |
 | AUDIO-351 | P0 | Completed | Validate live combat/disguise trigger routing through `AmbientSceneAudioController` using real combat loop events. | Adaptive audio routing now responds to gameplay emits; telemetry verified by Jest/Playwright suites and new infiltration benchmark. |
 | PERF-214 | P1 | Pending | Browser-level performance profiling for adaptive audio + overlay interactions to confirm <16 ms frame time budget. | Run Chromium/Firefox performance audits with combat/stealth transitions, log hotspots, and file perf follow-ups as needed. |
 | UX-173 | P1 | Pending | Improve debug audio overlay ergonomics (keyboard shortcuts, focus management). | Prototype keyboard navigation + focus traps, add Jest/Playwright coverage for accessibility interactions. |
 
-**Next Session Focus**: Share the staged RenderOps packet, start Week 1 of the bespoke art schedule, and run/stage `npm run telemetry:reminder` + `npm run telemetry:stage-reminder` ahead of the 2025-11-13 cadence checkpoint.
+**Next Session Focus**: Track RenderOps/analytics feedback, continue Week 1 bespoke art production, and prep follow-up telemetry reminder adjustments after threshold change.
+
+### Session #120 Backlog Updates
+
+#### M1-002 / M1-012: ECS/Narrative Integrations
+- Wired `EntityManager` destroy listeners into `QuestManager` and `FactionManager`, blocking quest objectives when key NPCs despawn and logging faction member removals for telemetry.
+- Surfaced `SpatialHash.getMetrics()` through the debug overlay to monitor cell counts, bucket load, and operation totals during stealth scenes.
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- Shared the staged Act 2 Crossroads RenderOps packet (2025-10-30T11-45-11-255Z) and logged the hand-off in `deliveries/renderops/.../handoff-readme.md` / `share-manifest.json`.
+- Kicked off Week 1 of the bespoke replacement schedule; relevant manifest entries now flagged `bespoke-scheduled` with scheduling metadata.
+
+#### TEL-021: Parity Schedule Reminder Automation
+- Distributed the telemetry reminder bundle and confirmed `.ics` import with analytics; staging manifest updated to reflect the share.
+- Lowered the warning threshold from 3 to 2 days to allow earlier alerting before the 2025-11-13 checkpoint.
 
 ### Session #118 Backlog Updates
 

@@ -38,6 +38,7 @@ export class QuestManager {
 
     // Event unsubscriber references
     this._offEventHandlers = [];
+    this._entityRemovalWarnings = new Set();
   }
 
   /**
@@ -382,6 +383,9 @@ export class QuestManager {
    * @param {Object} state
    */
   progressObjective(questId, objectiveId, quest, state) {
+    if (state.blocked) {
+      delete state.blocked;
+    }
     state.progress++;
 
     // Emit progress event
@@ -756,6 +760,139 @@ export class QuestManager {
     }
 
     this.updateObjectives('crossroads:thread_selected', data);
+  }
+
+  /**
+   * Handles entity destruction by marking dependent objectives as blocked.
+   * @param {number} entityId
+   * @param {object|null} metadata
+   * @param {Map<string,*>|object|null} componentSnapshot
+   */
+  handleEntityDestroyed(entityId, metadata = null, componentSnapshot = null) {
+    const narrative = this.#resolveNarrativeEntityData(componentSnapshot, metadata);
+    if (!narrative) {
+      return;
+    }
+
+    const now = Date.now();
+    const blockedObjectives = [];
+
+    if (narrative.npcId) {
+      for (const [questId, quest] of this.activeQuests) {
+        const objectives = Array.isArray(quest.objectives) ? quest.objectives : [];
+        for (const objective of objectives) {
+          if (!objective?.trigger || objective.trigger.event !== 'npc:interviewed') {
+            continue;
+          }
+          if (objective.trigger.npcId !== narrative.npcId) {
+            continue;
+          }
+
+          const state = quest.objectiveStates?.get(objective.id);
+          if (!state || state.status === 'completed') {
+            continue;
+          }
+
+          if (
+            state.blocked &&
+            state.blocked.reason === 'npc_unavailable' &&
+            state.blocked.requirement === narrative.npcId
+          ) {
+            continue;
+          }
+
+          state.status = 'blocked';
+          state.blocked = {
+            reason: 'npc_unavailable',
+            requirement: narrative.npcId,
+            recordedAt: now,
+            entityId,
+            tag: metadata?.tag ?? null,
+          };
+
+          const blockedMessage =
+            objective.blockedMessage ||
+            `The contact ${narrative.npcName ?? narrative.npcId} is no longer available.`;
+
+          this.eventBus.emit('objective:blocked', {
+            questId,
+            questTitle: quest.title,
+            questType: quest.type,
+            objectiveId: objective.id,
+            objectiveDescription: objective.description,
+            blockedMessage,
+            reason: 'npc_unavailable',
+            requirement: narrative.npcId,
+            requirements: objective.requirements || null,
+            eventType: 'entity:destroyed',
+            eventData: {
+              npcId: narrative.npcId,
+              npcName: narrative.npcName ?? null,
+              entityId,
+              tag: metadata?.tag ?? null,
+              factionId: narrative.factionId ?? null,
+            },
+          });
+
+          blockedObjectives.push({ questId, objectiveId: objective.id });
+        }
+      }
+
+      if (blockedObjectives.length) {
+        const signature = `${narrative.npcId}:${blockedObjectives
+          .map((entry) => `${entry.questId}:${entry.objectiveId}`)
+          .join('|')}`;
+        if (!this._entityRemovalWarnings.has(signature)) {
+          console.warn(
+            '[QuestManager] Marked objectives blocked due to despawned NPC',
+            narrative.npcId,
+            blockedObjectives
+          );
+          this._entityRemovalWarnings.add(signature);
+        }
+      }
+    }
+  }
+
+  #resolveNarrativeEntityData(source, metadata) {
+    if (!source) {
+      return null;
+    }
+
+    if (source instanceof Map) {
+      const npcComponent = source.get('NPC');
+      const factionComponent = source.get('FactionMember');
+
+      if (!npcComponent && !factionComponent) {
+        return null;
+      }
+
+      return {
+        npcId: npcComponent?.npcId ?? null,
+        npcName: npcComponent?.name ?? null,
+        factionId:
+          npcComponent?.faction ??
+          factionComponent?.primaryFaction ??
+          metadata?.tag ??
+          null,
+      };
+    }
+
+    if (typeof source === 'object' && source !== null) {
+      const narrative = source.narrative || source;
+      const npcId = narrative?.npcId ?? null;
+      const factionId = narrative?.factionId ?? null;
+      if (!npcId && !factionId) {
+        return null;
+      }
+      return {
+        npcId,
+        npcName: narrative?.npcName ?? null,
+        factionId,
+      };
+    }
+
+    return null;
   }
 
   /**

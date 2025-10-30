@@ -9,6 +9,7 @@ const initialFactionState = {
   lastResetReason: null,
   lastResetInitiatedBy: null,
   lastCascadeEvent: null,
+  recentMemberRemovals: [],
 };
 
 function createDefaultLastDelta() {
@@ -76,6 +77,9 @@ function cloneState(state) {
     lastResetReason: state.lastResetReason ?? null,
     lastResetInitiatedBy: state.lastResetInitiatedBy ?? null,
     lastCascadeEvent: state.lastCascadeEvent ? { ...state.lastCascadeEvent } : null,
+    recentMemberRemovals: Array.isArray(state.recentMemberRemovals)
+      ? state.recentMemberRemovals.map((entry) => ({ ...entry }))
+      : [],
   };
 }
 
@@ -214,7 +218,29 @@ export const factionSlice = {
           lastResetReason: payload.reason ?? null,
           lastResetInitiatedBy: payload.initiatedBy ?? null,
           lastCascadeEvent: null,
+          recentMemberRemovals: [],
         };
+      }
+
+      case 'FACTION_MEMBER_REMOVED': {
+        const removal = {
+          factionId: payload.factionId ?? null,
+          factionName: payload.factionName ?? null,
+          npcId: payload.npcId ?? null,
+          entityId: payload.entityId ?? null,
+          tag: payload.tag ?? null,
+          removedAt: action.timestamp ?? payload.removedAt ?? Date.now(),
+        };
+
+        const list = Array.isArray(next.recentMemberRemovals)
+          ? [...next.recentMemberRemovals, removal]
+          : [removal];
+        if (list.length > 10) {
+          list.splice(0, list.length - 10);
+        }
+        next.recentMemberRemovals = list;
+        hasChange = true;
+        break;
       }
 
       default:
@@ -258,6 +284,9 @@ export const factionSlice = {
       lastResetReason: state.lastResetReason ?? null,
       lastResetInitiatedBy: state.lastResetInitiatedBy ?? null,
       lastCascadeEvent: state.lastCascadeEvent ? { ...state.lastCascadeEvent } : null,
+      recentMemberRemovals: Array.isArray(state.recentMemberRemovals)
+        ? state.recentMemberRemovals.map((entry) => ({ ...entry }))
+        : [],
     };
   },
 
@@ -327,6 +356,11 @@ export const factionSlice = {
           cascadeTargets,
         };
       }
+    ),
+    selectRecentMemberRemovals: createSelector(
+      (state) => state.faction.recentMemberRemovals,
+      (removals) =>
+        Array.isArray(removals) ? removals.map((entry) => ({ ...entry })) : []
     ),
   },
 };

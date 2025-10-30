@@ -232,6 +232,53 @@ describe('QuestManager', () => {
     });
   });
 
+  describe('Entity destruction handling', () => {
+    test('marks objectives blocked when quest-critical NPC despawns', () => {
+      const quest = {
+        id: 'npc_support_quest',
+        title: 'Witness Testimony',
+        type: 'main',
+        objectives: [
+          {
+            id: 'speak_to_witness',
+            description: 'Interview the street witness',
+            trigger: { event: 'npc:interviewed', npcId: 'witness_alpha' },
+            optional: false,
+          },
+        ],
+      };
+
+      questManager.registerQuest(quest);
+      questManager.startQuest(quest.id);
+
+      const blockedListener = jest.fn();
+      eventBus.on('objective:blocked', blockedListener);
+
+      const npcComponent = {
+        npcId: 'witness_alpha',
+        name: 'Witness Alpha',
+        faction: 'civilian',
+      };
+      const components = new Map([['NPC', npcComponent]]);
+
+      questManager.handleEntityDestroyed(512, { tag: 'npc' }, components);
+
+      expect(blockedListener).toHaveBeenCalledTimes(1);
+      const payload = blockedListener.mock.calls[0][0];
+      expect(payload.questId).toBe('npc_support_quest');
+      expect(payload.objectiveId).toBe('speak_to_witness');
+      expect(payload.reason).toBe('npc_unavailable');
+
+      const activeQuest = questManager.activeQuests.get('npc_support_quest');
+      const objectiveState = activeQuest.objectiveStates.get('speak_to_witness');
+      expect(objectiveState.status).toBe('blocked');
+      expect(objectiveState.blocked).toMatchObject({
+        reason: 'npc_unavailable',
+        requirement: 'witness_alpha',
+      });
+    });
+  });
+
   describe('Objective Tracking', () => {
     let testQuest;
 

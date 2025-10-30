@@ -6,6 +6,12 @@
     "format": "zip",
     "relativePath": "../act2-crossroads-2025-10-30T11-45-11-255Z.zip"
   },
+  "sharedAt": "2025-11-13T09:05:00.000Z",
+  "shareChannels": [
+    "renderops-secure-handoff"
+  ],
+  "status": "awaiting-feedback",
+  "notes": "Bundle delivered with PACKET_README.md; awaiting RenderOps response on skipped floor segments.",
   "files": {
     "report": "lighting-preview.json",
     "summary": "lighting-preview-summary.md",

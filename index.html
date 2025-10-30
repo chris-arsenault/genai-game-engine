@@ -145,6 +145,13 @@
       max-width: 320px;
     }
 
+    #debug-spatial {
+      margin-top: 8px;
+      border-top: 1px solid rgba(0, 255, 255, 0.35);
+      padding-top: 6px;
+      max-width: 320px;
+    }
+
     .debug-meta {
       font-size: 11px;
       margin-bottom: 4px;
@@ -537,6 +544,13 @@
       <div id="debug-entities">Entities: 0</div>
       <div id="debug-memory">Memory: 0 MB</div>
       <div id="debug-frame-time">Frame: 0 ms</div>
+      <div id="debug-spatial">
+        <div class="debug-title">Spatial Hash</div>
+        <div id="debug-spatial-meta" class="debug-meta">Spatial hash: n/a</div>
+        <div id="debug-spatial-list" class="debug-world-list">
+          <div class="debug-world-row empty">No spatial data</div>
+        </div>
+      </div>
       <div id="debug-systems">
         <div class="debug-title">Systems</div>
         <div id="debug-systems-meta" class="debug-meta">Frame metrics: n/a</div>

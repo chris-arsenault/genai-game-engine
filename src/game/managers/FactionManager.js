@@ -27,6 +27,8 @@ export class FactionManager {
       maxReputation: 100,
       minReputation: 0,
     };
+
+    this.recentMemberRemovals = [];
   }
 
   /**
@@ -349,6 +351,66 @@ export class FactionManager {
     console.log('[FactionManager] Reputation reset to neutral');
 
     this.eventBus.emit('faction:reputation_reset', {});
+    this.recentMemberRemovals = [];
+  }
+
+  /**
+   * Handles an entity destruction notification to keep faction state in sync.
+   * @param {number} entityId
+   * @param {object|null} metadata
+   * @param {Map<string,*>|object|null} componentSnapshot
+   * @returns {object|null} Removal summary payload
+   */
+  handleEntityDestroyed(entityId, metadata = null, componentSnapshot = null) {
+    const removal = this.#resolveRemovalSummary(entityId, metadata, componentSnapshot);
+    if (!removal) {
+      return null;
+    }
+
+    this.recentMemberRemovals.push(removal);
+    if (this.recentMemberRemovals.length > 10) {
+      this.recentMemberRemovals.splice(0, this.recentMemberRemovals.length - 10);
+    }
+
+    this.eventBus.emit('faction:member_removed', removal);
+    return removal;
+  }
+
+  getRecentMemberRemovals() {
+    return this.recentMemberRemovals.map((entry) => ({ ...entry }));
+  }
+
+  #resolveRemovalSummary(entityId, metadata, snapshot) {
+    let factionId = null;
+    let factionName = null;
+    let npcId = null;
+
+    if (snapshot instanceof Map) {
+      const factionMember = snapshot.get('FactionMember');
+      const npcComponent = snapshot.get('NPC');
+      factionId = factionMember?.primaryFaction ?? npcComponent?.faction ?? null;
+      npcId = npcComponent?.npcId ?? null;
+    } else if (snapshot && typeof snapshot === 'object') {
+      const narrative = snapshot.narrative || snapshot;
+      factionId = narrative?.factionId ?? null;
+      npcId = narrative?.npcId ?? null;
+    }
+
+    if (!factionId) {
+      return null;
+    }
+
+    const faction = getFaction(factionId);
+    factionName = faction?.name ?? null;
+
+    return {
+      factionId,
+      factionName,
+      entityId,
+      npcId,
+      tag: metadata?.tag ?? null,
+      removedAt: Date.now(),
+    };
   }
 
   /**

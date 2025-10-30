@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Entity destruction lifecycle now feeds QuestManager and FactionManager, blocking objectives for missing NPCs and logging faction member removals (`src/engine/ecs/EntityManager.js`, `src/game/managers/QuestManager.js`, `src/game/managers/FactionManager.js`, `tests/game/managers/QuestManager.test.js`, `tests/game/managers/FactionManager.test.js`).
+- Spatial hash metrics surfaced in the debug overlay with collision system registration for live bucket monitoring (`src/game/Game.js`, `src/main.js`, `index.html`).
 - AR-001 – AR-005 prompt packaging CLI and JSON payload output for OpenAI sourcing (`scripts/art/exportGenerationPrompts.js`, `scripts/art/lib/generationPromptPackager.js`, `assets/images/generation-payloads/ar-001-005.json`, `tests/scripts/art/generationPromptPackager.test.js`).
 - Expanded Crossroads overlay config covering selection pads, plaza flooring, safehouse arc, selection conduit, checkpoint glow, and boundary walls with regenerated derivatives (`assets/images/overlay-derivatives-act2-crossroads.json`, `assets/overlays/act2-crossroads/*.png`, `docs/assets/visual-asset-inventory.md`).
 - Telemetry acknowledgement tracker CLI to log analytics confirmations and update outbox packages (`scripts/telemetry/outboxAcknowledgement.js`, `scripts/telemetry/lib/outboxAcknowledgement.js`, `tests/scripts/telemetry/outboxAcknowledgement.test.js`, `docs/guides/telemetry-parity-dispatch.md`).
