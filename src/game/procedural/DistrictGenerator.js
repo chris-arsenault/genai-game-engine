@@ -13,6 +13,10 @@ import { BSPGenerator } from './BSPGenerator.js';
 import { TemplateVariantResolver } from './TemplateVariantResolver.js';
 import { TilemapTransformer } from './TilemapTransformer.js';
 import { CorridorSeamPainter } from './CorridorSeamPainter.js';
+import {
+  templateVariantManifest as defaultTemplateVariantManifest,
+  createAuthoredTemplateForRoomType,
+} from './templates/authoredTemplates.js';
 
 /**
  * Room type constants for semantic district generation
@@ -140,10 +144,15 @@ export class DistrictGenerator {
         : [0, 90, 180, 270],
     };
 
+    const manifest =
+      config.templateVariantManifest !== undefined
+        ? config.templateVariantManifest
+        : defaultTemplateVariantManifest;
+
     this.templateVariantResolver =
       config.templateVariantResolver instanceof TemplateVariantResolver
         ? config.templateVariantResolver
-        : new TemplateVariantResolver(config.templateVariantManifest || null);
+        : new TemplateVariantResolver(manifest);
 
     this.tilemapTransformer =
       config.tilemapTransformer instanceof TilemapTransformer
@@ -184,7 +193,7 @@ export class DistrictGenerator {
     const corridors = this._createConnections(graph, rooms, this.rng);
 
     // Build final tilemap
-    const tilemap = this._buildFinalTilemap(rooms, roomData, corridors);
+    const { tilemap, placements } = this._buildFinalTilemap(rooms, roomData, corridors);
 
     // Validate district
     const validation = this._validateDistrict(graph, tilemap);
@@ -203,6 +212,7 @@ export class DistrictGenerator {
         roomCount: rooms.length,
         corridorCount: corridors.length,
         validation,
+        placements,
       },
     };
   }
@@ -356,6 +366,27 @@ export class DistrictGenerator {
 
     for (const node of graph.nodes.values()) {
       const roomType = node.data.roomType || node.type;
+      const authoredTemplate = createAuthoredTemplateForRoomType(roomType);
+      if (authoredTemplate) {
+        const width = authoredTemplate.tilemap.width;
+        const height = authoredTemplate.tilemap.height;
+        const rotation = this._selectRotation(rng);
+        const bounds = this._computeLayoutDimensions(width, height, rotation);
+
+        roomData.set(node.id, {
+          width,
+          height,
+          rotation,
+          layoutWidth: bounds.width,
+          layoutHeight: bounds.height,
+          tilemap: authoredTemplate.tilemap,
+          templateId: authoredTemplate.templateId,
+          type: 'authored',
+          metadata: authoredTemplate.metadata || null,
+        });
+        continue;
+      }
+
       const isBuilding = this._isBuilding(roomType);
 
       if (isBuilding) {
@@ -610,6 +641,7 @@ export class DistrictGenerator {
       instance.height = data.height;
       instance.tilemap = data.tilemap;
       instance.roomType = node.data.roomType || node.type;
+      instance.type = instance.roomType;
 
       rooms.push(instance);
     }
@@ -727,7 +759,7 @@ export class DistrictGenerator {
    * @param {RoomInstance[]} rooms - Array of room instances
    * @param {Map<string, object>} roomData - Room interior data
    * @param {Array<object>} corridors - Array of corridor data
-   * @returns {TileMap} Complete tilemap
+   * @returns {{tilemap: TileMap, placements: Array<object>}} Complete tilemap + placement summaries
    */
   _buildFinalTilemap(rooms, roomData, corridors) {
     const tilemap = new TileMap(
@@ -804,7 +836,7 @@ export class DistrictGenerator {
 
       placements.push({
         roomId: room.id,
-        roomType: room.type,
+        roomType: room.roomType || room.type || null,
         position: { x: room.x, y: room.y },
         size: {
           width: transformResult.width ?? resolvedTilemap.width,
@@ -840,7 +872,7 @@ export class DistrictGenerator {
       roomData,
     });
 
-    return tilemap;
+    return { tilemap, placements };
   }
 
   /**

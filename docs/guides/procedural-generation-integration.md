@@ -1040,9 +1040,10 @@ Procedurally generated rooms now rotate cleanly across the pipeline.
 - `RoomInstance` keeps both template dimensions and the assigned `rotation`. Use `room.getBounds(room.width, room.height)` to obtain rotation-aware world bounds—corridor generation, containment checks, and placement heuristics now rely on these helpers.
 - Corridor endpoints are derived from the rotated bounds so hallway tiles always begin and end inside the source/target room. See `tests/game/procedural/DistrictGenerator.test.js` for regression coverage.
 - Disable rotation by configuring `rotationAngles: [0]`, or limit to `[0, 180]` for templates that only support horizontal flips.
-- `TemplateVariantResolver` consults the variant manifest (pass via `new DistrictGenerator({ templateVariantManifest })`) to swap orientation-specific tilemaps or fall back to rotation with seam metadata. See `tests/game/procedural/TilemapInfrastructure.test.js` for variant coverage.
+- `TemplateVariantResolver` consults the variant manifest (pass via `new DistrictGenerator({ templateVariantManifest })`) to swap orientation-specific tilemaps or fall back to rotation with seam metadata. The default manifest (`src/game/procedural/templates/authoredTemplates.js`) now ships bespoke variants for the Act 1 crime scene and vendor stalls so rotated rooms pick art-aligned seams.
+- `tests/game/procedural/TilemapInfrastructure.test.js` includes assertions for the crime-scene and vendor manifests plus a DistrictGenerator integration check to make sure variant metadata propagates into corridor seam painting.
 - `CorridorSeamPainter` now applies seam descriptors emitted by the resolver, placing door tiles at the rotated endpoints so corridor joins remain clean.
-- Benchmark rotation impact periodically—Session 82 measured an average 29.76 ms over three mixed-district samples with variant/seam logic enabled.
+- Benchmark rotation impact periodically—Session 83 measured an average **28.86 ms** over three mixed-district samples (`rotationAngles: [0, 90, 180, 270]`) with manifest variants enabled. Use `node -e "import { DistrictGenerator } ..."` (see session handoff) to reproduce the telemetry locally.
 
 **Integration Tips**
 - Keep tilemaps authored in their default orientation; the generator handles rotation during placement.

@@ -417,14 +417,13 @@ describe('BSPGenerator', () => {
   });
 
   describe('performance', () => {
-    it('should complete generation in <16ms for 100×100 map', () => {
+    it('should complete generation in <10ms for 100×100 map', () => {
       const generator = new BSPGenerator();
 
       const start = performance.now();
       generator.generate(100, 100, 12345);
       const elapsed = performance.now() - start;
-
-      expect(elapsed).toBeLessThan(16);
+      expect(elapsed).toBeLessThan(10);
     });
 
     it('should handle multiple generations without leaking memory', () => {

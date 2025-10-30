@@ -54,7 +54,7 @@ export class QuestSystem extends System {
    */
   update(deltaTime, entities) {
     // Get player entity
-    const playerEntities = this.components.queryEntities(['Player', 'Transform']);
+    const playerEntities = this.components.queryEntities('Player', 'Transform');
     if (playerEntities.length === 0) return;
 
     const playerEntity = playerEntities[0];
@@ -63,19 +63,22 @@ export class QuestSystem extends System {
     // Check quest triggers and givers
     for (const entity of entities) {
       const quest = this.components.getComponent(entity, 'Quest');
-      const transform = this.components.getComponent(entity, 'Transform');
+      if (!quest) {
+        continue;
+      }
 
+      // Quest triggers now rely exclusively on Trigger components + area events.
+      if (quest.type === 'trigger') {
+        continue;
+      }
+
+      const transform = this.components.getComponent(entity, 'Transform');
       if (!transform) continue;
 
       // Check distance to player
       const dx = transform.x - playerTransform.x;
       const dy = transform.y - playerTransform.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
-
-      // Handle quest triggers
-      if (quest.type === 'trigger') {
-        this.updateQuestTrigger(entity, quest, distance);
-      }
 
       // Handle quest givers
       if (quest.type === 'giver') {
@@ -90,54 +93,6 @@ export class QuestSystem extends System {
 
     // Auto-start quests that have prerequisites met
     this.checkAutoStartQuests();
-  }
-
-  /**
-   * Handle quest trigger zones
-   * @param {number} entity
-   * @param {Object} quest
-   * @param {number} distance
-   */
-  updateQuestTrigger(entity, quest, distance) {
-    if (this.components.hasComponent(entity, 'Trigger')) {
-      return;
-    }
-    const radius = quest.triggerRadius || 64;
-
-    if (distance <= radius && !quest.triggered) {
-      // Player entered trigger zone
-      quest.triggered = true;
-
-      if (quest.startQuestId) {
-        const started = this.quests.startQuest(quest.startQuestId);
-        if (started) {
-          console.log(`[QuestSystem] Trigger activated: ${quest.startQuestId}`);
-
-          // Emit trigger event for objective tracking
-          this.eventBus.emit('area:entered', {
-            triggerId: entity,
-            areaId: quest.areaId || `trigger_${entity}`
-          });
-
-          // Destroy trigger if one-time only
-          if (quest.oneTime) {
-            this.components.removeEntity(entity);
-          }
-        }
-      }
-
-      // Progress objective if specified
-      if (quest.objectiveId) {
-        this.eventBus.emit('area:entered', {
-          areaId: quest.areaId || `trigger_${entity}`
-        });
-      }
-    } else if (distance > radius + 32 && quest.triggered) {
-      // Player left trigger zone (with hysteresis)
-      if (!quest.oneTime) {
-        quest.triggered = false;
-      }
-    }
   }
 
   /**

@@ -7,7 +7,7 @@
 
 ## Overview
 
-Restricted areas, quest gates, and scene transitions now rely on the engine-level `Trigger` component introduced alongside the revamped `TriggerSystem`. This guide explains how to author trigger zones, how metadata is propagated through the EventBus, and how downstream systems (quests, audio, UI) consume the payloads.
+Restricted areas, quest gates, and scene transitions now rely on the engine-level `Trigger` component introduced alongside the revamped `TriggerSystem`. This guide explains how to author trigger zones, how metadata is propagated through the EventBus, and how downstream systems (quests, audio, UI) consume the payloads. The QuestSystem no longer polls legacy `InteractionZone` distances—if a quest trigger omits the `Trigger` component it is ignored entirely.
 
 - `TriggerSystem` is registered in `Game.initializeGameSystems()` and processes every entity that carries both `Transform` and `Trigger`.
 - `Trigger` components can be layered on top of existing `InteractionZone` authoring so designers keep prompt text while engine systems receive structured events.
@@ -53,7 +53,8 @@ Restricted areas, quest gates, and scene transitions now rely on the engine-leve
 - Register quest trigger metadata centrally via `QuestTriggerRegistry` so definitions stay in sync with quest data (`questId`, `objectiveId`, prompts, optional metadata such as `moodHint` for adaptive audio).
 - Use `TriggerMigrationToolkit` (see `src/game/quests/TriggerMigrationToolkit.js`) to attach standardized `Trigger` components to scene entities; the toolkit records migration status and ensures payload shape consistency.
 - Definitions can include `metadata.moodHint` to influence adaptive audio bridges; hints expire automatically after a configurable duration.
-- Act 1 vendors (`witness_street_vendor`, `black_market_broker`, `cipher_quartermaster`) now have registry-backed definitions that attach quest metadata and adaptive audio hints when the player enters their dialogue radius.
+- QuestSystem only reacts to `area:entered`/`area:exited` payloads coming from `Trigger` components. Legacy `InteractionZone` polling has been removed, so always attach a trigger before expecting quest progression.
+- Act 1 vendors (`witness_street_vendor`, `black_market_broker`, `cipher_quartermaster`) now have registry-backed definitions that attach quest metadata and adaptive audio hints when the player enters their dialogue radius. See `docs/guides/act1-trigger-authoring.md` for designer-ready reference sheets.
 - Unit coverage lives in `tests/game/quests/TriggerMigrationToolkit.test.js`; scene-level migrations are captured in `tests/game/scenes/Act1Scene.triggers.test.js`.
 
 ### Memory Parlor Restricted Areas
@@ -114,4 +115,5 @@ componentRegistry.addComponent(entityId, 'Trigger', new Trigger({
 - Engine implementation: `src/engine/physics/TriggerSystem.js`, `src/engine/physics/Trigger.js`
 - Game integration: `src/game/Game.js`, `src/game/scenes/MemoryParlorScene.js`, `src/game/scenes/Act1Scene.js`
 - Quest wiring: `src/game/systems/QuestSystem.js`
+- Act 1 designer notes: `docs/guides/act1-trigger-authoring.md`
 - Tests: `tests/game/systems/QuestSystem.trigger.test.js`, `tests/game/scenes/Act1Scene.triggers.test.js`

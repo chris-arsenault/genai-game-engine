@@ -69,6 +69,29 @@ describe('QuestSystem trigger integration', () => {
     expect(componentRegistry.entityManager.hasEntity(entityId)).toBe(false);
   });
 
+  it('ignores legacy quest triggers that do not attach Trigger components', () => {
+    const playerId = entityManager.createEntity('player');
+    componentRegistry.addComponent(playerId, 'Transform', { x: 0, y: 0 });
+    componentRegistry.addComponent(playerId, 'Player', { id: 'player-1' });
+
+    const legacyEntity = entityManager.createEntity('legacy_quest_trigger');
+    componentRegistry.addComponent(legacyEntity, 'Transform', { x: 0, y: 0 });
+    componentRegistry.addComponent(legacyEntity, 'Quest', {
+      type: 'trigger',
+      startQuestId: 'quest_legacy',
+      triggerRadius: 128,
+      oneTime: true,
+      triggered: false,
+      areaId: 'legacy_area',
+    });
+
+    system.update(0.016, [legacyEntity]);
+
+    expect(questManager.startQuest).not.toHaveBeenCalledWith('quest_legacy');
+    const questComponent = componentRegistry.getComponent(legacyEntity, 'Quest');
+    expect(questComponent.triggered).toBe(false);
+  });
+
   it('resets non one-shot quest triggers on exit', () => {
     const entityId = system.createQuestTrigger(0, 0, 'quest_beta', { oneTime: false });
     const trigger = componentRegistry.getComponent(entityId, 'Trigger');

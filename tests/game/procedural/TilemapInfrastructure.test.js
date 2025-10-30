@@ -2,6 +2,13 @@ import TileMap, { TileType } from '../../../src/game/procedural/TileMap.js';
 import { TemplateVariantResolver } from '../../../src/game/procedural/TemplateVariantResolver.js';
 import { TilemapTransformer } from '../../../src/game/procedural/TilemapTransformer.js';
 import { CorridorSeamPainter } from '../../../src/game/procedural/CorridorSeamPainter.js';
+import {
+  templateVariantManifest,
+  createAuthoredTemplateForRoomType,
+  CRIME_SCENE_TEMPLATE_ID,
+  VENDOR_STALL_TEMPLATE_ID,
+} from '../../../src/game/procedural/templates/authoredTemplates.js';
+import { DistrictGenerator } from '../../../src/game/procedural/DistrictGenerator.js';
 
 describe('Procedural tilemap infrastructure', () => {
   describe('TemplateVariantResolver', () => {
@@ -100,6 +107,60 @@ describe('Procedural tilemap infrastructure', () => {
         expect.objectContaining({ x: 1, y: 1, tile: TileType.DOOR, edge: 'south' }),
       ]);
     });
+
+    it('selects crime scene manifest variant for 90° rotation with metadata seams applied', () => {
+      const resolver = new TemplateVariantResolver(templateVariantManifest);
+      const authored = createAuthoredTemplateForRoomType('crime_scene');
+      const result = resolver.resolve({
+        room: {
+          id: 'crime_scene_room_1',
+          type: 'crime_scene',
+          templateId: authored.templateId,
+        },
+        template: { id: authored.templateId, tilemap: authored.tilemap.clone() },
+        rotation: 90,
+      });
+
+      expect(result.strategy).toBe('variant');
+      expect(result.variantId).toBe(`${CRIME_SCENE_TEMPLATE_ID}_r90`);
+      expect(result.metadata).toEqual(
+        expect.objectContaining({
+          templateId: CRIME_SCENE_TEMPLATE_ID,
+          moodHint: 'investigation_peak',
+          orientation: 90,
+        })
+      );
+      expect(result.seams).toEqual(
+        expect.arrayContaining([expect.objectContaining({ edge: 'east', tile: TileType.DOOR })])
+      );
+    });
+
+    it('provides vendor stall seam metadata for 270° rotation', () => {
+      const resolver = new TemplateVariantResolver(templateVariantManifest);
+      const authored = createAuthoredTemplateForRoomType('shop');
+      const result = resolver.resolve({
+        room: {
+          id: 'vendor_room_1',
+          type: 'shop',
+          templateId: authored.templateId,
+        },
+        template: { id: authored.templateId, tilemap: authored.tilemap.clone() },
+        rotation: 270,
+      });
+
+      expect(result.strategy).toBe('variant');
+      expect(result.variantId).toBe(`${VENDOR_STALL_TEMPLATE_ID}_r270`);
+      expect(result.metadata).toEqual(
+        expect.objectContaining({
+          templateId: VENDOR_STALL_TEMPLATE_ID,
+          moodHint: 'market_intrigue',
+          orientation: 270,
+        })
+      );
+      expect(result.seams).toEqual(
+        expect.arrayContaining([expect.objectContaining({ edge: 'east', tile: TileType.DOOR })])
+      );
+    });
   });
 
   describe('TilemapTransformer', () => {
@@ -167,6 +228,35 @@ describe('Procedural tilemap infrastructure', () => {
       expect(summary.applied).toBe(true);
       expect(summary.seamsApplied).toBe(1);
       expect(tilemap.getTile(3, 2)).toBe(TileType.DOOR);
+    });
+  });
+
+  describe('DistrictGenerator manifest integration', () => {
+    it('records manifest variant usage for crime scene rooms by default', () => {
+      const generator = new DistrictGenerator({
+        districtSize: { width: 80, height: 80 },
+        roomCounts: {
+          crime_scene: 1,
+          street: 1,
+        },
+        rotationAngles: [90],
+        forceIterations: 10,
+      });
+
+      const result = generator.generate(12345, 'mixed');
+      const placement = result.metadata.placements.find(
+        (entry) => entry.roomType === 'crime_scene'
+      );
+
+      expect(placement).toBeDefined();
+      expect(placement.variantId).toBe(`${CRIME_SCENE_TEMPLATE_ID}_r90`);
+      expect(placement.variantStrategy).toBe('variant');
+      expect(placement.metadata).toEqual(
+        expect.objectContaining({ moodHint: 'investigation_peak' })
+      );
+      expect(placement.seams).toEqual(
+        expect.arrayContaining([expect.objectContaining({ edge: 'east' })])
+      );
     });
   });
 });

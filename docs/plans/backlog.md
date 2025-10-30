@@ -418,11 +418,12 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Priority**: P1
 - **Tags**: `quest`, `physics`, `narrative`
 - **Effort**: 5 hours
-- **Status**: 🟡 In Progress — Crime scene and vendor triggers migrated; QuestSystem cleanup and doc refresh remain.
+- **Status**: ✅ Completed — Quest triggers now require Trigger components, QuestSystem cleanup landed, and designer docs are refreshed.
 - **Summary**: Transition Act 1 crime scene and vendor interactions to the standardized Trigger component schema with structured quest metadata.
 - **Progress (Session #79)**: Authored `TriggerMigrationToolkit`, `QuestTriggerRegistry`, and Jest coverage to convert legacy InteractionZones and track outstanding migrations.
 - **Progress (Session #80)**: Migrated the Act 1 crime scene trigger to the registry-backed toolkit (`src/game/scenes/Act1Scene.js`) and added Jest coverage (`tests/game/scenes/Act1Scene.triggers.test.js`) confirming outstanding migration tracking and quest metadata.
 - **Progress (Session #82)**: Converted Act 1 vendor NPCs to toolkit-backed quest triggers with mood hint metadata, updated `TriggerMigrationToolkit` to seed Quest components, and extended Jest suites (`tests/game/quests/TriggerMigrationToolkit.test.js`, `tests/game/scenes/Act1Scene.triggers.test.js`) to cover vendor migrations.
+- **Progress (Session #83)**: Pruned QuestSystem's legacy polling path, fortified `tests/game/systems/QuestSystem.trigger.test.js`, and published the Act 1 trigger authoring cheat sheet (`docs/guides/act1-trigger-authoring.md`).
 - **Acceptance Criteria**:
   - Migrated triggers emit `area:entered`/`area:exited` with quest metadata aligned to the schema.
   - QuestSystem progression and resets validated via updated regression tests.
@@ -439,6 +440,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Progress (Session #80)**: Integrated `TileRotationMatrix` into `DistrictGenerator._buildFinalTilemap` and extended Jest coverage (`tests/game/procedural/DistrictGenerator.test.js`) to confirm rotated tiles land at expected coordinates.
 - **Progress (Session #81)**: Stubbed TemplateVariantResolver, TilemapTransformer, and CorridorSeamPainter, refactored `DistrictGenerator` to route room placement through the new pipeline, and added coverage in `tests/game/procedural/TilemapInfrastructure.test.js`.
 - **Progress (Session #82)**: Implemented manifest-driven variant resolution, corridor seam painting, expanded `TilemapInfrastructure` tests for variants/seams, and benchmarked rotated generation (avg 29.76 ms across three samples).
+- **Progress (Session #83)**: Added authored manifest variants for Act 1 crime scenes and vendor bays (`src/game/procedural/templates/authoredTemplates.js`), defaulted DistrictGenerator to the manifest, extended regression tests, and re-benchmarked rotation overhead (avg 28.86 ms across three seeds).
 - **Acceptance Criteria**:
   - Rotated rooms display correct tile orientation without misaligned seams.
   - Corridor seam painter places door tiles matching rotation.
