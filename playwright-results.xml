@@ -1,47 +1,13 @@
-<testsuites id="" name="" tests="1" failures="1" skipped="0" errors="0" time="1.480378">
-<testsuite name="hud-telemetry.spec.js" timestamp="2025-10-29T17:58:26.648Z" hostname="" tests="1" failures="1" skipped="0" time="0.515" errors="0">
-<testcase name="HUD telemetry overlays › reputation UI and save inspector surface cascade/tutorial data" classname="hud-telemetry.spec.js" time="0.515">
-<failure message="hud-telemetry.spec.js:5:3 reputation UI and save inspector surface cascade/tutorial data" type="FAILURE">
-<![CDATA[  hud-telemetry.spec.js:5:3 › HUD telemetry overlays › reputation UI and save inspector surface cascade/tutorial data 
-
-    Error: expect(received).toBe(expected) // Object.is equality
-
-    Expected: true
-    Received: false
-
-      81 |     });
-      82 |
-    > 83 |     expect(reputationState?.visible).toBe(true);
-         |                                      ^
-      84 |     expect(reputationState?.lastCascade?.targetFactionId).toBe('luminari_syndicate');
-      85 |     expect(reputationState?.hotspots?.[0]?.factionId).toBe('luminari_syndicate');
-      86 |
-        at /home/tsonu/src/genai-game-engine/tests/e2e/hud-telemetry.spec.js:83:38
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ../../test-results/hud-telemetry-HUD-telemetr-357a5-rface-cascade-tutorial-data/test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
-    ../../test-results/hud-telemetry-HUD-telemetr-357a5-rface-cascade-tutorial-data/video.webm
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
-    ../../test-results/hud-telemetry-HUD-telemetr-357a5-rface-cascade-tutorial-data/trace.zip
-    Usage:
-
-        npx playwright show-trace ../../test-results/hud-telemetry-HUD-telemetr-357a5-rface-cascade-tutorial-data/trace.zip
-
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-]]>
-</failure>
+<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="2.231455">
+<testsuite name="debug-overlay-spatial-metrics.spec.js" timestamp="2025-10-30T13:31:03.523Z" hostname="" tests="1" failures="0" skipped="0" time="1.042" errors="0">
+<testcase name="Debug overlay spatial metrics › surfaces rolling averages when metrics window is adjusted" classname="debug-overlay-spatial-metrics.spec.js" time="1.042">
 <system-out>
 <![CDATA[
-[[ATTACHMENT|test-results/hud-telemetry-HUD-telemetr-357a5-rface-cascade-tutorial-data/test-failed-1.png]]
+[[ATTACHMENT|test-results/debug-overlay-spatial-metr-426b7--metrics-window-is-adjusted/attachments/pw-surfaces-rolling-averages-when-metrics-window-is-adjusted-summary-20251030T133105Z-json-b71436cff48e5cc443427687e7b904676ddf136c.json]]
 
-[[ATTACHMENT|test-results/hud-telemetry-HUD-telemetr-357a5-rface-cascade-tutorial-data/video.webm]]
+[[ATTACHMENT|test-results/debug-overlay-spatial-metr-426b7--metrics-window-is-adjusted/attachments/pw-surfaces-rolling-averages-when-metrics-window-is-adjusted-cascade-targets-20251030T133105Z-csv-f0351e83b79a9eccc3a8c8f9456f97a9b3fa54e0.csv]]
 
-[[ATTACHMENT|test-results/hud-telemetry-HUD-telemetr-357a5-rface-cascade-tutorial-data/trace.zip]]
+[[ATTACHMENT|test-results/debug-overlay-spatial-metr-426b7--metrics-window-is-adjusted/attachments/pw-surfaces-rolling-averages-when-metrics-window-is-adjusted-tutorial-snapshots-20251030T133105Z-csv-f343545afa1cc1645ec5eebc8a503af03fa40aec.csv]]
 ]]>
 </system-out>
 </testcase>

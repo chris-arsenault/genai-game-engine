@@ -21,7 +21,16 @@
 | PERF-214 | P1 | Pending | Browser-level performance profiling for adaptive audio + overlay interactions to confirm <16 ms frame time budget. | Run Chromium/Firefox performance audits with combat/stealth transitions, log hotspots, and file perf follow-ups as needed. |
 | UX-173 | P1 | Pending | Improve debug audio overlay ergonomics (keyboard shortcuts, focus management). | Prototype keyboard navigation + focus traps, add Jest/Playwright coverage for accessibility interactions. |
 
-**Next Session Focus**: Track RenderOps/analytics feedback, continue Week 1 bespoke art production, and prep follow-up telemetry reminder adjustments after threshold change.
+**Next Session Focus**: Review spatial hash profiling to confirm the default metrics window, secure neon signage approval for the Week 1 bespoke packet, and collect RenderOps feedback on the remaining Act 2 lighting segments.
+
+### Session #122 Backlog Updates
+
+#### M1-002 / M1-012: ECS/Narrative Integrations
+- Added Playwright coverage (`tests/e2e/debug-overlay-spatial-metrics.spec.js`) to assert rolling spatial hash telemetry in the debug HUD across window adjustments, protecting respawn-driven overlay updates.
+- Authored `scripts/telemetry/profileSpatialHashWindows.js` and published `reports/telemetry/spatial-hash-window-profile.(json|md)` to benchmark retention windows versus payload/CPU cost for stealth profiling.
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- Logged Week 1 bespoke revisions via `scripts/art/trackBespokeDeliverables.js --week=1`, refreshing `assets/images/requests.json`, `assets/bespoke/week1/README.md`, and `reports/art/week1-bespoke-progress.json` with approvals/licensing notes for the glow loop and neon district updates.
 
 ### Session #121 Backlog Updates
 

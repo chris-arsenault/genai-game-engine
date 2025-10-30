@@ -1,0 +1,242 @@
+{
+  "summary": {
+    "generatedAt": "2025-10-30T13:33:59.266Z",
+    "frames": 360,
+    "baseEntities": 28,
+    "entityVariance": 14,
+    "cellSize": 64,
+    "rngSeed": 873109517,
+    "windows": [
+      60,
+      90,
+      120,
+      180
+    ]
+  },
+  "results": [
+    {
+      "window": 60,
+      "framesSimulated": 360,
+      "sampleCount": 60,
+      "retentionSeconds": 1,
+      "metrics": {
+        "averageCells": 52.99,
+        "peakCells": 70,
+        "averageTrackedEntities": 35.01,
+        "peakTrackedEntities": 41,
+        "averageMaxBucket": 4.17,
+        "peakMaxBucket": 7,
+        "rolling": {
+          "window": 60,
+          "sampleCount": 60,
+          "lastSample": {
+            "cellCount": 54,
+            "maxBucketSize": 4,
+            "trackedEntities": 38,
+            "timestamp": 1761831239240
+          },
+          "cellCount": {
+            "average": 53.1,
+            "min": 40,
+            "max": 66
+          },
+          "maxBucketSize": {
+            "average": 4.133333333333334,
+            "min": 3,
+            "max": 6
+          },
+          "trackedEntities": {
+            "average": 35.4,
+            "min": 28,
+            "max": 41
+          }
+        }
+      },
+      "timings": {
+        "insert": {
+          "averageMs": 0.0287,
+          "p95Ms": 0.0988,
+          "maxMs": 0.3621
+        },
+        "getMetrics": {
+          "averageMs": 0.0056,
+          "p95Ms": 0.009,
+          "maxMs": 0.1765
+        }
+      },
+      "telemetryPayload": {
+        "historyBytes": 4921,
+        "metricsBytes": 404,
+        "perSampleBytes": 82.02
+      }
+    },
+    {
+      "window": 90,
+      "framesSimulated": 360,
+      "sampleCount": 90,
+      "retentionSeconds": 1.5,
+      "metrics": {
+        "averageCells": 51.98,
+        "peakCells": 67,
+        "averageTrackedEntities": 34.4,
+        "peakTrackedEntities": 41,
+        "averageMaxBucket": 4.16,
+        "peakMaxBucket": 7,
+        "rolling": {
+          "window": 90,
+          "sampleCount": 90,
+          "lastSample": {
+            "cellCount": 62,
+            "maxBucketSize": 4,
+            "trackedEntities": 41,
+            "timestamp": 1761831239249
+          },
+          "cellCount": {
+            "average": 52.544444444444444,
+            "min": 37,
+            "max": 65
+          },
+          "maxBucketSize": {
+            "average": 4.155555555555556,
+            "min": 3,
+            "max": 7
+          },
+          "trackedEntities": {
+            "average": 34.91111111111111,
+            "min": 28,
+            "max": 41
+          }
+        }
+      },
+      "timings": {
+        "insert": {
+          "averageMs": 0.0196,
+          "p95Ms": 0.0297,
+          "maxMs": 0.1771
+        },
+        "getMetrics": {
+          "averageMs": 0.0032,
+          "p95Ms": 0.0041,
+          "maxMs": 0.0641
+        }
+      },
+      "telemetryPayload": {
+        "historyBytes": 7381,
+        "metricsBytes": 431,
+        "perSampleBytes": 82.01
+      }
+    },
+    {
+      "window": 120,
+      "framesSimulated": 360,
+      "sampleCount": 120,
+      "retentionSeconds": 2,
+      "metrics": {
+        "averageCells": 52.16,
+        "peakCells": 69,
+        "averageTrackedEntities": 34.64,
+        "peakTrackedEntities": 41,
+        "averageMaxBucket": 4.22,
+        "peakMaxBucket": 7,
+        "rolling": {
+          "window": 120,
+          "sampleCount": 120,
+          "lastSample": {
+            "cellCount": 53,
+            "maxBucketSize": 5,
+            "trackedEntities": 34,
+            "timestamp": 1761831239259
+          },
+          "cellCount": {
+            "average": 51.96666666666667,
+            "min": 36,
+            "max": 64
+          },
+          "maxBucketSize": {
+            "average": 4.175,
+            "min": 3,
+            "max": 7
+          },
+          "trackedEntities": {
+            "average": 34.40833333333333,
+            "min": 28,
+            "max": 41
+          }
+        }
+      },
+      "timings": {
+        "insert": {
+          "averageMs": 0.022,
+          "p95Ms": 0.0383,
+          "maxMs": 0.259
+        },
+        "getMetrics": {
+          "averageMs": 0.0048,
+          "p95Ms": 0.0068,
+          "maxMs": 0.1085
+        }
+      },
+      "telemetryPayload": {
+        "historyBytes": 9841,
+        "metricsBytes": 420,
+        "perSampleBytes": 82.01
+      }
+    },
+    {
+      "window": 180,
+      "framesSimulated": 360,
+      "sampleCount": 180,
+      "retentionSeconds": 3,
+      "metrics": {
+        "averageCells": 52.33,
+        "peakCells": 71,
+        "averageTrackedEntities": 34.37,
+        "peakTrackedEntities": 41,
+        "averageMaxBucket": 4.19,
+        "peakMaxBucket": 7,
+        "rolling": {
+          "window": 180,
+          "sampleCount": 180,
+          "lastSample": {
+            "cellCount": 56,
+            "maxBucketSize": 5,
+            "trackedEntities": 40,
+            "timestamp": 1761831239266
+          },
+          "cellCount": {
+            "average": 52.63333333333333,
+            "min": 35,
+            "max": 68
+          },
+          "maxBucketSize": {
+            "average": 4.227777777777778,
+            "min": 2,
+            "max": 7
+          },
+          "trackedEntities": {
+            "average": 34.99444444444445,
+            "min": 28,
+            "max": 41
+          }
+        }
+      },
+      "timings": {
+        "insert": {
+          "averageMs": 0.0143,
+          "p95Ms": 0.0159,
+          "maxMs": 0.2432
+        },
+        "getMetrics": {
+          "averageMs": 0.0043,
+          "p95Ms": 0.005,
+          "maxMs": 0.1708
+        }
+      },
+      "telemetryPayload": {
+        "historyBytes": 14761,
+        "metricsBytes": 432,
+        "perSampleBytes": 82.01
+      }
+    }
+  ]
+}

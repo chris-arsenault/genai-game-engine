@@ -14,11 +14,15 @@
     },
     {
       "id": "image-ar-001-clue-node-pack",
-      "status": "bespoke-in-review",
+      "status": "bespoke-approved",
       "artist": "Helena Voss",
-      "deliverablePath": "assets/bespoke/week1/image-ar-001-clue-node-pack.psd",
+      "license": "Internal Commission – Full Rights (UI Systems)",
+      "deliverablePath": "assets/bespoke/week1/image-ar-001-clue-node-pack_v2.psd",
       "receivedOn": "2025-11-13",
-      "reviewNotes": "Revision requested on animated glow variant; secondary pass due 2025-11-15."
+      "approvedOn": "2025-11-16",
+      "reviewedBy": "Art Lead: M. Cortez",
+      "notes": "Revision approved; glow animation variant balanced to match UI telemetry pulses.",
+      "reviewNotes": "Ensure exported spritesheet includes 6-frame glow loop for integration."
     },
     {
       "id": "image-ar-001-evidence-icon-set",
@@ -37,10 +41,12 @@
     },
     {
       "id": "image-ar-005-tileset-neon-district",
-      "status": "bespoke-in-progress",
+      "status": "bespoke-in-review",
       "artist": "Axiom Studio",
-      "receivedOn": "2025-11-14",
-      "reviewNotes": "Blocking pass delivered; needs reflection polish + signage layer."
+      "license": "Internal Commission – Environment Tiles (Act 2)",
+      "deliverablePath": "assets/bespoke/week1/image-ar-005-tileset-neon-district_v2.png",
+      "receivedOn": "2025-11-15",
+      "reviewNotes": "Reflection polish applied; signage glow pending approval with Narrative for branch cues."
     }
   ]
 }

@@ -105,9 +105,9 @@
 - Week 1 deliverable snapshot:
   - `image-ar-001-deduction-board-bg` → `bespoke-approved` (Helena Voss, Internal Commission – Full Rights). Final PSD mirrored at `assets/bespoke/week1/image-ar-001-deduction-board-bg.png`.
   - `image-ar-001-evidence-icon-set` → `bespoke-approved` (Helena Voss, Internal Commission – UI Iconography Pack) with monochrome + color exports.
-  - `image-ar-001-clue-node-pack` → `bespoke-in-review` (revision requested on animated glow variant, follow-up due 2025-11-15).
+  - `image-ar-001-clue-node-pack` → `bespoke-approved` (glow loop revision delivered 2025-11-16; Art Lead M. Cortez sign-off, full UI rights).
   - `image-ar-002-generic-marker` → `bespoke-pending` (awaiting vendor thumbnails; ETA 2025-11-16).
-  - `image-ar-005-tileset-neon-district` → `bespoke-in-progress` (Axiom Studio blocking pass received 2025-11-14; polishing reflections/signage).
+  - `image-ar-005-tileset-neon-district` → `bespoke-in-review` (Axiom Studio reflection polish received 2025-11-15; signage glow under narrative review, Internal Commission – Environment Tiles).
 - Approved entries now record commission licenses, reviewers, and approval timestamps; see new `statusHistory`, `bespokeApprovedOn`, and `bespokeNotes` fields in the manifest for compliance/audit trails.
 - Added `assets/bespoke/week1/README.md` to log vendor hand-offs and repository-visible exports while original source files remain in the studio vault.
 
