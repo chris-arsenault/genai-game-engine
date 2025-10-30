@@ -1,6 +1,6 @@
 # Trigger Authoring Guide
 
-**Updated**: 2025-10-30 (Session 80)  
+**Updated**: 2025-10-31 (Session 82)  
 **Scope**: Engine `TriggerSystem` + gameplay authoring workflow
 
 ---
@@ -53,6 +53,7 @@ Restricted areas, quest gates, and scene transitions now rely on the engine-leve
 - Register quest trigger metadata centrally via `QuestTriggerRegistry` so definitions stay in sync with quest data (`questId`, `objectiveId`, prompts, optional metadata such as `moodHint` for adaptive audio).
 - Use `TriggerMigrationToolkit` (see `src/game/quests/TriggerMigrationToolkit.js`) to attach standardized `Trigger` components to scene entities; the toolkit records migration status and ensures payload shape consistency.
 - Definitions can include `metadata.moodHint` to influence adaptive audio bridges; hints expire automatically after a configurable duration.
+- Act 1 vendors (`witness_street_vendor`, `black_market_broker`, `cipher_quartermaster`) now have registry-backed definitions that attach quest metadata and adaptive audio hints when the player enters their dialogue radius.
 - Unit coverage lives in `tests/game/quests/TriggerMigrationToolkit.test.js`; scene-level migrations are captured in `tests/game/scenes/Act1Scene.triggers.test.js`.
 
 ### Memory Parlor Restricted Areas

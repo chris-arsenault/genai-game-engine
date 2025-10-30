@@ -1032,7 +1032,7 @@ function visualizeDistrict(district) {
 
 ---
 
-## Rotation Support (Session 77)
+## Rotation Support (Session 77, updated Session 82)
 
 Procedurally generated rooms now rotate cleanly across the pipeline.
 
@@ -1040,6 +1040,9 @@ Procedurally generated rooms now rotate cleanly across the pipeline.
 - `RoomInstance` keeps both template dimensions and the assigned `rotation`. Use `room.getBounds(room.width, room.height)` to obtain rotation-aware world bounds—corridor generation, containment checks, and placement heuristics now rely on these helpers.
 - Corridor endpoints are derived from the rotated bounds so hallway tiles always begin and end inside the source/target room. See `tests/game/procedural/DistrictGenerator.test.js` for regression coverage.
 - Disable rotation by configuring `rotationAngles: [0]`, or limit to `[0, 180]` for templates that only support horizontal flips.
+- `TemplateVariantResolver` consults the variant manifest (pass via `new DistrictGenerator({ templateVariantManifest })`) to swap orientation-specific tilemaps or fall back to rotation with seam metadata. See `tests/game/procedural/TilemapInfrastructure.test.js` for variant coverage.
+- `CorridorSeamPainter` now applies seam descriptors emitted by the resolver, placing door tiles at the rotated endpoints so corridor joins remain clean.
+- Benchmark rotation impact periodically—Session 82 measured an average 29.76 ms over three mixed-district samples with variant/seam logic enabled.
 
 **Integration Tips**
 - Keep tilemaps authored in their default orientation; the generator handles rotation during placement.

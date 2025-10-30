@@ -59,10 +59,24 @@ export class TriggerMigrationToolkit {
     }
 
     const areaId = definition.areaId || definition.id;
+    const once = definition.once ?? true;
+
+    const questComponentPayload = {
+      type: 'trigger',
+      questId: definition.questId,
+      startQuestId: definition.questId,
+      objectiveId: definition.objectiveId,
+      areaId,
+      triggerRadius: definition.radius,
+      oneTime: once,
+      triggered: false,
+      prompt: definition.prompt ?? null,
+    };
+
     const triggerComponent = new Trigger({
       id: areaId,
       radius: definition.radius,
-      once: definition.once,
+      once,
       eventOnEnter: this.eventOnEnter,
       eventOnExit: this.eventOnExit,
       targetTags: ['player'],
@@ -81,6 +95,21 @@ export class TriggerMigrationToolkit {
     });
 
     if (this.componentRegistry && typeof this.componentRegistry.addComponent === 'function') {
+      if (
+        typeof this.componentRegistry.hasComponent === 'function' &&
+        this.componentRegistry.hasComponent(entityId, 'Quest')
+      ) {
+        const existing =
+          typeof this.componentRegistry.getComponent === 'function'
+            ? this.componentRegistry.getComponent(entityId, 'Quest') || {}
+            : {};
+        this.componentRegistry.addComponent(entityId, 'Quest', {
+          ...existing,
+          ...questComponentPayload,
+        });
+      } else {
+        this.componentRegistry.addComponent(entityId, 'Quest', questComponentPayload);
+      }
       this.componentRegistry.addComponent(entityId, 'Trigger', triggerComponent);
     }
     this.registry.markMigrated(definition.id);
@@ -142,4 +171,3 @@ function normaliseNumber(value, fallback) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
-

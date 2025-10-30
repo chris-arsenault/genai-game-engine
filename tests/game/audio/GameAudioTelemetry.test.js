@@ -1,5 +1,9 @@
 import { Game } from '../../../src/game/Game.js';
 import { EventBus } from '../../../src/engine/events/EventBus.js';
+import { GameConfig } from '../../../src/game/config/GameConfig.js';
+import { TriggerMigrationToolkit } from '../../../src/game/quests/TriggerMigrationToolkit.js';
+import { QuestTriggerRegistry } from '../../../src/game/quests/QuestTriggerRegistry.js';
+import { QUEST_001_HOLLOW_CASE } from '../../../src/game/data/quests/act1Quests.js';
 
 function createMockCanvas() {
   return {
@@ -54,6 +58,8 @@ describe('Game audio telemetry integration', () => {
   let eventBus;
   let engine;
   let game;
+  let originalBridgeConfig;
+  let originalEnableEmitters;
 
   beforeEach(() => {
     eventBus = new EventBus();
@@ -69,6 +75,11 @@ describe('Game audio telemetry integration', () => {
       getCatalog: jest.fn(() => ({ items: [] })),
       getEntry: jest.fn(() => null),
     };
+
+    originalBridgeConfig = { ...GameConfig.audio.gameplayMoodBridge };
+    originalEnableEmitters = GameConfig.audio.enableGameplayEmitters;
+    GameConfig.audio.enableGameplayEmitters = true;
+    GameConfig.audio.gameplayMoodBridge.updateIntervalMs = 0;
   });
 
   afterEach(() => {
@@ -76,6 +87,8 @@ describe('Game audio telemetry integration', () => {
       game.cleanup();
       game = null;
     }
+    Object.assign(GameConfig.audio.gameplayMoodBridge, originalBridgeConfig);
+    GameConfig.audio.enableGameplayEmitters = originalEnableEmitters;
   });
 
   it('records adaptive music state transitions emitted on the event bus', async () => {
@@ -213,5 +226,83 @@ describe('Game audio telemetry integration', () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+
+  it('captures quest trigger mood hints and reports expiry countdown', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2025-11-01T12:00:00Z'));
+
+    const vendorTriggerId = 'act1_vendor_corner';
+    const moodHint = 'market_intrigue';
+
+    QuestTriggerRegistry.registerDefinition({
+      id: vendorTriggerId,
+      questId: QUEST_001_HOLLOW_CASE.id,
+      objectiveId: 'obj_interview_witness',
+      areaId: 'market_vendor_corner',
+      radius: 110,
+      once: false,
+      metadata: {
+        moodHint,
+        narrativeBeat: 'act1_vendor_briefing',
+      },
+    });
+
+    GameConfig.audio.gameplayMoodBridge.moodHintDurationMs = 6000;
+
+    await game.initializeAudioIntegrations();
+    game.loaded = true;
+
+    const toolkit = new TriggerMigrationToolkit(
+      { addComponent: jest.fn() },
+      eventBus,
+      { registry: QuestTriggerRegistry }
+    );
+
+    const triggerComponent = toolkit.createQuestTrigger(501, vendorTriggerId);
+
+    eventBus.emit('area:entered', {
+      areaId: triggerComponent.data.areaId,
+      triggerId: 'test-trigger',
+      data: triggerComponent.data,
+      metadata: triggerComponent.data.metadata,
+    });
+
+    game.update(0.016);
+
+    let telemetry = game.getGameplayAdaptiveBridgeTelemetry();
+    expect(telemetry).toEqual(
+      expect.objectContaining({
+        moodHint,
+        moodHintSource: 'market_vendor_corner',
+        moodHintExpiresInMs: 6000,
+      })
+    );
+
+    jest.advanceTimersByTime(4000);
+    game.update(0.016);
+
+    telemetry = game.getGameplayAdaptiveBridgeTelemetry();
+    expect(telemetry).toEqual(
+      expect.objectContaining({
+        moodHint,
+        moodHintSource: 'market_vendor_corner',
+        moodHintExpiresInMs: 2000,
+      })
+    );
+
+    jest.advanceTimersByTime(2500);
+    game.update(0.016);
+
+    telemetry = game.getGameplayAdaptiveBridgeTelemetry();
+    expect(telemetry).toEqual(
+      expect.objectContaining({
+        moodHint: null,
+        moodHintSource: null,
+        moodHintExpiresInMs: null,
+      })
+    );
+
+    jest.useRealTimers();
   });
 });

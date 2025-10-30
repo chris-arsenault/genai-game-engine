@@ -812,7 +812,11 @@ export class DistrictGenerator {
         },
         rotation: transformResult.rotation ?? resolvedRotation,
         variantId: variantSummary?.variantId ?? null,
+        variantStrategy: variantSummary?.strategy ?? 'rotate',
         metadata: variantSummary?.metadata ?? null,
+        seams: Array.isArray(variantSummary?.seams)
+          ? variantSummary.seams.map((seam) => ({ ...seam }))
+          : [],
       });
     }
 

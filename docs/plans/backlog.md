@@ -402,11 +402,12 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Priority**: P0
 - **Tags**: `audio`, `gameplay`, `stealth`
 - **Effort**: 3 hours
-- **Status**: 🟡 In Progress — Gameplay bridge and telemetry are live; narrative mood hints remain before close.
+- **Status**: ✅ Completed — Gameplay bridge, quest-driven mood hints, and telemetry coverage are all in place.
 - **Summary**: Wire DisguiseSystem, Firewall Scrambler, and combat suspicion events into the adaptive music EventBus so stealth/combat transitions trigger without manual injections.
 - **Progress (Session #79)**: Added `SuspicionMoodMapper`, `AdaptiveMoodEmitter`, and Jest suites; `Game.initializeAudioIntegrations()` now instantiates the emitter for telemetry-ready mood requests.
 - **Progress (Session #80)**: Implemented `GameplayAdaptiveAudioBridge`, wired it into `Game.initializeAudioIntegrations()` behind `GameConfig.audio.enableGameplayEmitters`, and added Jest coverage (`tests/game/audio/GameplayAdaptiveAudioBridge.test.js`) for snapshot emission and mood hint handling.
 - **Progress (Session #81)**: Authored integration coverage (`tests/game/audio/GameplayAdaptiveAudioIntegration.test.js`) driving disguise/combat/scrambler events through the bridge and extended the debug audio overlay with gameplay diagnostics for designers.
+- **Progress (Session #82)**: Validated quest-trigger mood hints via `QuestTriggerRegistry`, expanded telemetry tests (`tests/game/audio/GameAudioTelemetry.test.js`) to cover hint expiry countdowns, and confirmed TriggerMigrationToolkit preserves mood hint metadata.
 - **Acceptance Criteria**:
   - DisguiseSystem emits adaptive mood events when disguises equip, suspicion crosses thresholds, and combat triggers resolve.
   - Firewall scrambler windows emit stealth boosts with timed mood reverts aligned to scrambler lifetimes.
@@ -417,10 +418,11 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Priority**: P1
 - **Tags**: `quest`, `physics`, `narrative`
 - **Effort**: 5 hours
-- **Status**: 🟡 In Progress — Crime scene trigger migrated via toolkit; vendor conversions and QuestSystem cleanup still pending.
+- **Status**: 🟡 In Progress — Crime scene and vendor triggers migrated; QuestSystem cleanup and doc refresh remain.
 - **Summary**: Transition Act 1 crime scene and vendor interactions to the standardized Trigger component schema with structured quest metadata.
 - **Progress (Session #79)**: Authored `TriggerMigrationToolkit`, `QuestTriggerRegistry`, and Jest coverage to convert legacy InteractionZones and track outstanding migrations.
 - **Progress (Session #80)**: Migrated the Act 1 crime scene trigger to the registry-backed toolkit (`src/game/scenes/Act1Scene.js`) and added Jest coverage (`tests/game/scenes/Act1Scene.triggers.test.js`) confirming outstanding migration tracking and quest metadata.
+- **Progress (Session #82)**: Converted Act 1 vendor NPCs to toolkit-backed quest triggers with mood hint metadata, updated `TriggerMigrationToolkit` to seed Quest components, and extended Jest suites (`tests/game/quests/TriggerMigrationToolkit.test.js`, `tests/game/scenes/Act1Scene.triggers.test.js`) to cover vendor migrations.
 - **Acceptance Criteria**:
   - Migrated triggers emit `area:entered`/`area:exited` with quest metadata aligned to the schema.
   - QuestSystem progression and resets validated via updated regression tests.
@@ -431,11 +433,12 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Priority**: P1
 - **Tags**: `procedural`, `rendering`, `engine`
 - **Effort**: 5 hours
-- **Status**: 🟡 In Progress — Rotation pipeline scaffolding landed; variant manifests, seam painting, and benchmarks remain.
+- **Status**: ✅ Completed — Variant resolver, seam painting, and rotation benchmarks are live.
 - **Summary**: Rotate room tilemaps or select orientation variants so procedural districts render correctly when rooms are rotated; ensure corridor seams host proper door tiles.
 - **Progress (Session #79)**: Implemented `TileRotationMatrix` with coordinate transforms and Jest coverage to power upcoming tilemap transformer work.
 - **Progress (Session #80)**: Integrated `TileRotationMatrix` into `DistrictGenerator._buildFinalTilemap` and extended Jest coverage (`tests/game/procedural/DistrictGenerator.test.js`) to confirm rotated tiles land at expected coordinates.
 - **Progress (Session #81)**: Stubbed TemplateVariantResolver, TilemapTransformer, and CorridorSeamPainter, refactored `DistrictGenerator` to route room placement through the new pipeline, and added coverage in `tests/game/procedural/TilemapInfrastructure.test.js`.
+- **Progress (Session #82)**: Implemented manifest-driven variant resolution, corridor seam painting, expanded `TilemapInfrastructure` tests for variants/seams, and benchmarked rotated generation (avg 29.76 ms across three samples).
 - **Acceptance Criteria**:
   - Rotated rooms display correct tile orientation without misaligned seams.
   - Corridor seam painter places door tiles matching rotation.

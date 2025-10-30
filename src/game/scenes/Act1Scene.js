@@ -27,6 +27,11 @@ const SCENE_CENTER_Y = 300;
 const CRIME_SCENE_WIDTH = 560;
 const CRIME_SCENE_HEIGHT = 360;
 const CRIME_SCENE_TRIGGER_ID = 'crime_scene_entry';
+const VENDOR_TRIGGER_IDS = Object.freeze({
+  WITNESS: 'act1_vendor_witness_trigger',
+  BLACK_MARKET: 'act1_black_market_trigger',
+  QUARTERMASTER: 'act1_cipher_quartermaster_trigger',
+});
 
 const existingCrimeSceneDefinition = QuestTriggerRegistry.getTriggerDefinition(CRIME_SCENE_TRIGGER_ID);
 if (!existingCrimeSceneDefinition) {
@@ -46,6 +51,60 @@ if (!existingCrimeSceneDefinition) {
   });
 }
 
+const vendorTriggerDefinitions = [
+  {
+    id: VENDOR_TRIGGER_IDS.WITNESS,
+    questId: QUEST_001_HOLLOW_CASE.id,
+    objectiveId: 'obj_interview_witness',
+    areaId: 'market_vendor_corner',
+    radius: 96,
+    once: false,
+    prompt: 'Interview the witness',
+    triggerType: 'npc_vendor_dialogue',
+    metadata: {
+      moodHint: 'market_intrigue',
+      narrativeBeat: 'act1_vendor_briefing',
+      npcId: 'witness_street_vendor',
+    },
+  },
+  {
+    id: VENDOR_TRIGGER_IDS.BLACK_MARKET,
+    questId: QUEST_001_HOLLOW_CASE.id,
+    objectiveId: 'obj_consult_black_market_broker',
+    areaId: 'black_market_exchange',
+    radius: 96,
+    once: false,
+    prompt: 'Consult the black market broker',
+    triggerType: 'npc_vendor_dialogue',
+    metadata: {
+      moodHint: 'underground_pressure',
+      narrativeBeat: 'act1_broker_lead',
+      npcId: 'black_market_broker',
+    },
+  },
+  {
+    id: VENDOR_TRIGGER_IDS.QUARTERMASTER,
+    questId: QUEST_001_HOLLOW_CASE.id,
+    objectiveId: 'obj_contact_cipher_quartermaster',
+    areaId: 'cipher_quartermaster_bay',
+    radius: 96,
+    once: false,
+    prompt: 'Acquire Cipher scrambler charge',
+    triggerType: 'npc_vendor_dialogue',
+    metadata: {
+      moodHint: 'cipher_preparation',
+      narrativeBeat: 'act1_cipher_supply',
+      npcId: 'cipher_quartermaster',
+    },
+  },
+];
+
+for (const definition of vendorTriggerDefinitions) {
+  if (!QuestTriggerRegistry.getTriggerDefinition(definition.id)) {
+    QuestTriggerRegistry.registerDefinition(definition);
+  }
+}
+
 /**
  * Load Act 1 scene
  * @param {Object} entityManager - Entity manager instance
@@ -58,6 +117,7 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus, 
 
   const sceneEntities = [];
   const cleanupHandlers = [];
+  const questTriggerToolkit = new TriggerMigrationToolkit(componentRegistry, eventBus);
 
   // 1. Create player at spawn point
   const reusePlayerId = options.reusePlayerId ?? null;
@@ -124,6 +184,7 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus, 
   });
   sceneEntities.push(witnessId);
   console.log(`[Act1Scene] Witness NPC created: ${witnessId}`);
+  attachQuestTriggerToEntity(questTriggerToolkit, witnessId, VENDOR_TRIGGER_IDS.WITNESS);
 
   // 5. Create black market broker NPC (optional memory parlor lead)
   const brokerId = createNPCEntity(entityManager, componentRegistry, {
@@ -137,6 +198,7 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus, 
   });
   sceneEntities.push(brokerId);
   console.log(`[Act1Scene] Black market broker NPC created: ${brokerId}`);
+  attachQuestTriggerToEntity(questTriggerToolkit, brokerId, VENDOR_TRIGGER_IDS.BLACK_MARKET);
 
   // 6. Create Cipher Collective quartermaster (sells infiltration gadget)
   const quartermasterId = createNPCEntity(entityManager, componentRegistry, {
@@ -150,6 +212,7 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus, 
   });
   sceneEntities.push(quartermasterId);
   console.log(`[Act1Scene] Cipher quartermaster NPC created: ${quartermasterId}`);
+  attachQuestTriggerToEntity(questTriggerToolkit, quartermasterId, VENDOR_TRIGGER_IDS.QUARTERMASTER);
 
   // 7. Create Captain Reese NPC (for objective 9)
   // Position at precinct entrance
@@ -322,6 +385,18 @@ function createBoundary(entityManager, componentRegistry, x, y, width, height) {
   componentRegistry.addComponent(entityId, sprite);
 
   return entityId;
+}
+
+function attachQuestTriggerToEntity(toolkit, entityId, triggerId) {
+  if (!toolkit || typeof toolkit.createQuestTrigger !== 'function') {
+    return null;
+  }
+  try {
+    return toolkit.createQuestTrigger(entityId, triggerId);
+  } catch (error) {
+    console.warn(`[Act1Scene] Failed to attach quest trigger "${triggerId}"`, error);
+    return null;
+  }
 }
 
 /**

@@ -10,6 +10,8 @@ describe('TriggerMigrationToolkit', () => {
   it('migrates legacy interaction zones into Trigger components', () => {
     const componentRegistry = {
       addComponent: jest.fn(),
+      hasComponent: jest.fn(() => false),
+      getComponent: jest.fn(),
     };
     const toolkit = new TriggerMigrationToolkit(componentRegistry, null);
 
@@ -22,6 +24,19 @@ describe('TriggerMigrationToolkit', () => {
       metadata: { sceneId: 'act1_hollow_case' },
     });
 
+    expect(componentRegistry.hasComponent).toHaveBeenCalledWith(101, 'Quest');
+    const questCall = componentRegistry.addComponent.mock.calls.find(
+      ([, type]) => type === 'Quest'
+    );
+    expect(questCall).toBeDefined();
+    expect(questCall[2]).toEqual(
+      expect.objectContaining({
+        questId: 'quest_hollow_case',
+        objectiveId: 'obj_arrive_scene',
+        areaId: 'crime_scene_entry_area',
+        oneTime: true,
+      })
+    );
     expect(componentRegistry.addComponent).toHaveBeenCalledWith(
       101,
       'Trigger',
@@ -40,17 +55,42 @@ describe('TriggerMigrationToolkit', () => {
       questId: 'quest_hollow_case',
       objectiveId: 'obj_interview_vendor',
       once: false,
+      metadata: {
+        moodHint: 'market_intrigue',
+      },
     });
 
     const componentRegistry = {
       addComponent: jest.fn(),
+      hasComponent: jest.fn(() => false),
+      getComponent: jest.fn(),
     };
     const toolkit = new TriggerMigrationToolkit(componentRegistry, null);
     const trigger = toolkit.createQuestTrigger(33, 'vendor_trigger');
 
     expect(trigger).toBeInstanceOf(Trigger);
     expect(trigger.once).toBe(false);
-    expect(componentRegistry.addComponent).toHaveBeenCalledTimes(1);
+    expect(trigger.data.metadata).toEqual(
+      expect.objectContaining({
+        moodHint: 'market_intrigue',
+      })
+    );
+    expect(componentRegistry.addComponent).toHaveBeenCalledWith(
+      33,
+      'Quest',
+      expect.objectContaining({
+        questId: 'quest_hollow_case',
+        objectiveId: 'obj_interview_vendor',
+        areaId: 'vendor_trigger',
+        oneTime: false,
+      })
+    );
+    expect(componentRegistry.addComponent).toHaveBeenCalledWith(
+      33,
+      'Trigger',
+      expect.any(Trigger)
+    );
+    expect(componentRegistry.addComponent).toHaveBeenCalledTimes(2);
     expect(QuestTriggerRegistry.listOutstandingMigrations()).toHaveLength(0);
   });
 
@@ -61,4 +101,3 @@ describe('TriggerMigrationToolkit', () => {
     ).toThrow('[TriggerMigrationToolkit] Legacy config missing id/triggerId');
   });
 });
-
