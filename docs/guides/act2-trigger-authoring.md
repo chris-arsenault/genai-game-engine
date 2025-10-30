@@ -138,6 +138,12 @@ strategy and acceptance criteria.
 - Session 96 added branch objective dialogue triggers for the coordination chamber and signal array,
   verified in `tests/game/scenes/Act2BranchObjectiveDialogues.test.js`, and validated telemetry flow
   with `QuestTelemetryValidationHarness` + updated `QuestTriggerTelemetryBridge` coverage.
+- Session 97 introduces manifest-aware art overrides and cross-branch dialogue regression: the Act 2
+  Crossroads scene now consumes `GameConfig.sceneArt.act2Crossroads` or remote manifests (see
+  `tests/game/scenes/Act2CrossroadsScene.artOverrides.test.js`), while
+  `tests/game/scenes/Act2BranchDialogueIntegration.test.js` locks the event flow that emits
+  `interaction:dialogue` for the corporate, resistance, and personal interiors when branch objectives
+  fire.
 
 ## Thread C: Personal Investigation Trigger Map
 

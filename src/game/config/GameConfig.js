@@ -1,3 +1,5 @@
+import { Act2CrossroadsArtConfig } from '../data/sceneArt/Act2CrossroadsArtConfig.js';
+
 /**
  * GameConfig
  *
@@ -305,7 +307,7 @@ export const GameConfig = {
   sceneArt: {
     // Override the hybrid geometry sprites for the Act 2 Crossroads hub once bespoke art lands.
     // Each array mirrors the fallback segments defined in Act2CrossroadsScene.
-    act2Crossroads: null,
+    act2Crossroads: Act2CrossroadsArtConfig,
   },
 
   debug: {

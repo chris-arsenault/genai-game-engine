@@ -311,9 +311,7 @@ function ensureAct2TriggerDefinitions() {
   seedAct2CrossroadsTriggers(QuestTriggerRegistry);
 }
 
-function resolveAct2CrossroadsArtSegments() {
-  const artConfig = GameConfig?.sceneArt?.act2Crossroads ?? null;
-
+function resolveAct2CrossroadsArtSegments(artConfig = GameConfig?.sceneArt?.act2Crossroads ?? null) {
   if (!artConfig) {
     return {
       floors: cloneSegments(FLOOR_SEGMENTS),
@@ -335,20 +333,90 @@ function resolveAct2CrossroadsArtSegments() {
   };
 }
 
+function cloneArtConfig(config) {
+  if (!config || typeof config !== 'object') {
+    return null;
+  }
+
+  const { floors, accents, lightColumns, boundaries, ...meta } = config;
+  return {
+    ...meta,
+    floors: Array.isArray(floors) ? cloneSegments(floors) : [],
+    accents: Array.isArray(accents) ? cloneSegments(accents) : [],
+    lightColumns: Array.isArray(lightColumns) ? cloneSegments(lightColumns) : [],
+    boundaries: Array.isArray(boundaries) ? cloneSegments(boundaries) : [],
+  };
+}
+
+function combineArtConfigs(baseConfig, overrideConfig) {
+  if (!baseConfig && !overrideConfig) {
+    return null;
+  }
+  if (!baseConfig) {
+    return cloneArtConfig(overrideConfig);
+  }
+  if (!overrideConfig) {
+    return cloneArtConfig(baseConfig);
+  }
+
+  const baseClone = cloneArtConfig(baseConfig) ?? {};
+  const overrideClone = cloneArtConfig(overrideConfig) ?? {};
+
+  const {
+    floors: baseFloors = [],
+    accents: baseAccents = [],
+    lightColumns: baseLightColumns = [],
+    boundaries: baseBoundaries = [],
+    ...baseMeta
+  } = baseClone;
+
+  const {
+    floors: overrideFloors = [],
+    accents: overrideAccents = [],
+    lightColumns: overrideLightColumns = [],
+    boundaries: overrideBoundaries = [],
+    ...overrideMeta
+  } = overrideClone;
+
+  return {
+    ...baseMeta,
+    ...overrideMeta,
+    floors: mergeSegmentCollection(overrideFloors, baseFloors, 'floor'),
+    accents: mergeSegmentCollection(overrideAccents, baseAccents, 'accent'),
+    lightColumns: mergeSegmentCollection(overrideLightColumns, baseLightColumns, 'light_column'),
+    boundaries: mergeSegmentCollection(overrideBoundaries, baseBoundaries, 'boundary'),
+  };
+}
+
 function mergeSegmentCollection(overrides, fallback, prefix) {
   if (!Array.isArray(overrides) || overrides.length === 0) {
     return fallback.map(cloneSegmentDetails);
   }
 
   const fallbackById = new Map(fallback.map((segment) => [segment.id, segment]));
-
-  return overrides.map((override, index) => {
+  const usedIds = new Set();
+  const merged = overrides.map((override, index) => {
     const fallbackSegment =
       (override && typeof override.id === 'string' && fallbackById.get(override.id)) ||
       fallback[index] ||
       null;
-    return cloneSegmentDetails(normalizeSegment(override, fallbackSegment, `${prefix}_${index}`));
+    const normalised = normalizeSegment(override, fallbackSegment, `${prefix}_${index}`);
+    if (fallbackSegment?.id) {
+      usedIds.add(fallbackSegment.id);
+    }
+    if (normalised?.id) {
+      usedIds.add(normalised.id);
+    }
+    return cloneSegmentDetails(normalised);
   });
+
+  for (const segment of fallback) {
+    if (segment?.id && !usedIds.has(segment.id)) {
+      merged.push(cloneSegmentDetails(segment));
+    }
+  }
+
+  return merged;
 }
 
 function normalizeSegment(segment, fallback, generatedId) {
@@ -588,7 +656,8 @@ export class Act2CrossroadsScene {
 
     this._questTriggerToolkit = new TriggerMigrationToolkit(this.componentRegistry, this.eventBus);
 
-    this._artSegments = resolveAct2CrossroadsArtSegments();
+    const artDescriptor = await this._loadAct2CrossroadsArtConfig();
+    this._artSegments = resolveAct2CrossroadsArtSegments(artDescriptor.config);
     await this._primeArtAssets(this._artSegments);
 
     const geometryEntities = this._createStaticGeometry(this._artSegments);
@@ -622,7 +691,11 @@ export class Act2CrossroadsScene {
       lightColumns: cloneSegments(this._artSegments?.lightColumns ?? []),
       boundaries: cloneSegments(this._artSegments?.boundaries ?? []),
     };
-    this.metadata.artSource = GameConfig?.sceneArt?.act2Crossroads ?? null;
+    this.metadata.artSource = {
+      input: GameConfig?.sceneArt?.act2Crossroads ?? null,
+      manifestUrl: artDescriptor.manifestUrl,
+      resolved: artDescriptor.config ? cloneArtConfig(artDescriptor.config) : null,
+    };
 
     const ambientSummary = this._setupAmbientAudio();
     this._bindTriggerEventHandlers();
@@ -730,18 +803,12 @@ export class Act2CrossroadsScene {
       return;
     }
 
-    if (!this._assetLoader) {
-      this._assetLoader = new AssetLoader({
-        maxRetries: 2,
-        retryDelay: 400,
-        timeout: 20000,
-      });
-    }
+    const loader = this._ensureAssetLoader();
 
     await Promise.all(
       segmentsToLoad.map(async (segment) => {
         try {
-          const image = await this._assetLoader.loadImage(segment.imageUrl);
+          const image = await loader.loadImage(segment.imageUrl);
           if (image) {
             segment.image = image;
           }
@@ -754,6 +821,85 @@ export class Act2CrossroadsScene {
         }
       })
     );
+  }
+
+  async _loadAct2CrossroadsArtConfig(entry = GameConfig?.sceneArt?.act2Crossroads ?? null) {
+    const descriptor = {
+      input: entry ?? null,
+      manifestUrl: null,
+      config: null,
+    };
+
+    if (!entry) {
+      return descriptor;
+    }
+
+    if (typeof entry === 'string') {
+      descriptor.manifestUrl = entry;
+      descriptor.config = await this._loadArtManifest(entry);
+      return descriptor;
+    }
+
+    if (entry && typeof entry === 'object') {
+      const manifestUrl =
+        typeof entry.manifestUrl === 'string' && entry.manifestUrl.length > 0
+          ? entry.manifestUrl
+          : null;
+      const overrides =
+        entry.overrides && typeof entry.overrides === 'object' ? entry.overrides : null;
+
+      let manifestConfig = null;
+
+      if (manifestUrl) {
+        descriptor.manifestUrl = manifestUrl;
+        manifestConfig = await this._loadArtManifest(manifestUrl);
+      }
+
+      if (overrides) {
+        descriptor.config = combineArtConfigs(manifestConfig, overrides);
+      } else if (manifestConfig) {
+        descriptor.config = manifestConfig;
+      } else {
+        const { manifestUrl: ignoredManifestUrl, overrides: ignoredOverrides, ...rest } = entry;
+        descriptor.config = cloneArtConfig(rest);
+      }
+
+      return descriptor;
+    }
+
+    return descriptor;
+  }
+
+  async _loadArtManifest(url) {
+    if (typeof url !== 'string' || url.length === 0) {
+      return null;
+    }
+
+    try {
+      const loader = this._ensureAssetLoader();
+      const data = await loader.loadJSON(url);
+      if (data && typeof data === 'object') {
+        if (data.act2Crossroads && typeof data.act2Crossroads === 'object') {
+          return cloneArtConfig(data.act2Crossroads);
+        }
+        return cloneArtConfig(data);
+      }
+    } catch (error) {
+      console.warn(`[Act2CrossroadsScene] Failed to load art manifest (${url})`, error);
+    }
+
+    return null;
+  }
+
+  _ensureAssetLoader() {
+    if (!this._assetLoader) {
+      this._assetLoader = new AssetLoader({
+        maxRetries: 2,
+        retryDelay: 400,
+        timeout: 20000,
+      });
+    }
+    return this._assetLoader;
   }
 
   _createStaticGeometry(artSegments) {
