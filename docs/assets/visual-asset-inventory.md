@@ -2,10 +2,12 @@
 
 ## Context
 - Derived from `docs/plans/backlog.md` asset tracker and `assets/manifests/act2-crossroads-art.json`.
-- Synced with `assets/images/requests.json` on 2025-11-12 during AR-050 inventory pass.
+- Synced with `assets/images/requests.json` on 2025-11-12 during AR-050 inventory pass; refreshed 2025-11-12 Session 111 after packaging prompts and generating new overlays.
 - Status values:
   - `pending-sourcing` – requires locating or generating an asset.
   - `reference-selected` – candidate reference gathered, needs conversion or bespoke art.
+  - `prompt-packaged` – OpenAI-ready brief packaged into JSON payloads and staged for generation.
+  - `derivative-generated` – overlay or processed asset rendered into `assets/overlays/`.
 
 ## Outstanding Requests
 
@@ -54,6 +56,12 @@
 - Column overlays are defined in `assets/images/overlay-derivatives-act2-crossroads.json`; the script downloads the Openverse source plates and renders processed PNGs to `assets/overlays/act2-crossroads/`.
 - Run `npm run art:generate-crossroads-overlays` (add `--dry-run` to inspect dimensions only). Configuration defaults cover cyan safehouse beams and amber checkpoint beams; tweak per-entry overrides when art direction shifts.
 
+## Session 111 Updates
+- Implemented `scripts/art/exportGenerationPrompts.js` to package AR-001 – AR-005 briefs into `assets/images/generation-payloads/ar-001-005.json`, automatically marking manifest entries as `prompt-packaged` with timestamp metadata.
+- Extended `assets/images/overlay-derivatives-act2-crossroads.json` to cover selection pad, checkpoint plaza, safehouse arc, selection conduit, checkpoint glow, and all boundary wall references; running `npm run art:generate-crossroads-overlays` now emits 13 overlays into `assets/overlays/act2-crossroads/`.
+- Manifest entries for the new overlays are updated to `derivative-generated` with processing provenance (`Session 111`) for traceability.
+- Added telemetry acknowledgement tooling (`scripts/telemetry/outboxAcknowledgement.js`) so art/analytics leads can track ingestion status alongside asset packages.
+
 ## Next Actions
-1. Prepare generation brief templates covering art style, palette, and lighting for AR-001 through AR-005 requests that remain `pending-sourcing`.
-2. Convert newly sourced references into transparent overlays and update manifests with processing notes once derivatives are produced.
+1. Trigger OpenAI or internal sprite/tile generation runs using `art:package-generation-prompts` output, vet assets, and backfill licensing metadata into manifests.
+2. Coordinate with RenderOps to review the expanded Crossroads overlay suite, tuning tint/alpha parameters based on in-engine lighting validation.

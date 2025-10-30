@@ -15,7 +15,7 @@
 
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
-| AR-050 | P0 | In Progress | Visual asset sourcing pipeline now covers Act 2 Crossroads selection conduit/pad, checkpoint glow/plaza, safehouse arc, boundary walls, and column beam overlays with CC0/CC-BY references captured in manifests; column derivatives generated and stored in `assets/overlays/act2-crossroads/`. | Coordinate RenderOps lighting validation, extend overlay derivative runs to remaining AR-050 plates, and trigger AR-001–AR-005 asset generation using the published prompts. |
+| AR-050 | P0 | In Progress | Visual asset sourcing pipeline now covers Act 2 Crossroads selection conduit/pad, checkpoint glow/plaza, safehouse arc, boundary walls, and column beam overlays with CC0/CC-BY references captured in manifests; derivatives for all referenced plates generated via `art:generate-crossroads-overlays`. | Coordinate RenderOps lighting validation, integrate overlays into scene presets, and trigger AR-001–AR-005 asset generation using the packaged prompts. |
 | TUT-201 | P0 | Completed | Tutorial case blocked at step 3 (`evidence_detection`) because legacy scene entities bypassed ECS detection events. | ECS-aligned tutorial scene entities shipped Session #51; re-run tutorial smoke tests after combat audio validation. |
 | AUDIO-351 | P0 | Completed | Validate live combat/disguise trigger routing through `AmbientSceneAudioController` using real combat loop events. | Adaptive audio routing now responds to gameplay emits; telemetry verified by Jest/Playwright suites and new infiltration benchmark. |
 | PERF-214 | P1 | Pending | Browser-level performance profiling for adaptive audio + overlay interactions to confirm <16 ms frame time budget. | Run Chromium/Firefox performance audits with combat/stealth transitions, log hotspots, and file perf follow-ups as needed. |
@@ -2333,7 +2333,7 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Evidence type icons (32x32 each: physical, digital, testimonial, forensic)
   - UI buttons (play, pause, settings, etc.)
 - **File**: `assets/images/requests.json`
-- **Status**: Prompt briefs drafted and stored in `docs/assets/generation-prompts-ar-001-005.md`; generation run pending.
+- **Status**: Prompt briefs packaged via `art:package-generation-prompts` into `assets/images/generation-payloads/ar-001-005.json`; OpenAI run + QA pending.
 
 #### AR-002: Evidence Placeholder Sprites (M2)
 - **Type**: Images
@@ -2347,7 +2347,7 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Neural extractor sprite
   - Blood spatter sprite
 - **File**: `assets/images/requests.json`
-- **Status**: Prompt briefs drafted and stored in `docs/assets/generation-prompts-ar-001-005.md`; generation run pending.
+- **Status**: Prompt briefs packaged via `art:package-generation-prompts` into `assets/images/generation-payloads/ar-001-005.json`; sprite generation review pending.
 
 #### AR-003: Player Character Sprite (M2)
 - **Type**: Images
@@ -2359,7 +2359,7 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Detective coat, distinctive look
   - 4-direction or 8-direction movement
 - **File**: `assets/images/requests.json`
-- **Status**: Prompt brief drafted in `docs/assets/generation-prompts-ar-001-005.md`; waiting on sprite generation + review.
+- **Status**: Prompt brief packaged via `art:package-generation-prompts` (see `assets/images/generation-payloads/ar-001-005.json`); awaiting sprite generation + review.
 
 ### High Priority Assets (P1 - Required for M3-M6)
 
@@ -2373,7 +2373,7 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Guard NPCs (3 variations, 32x32)
   - Faction-specific clothing/colors
 - **File**: `assets/images/requests.json`
-- **Status**: Prompt briefs for civilian and guard packs documented in `docs/assets/generation-prompts-ar-001-005.md`; generation QA pending.
+- **Status**: Prompt briefs packaged via `art:package-generation-prompts` for civilian/guard packs (`assets/images/generation-payloads/ar-001-005.json`); generation QA pending.
 
 #### AR-005: District Tilesets (M4)
 - **Type**: Images
@@ -2386,7 +2386,7 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Archive Undercity: Dark, ancient tech (16x16 tiles)
   - Zenith Sector: Futuristic, imposing (16x16 tiles)
 - **File**: `assets/images/requests.json`
-- **Status**: Prompt briefs covering all four districts logged in `docs/assets/generation-prompts-ar-001-005.md`; awaiting asset generation and collision annotation.
+- **Status**: Prompt briefs covering all four districts packaged via `art:package-generation-prompts` (`assets/images/generation-payloads/ar-001-005.json`); awaiting asset generation and collision annotation.
 
 #### AR-006: UI Sound Effects (M2-M6)
 - **Type**: Audio

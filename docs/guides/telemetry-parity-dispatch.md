@@ -42,3 +42,4 @@ telemetry-artifacts/analytics/outbox/<label>/
 - Upload the dispatch folder to the analytics SFTP drop or shared drive.
 - Comment in `QUEST-610` with the dispatch label and link to the manifest.
 - Schedule the next telemetry sample collection if `manifest.nextSteps` still lists follow-up items.
+- Track acknowledgement using `npm run telemetry:ack -- --acknowledge=<label> --by="Name (Analytics)" --method=email --note="ingested"` once analytics confirms ingestion; this stamps `acknowledgement.json`, appends the README log, and updates `telemetry-artifacts/analytics/acknowledgements.json`.

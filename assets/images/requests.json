@@ -17,9 +17,11 @@
     "creator": "",
     "source": "",
     "license": "",
-    "status": "pending-sourcing",
+    "status": "prompt-packaged",
     "usage": "1024x768 deduction board backdrop for investigative UI overlay.",
-    "notes": "Needs layered neon corkboard vibe with space for clue nodes and narrative callouts. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
+    "notes": "Needs layered neon corkboard vibe with space for clue nodes and narrative callouts. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md",
+    "promptPackage": "generation-payloads/ar-001-005.json",
+    "promptPackagedAt": "2025-10-30T09:44:35.484Z"
   },
   {
     "id": "image-ar-001-clue-node-pack",
@@ -28,9 +30,11 @@
     "creator": "",
     "source": "",
     "license": "",
-    "status": "pending-sourcing",
+    "status": "prompt-packaged",
     "usage": "64x64 node sprites representing active, solved, and locked clues on deduction board.",
-    "notes": "Requires at least three variations with animated pulse option for narrative emphasis. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
+    "notes": "Requires at least three variations with animated pulse option for narrative emphasis. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md",
+    "promptPackage": "generation-payloads/ar-001-005.json",
+    "promptPackagedAt": "2025-10-30T09:44:35.484Z"
   },
   {
     "id": "image-ar-001-evidence-icon-set",
@@ -39,9 +43,11 @@
     "creator": "",
     "source": "",
     "license": "",
-    "status": "pending-sourcing",
+    "status": "prompt-packaged",
     "usage": "32x32 icon suite for physical, digital, testimonial, and forensic evidence categories.",
-    "notes": "Icons must read at small sizes; include monochrome and color treatments. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
+    "notes": "Icons must read at small sizes; include monochrome and color treatments. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md",
+    "promptPackage": "generation-payloads/ar-001-005.json",
+    "promptPackagedAt": "2025-10-30T09:44:35.484Z"
   },
   {
     "id": "image-ar-001-ui-button-pack",
@@ -50,9 +56,11 @@
     "creator": "",
     "source": "",
     "license": "",
-    "status": "pending-sourcing",
+    "status": "prompt-packaged",
     "usage": "Interactive buttons (play, pause, settings, confirm, cancel) for menu overlays.",
-    "notes": "Target 64x32 sprites with hover/pressed states; neon noir styling. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
+    "notes": "Target 64x32 sprites with hover/pressed states; neon noir styling. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md",
+    "promptPackage": "generation-payloads/ar-001-005.json",
+    "promptPackagedAt": "2025-10-30T09:44:35.484Z"
   },
   {
     "id": "image-ar-002-generic-marker",
@@ -61,9 +69,11 @@
     "creator": "",
     "source": "",
     "license": "",
-    "status": "pending-sourcing",
+    "status": "prompt-packaged",
     "usage": "32x32 placeholder sprite for generic evidence pickups.",
-    "notes": "Needs blank label area for procedural numbering. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
+    "notes": "Needs blank label area for procedural numbering. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md",
+    "promptPackage": "generation-payloads/ar-001-005.json",
+    "promptPackagedAt": "2025-10-30T09:44:35.484Z"
   },
   {
     "id": "image-ar-002-fingerprint",
@@ -72,9 +82,11 @@
     "creator": "",
     "source": "",
     "license": "",
-    "status": "pending-sourcing",
+    "status": "prompt-packaged",
     "usage": "32x32 sprite for latent fingerprint items.",
-    "notes": "Supports neon-guided cyan lighting to align with Memory Parlor palette. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
+    "notes": "Supports neon-guided cyan lighting to align with Memory Parlor palette. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md",
+    "promptPackage": "generation-payloads/ar-001-005.json",
+    "promptPackagedAt": "2025-10-30T09:44:35.484Z"
   },
   {
     "id": "image-ar-002-document",
@@ -83,9 +95,11 @@
     "creator": "",
     "source": "",
     "license": "",
-    "status": "pending-sourcing",
+    "status": "prompt-packaged",
     "usage": "32x32 sprite for dossier and report collectibles.",
-    "notes": "Add subtle fold and holographic seal for narrative flair. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
+    "notes": "Add subtle fold and holographic seal for narrative flair. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md",
+    "promptPackage": "generation-payloads/ar-001-005.json",
+    "promptPackagedAt": "2025-10-30T09:44:35.484Z"
   },
   {
     "id": "image-ar-002-neural-extractor",
@@ -94,9 +108,11 @@
     "creator": "",
     "source": "",
     "license": "",
-    "status": "pending-sourcing",
+    "status": "prompt-packaged",
     "usage": "32x32 device sprite used in mind-hack missions.",
-    "notes": "Depict compact tech device with blue accent lights and removable prongs. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
+    "notes": "Depict compact tech device with blue accent lights and removable prongs. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md",
+    "promptPackage": "generation-payloads/ar-001-005.json",
+    "promptPackagedAt": "2025-10-30T09:44:35.484Z"
   },
   {
     "id": "image-ar-002-blood-spatter",
@@ -105,9 +121,11 @@
     "creator": "",
     "source": "",
     "license": "",
-    "status": "pending-sourcing",
+    "status": "prompt-packaged",
     "usage": "32x32 sprite for forensic blood sample pickups.",
-    "notes": "Stylise to remain readable while respecting M2 rating guidelines. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
+    "notes": "Stylise to remain readable while respecting M2 rating guidelines. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md",
+    "promptPackage": "generation-payloads/ar-001-005.json",
+    "promptPackagedAt": "2025-10-30T09:44:35.484Z"
   },
   {
     "id": "image-ar-003-player-kira-sprite",
@@ -116,9 +134,11 @@
     "creator": "",
     "source": "",
     "license": "",
-    "status": "pending-sourcing",
+    "status": "prompt-packaged",
     "usage": "32x32 sprite sheet with idle, walk, and run animations across 4 directions.",
-    "notes": "Detective coat silhouette with readable silhouette; 6 frames per animation recommended. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
+    "notes": "Detective coat silhouette with readable silhouette; 6 frames per animation recommended. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md",
+    "promptPackage": "generation-payloads/ar-001-005.json",
+    "promptPackagedAt": "2025-10-30T09:44:35.484Z"
   },
   {
     "id": "image-ar-004-npc-civilian-pack",
@@ -127,9 +147,11 @@
     "creator": "",
     "source": "",
     "license": "",
-    "status": "pending-sourcing",
+    "status": "prompt-packaged",
     "usage": "Five 32x32 civilian NPC variants for social hubs and investigation scenes.",
-    "notes": "Represent faction-aligned outfits; include gender-diverse silhouettes. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
+    "notes": "Represent faction-aligned outfits; include gender-diverse silhouettes. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md",
+    "promptPackage": "generation-payloads/ar-001-005.json",
+    "promptPackagedAt": "2025-10-30T09:44:35.484Z"
   },
   {
     "id": "image-ar-004-npc-guard-pack",
@@ -138,9 +160,11 @@
     "creator": "",
     "source": "",
     "license": "",
-    "status": "pending-sourcing",
+    "status": "prompt-packaged",
     "usage": "Three 32x32 guard NPC variants for stealth patrols.",
-    "notes": "Include visor glow for detection cues; integrate faction insignia. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
+    "notes": "Include visor glow for detection cues; integrate faction insignia. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md",
+    "promptPackage": "generation-payloads/ar-001-005.json",
+    "promptPackagedAt": "2025-10-30T09:44:35.484Z"
   },
   {
     "id": "image-ar-005-tileset-neon-district",
@@ -149,9 +173,11 @@
     "creator": "",
     "source": "",
     "license": "",
-    "status": "pending-sourcing",
+    "status": "prompt-packaged",
     "usage": "16x16 tile atlas for rain-soaked neon city blocks.",
-    "notes": "Needs wet reflections, signage layers, and animated neon strips. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
+    "notes": "Needs wet reflections, signage layers, and animated neon strips. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md",
+    "promptPackage": "generation-payloads/ar-001-005.json",
+    "promptPackagedAt": "2025-10-30T09:44:35.484Z"
   },
   {
     "id": "image-ar-005-tileset-corporate-spires",
@@ -160,9 +186,11 @@
     "creator": "",
     "source": "",
     "license": "",
-    "status": "pending-sourcing",
+    "status": "prompt-packaged",
     "usage": "16x16 tile atlas for sterile high-tech interiors.",
-    "notes": "Feature frosted glass, chrome flooring, and light columns. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
+    "notes": "Feature frosted glass, chrome flooring, and light columns. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md",
+    "promptPackage": "generation-payloads/ar-001-005.json",
+    "promptPackagedAt": "2025-10-30T09:44:35.484Z"
   },
   {
     "id": "image-ar-005-tileset-archive-undercity",
@@ -171,9 +199,11 @@
     "creator": "",
     "source": "",
     "license": "",
-    "status": "pending-sourcing",
+    "status": "prompt-packaged",
     "usage": "16x16 tile atlas for ancient underground data vaults.",
-    "notes": "Blend corroded metal with glowing conduits and dust particles. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
+    "notes": "Blend corroded metal with glowing conduits and dust particles. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md",
+    "promptPackage": "generation-payloads/ar-001-005.json",
+    "promptPackagedAt": "2025-10-30T09:44:35.484Z"
   },
   {
     "id": "image-ar-005-tileset-zenith-sector",
@@ -182,9 +212,11 @@
     "creator": "",
     "source": "",
     "license": "",
-    "status": "pending-sourcing",
+    "status": "prompt-packaged",
     "usage": "16x16 tile atlas for imposing futurist plazas.",
-    "notes": "Incorporate holographic banners and elevated rail tracks. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
+    "notes": "Incorporate holographic banners and elevated rail tracks. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md",
+    "promptPackage": "generation-payloads/ar-001-005.json",
+    "promptPackagedAt": "2025-10-30T09:44:35.484Z"
   },
   {
     "id": "image-ar-007-particles-rain",
@@ -270,9 +302,9 @@
     "creator": "The Fun Chronicles",
     "source": "https://www.flickr.com/photos/196406308@N04/52845556684",
     "license": "CC0 1.0",
-    "status": "reference-selected",
+    "status": "derivative-generated",
     "usage": "Interactive pad for thread selection console.",
-    "notes": "Matches assetId act2_crossroads_selection_pad_v1; CC0 helipad top-down plate gives concentric guidance rings for reactive glass and telemetry glyphs. Openverse ID 67a16c30-eb3c-4b8e-88f5-f1e31bfddb5a (\"30 A Helipad Near The Top (4) - East View\")."
+    "notes": "Matches assetId act2_crossroads_selection_pad_v1; CC0 helipad top-down plate gives concentric guidance rings for reactive glass and telemetry glyphs. Openverse ID 67a16c30-eb3c-4b8e-88f5-f1e31bfddb5a (\"30 A Helipad Near The Top (4) - East View\"). | Overlay derivative generated in Session 111 via npm run art:generate-crossroads-overlays -> assets/overlays/act2-crossroads/act2_crossroads_selection_pad.png"
   },
   {
     "id": "image-ar-050-crossroads-checkpoint-plaza",
@@ -281,9 +313,9 @@
     "creator": "Nestor's Blurrylife",
     "source": "https://www.flickr.com/photos/7711906@N07/13462190584",
     "license": "CC BY 2.0",
-    "status": "reference-selected",
+    "status": "derivative-generated",
     "usage": "Checkpoint staging floor for guard interactions.",
-    "notes": "Matches assetId act2_crossroads_checkpoint_plaza_v1; Dongdaemun Design Plaza night plaza reference delivers illuminated ribbing and steel inlays for militarised tone. Openverse ID 1d101862-fda2-4591-8160-d799b6e2b39c (\"Dongdaemun Design Plaza & Park\")."
+    "notes": "Matches assetId act2_crossroads_checkpoint_plaza_v1; Dongdaemun Design Plaza night plaza reference delivers illuminated ribbing and steel inlays for militarised tone. Openverse ID 1d101862-fda2-4591-8160-d799b6e2b39c (\"Dongdaemun Design Plaza & Park\"). | Overlay derivative generated in Session 111 via npm run art:generate-crossroads-overlays -> assets/overlays/act2-crossroads/act2_crossroads_checkpoint_plaza.png"
   },
   {
     "id": "image-ar-050-crossroads-safehouse-arc",
@@ -292,9 +324,9 @@
     "creator": "NASA Goddard Photo and Video",
     "source": "https://www.flickr.com/photos/24662369@N07/33570800220",
     "license": "CC BY 2.0",
-    "status": "reference-selected",
+    "status": "derivative-generated",
     "usage": "Lighting accent for safehouse arc installation.",
-    "notes": "Matches assetId act2_crossroads_safehouse_arc_v1; deliver semi-transparent beam overlay. Openverse ID 958a108e-b4ee-4fef-800a-5a8a48e68a2b (\"Alien aurorae spotted on Uranus by Hubble\") features layered aurora strands ideal for semi-transparent arc treatments."
+    "notes": "Matches assetId act2_crossroads_safehouse_arc_v1; deliver semi-transparent beam overlay. Openverse ID 958a108e-b4ee-4fef-800a-5a8a48e68a2b (\"Alien aurorae spotted on Uranus by Hubble\") features layered aurora strands ideal for semi-transparent arc treatments. | Overlay derivative generated in Session 111 via npm run art:generate-crossroads-overlays -> assets/overlays/act2-crossroads/act2_crossroads_safehouse_arc.png"
   },
   {
     "id": "image-ar-050-crossroads-selection-conduit",
@@ -303,9 +335,9 @@
     "creator": "Tanozzo",
     "source": "https://www.flickr.com/photos/7943346@N07/4778327737",
     "license": "CC BY 2.0",
-    "status": "reference-selected",
+    "status": "derivative-generated",
     "usage": "Lighting accent connecting selection pad to central console.",
-    "notes": "AssetId act2_crossroads_selection_conduit_v1; require emissive orange conduit effect. Openverse ID f4fa7dce-2bdf-4e52-a9bf-943aa0ea3dec (\"High Energy\") provides plasma arc reference with strong radial beams that can be recolored to the Crossroads orange palette."
+    "notes": "AssetId act2_crossroads_selection_conduit_v1; require emissive orange conduit effect. Openverse ID f4fa7dce-2bdf-4e52-a9bf-943aa0ea3dec (\"High Energy\") provides plasma arc reference with strong radial beams that can be recolored to the Crossroads orange palette. | Overlay derivative generated in Session 111 via npm run art:generate-crossroads-overlays -> assets/overlays/act2-crossroads/act2_crossroads_selection_conduit.png"
   },
   {
     "id": "image-ar-050-crossroads-checkpoint-glow",
@@ -314,9 +346,9 @@
     "creator": "MTAPhotos",
     "source": "https://www.flickr.com/photos/61135621@N03/32827022948",
     "license": "CC BY 2.0",
-    "status": "reference-selected",
+    "status": "derivative-generated",
     "usage": "Lighting accent for checkpoint guard rails.",
-    "notes": "AssetId act2_crossroads_checkpoint_glow_v1; implement subtle pulsing shader reference. Openverse ID 3f514b03-b6b2-48b8-baa8-7264b0d42f77 (\"Reopening of 167 St on the B, D lines\") showcases linear overhead strip lighting suitable for translating into a guarded checkpoint glow."
+    "notes": "AssetId act2_crossroads_checkpoint_glow_v1; implement subtle pulsing shader reference. Openverse ID 3f514b03-b6b2-48b8-baa8-7264b0d42f77 (\"Reopening of 167 St on the B, D lines\") showcases linear overhead strip lighting suitable for translating into a guarded checkpoint glow. | Overlay derivative generated in Session 111 via npm run art:generate-crossroads-overlays -> assets/overlays/act2-crossroads/act2_crossroads_checkpoint_glow.png"
   },
   {
     "id": "image-ar-050-crossroads-column-safehouse-left",
@@ -369,9 +401,9 @@
     "creator": "Jeremy Levine Design",
     "source": "https://www.flickr.com/photos/25186605@N04/2814805163",
     "license": "CC BY 2.0",
-    "status": "reference-selected",
+    "status": "derivative-generated",
     "usage": "Boundary wall texture for west perimeter.",
-    "notes": "AssetId act2_crossroads_boundary_west_v1; Solar Energy System grid supplies modular energy panel pattern with subtle parallax seams. Openverse ID cffc95f8-a10c-4ea1-9403-75989f5c510c (\"Solar Energy System\")."
+    "notes": "AssetId act2_crossroads_boundary_west_v1; Solar Energy System grid supplies modular energy panel pattern with subtle parallax seams. Openverse ID cffc95f8-a10c-4ea1-9403-75989f5c510c (\"Solar Energy System\"). | Overlay derivative generated in Session 111 via npm run art:generate-crossroads-overlays -> assets/overlays/act2-crossroads/act2_crossroads_boundary_west.png"
   },
   {
     "id": "image-ar-050-crossroads-boundary-east",
@@ -380,9 +412,9 @@
     "creator": "spinster cardigan",
     "source": "https://www.flickr.com/photos/84906483@N08/8567491153",
     "license": "CC BY 2.0",
-    "status": "reference-selected",
+    "status": "derivative-generated",
     "usage": "Boundary wall texture for east perimeter.",
-    "notes": "AssetId act2_crossroads_boundary_east_v1; glass brick wall photo supports translucent signage inserts with damage detail. Openverse ID 9d2a5d45-5ba9-47ac-a910-e8ec191e2ed2 (\"glass brick wall\")."
+    "notes": "AssetId act2_crossroads_boundary_east_v1; glass brick wall photo supports translucent signage inserts with damage detail. Openverse ID 9d2a5d45-5ba9-47ac-a910-e8ec191e2ed2 (\"glass brick wall\"). | Overlay derivative generated in Session 111 via npm run art:generate-crossroads-overlays -> assets/overlays/act2-crossroads/act2_crossroads_boundary_east.png"
   },
   {
     "id": "image-ar-050-crossroads-boundary-north",
@@ -391,9 +423,9 @@
     "creator": "*rboed*",
     "source": "https://www.flickr.com/photos/92082510@N04/14373826104",
     "license": "CC BY 2.0",
-    "status": "reference-selected",
+    "status": "derivative-generated",
     "usage": "Boundary wall texture for north perimeter.",
-    "notes": "AssetId act2_crossroads_boundary_north_v1; high-density window grid offers structural support motif for walkway entrance signage. Openverse ID 8cac3eaf-712d-4ab1-9fa9-cc6a0860d66b (\"Windows\")."
+    "notes": "AssetId act2_crossroads_boundary_north_v1; high-density window grid offers structural support motif for walkway entrance signage. Openverse ID 8cac3eaf-712d-4ab1-9fa9-cc6a0860d66b (\"Windows\"). | Overlay derivative generated in Session 111 via npm run art:generate-crossroads-overlays -> assets/overlays/act2-crossroads/act2_crossroads_boundary_north.png"
   },
   {
     "id": "image-ar-050-crossroads-boundary-south",
@@ -402,8 +434,8 @@
     "creator": "Mr Thinktank",
     "source": "https://www.flickr.com/photos/34621580@N00/4048656050",
     "license": "CC BY 2.0",
-    "status": "reference-selected",
+    "status": "derivative-generated",
     "usage": "Boundary wall texture for south perimeter.",
-    "notes": "AssetId act2_crossroads_boundary_south_v1; perforated steel panel adds armored venting cues while keeping collision silhouette readable. Openverse ID 7b9870f8-1647-4fa6-a29b-62361aa1f4f7 (\"perforated steel panel in stairway\")."
+    "notes": "AssetId act2_crossroads_boundary_south_v1; perforated steel panel adds armored venting cues while keeping collision silhouette readable. Openverse ID 7b9870f8-1647-4fa6-a29b-62361aa1f4f7 (\"perforated steel panel in stairway\"). | Overlay derivative generated in Session 111 via npm run art:generate-crossroads-overlays -> assets/overlays/act2-crossroads/act2_crossroads_boundary_south.png"
   }
 ]
