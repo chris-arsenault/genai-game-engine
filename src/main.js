@@ -8,6 +8,7 @@ import {
   buildQuestDebugSummary,
   buildStoryDebugSummary,
 } from './game/ui/helpers/worldStateDebugView.js';
+import { buildSystemMetricsDebugView } from './game/ui/helpers/systemMetricsDebugView.js';
 import { factionSlice } from './game/state/slices/factionSlice.js';
 import { tutorialSlice } from './game/state/slices/tutorialSlice.js';
 
@@ -71,6 +72,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   const debugSfxList = document.getElementById('debug-sfx-list');
   const debugSfxFilterInput = document.getElementById('debug-sfx-filter');
   const debugSfxTagFilters = document.getElementById('debug-sfx-tag-filters');
+  const debugSystemsMeta = document.getElementById('debug-systems-meta');
+  const debugSystemsList = document.getElementById('debug-systems-list');
 
   const formatClock = (timestamp) => {
     if (!timestamp || Number.isNaN(timestamp)) {
@@ -185,6 +188,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   let factionCascadeSelectorErrorLogged = false;
   let tutorialSelectorErrorLogged = false;
   let audioBridgeErrorLogged = false;
+  let lastSystemMetricsSignature = null;
+  let systemMetricsErrorLogged = false;
 
   if (debugDialogueControls) {
     debugDialogueControls.textContent = 'Controls: F3 toggle overlay · F4 pause/resume transcript';
@@ -348,6 +353,80 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (frameTimeElement) {
       const frameTime = (engine.getDeltaTime() * 1000).toFixed(1);
       frameTimeElement.textContent = `Frame: ${frameTime} ms`;
+    }
+
+    if ((debugSystemsList || debugSystemsMeta) && typeof engine.getSystemManager === 'function') {
+      let metricsView = null;
+      try {
+        const systemManager = engine.getSystemManager();
+        if (
+          systemManager &&
+          typeof systemManager.getLastFrameMetrics === 'function'
+        ) {
+          const lastFrameMetrics = systemManager.getLastFrameMetrics();
+          const averageFrameTime =
+            typeof systemManager.getAverageFrameTime === 'function'
+              ? systemManager.getAverageFrameTime()
+              : null;
+          const budgetOverride =
+            typeof window !== 'undefined' && Number.isFinite(window.debugSystemBudgetMs)
+              ? window.debugSystemBudgetMs
+              : null;
+          metricsView = buildSystemMetricsDebugView({
+            lastFrame: lastFrameMetrics,
+            averageFrameTime,
+            budgetMs: budgetOverride ?? 4,
+          });
+        }
+      } catch (error) {
+        if (!systemMetricsErrorLogged) {
+          console.warn('[DebugOverlay] Failed to render system metrics', error);
+          systemMetricsErrorLogged = true;
+        }
+      }
+
+      const signature = metricsView
+        ? JSON.stringify({
+            summary: metricsView.summary,
+            rows: metricsView.rows.map(
+              (row) => `${row.id}:${row.state ?? 'none'}:${row.text}`
+            ),
+          })
+        : 'no-metrics';
+
+      if (signature !== lastSystemMetricsSignature) {
+        lastSystemMetricsSignature = signature;
+
+        if (debugSystemsMeta) {
+          debugSystemsMeta.textContent =
+            metricsView?.summary ?? 'Frame metrics: n/a';
+        }
+
+        if (debugSystemsList) {
+          debugSystemsList.innerHTML = '';
+
+          if (
+            !metricsView ||
+            !Array.isArray(metricsView.rows) ||
+            metricsView.rows.length === 0
+          ) {
+            const emptyRow = document.createElement('div');
+            emptyRow.className = 'debug-world-row empty';
+            emptyRow.textContent = 'No system metrics';
+            debugSystemsList.appendChild(emptyRow);
+          } else {
+            for (const entry of metricsView.rows) {
+              const row = document.createElement('div');
+              row.className = 'debug-world-row';
+              if (entry.state) {
+                row.dataset.tone = entry.state;
+              }
+              row.textContent = entry.text;
+              debugSystemsList.appendChild(row);
+            }
+          }
+        }
+      }
     }
 
     if (debugUiOverlayList && window.game?.getOverlayStateSnapshot) {

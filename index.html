@@ -138,6 +138,13 @@
       max-width: 320px;
     }
 
+    #debug-systems {
+      margin-top: 8px;
+      border-top: 1px solid rgba(0, 255, 255, 0.35);
+      padding-top: 6px;
+      max-width: 320px;
+    }
+
     .debug-meta {
       font-size: 11px;
       margin-bottom: 4px;
@@ -186,6 +193,18 @@
 
     .debug-world-row[data-tone="flag-inactive"] {
       color: rgba(200, 200, 200, 0.72);
+    }
+
+    .debug-world-row[data-tone="system-ok"] {
+      color: #9ef5c3;
+    }
+
+    .debug-world-row[data-tone="system-warn"] {
+      color: #ffd166;
+    }
+
+    .debug-world-row[data-tone="system-over"] {
+      color: #ff7b7b;
     }
 
     .debug-world-row.empty {
@@ -466,6 +485,13 @@
       <div id="debug-entities">Entities: 0</div>
       <div id="debug-memory">Memory: 0 MB</div>
       <div id="debug-frame-time">Frame: 0 ms</div>
+      <div id="debug-systems">
+        <div class="debug-title">Systems</div>
+        <div id="debug-systems-meta" class="debug-meta">Frame metrics: n/a</div>
+        <div id="debug-systems-list" class="debug-world-list">
+          <div class="debug-world-row empty">No system metrics</div>
+        </div>
+      </div>
       <div id="debug-ui-overlays">
         <div class="debug-title">UI Overlays</div>
         <div id="debug-ui-overlays-list" class="debug-overlays-list">

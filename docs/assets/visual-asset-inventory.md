@@ -24,7 +24,12 @@
 - Phase 2: For requests without suitable references, schedule OpenAI image generation prompts with exact framing notes from `notes` fields.
 - Phase 3: Update `assets/manifests/` entries with final asset metadata, citing source links and licenses in `usage`.
 
+## Session 107 Updates
+- `image-ar-050-crossroads-selection-conduit` now points to Tanozzo’s **High Energy** plasma arc photography (CC BY 2.0, Flickr). The radial beams provide a strong base for recoloring into the Crossroads conduit glow.
+- `image-ar-050-crossroads-checkpoint-glow` references MTAPhotos’ **Reopening of 167 St on the B, D lines** (CC BY 2.0, Flickr), giving us layered strip-light geometry to adapt into the guarded rail shimmer.
+- `image-ar-050-crossroads-safehouse-arc` leverages NASA Goddard’s **Alien aurorae spotted on Uranus by Hubble** (CC BY 2.0, Flickr) for translucent aurora strands that map onto the safehouse shielding arc.
+
 ## Next Actions
 1. Gather candidate imagery for `image-ar-050-crossroads-selection-pad` and `image-ar-050-crossroads-checkpoint-plaza` (highest narrative visibility).
-2. Prepare generation brief templates covering art style, palette, and lighting for new assets.
+2. Prepare generation brief templates covering art style, palette, and lighting for new assets that still show `pending-sourcing`.
 3. Once assets selected, update corresponding `source`, `creator`, `license`, and `status` fields, then document sourcing rationale in session handoff.

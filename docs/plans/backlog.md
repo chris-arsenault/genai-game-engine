@@ -6,7 +6,7 @@
 ## Document Overview
 
 **Version**: 1.1
-**Last Updated**: 2025-11-12
+**Last Updated**: 2025-10-30
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
@@ -15,7 +15,7 @@
 
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
-| AR-050 | P0 | In Progress | Visual asset sourcing pipeline for outstanding manifests (inventory logged). | Source CC0/CC-BY references for Act 2 Crossroads overlays, prep generation prompts for remaining AR-001–AR-005 items, update manifests with licensing notes. |
+| AR-050 | P0 | In Progress | Visual asset sourcing pipeline with Act 2 Crossroads selection conduit, checkpoint glow, and safehouse arc references logged. | Locate CC0/CC-BY options for remaining Crossroads overlays, prep generation prompts for AR-001–AR-005 items, update manifests with licensing notes. |
 | TUT-201 | P0 | Completed | Tutorial case blocked at step 3 (`evidence_detection`) because legacy scene entities bypassed ECS detection events. | ECS-aligned tutorial scene entities shipped Session #51; re-run tutorial smoke tests after combat audio validation. |
 | AUDIO-351 | P0 | Completed | Validate live combat/disguise trigger routing through `AmbientSceneAudioController` using real combat loop events. | Adaptive audio routing now responds to gameplay emits; telemetry verified by Jest/Playwright suites and new infiltration benchmark. |
 | PERF-214 | P1 | Pending | Browser-level performance profiling for adaptive audio + overlay interactions to confirm <16 ms frame time budget. | Run Chromium/Firefox performance audits with combat/stealth transitions, log hotspots, and file perf follow-ups as needed. |
@@ -629,6 +629,23 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - `SaveManager.getInspectorSummary()` returns cascade and tutorial telemetry for console inspection.
   - Playwright smoke verifies cascade and tutorial telemetry render in the overlay.
   - Benchmark dispatch latency remains under the 0.25 ms guardrail.
+
+---
+
+### Session #107 System Metrics Overlay
+
+#### DEBUG-318: Surface SystemManager Metrics in Debug HUD
+- **Priority**: P0
+- **Tags**: `debug`, `engine`, `telemetry`
+- **Effort**: 2 hours
+- **Dependencies**: M1-004
+- **Status**: ✅ Completed — Session #107 added a SystemManager metrics panel with budget highlighting, reusable formatting helper, and Jest coverage.
+- **Description**: Expose SystemManager profiling metrics within the developer debug overlay so performance insights surface without manual logging.
+- **Acceptance Criteria**:
+  - Debug overlay lists each registered system with last-frame query/update timings plus rolling averages.
+  - Overlay highlights systems exceeding configurable frame budget thresholds.
+  - SystemManager metrics refresh each frame without regressing overlay performance.
+  - Jest coverage validates metrics formatting utilities or overlay rendering logic.
 
 ---
 

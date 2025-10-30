@@ -289,34 +289,34 @@
     "id": "image-ar-050-crossroads-safehouse-arc",
     "arId": "AR-050",
     "title": "Act 2 Crossroads Safehouse Light Arc",
-    "creator": "",
-    "source": "",
-    "license": "",
-    "status": "pending-sourcing",
+    "creator": "NASA Goddard Photo and Video",
+    "source": "https://www.flickr.com/photos/24662369@N07/33570800220",
+    "license": "CC BY 2.0",
+    "status": "reference-selected",
     "usage": "Lighting accent for safehouse arc installation.",
-    "notes": "Matches assetId act2_crossroads_safehouse_arc_v1; deliver semi-transparent beam overlay."
+    "notes": "Matches assetId act2_crossroads_safehouse_arc_v1; deliver semi-transparent beam overlay. Openverse ID 958a108e-b4ee-4fef-800a-5a8a48e68a2b (\"Alien aurorae spotted on Uranus by Hubble\") features layered aurora strands ideal for semi-transparent arc treatments."
   },
   {
     "id": "image-ar-050-crossroads-selection-conduit",
     "arId": "AR-050",
     "title": "Act 2 Crossroads Selection Conduit",
-    "creator": "",
-    "source": "",
-    "license": "",
-    "status": "pending-sourcing",
+    "creator": "Tanozzo",
+    "source": "https://www.flickr.com/photos/7943346@N07/4778327737",
+    "license": "CC BY 2.0",
+    "status": "reference-selected",
     "usage": "Lighting accent connecting selection pad to central console.",
-    "notes": "AssetId act2_crossroads_selection_conduit_v1; require emissive orange conduit effect."
+    "notes": "AssetId act2_crossroads_selection_conduit_v1; require emissive orange conduit effect. Openverse ID f4fa7dce-2bdf-4e52-a9bf-943aa0ea3dec (\"High Energy\") provides plasma arc reference with strong radial beams that can be recolored to the Crossroads orange palette."
   },
   {
     "id": "image-ar-050-crossroads-checkpoint-glow",
     "arId": "AR-050",
     "title": "Act 2 Crossroads Checkpoint Glow",
-    "creator": "",
-    "source": "",
-    "license": "",
-    "status": "pending-sourcing",
+    "creator": "MTAPhotos",
+    "source": "https://www.flickr.com/photos/61135621@N03/32827022948",
+    "license": "CC BY 2.0",
+    "status": "reference-selected",
     "usage": "Lighting accent for checkpoint guard rails.",
-    "notes": "AssetId act2_crossroads_checkpoint_glow_v1; implement subtle pulsing shader reference."
+    "notes": "AssetId act2_crossroads_checkpoint_glow_v1; implement subtle pulsing shader reference. Openverse ID 3f514b03-b6b2-48b8-baa8-7264b0d42f77 (\"Reopening of 167 St on the B, D lines\") showcases linear overhead strip lighting suitable for translating into a guarded checkpoint glow."
   },
   {
     "id": "image-ar-050-crossroads-column-safehouse-left",
