@@ -114,7 +114,9 @@ export function validateAct2CrossroadsArtBundle(options = {}) {
       validateAlpha(mergedSegment, category, issues);
       validateAssetId(mergedSegment, category, issues);
       validateMetadata(mergedSegment, category, issues);
-      evaluateReadiness(mergedSegment, category, readiness, issues);
+      evaluateReadiness(mergedSegment, category, readiness, issues, {
+        manifestSegment,
+      });
       evaluateLightingPresetProfile(mergedSegment, category, lightingAnalysis, issues);
     }
 
@@ -313,17 +315,28 @@ function severityComparator(a, b) {
   return weight(a) - weight(b);
 }
 
-function evaluateReadiness(segment, category, readiness, issues) {
+function evaluateReadiness(segment, category, readiness, issues, context = {}) {
   if (!segment || !category) {
     return;
   }
 
+  const manifestSegment =
+    context && typeof context === 'object' ? context.manifestSegment ?? null : null;
+  const hasManifestSegment = !!manifestSegment;
+
   if (LIGHTING_CATEGORIES.has(category)) {
     readiness.lighting.total += 1;
-    const lightingPreset =
-      typeof segment?.metadata?.lightingPreset === 'string' && segment.metadata.lightingPreset.length > 0
-        ? segment.metadata.lightingPreset
+    const manifestPreset =
+      typeof manifestSegment?.metadata?.lightingPreset === 'string' &&
+      manifestSegment.metadata.lightingPreset.length > 0
+        ? manifestSegment.metadata.lightingPreset
         : null;
+    const lightingPreset =
+      manifestPreset ??
+      (typeof segment?.metadata?.lightingPreset === 'string' &&
+      segment.metadata.lightingPreset.length > 0
+        ? segment.metadata.lightingPreset
+        : null);
     if (lightingPreset) {
       readiness.lighting.ready += 1;
     } else {
@@ -339,11 +352,23 @@ function evaluateReadiness(segment, category, readiness, issues) {
 
   if (COLLISION_CATEGORIES.has(category)) {
     readiness.collision.total += 1;
-    const metadataCollision =
-      typeof segment?.metadata?.collisionProfile === 'string' && segment.metadata.collisionProfile.length > 0;
-    const tagCollision = Array.isArray(segment?.tags)
-      ? segment.tags.some((tag) => tag === 'nav_blocker' || tag === 'collision')
+    const manifestCollision =
+      typeof manifestSegment?.metadata?.collisionProfile === 'string' &&
+      manifestSegment.metadata.collisionProfile.length > 0;
+    const manifestTagCollision = Array.isArray(manifestSegment?.tags)
+      ? manifestSegment.tags.some(
+          (tag) => tag === 'nav_blocker' || tag === 'collision'
+        )
       : false;
+    const metadataCollision = hasManifestSegment
+      ? manifestCollision
+      : typeof segment?.metadata?.collisionProfile === 'string' &&
+        segment.metadata.collisionProfile.length > 0;
+    const tagCollision = hasManifestSegment
+      ? manifestTagCollision
+      : Array.isArray(segment?.tags)
+        ? segment.tags.some((tag) => tag === 'nav_blocker' || tag === 'collision')
+        : false;
     if (metadataCollision || tagCollision) {
       readiness.collision.ready += 1;
     } else {
@@ -459,18 +484,18 @@ function evaluateLightingPresetProfile(segment, category, lightingAnalysis, issu
   lightingAnalysis.push(analysisEntry);
 }
 
-function normalizeHexColour(colour) {
+export function normalizeHexColour(colour) {
   if (!isValidHexColour(colour)) {
     return null;
   }
   return colour.toLowerCase();
 }
 
-function isValidHexColour(colour) {
+export function isValidHexColour(colour) {
   return typeof colour === 'string' && HEX_COLOR_REGEX.test(colour);
 }
 
-function computeRelativeLuminance(hexColour) {
+export function computeRelativeLuminance(hexColour) {
   const r = parseInt(hexColour.slice(1, 3), 16) / 255;
   const g = parseInt(hexColour.slice(3, 5), 16) / 255;
   const b = parseInt(hexColour.slice(5, 7), 16) / 255;
@@ -491,6 +516,6 @@ function summarizePreset(preset) {
   };
 }
 
-function formatDecimal(value) {
+export function formatDecimal(value) {
   return Number.isFinite(value) ? value.toFixed(3) : 'n/a';
 }

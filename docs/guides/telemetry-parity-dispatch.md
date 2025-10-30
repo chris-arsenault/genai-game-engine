@@ -43,3 +43,8 @@ telemetry-artifacts/analytics/outbox/<label>/
 - Comment in `QUEST-610` with the dispatch label and link to the manifest.
 - Schedule the next telemetry sample collection if `manifest.nextSteps` still lists follow-up items.
 - Track acknowledgement using `npm run telemetry:ack -- --acknowledge <label> --by "Name (Analytics)" --method email --note "ingested"` once analytics confirms ingestion; this stamps `acknowledgement.json`, appends the README log, and updates `telemetry-artifacts/analytics/acknowledgements.json`. (Flags use space-delimited values—`--acknowledge=label` will not record an update.)
+
+### Planning the Next Parity Run
+- Run `node scripts/telemetry/planQuestTelemetryParity.js --interval-days=14` (or your preferred cadence) after each acknowledgement to regenerate `telemetry-artifacts/analytics/parity-schedule.json`.
+- The schedule file records the latest dispatch/acknowledgement pair, flags pending outbox folders awaiting acknowledgement, and notes when the next check becomes overdue.
+- Reference the generated `nextCheckAt` timestamp when updating QUEST-610 so analytics knows exactly when the follow-up batch is expected.

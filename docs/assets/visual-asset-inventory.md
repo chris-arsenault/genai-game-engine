@@ -67,6 +67,11 @@
 - Retuned `assets/images/overlay-derivatives-act2-crossroads.json` (alpha floors, tint ratios, inverted boundary ceilings) and regenerated the full overlay set so averages now land between 0.12–0.17 (columns/conduits) and ~0.75 for boundary shields.
 - Synced `src/game/data/sceneArt/Act2CrossroadsArtConfig.js` with calibrated alpha targets, added `overlayAverageAlpha` metadata for LightingPreset validation, and expanded boundary entries so all four walls load bespoke derivatives by default.
 
+## Session 113 Updates
+- Built `scripts/art/previewCrossroadsLighting.js` on top of the new `Act2CrossroadsLightingPreviewer` utility; generated `reports/art/act2-crossroads-lighting-preview.json` to surface segments drifting below preset luminance targets before RenderOps sweeps.
+- Executed the AR-001–AR-005 prompt queue via `scripts/art/queueGenerationRequests.js`, emitting `assets/images/generation-queue/2025-10-30T10-28-46-627Z-ar-001-ar-002-ar-003-ar-004-ar-005.jsonl` so art leads can trigger OpenAI batches in a single hand-off.
+- Advanced all AR-001–AR-005 manifest entries in `assets/images/requests.json` to `generation-queued`, stamping the queue file path, timestamp, and provisional `AI-generated (review pending)` licensing notes pending final approvals.
+
 ## Next Actions
-1. Trigger OpenAI or internal sprite/tile generation runs using `art:package-generation-prompts` output, vet assets, and backfill licensing metadata into manifests.
-2. Partner with RenderOps on in-engine validation of the calibrated Crossroads overlays (use the analysis script output + `overlayAverageAlpha` metadata to flag hotspots quickly); capture any alpha/tint follow-ups in AR-050.
+1. Partner with RenderOps to review the luminance deltas surfaced in `reports/art/act2-crossroads-lighting-preview.json`, then iterate on overlay derivatives or config tinting as required.
+2. Run the queued AR-001–AR-005 generation batch, evaluate outputs against gameplay/narrative briefs, and replace provisional licensing metadata with final selections in `assets/images/requests.json`.

@@ -1,0 +1,500 @@
+{
+  "entries": [
+    {
+      "segmentId": "crossroads_floor_safehouse",
+      "category": "floors",
+      "assetId": "act2_crossroads_floor_safehouse_v1",
+      "presetId": "safehouse_idle",
+      "configAlpha": 0.98,
+      "colour": "#142031",
+      "overlay": {
+        "averageAlpha": null,
+        "metadataAverageAlpha": null,
+        "delta": null
+      },
+      "projected": {
+        "alpha": null,
+        "luminance": null,
+        "trend": null,
+        "deviation": null,
+        "allowedDeviation": null,
+        "maxLuminance": null,
+        "targetLuminance": null
+      },
+      "issues": [],
+      "status": "skipped"
+    },
+    {
+      "segmentId": "crossroads_branch_walkway",
+      "category": "floors",
+      "assetId": "act2_crossroads_branch_walkway_v1",
+      "presetId": "branch_idle",
+      "configAlpha": 0.94,
+      "colour": "#182b44",
+      "overlay": {
+        "averageAlpha": null,
+        "metadataAverageAlpha": null,
+        "delta": null
+      },
+      "projected": {
+        "alpha": null,
+        "luminance": null,
+        "trend": null,
+        "deviation": null,
+        "allowedDeviation": null,
+        "maxLuminance": null,
+        "targetLuminance": null
+      },
+      "issues": [],
+      "status": "skipped"
+    },
+    {
+      "segmentId": "crossroads_selection_pad",
+      "category": "floors",
+      "assetId": "act2_crossroads_selection_pad_v1",
+      "presetId": "selection_ready",
+      "configAlpha": 0.9,
+      "colour": "#0f3f6c",
+      "overlay": {
+        "averageAlpha": 0.13333333333333333,
+        "metadataAverageAlpha": 0.133,
+        "delta": -0.0003333333333333244
+      },
+      "projected": {
+        "alpha": 0.12,
+        "luminance": 0.005687137575140306,
+        "trend": "under",
+        "deviation": -0.0443128624248597,
+        "allowedDeviation": 0.07,
+        "maxLuminance": 0.12,
+        "targetLuminance": 0.05
+      },
+      "issues": [],
+      "status": "ok"
+    },
+    {
+      "segmentId": "crossroads_checkpoint_plaza",
+      "category": "floors",
+      "assetId": "act2_crossroads_checkpoint_plaza_v1",
+      "presetId": "checkpoint_idle",
+      "configAlpha": 0.92,
+      "colour": "#0d2134",
+      "overlay": {
+        "averageAlpha": 0.11764705882352941,
+        "metadataAverageAlpha": 0.118,
+        "delta": 0.00035294117647058365
+      },
+      "projected": {
+        "alpha": 0.10823529411764707,
+        "luminance": 0.0015382528155985212,
+        "trend": "under",
+        "deviation": -0.013461747184401478,
+        "allowedDeviation": 0.05,
+        "maxLuminance": 0.08,
+        "targetLuminance": 0.015
+      },
+      "issues": [],
+      "status": "ok"
+    },
+    {
+      "segmentId": "crossroads_selection_conduit",
+      "category": "accents",
+      "assetId": "act2_crossroads_selection_conduit_v1",
+      "presetId": "thread_ready",
+      "configAlpha": 0.24,
+      "colour": "#ff9b45",
+      "overlay": {
+        "averageAlpha": 0.12549019607843137,
+        "metadataAverageAlpha": 0.125,
+        "delta": -0.0004901960784313708
+      },
+      "projected": {
+        "alpha": 0.030117647058823527,
+        "luminance": 0.013592805108718116,
+        "trend": "under",
+        "deviation": -0.4464071948912819,
+        "allowedDeviation": 0.08,
+        "maxLuminance": 0.55,
+        "targetLuminance": 0.46
+      },
+      "issues": [
+        {
+          "severity": "warning",
+          "code": "deviation-under",
+          "message": "Projected luminance deviates from target by 0.446 (allowed 0.080)"
+        }
+      ],
+      "status": "deviation-under"
+    },
+    {
+      "segmentId": "crossroads_safehouse_light_arc",
+      "category": "accents",
+      "assetId": "act2_crossroads_safehouse_arc_v1",
+      "presetId": "safehouse_idle",
+      "configAlpha": 0.2,
+      "colour": "#2c6df0",
+      "overlay": {
+        "averageAlpha": 0.13333333333333333,
+        "metadataAverageAlpha": 0.133,
+        "delta": -0.0003333333333333244
+      },
+      "projected": {
+        "alpha": 0.02666666666666667,
+        "luminance": 0.004737072433882049,
+        "trend": "under",
+        "deviation": -0.09526292756611796,
+        "allowedDeviation": 0.12,
+        "maxLuminance": 0.28,
+        "targetLuminance": 0.1
+      },
+      "issues": [],
+      "status": "ok"
+    },
+    {
+      "segmentId": "crossroads_checkpoint_glow",
+      "category": "accents",
+      "assetId": "act2_crossroads_checkpoint_glow_v1",
+      "presetId": "checkpoint_active",
+      "configAlpha": 0.22,
+      "colour": "#33a1ff",
+      "overlay": {
+        "averageAlpha": 0.12549019607843137,
+        "metadataAverageAlpha": 0.125,
+        "delta": -0.0004901960784313708
+      },
+      "projected": {
+        "alpha": 0.027607843137254902,
+        "luminance": 0.009224759268712504,
+        "trend": "under",
+        "deviation": -0.3207752407312875,
+        "allowedDeviation": 0.07,
+        "maxLuminance": 0.45,
+        "targetLuminance": 0.33
+      },
+      "issues": [
+        {
+          "severity": "warning",
+          "code": "deviation-under",
+          "message": "Projected luminance deviates from target by 0.321 (allowed 0.070)"
+        }
+      ],
+      "status": "deviation-under"
+    },
+    {
+      "segmentId": "crossroads_column_checkpoint_north",
+      "category": "lightColumns",
+      "assetId": "act2_crossroads_column_checkpoint_north_v1",
+      "presetId": "checkpoint_column_guard",
+      "configAlpha": 0.22,
+      "colour": "#4bbfff",
+      "overlay": {
+        "averageAlpha": 0.12549019607843137,
+        "metadataAverageAlpha": 0.125,
+        "delta": -0.0004901960784313708
+      },
+      "projected": {
+        "alpha": 0.027607843137254902,
+        "luminance": 0.012693384767521517,
+        "trend": "under",
+        "deviation": -0.4373066152324785,
+        "allowedDeviation": 0.08,
+        "maxLuminance": 0.6,
+        "targetLuminance": 0.45
+      },
+      "issues": [
+        {
+          "severity": "warning",
+          "code": "deviation-under",
+          "message": "Projected luminance deviates from target by 0.437 (allowed 0.080)"
+        }
+      ],
+      "status": "deviation-under"
+    },
+    {
+      "segmentId": "crossroads_column_checkpoint_south",
+      "category": "lightColumns",
+      "assetId": "act2_crossroads_column_checkpoint_south_v1",
+      "presetId": "checkpoint_column_guard",
+      "configAlpha": 0.2,
+      "colour": "#4bbfff",
+      "overlay": {
+        "averageAlpha": 0.11764705882352941,
+        "metadataAverageAlpha": 0.118,
+        "delta": 0.00035294117647058365
+      },
+      "projected": {
+        "alpha": 0.023529411764705882,
+        "luminance": 0.010818225654137658,
+        "trend": "under",
+        "deviation": -0.43918177434586236,
+        "allowedDeviation": 0.08,
+        "maxLuminance": 0.6,
+        "targetLuminance": 0.45
+      },
+      "issues": [
+        {
+          "severity": "warning",
+          "code": "deviation-under",
+          "message": "Projected luminance deviates from target by 0.439 (allowed 0.080)"
+        }
+      ],
+      "status": "deviation-under"
+    },
+    {
+      "segmentId": "crossroads_column_safehouse_left",
+      "category": "lightColumns",
+      "assetId": "act2_crossroads_column_safehouse_left_v1",
+      "presetId": "safehouse_column_soft",
+      "configAlpha": 0.26,
+      "colour": "#395a8f",
+      "overlay": {
+        "averageAlpha": 0.16470588235294117,
+        "metadataAverageAlpha": 0.165,
+        "delta": 0.0002941176470588336
+      },
+      "projected": {
+        "alpha": 0.042823529411764705,
+        "luminance": 0.004353164229222013,
+        "trend": "under",
+        "deviation": -0.095646835770778,
+        "allowedDeviation": 0.06,
+        "maxLuminance": 0.2,
+        "targetLuminance": 0.1
+      },
+      "issues": [
+        {
+          "severity": "warning",
+          "code": "deviation-under",
+          "message": "Projected luminance deviates from target by 0.096 (allowed 0.060)"
+        }
+      ],
+      "status": "deviation-under"
+    },
+    {
+      "segmentId": "crossroads_column_safehouse_right",
+      "category": "lightColumns",
+      "assetId": "act2_crossroads_column_safehouse_right_v1",
+      "presetId": "safehouse_column_soft",
+      "configAlpha": 0.24,
+      "colour": "#395a8f",
+      "overlay": {
+        "averageAlpha": 0.14901960784313725,
+        "metadataAverageAlpha": 0.149,
+        "delta": -0.000019607843137259273
+      },
+      "projected": {
+        "alpha": 0.03576470588235294,
+        "luminance": 0.0036356096859436597,
+        "trend": "under",
+        "deviation": -0.09636439031405634,
+        "allowedDeviation": 0.06,
+        "maxLuminance": 0.2,
+        "targetLuminance": 0.1
+      },
+      "issues": [
+        {
+          "severity": "warning",
+          "code": "deviation-under",
+          "message": "Projected luminance deviates from target by 0.096 (allowed 0.060)"
+        }
+      ],
+      "status": "deviation-under"
+    }
+  ],
+  "summary": {
+    "total": 11,
+    "statusCounts": {
+      "skipped": 2,
+      "ok": 3,
+      "deviation-under": 6
+    },
+    "hotspots": [],
+    "deviations": [
+      {
+        "segmentId": "crossroads_selection_conduit",
+        "category": "accents",
+        "assetId": "act2_crossroads_selection_conduit_v1",
+        "presetId": "thread_ready",
+        "configAlpha": 0.24,
+        "colour": "#ff9b45",
+        "overlay": {
+          "averageAlpha": 0.12549019607843137,
+          "metadataAverageAlpha": 0.125,
+          "delta": -0.0004901960784313708
+        },
+        "projected": {
+          "alpha": 0.030117647058823527,
+          "luminance": 0.013592805108718116,
+          "trend": "under",
+          "deviation": -0.4464071948912819,
+          "allowedDeviation": 0.08,
+          "maxLuminance": 0.55,
+          "targetLuminance": 0.46
+        },
+        "issues": [
+          {
+            "severity": "warning",
+            "code": "deviation-under",
+            "message": "Projected luminance deviates from target by 0.446 (allowed 0.080)"
+          }
+        ],
+        "status": "deviation-under"
+      },
+      {
+        "segmentId": "crossroads_checkpoint_glow",
+        "category": "accents",
+        "assetId": "act2_crossroads_checkpoint_glow_v1",
+        "presetId": "checkpoint_active",
+        "configAlpha": 0.22,
+        "colour": "#33a1ff",
+        "overlay": {
+          "averageAlpha": 0.12549019607843137,
+          "metadataAverageAlpha": 0.125,
+          "delta": -0.0004901960784313708
+        },
+        "projected": {
+          "alpha": 0.027607843137254902,
+          "luminance": 0.009224759268712504,
+          "trend": "under",
+          "deviation": -0.3207752407312875,
+          "allowedDeviation": 0.07,
+          "maxLuminance": 0.45,
+          "targetLuminance": 0.33
+        },
+        "issues": [
+          {
+            "severity": "warning",
+            "code": "deviation-under",
+            "message": "Projected luminance deviates from target by 0.321 (allowed 0.070)"
+          }
+        ],
+        "status": "deviation-under"
+      },
+      {
+        "segmentId": "crossroads_column_checkpoint_north",
+        "category": "lightColumns",
+        "assetId": "act2_crossroads_column_checkpoint_north_v1",
+        "presetId": "checkpoint_column_guard",
+        "configAlpha": 0.22,
+        "colour": "#4bbfff",
+        "overlay": {
+          "averageAlpha": 0.12549019607843137,
+          "metadataAverageAlpha": 0.125,
+          "delta": -0.0004901960784313708
+        },
+        "projected": {
+          "alpha": 0.027607843137254902,
+          "luminance": 0.012693384767521517,
+          "trend": "under",
+          "deviation": -0.4373066152324785,
+          "allowedDeviation": 0.08,
+          "maxLuminance": 0.6,
+          "targetLuminance": 0.45
+        },
+        "issues": [
+          {
+            "severity": "warning",
+            "code": "deviation-under",
+            "message": "Projected luminance deviates from target by 0.437 (allowed 0.080)"
+          }
+        ],
+        "status": "deviation-under"
+      },
+      {
+        "segmentId": "crossroads_column_checkpoint_south",
+        "category": "lightColumns",
+        "assetId": "act2_crossroads_column_checkpoint_south_v1",
+        "presetId": "checkpoint_column_guard",
+        "configAlpha": 0.2,
+        "colour": "#4bbfff",
+        "overlay": {
+          "averageAlpha": 0.11764705882352941,
+          "metadataAverageAlpha": 0.118,
+          "delta": 0.00035294117647058365
+        },
+        "projected": {
+          "alpha": 0.023529411764705882,
+          "luminance": 0.010818225654137658,
+          "trend": "under",
+          "deviation": -0.43918177434586236,
+          "allowedDeviation": 0.08,
+          "maxLuminance": 0.6,
+          "targetLuminance": 0.45
+        },
+        "issues": [
+          {
+            "severity": "warning",
+            "code": "deviation-under",
+            "message": "Projected luminance deviates from target by 0.439 (allowed 0.080)"
+          }
+        ],
+        "status": "deviation-under"
+      },
+      {
+        "segmentId": "crossroads_column_safehouse_left",
+        "category": "lightColumns",
+        "assetId": "act2_crossroads_column_safehouse_left_v1",
+        "presetId": "safehouse_column_soft",
+        "configAlpha": 0.26,
+        "colour": "#395a8f",
+        "overlay": {
+          "averageAlpha": 0.16470588235294117,
+          "metadataAverageAlpha": 0.165,
+          "delta": 0.0002941176470588336
+        },
+        "projected": {
+          "alpha": 0.042823529411764705,
+          "luminance": 0.004353164229222013,
+          "trend": "under",
+          "deviation": -0.095646835770778,
+          "allowedDeviation": 0.06,
+          "maxLuminance": 0.2,
+          "targetLuminance": 0.1
+        },
+        "issues": [
+          {
+            "severity": "warning",
+            "code": "deviation-under",
+            "message": "Projected luminance deviates from target by 0.096 (allowed 0.060)"
+          }
+        ],
+        "status": "deviation-under"
+      },
+      {
+        "segmentId": "crossroads_column_safehouse_right",
+        "category": "lightColumns",
+        "assetId": "act2_crossroads_column_safehouse_right_v1",
+        "presetId": "safehouse_column_soft",
+        "configAlpha": 0.24,
+        "colour": "#395a8f",
+        "overlay": {
+          "averageAlpha": 0.14901960784313725,
+          "metadataAverageAlpha": 0.149,
+          "delta": -0.000019607843137259273
+        },
+        "projected": {
+          "alpha": 0.03576470588235294,
+          "luminance": 0.0036356096859436597,
+          "trend": "under",
+          "deviation": -0.09636439031405634,
+          "allowedDeviation": 0.06,
+          "maxLuminance": 0.2,
+          "targetLuminance": 0.1
+        },
+        "issues": [
+          {
+            "severity": "warning",
+            "code": "deviation-under",
+            "message": "Projected luminance deviates from target by 0.096 (allowed 0.060)"
+          }
+        ],
+        "status": "deviation-under"
+      }
+    ],
+    "metadataDrift": [],
+    "missingOverlays": [],
+    "missingPresets": [],
+    "unknownPresets": [],
+    "invalidColours": []
+  }
+}

@@ -3,7 +3,7 @@ import path from 'node:path';
 import process from 'node:process';
 import fs from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { Jimp } from 'jimp';
+import { collectOverlayStatsFromFile, normalizeOverlayStats } from '../../src/game/tools/OverlayStatCollector.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,65 +14,15 @@ const DEFAULT_OVERLAY_DIR = path.resolve(
 );
 
 /**
- * Computes summary statistics for every pixel in an overlay.
- * @param {Jimp} image
- * @returns {{
- *   pixelCount: number,
- *   averageLuma: number,
- *   averageAlpha: number,
- *   peakAlpha: number,
- *   highAlphaRatio: number,
- *   lowAlphaRatio: number
- * }}
- */
-function computeOverlayStats(image) {
-  let lumaSum = 0;
-  let alphaSum = 0;
-  let peakAlpha = 0;
-  let highAlpha = 0;
-  let lowAlpha = 0;
-
-  image.scan(0, 0, image.bitmap.width, image.bitmap.height, (_x, _y, idx) => {
-    const r = image.bitmap.data[idx];
-    const g = image.bitmap.data[idx + 1];
-    const b = image.bitmap.data[idx + 2];
-    const a = image.bitmap.data[idx + 3];
-
-    const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    lumaSum += luma;
-    alphaSum += a;
-    peakAlpha = Math.max(peakAlpha, a);
-
-    if (a >= 220) {
-      highAlpha += 1;
-    } else if (a <= 64) {
-      lowAlpha += 1;
-    }
-  });
-
-  const pixelCount = image.bitmap.width * image.bitmap.height;
-  const averageLuma = pixelCount > 0 ? lumaSum / pixelCount : 0;
-  const averageAlpha = pixelCount > 0 ? alphaSum / pixelCount : 0;
-
-  return {
-    pixelCount,
-    averageLuma,
-    averageAlpha,
-    peakAlpha,
-    highAlphaRatio: pixelCount > 0 ? highAlpha / pixelCount : 0,
-    lowAlphaRatio: pixelCount > 0 ? lowAlpha / pixelCount : 0,
-  };
-}
-
-/**
  * Formats the stats into a concise string.
  * @param {string} name
- * @param {ReturnType<typeof computeOverlayStats>} stats
- * @param {Jimp} image
+ * @param {ReturnType<typeof normalizeOverlayStats>} stats
  * @returns {string}
  */
-function formatStats(name, stats, image) {
+function formatStats(name, stats) {
   const {
+    width,
+    height,
     averageLuma,
     averageAlpha,
     peakAlpha,
@@ -80,7 +30,7 @@ function formatStats(name, stats, image) {
     lowAlphaRatio,
   } = stats;
 
-  const size = `${image.bitmap.width}x${image.bitmap.height}`;
+  const size = `${width}x${height}`;
   const highPct = (highAlphaRatio * 100).toFixed(1).padStart(5);
   const lowPct = (lowAlphaRatio * 100).toFixed(1).padStart(5);
 
@@ -92,11 +42,6 @@ function formatStats(name, stats, image) {
     `high@220+=${highPct}%`,
     `low@<=64=${lowPct}%`,
   ].join('  ');
-}
-
-async function loadPng(filePath) {
-  const buffer = await fs.readFile(filePath);
-  return Jimp.read(buffer);
 }
 
 async function main() {
@@ -142,9 +87,9 @@ async function main() {
   for (const fileName of pngEntries) {
     const fullPath = path.join(overlayDir, fileName);
     try {
-      const image = await loadPng(fullPath);
-      const stats = computeOverlayStats(image);
-      console.log(formatStats(fileName, stats, image));
+      const rawStats = await collectOverlayStatsFromFile(fullPath);
+      const stats = normalizeOverlayStats(rawStats);
+      console.log(formatStats(fileName, stats));
     } catch (error) {
       console.error(
         `[analyzeCrossroadsOverlays] Failed to analyze ${fileName}:`,
@@ -163,4 +108,3 @@ if (process.argv[1] && process.argv[1].includes('analyzeCrossroadsOverlays.js'))
     process.exitCode = 1;
   });
 }
-
