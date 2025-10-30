@@ -31,12 +31,14 @@
         "trimBottom": 100,
         "tint": {
           "color": "#4be7ff",
-          "amount": 55
+          "amount": 48
         },
         "gaussian": 2,
         "alphaFromLuma": {
-          "threshold": 100,
-          "softness": 80
+          "threshold": 96,
+          "softness": 78,
+          "floor": 42,
+          "ceiling": 210
         },
         "postBlur": 1
       }
@@ -50,15 +52,18 @@
         "centerCropWidth": 380,
         "trimTop": 40,
         "trimBottom": 60,
-        "brightness": 0.18,
         "tint": {
           "color": "#56f2ff",
-          "amount": 48
+          "amount": 44
         },
+        "gaussian": 1,
         "alphaFromLuma": {
-          "threshold": 110,
-          "softness": 85
-        }
+          "threshold": 100,
+          "softness": 78,
+          "floor": 38,
+          "ceiling": 210
+        },
+        "postBlur": 1
       }
     },
     {
@@ -72,13 +77,14 @@
         "trimBottom": 0,
         "tint": {
           "color": "#ffe68d",
-          "amount": 42
+          "amount": 38
         },
         "contrast": 0.32,
         "alphaFromLuma": {
-          "threshold": 115,
-          "softness": 70,
-          "floor": 16
+          "threshold": 108,
+          "softness": 72,
+          "floor": 32,
+          "ceiling": 205
         }
       }
     },
@@ -93,13 +99,14 @@
         "trimBottom": 40,
         "tint": {
           "color": "#fff0b3",
-          "amount": 38
+          "amount": 34
         },
         "contrast": 0.28,
         "alphaFromLuma": {
-          "threshold": 118,
+          "threshold": 110,
           "softness": 75,
-          "floor": 10
+          "floor": 30,
+          "ceiling": 205
         },
         "postBlur": 1
       }
@@ -119,13 +126,13 @@
         "gaussian": 2,
         "tint": {
           "color": "#63faff",
-          "amount": 40
+          "amount": 36
         },
         "alphaFromLuma": {
-          "threshold": 150,
-          "softness": 60,
-          "floor": 15,
-          "ceiling": 255
+          "threshold": 140,
+          "softness": 58,
+          "floor": 34,
+          "ceiling": 235
         },
         "opacity": 0.85
       }
@@ -146,12 +153,13 @@
         "contrast": 0.18,
         "tint": {
           "color": "#ffd685",
-          "amount": 32
+          "amount": 28
         },
         "alphaFromLuma": {
-          "threshold": 140,
-          "softness": 70,
-          "floor": 10
+          "threshold": 128,
+          "softness": 68,
+          "floor": 30,
+          "ceiling": 215
         },
         "opacity": 0.88
       }
@@ -170,12 +178,13 @@
         "gaussian": 3,
         "tint": {
           "color": "#5df0ff",
-          "amount": 52
+          "amount": 46
         },
         "alphaFromLuma": {
-          "threshold": 120,
-          "softness": 90,
-          "floor": 5
+          "threshold": 110,
+          "softness": 88,
+          "floor": 34,
+          "ceiling": 210
         },
         "postBlur": 2,
         "opacity": 0.82
@@ -196,12 +205,13 @@
         "gaussian": 1,
         "tint": {
           "color": "#ff9a3c",
-          "amount": 65
+          "amount": 60
         },
         "alphaFromLuma": {
-          "threshold": 110,
-          "softness": 70,
-          "floor": 10
+          "threshold": 102,
+          "softness": 68,
+          "floor": 32,
+          "ceiling": 210
         },
         "opacity": 0.9
       }
@@ -220,12 +230,13 @@
         "trimBottom": 150,
         "tint": {
           "color": "#ffe8a3",
-          "amount": 35
+          "amount": 32
         },
         "alphaFromLuma": {
-          "threshold": 125,
-          "softness": 60,
-          "ceiling": 245
+          "threshold": 112,
+          "softness": 64,
+          "floor": 32,
+          "ceiling": 230
         },
         "gaussian": 1,
         "opacity": 0.9
@@ -244,10 +255,11 @@
         "desaturate": 45,
         "contrast": 0.22,
         "alphaFromLuma": {
-          "threshold": 160,
-          "softness": 80,
+          "threshold": 150,
+          "softness": 78,
           "invert": true,
-          "ceiling": 220
+          "floor": 48,
+          "ceiling": 196
         },
         "opacity": 0.85
       }
@@ -269,10 +281,11 @@
           "amount": 18
         },
         "alphaFromLuma": {
-          "threshold": 150,
-          "softness": 70,
+          "threshold": 142,
+          "softness": 72,
           "invert": true,
-          "ceiling": 230
+          "floor": 44,
+          "ceiling": 192
         },
         "opacity": 0.82
       }
@@ -290,10 +303,11 @@
         "desaturate": 50,
         "contrast": 0.24,
         "alphaFromLuma": {
-          "threshold": 155,
-          "softness": 75,
+          "threshold": 146,
+          "softness": 74,
           "invert": true,
-          "ceiling": 225
+          "floor": 46,
+          "ceiling": 194
         },
         "opacity": 0.84
       }
@@ -315,10 +329,11 @@
           "amount": 20
         },
         "alphaFromLuma": {
-          "threshold": 150,
-          "softness": 80,
+          "threshold": 142,
+          "softness": 76,
           "invert": true,
-          "ceiling": 220
+          "floor": 46,
+          "ceiling": 192
         },
         "opacity": 0.84
       }

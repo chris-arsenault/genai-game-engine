@@ -62,6 +62,11 @@
 - Manifest entries for the new overlays are updated to `derivative-generated` with processing provenance (`Session 111`) for traceability.
 - Added telemetry acknowledgement tooling (`scripts/telemetry/outboxAcknowledgement.js`) so art/analytics leads can track ingestion status alongside asset packages.
 
+## Session 112 Updates
+- Authored `scripts/art/analyzeCrossroadsOverlays.js` to profile luma/alpha density for each derived PNG; the stats drive tint/floor recalibration before re-rendering.
+- Retuned `assets/images/overlay-derivatives-act2-crossroads.json` (alpha floors, tint ratios, inverted boundary ceilings) and regenerated the full overlay set so averages now land between 0.12–0.17 (columns/conduits) and ~0.75 for boundary shields.
+- Synced `src/game/data/sceneArt/Act2CrossroadsArtConfig.js` with calibrated alpha targets, added `overlayAverageAlpha` metadata for LightingPreset validation, and expanded boundary entries so all four walls load bespoke derivatives by default.
+
 ## Next Actions
 1. Trigger OpenAI or internal sprite/tile generation runs using `art:package-generation-prompts` output, vet assets, and backfill licensing metadata into manifests.
-2. Coordinate with RenderOps to review the expanded Crossroads overlay suite, tuning tint/alpha parameters based on in-engine lighting validation.
+2. Partner with RenderOps on in-engine validation of the calibrated Crossroads overlays (use the analysis script output + `overlayAverageAlpha` metadata to flag hotspots quickly); capture any alpha/tint follow-ups in AR-050.
