@@ -36,6 +36,13 @@
 - Refactored `AudioFeedbackController` to consume the config-driven mix, expose an `applyDetectiveVisionMix` hook, and retune active loops via `setVolume`/gain fallbacks when calibration shifts.
 - Extended Jest coverage to exercise the new calibration API and ensure live detective vision loops adopt updated volumes.
 
+### Session #141 Backlog Updates
+
+#### FX-235: Quest & Forensic Overlay Cues
+- Expanded `FxOverlay` with quest milestone pulses, quest completion bursts, and forensic scan/reveal renders so narrative and investigation beats surface across the HUD layer.
+- Emitted `fx:overlay_cue` from `QuestManager` (start/objective completion/quest completion) and `ForensicSystem` (availability/start/complete) with contextual metadata powering the new treatments.
+- Refreshed Jest coverage across `FxOverlay`, `QuestManager`, and `ForensicSystem` to lock in the cue emissions and renderer behaviour.
+
 ### Session #129 Backlog Updates
 
 #### Tutorial Onboarding UX

@@ -114,6 +114,15 @@ export class ForensicSystem extends System {
       requirements: forensic.getRequirements()
     });
 
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId: 'forensicPulse',
+      origin: 'forensic',
+      stage: 'available',
+      evidenceId,
+      forensicType: forensic.forensicType,
+      caseId
+    });
+
     console.log(`[ForensicSystem] Forensic analysis available for: ${evidenceId}`);
   }
 
@@ -195,6 +204,16 @@ export class ForensicSystem extends System {
       duration: this.activeAnalysis.duration
     });
 
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId: 'forensicPulse',
+      origin: 'forensic',
+      stage: 'started',
+      evidenceId: this.activeAnalysis.evidenceId,
+      forensicType: this.activeAnalysis.forensicType,
+      caseId: this.activeAnalysis.caseId,
+      duration: this.activeAnalysis.duration
+    });
+
     console.log(`[ForensicSystem] Analysis started: ${this.activeAnalysis.evidenceId}`);
   }
 
@@ -226,6 +245,16 @@ export class ForensicSystem extends System {
         forensicType,
         cluesRevealed: revealedClues.length,
         clues: revealedClues
+      });
+
+      this.eventBus.emit('fx:overlay_cue', {
+        effectId: 'forensicRevealFlash',
+        origin: 'forensic',
+        stage: 'complete',
+        evidenceId,
+        forensicType,
+        caseId,
+        cluesRevealed: revealedClues.length
       });
 
       console.log(`[ForensicSystem] Analysis complete: ${evidenceId} (${revealedClues.length} clues revealed)`);

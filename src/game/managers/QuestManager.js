@@ -242,6 +242,15 @@ export class QuestManager {
       type: quest.type
     });
 
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId: 'questMilestonePulse',
+      origin: 'quest',
+      stage: 'started',
+      questId,
+      title: quest.title,
+      questType: quest.type
+    });
+
     console.log(`[QuestManager] Started quest: ${quest.title}`);
     return true;
   }
@@ -389,6 +398,8 @@ export class QuestManager {
     }
     state.progress++;
 
+    const objective = (quest.objectives || []).find((obj) => obj.id === objectiveId) || null;
+
     // Emit progress event
     this.eventBus.emit('objective:progress', {
       questId,
@@ -404,6 +415,17 @@ export class QuestManager {
       this.eventBus.emit('objective:completed', {
         questId,
         objectiveId
+      });
+
+      this.eventBus.emit('fx:overlay_cue', {
+        effectId: 'questMilestonePulse',
+        origin: 'quest',
+        stage: 'objective_completed',
+        questId,
+        objectiveId,
+        objectiveDescription: objective ? objective.description : null,
+        questTitle: quest.title,
+        questType: quest.type
       });
 
       console.log(`[QuestManager] Objective completed: ${objectiveId} (${quest.title})`);
@@ -462,6 +484,15 @@ export class QuestManager {
       title: quest.title,
       type: quest.type,
       rewards: quest.rewards
+    });
+
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId: 'questCompleteBurst',
+      origin: 'quest',
+      stage: 'completed',
+      questId,
+      title: quest.title,
+      questType: quest.type
     });
 
     console.log(`[QuestManager] Completed quest: ${quest.title}`);

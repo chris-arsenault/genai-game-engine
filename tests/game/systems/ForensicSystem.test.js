@@ -83,6 +83,13 @@ describe('ForensicSystem', () => {
           difficulty: 1
         })
       });
+
+      expect(mockEventBus.emit).toHaveBeenCalledWith('fx:overlay_cue', expect.objectContaining({
+        effectId: 'forensicPulse',
+        stage: 'available',
+        evidenceId,
+        forensicType: 'fingerprint'
+      }));
     });
 
     test('should not emit forensic:available if evidence already analyzed', () => {
@@ -272,6 +279,13 @@ describe('ForensicSystem', () => {
         evidenceId,
         forensicType: 'document'
       }));
+
+      expect(mockEventBus.emit).toHaveBeenCalledWith('fx:overlay_cue', expect.objectContaining({
+        effectId: 'forensicPulse',
+        stage: 'started',
+        evidenceId,
+        forensicType: 'document'
+      }));
     });
 
     test('should emit progress events during analysis', () => {
@@ -357,6 +371,13 @@ describe('ForensicSystem', () => {
         cluesRevealed: 3,
         clues: ['clue-1', 'clue-2', 'clue-3']
       });
+
+      expect(mockEventBus.emit).toHaveBeenCalledWith('fx:overlay_cue', expect.objectContaining({
+        effectId: 'forensicRevealFlash',
+        stage: 'complete',
+        evidenceId,
+        forensicType: 'memory_trace'
+      }));
 
       // Forensic evidence should be marked as analyzed
       expect(forensic.analyzed).toBe(true);

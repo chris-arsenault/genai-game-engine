@@ -4,7 +4,8 @@ import { overlayTheme } from './theme/overlayTheme.js';
  * FxOverlay
  *
  * Lightweight screen-space FX layer that listens for fx:overlay_cue events and
- * renders short-lived canvas treatments (screen flashes, edge pulses, etc.).
+ * renders short-lived canvas treatments (screen flashes, edge pulses, quest
+ * bursts, forensic scans, etc.).
  */
 export class FxOverlay {
   /**
@@ -29,6 +30,20 @@ export class FxOverlay {
       deactivateOuter: options.deactivateOuter || 'rgba(255, 0, 80, 0)',
       deactivateDuration: options.deactivateDuration || 0.35,
       deactivateRimColor: options.deactivateRimColor || 'rgba(255, 160, 160, 0.7)',
+      questPulseTop: options.questPulseTop || 'rgba(255, 220, 130, 0.85)',
+      questPulseBottom: options.questPulseBottom || 'rgba(255, 160, 60, 0.0)',
+      questPulseRim: options.questPulseRim || palette.highlight,
+      questPulseDuration: options.questPulseDuration || 0.8,
+      questCompleteInner: options.questCompleteInner || 'rgba(255, 255, 210, 0.9)',
+      questCompleteOuter: options.questCompleteOuter || 'rgba(255, 190, 90, 0.0)',
+      questCompleteRays: options.questCompleteRays || 'rgba(255, 220, 120, 0.8)',
+      questCompleteDuration: options.questCompleteDuration || 1.05,
+      forensicPulseInner: options.forensicPulseInner || 'rgba(120, 200, 255, 0.75)',
+      forensicPulseOuter: options.forensicPulseOuter || 'rgba(30, 140, 220, 0)',
+      forensicPulseDuration: options.forensicPulseDuration || 0.6,
+      forensicRevealColor: options.forensicRevealColor || 'rgba(80, 255, 200, 0.8)',
+      forensicRevealRim: options.forensicRevealRim || 'rgba(40, 200, 160, 0.4)',
+      forensicRevealDuration: options.forensicRevealDuration || 0.75,
     };
   }
 
@@ -87,6 +102,20 @@ export class FxOverlay {
       case 'detectiveVisionDeactivation':
         this._spawnDeactivationEffect(payload);
         break;
+      case 'questMilestonePulse':
+      case 'questUpdatePulse':
+        this._spawnQuestMilestoneEffect(payload);
+        break;
+      case 'questCompleteBurst':
+        this._spawnQuestCompleteEffect(payload);
+        break;
+      case 'forensicPulse':
+      case 'forensicScanWave':
+        this._spawnForensicPulseEffect(payload);
+        break;
+      case 'forensicRevealFlash':
+        this._spawnForensicRevealEffect(payload);
+        break;
       default:
         break;
     }
@@ -109,6 +138,46 @@ export class FxOverlay {
       elapsed: 0,
       duration,
       render: this._renderDeactivation.bind(this),
+    });
+  }
+
+  _spawnQuestMilestoneEffect(payload) {
+    const duration = Math.max(0.3, Number(payload.duration) || this.theme.questPulseDuration);
+    this.effects.push({
+      id: 'questMilestonePulse',
+      elapsed: 0,
+      duration,
+      render: this._renderQuestMilestone.bind(this),
+    });
+  }
+
+  _spawnQuestCompleteEffect(payload) {
+    const duration = Math.max(0.4, Number(payload.duration) || this.theme.questCompleteDuration);
+    this.effects.push({
+      id: 'questCompleteBurst',
+      elapsed: 0,
+      duration,
+      render: this._renderQuestComplete.bind(this),
+    });
+  }
+
+  _spawnForensicPulseEffect(payload) {
+    const duration = Math.max(0.25, Number(payload.duration) || this.theme.forensicPulseDuration);
+    this.effects.push({
+      id: 'forensicPulse',
+      elapsed: 0,
+      duration,
+      render: this._renderForensicPulse.bind(this),
+    });
+  }
+
+  _spawnForensicRevealEffect(payload) {
+    const duration = Math.max(0.3, Number(payload.duration) || this.theme.forensicRevealDuration);
+    this.effects.push({
+      id: 'forensicRevealFlash',
+      elapsed: 0,
+      duration,
+      render: this._renderForensicReveal.bind(this),
     });
   }
 
@@ -165,6 +234,114 @@ export class FxOverlay {
       canvas.width - rimThickness,
       canvas.height - rimThickness
     );
+    ctx.restore();
+  }
+
+  _renderQuestMilestone(ctx, effect, canvas, theme) {
+    const progress = Math.min(1, effect.elapsed / effect.duration);
+    const intensity = Math.pow(1 - progress, 1.4);
+    const bandHeight = Math.max(canvas.height * 0.28 * intensity, 40);
+
+    ctx.save();
+    ctx.globalAlpha = intensity;
+
+    const gradient = ctx.createLinearGradient(0, 0, 0, bandHeight);
+    gradient.addColorStop(0, theme.questPulseTop);
+    gradient.addColorStop(1, theme.questPulseBottom);
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, bandHeight);
+
+    ctx.strokeStyle = theme.questPulseRim;
+    ctx.lineWidth = Math.max(3, bandHeight * 0.12);
+    ctx.globalAlpha = intensity * 0.85;
+    ctx.beginPath();
+    ctx.moveTo(0, bandHeight);
+    ctx.lineTo(canvas.width, bandHeight);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  _renderQuestComplete(ctx, effect, canvas, theme) {
+    const progress = Math.min(1, effect.elapsed / effect.duration);
+    const eased = 1 - Math.pow(progress, 1.3);
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    const maxRadius = Math.max(canvas.width, canvas.height) * 0.6;
+
+    ctx.save();
+    ctx.globalAlpha = eased;
+
+    const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxRadius);
+    gradient.addColorStop(0, theme.questCompleteInner);
+    gradient.addColorStop(1, theme.questCompleteOuter);
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const rayCount = 12;
+    ctx.strokeStyle = theme.questCompleteRays;
+    ctx.lineWidth = Math.max(2, maxRadius * 0.015);
+    ctx.globalAlpha = eased * 0.9;
+    for (let i = 0; i < rayCount; i++) {
+      const angle = (Math.PI * 2 * i) / rayCount;
+      const length = maxRadius * (0.65 + 0.35 * Math.sin(i * 1.37));
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(angle) * (maxRadius * 0.2), cy + Math.sin(angle) * (maxRadius * 0.2));
+      ctx.lineTo(cx + Math.cos(angle) * length, cy + Math.sin(angle) * length);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  _renderForensicPulse(ctx, effect, canvas, theme) {
+    const progress = Math.min(1, effect.elapsed / effect.duration);
+    const fade = 1 - progress;
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    const baseRadius = Math.min(canvas.width, canvas.height) * 0.15;
+    const radius = baseRadius + baseRadius * progress * 2.5;
+
+    ctx.save();
+    ctx.globalAlpha = fade;
+
+    const gradient = ctx.createRadialGradient(cx, cy, baseRadius * 0.25, cx, cy, radius);
+    gradient.addColorStop(0, theme.forensicPulseInner);
+    gradient.addColorStop(1, theme.forensicPulseOuter);
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = theme.forensicPulseInner;
+    ctx.lineWidth = Math.max(2, radius * 0.05);
+    ctx.globalAlpha = fade * 0.75;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius * 0.65, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  _renderForensicReveal(ctx, effect, canvas, theme) {
+    const progress = Math.min(1, effect.elapsed / effect.duration);
+    const eased = Math.pow(1 - progress, 1.1);
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    const outer = Math.max(canvas.width, canvas.height) * 0.45;
+
+    ctx.save();
+    ctx.globalAlpha = eased;
+
+    ctx.strokeStyle = theme.forensicRevealRim;
+    ctx.lineWidth = Math.max(4, outer * 0.02);
+    ctx.beginPath();
+    ctx.arc(cx, cy, outer * 0.7, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = theme.forensicRevealColor;
+    ctx.globalAlpha = eased * 0.8;
+    ctx.fillRect(0, cy - 1, canvas.width, 2);
+    ctx.fillRect(cx - 1, 0, 2, canvas.height);
     ctx.restore();
   }
 }

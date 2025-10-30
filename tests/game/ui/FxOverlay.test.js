@@ -36,6 +36,7 @@ describe('FxOverlay', () => {
       save: jest.fn(),
       restore: jest.fn(),
       fillRect: jest.fn(),
+      fill: jest.fn(),
       strokeRect: jest.fn(),
       stroke: jest.fn(),
       beginPath: jest.fn(),
@@ -46,6 +47,8 @@ describe('FxOverlay', () => {
       createLinearGradient: jest.fn(() => ({
         addColorStop: jest.fn(),
       })),
+      moveTo: jest.fn(),
+      lineTo: jest.fn(),
       lineWidth: 0,
       globalAlpha: 1,
       fillStyle: '',
@@ -100,5 +103,60 @@ describe('FxOverlay', () => {
     const unsubscribers = unbinds['fx:overlay_cue'] || [];
     expect(unsubscribers[0]).toHaveBeenCalled();
     expect(overlay.effects).toHaveLength(0);
+  });
+
+  it('handles quest milestone and completion cues with distinct renderers', () => {
+    const overlay = new FxOverlay(canvas, eventBus, {
+      questPulseDuration: 0.3,
+      questCompleteDuration: 0.4,
+    });
+    overlay.init();
+
+    const handler = getLastHandler('fx:overlay_cue');
+
+    handler({ effectId: 'questMilestonePulse', duration: 0.35 });
+    expect(overlay.effects).toHaveLength(1);
+    expect(overlay.effects[0].id).toBe('questMilestonePulse');
+
+    const ctxPulse = createMockContext();
+    overlay.render(ctxPulse);
+    expect(ctxPulse.moveTo).toHaveBeenCalled();
+
+    overlay.update(0.4);
+    expect(overlay.effects).toHaveLength(0);
+
+    handler({ effectId: 'questCompleteBurst', duration: 0.5 });
+    expect(overlay.effects).toHaveLength(1);
+    expect(overlay.effects[0].id).toBe('questCompleteBurst');
+
+    const ctxBurst = createMockContext();
+    overlay.render(ctxBurst);
+    expect(ctxBurst.stroke).toHaveBeenCalled();
+  });
+
+  it('renders forensic pulse and reveal cues', () => {
+    const overlay = new FxOverlay(canvas, eventBus, {
+      forensicPulseDuration: 0.3,
+      forensicRevealDuration: 0.4,
+    });
+    overlay.init();
+
+    const handler = getLastHandler('fx:overlay_cue');
+
+    handler({ effectId: 'forensicPulse', duration: 0.32 });
+    expect(overlay.effects[0].id).toBe('forensicPulse');
+
+    const ctxPulse = createMockContext();
+    overlay.render(ctxPulse);
+    expect(ctxPulse.fill).toHaveBeenCalled();
+
+    overlay.update(0.5);
+
+    handler({ effectId: 'forensicRevealFlash', duration: 0.45 });
+    expect(overlay.effects[0].id).toBe('forensicRevealFlash');
+
+    const ctxReveal = createMockContext();
+    overlay.render(ctxReveal);
+    expect(ctxReveal.fillRect).toHaveBeenCalled();
   });
 });
