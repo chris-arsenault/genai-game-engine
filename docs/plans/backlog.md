@@ -1613,6 +1613,8 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Energy drain balanced
   - No performance degradation
 
+_Progress 2025-11-01 (Session #137 procedural gating): EvidenceGraph now exposes dependency metadata powering EntityPopulator to flag clue/analysis leads as hidden and ability-gated (`detective_vision`, `forensic_analysis`), with Jest integration suites protecting the flow. Visual overlays + energy tuning remain outstanding._
+
 #### M2-003: Evidence Entity Factory
 - **Priority**: P1
 - **Tags**: `gameplay`, `investigation`

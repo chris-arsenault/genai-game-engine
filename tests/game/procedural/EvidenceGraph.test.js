@@ -629,6 +629,28 @@ describe('EvidenceGraph', () => {
 
       expect(graph.getDependencyCount()).toBe(2);
     });
+
+    it('should return dependencies for evidence', () => {
+      graph.addDependency('body', 'weapon', { revealType: RevealType.DIRECT, clue: 'blood trail' });
+      graph.addDependency('fingerprints', 'weapon', { revealType: RevealType.CLUE });
+
+      const dependencies = graph.getDependenciesFor('weapon');
+      expect(dependencies).toHaveLength(2);
+
+      const fromIds = dependencies.map(dep => dep.from);
+      expect(fromIds).toEqual(expect.arrayContaining(['body', 'fingerprints']));
+
+      const bodyDependency = dependencies.find(dep => dep.from === 'body');
+      expect(bodyDependency.metadata).toEqual({ revealType: RevealType.DIRECT, clue: 'blood trail' });
+    });
+
+    it('should report when evidence has dependencies', () => {
+      graph.addDependency('body', 'weapon');
+
+      expect(graph.hasDependencies('weapon')).toBe(true);
+      expect(graph.hasDependencies('body')).toBe(false);
+      expect(graph.hasDependencies('non_existent')).toBe(false);
+    });
   });
 
   describe('Serialization', () => {
