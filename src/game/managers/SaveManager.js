@@ -14,7 +14,10 @@
 
 import { factionSlice } from '../state/slices/factionSlice.js';
 import { tutorialSlice } from '../state/slices/tutorialSlice.js';
-import { createInspectorExportArtifacts } from '../telemetry/inspectorTelemetryExporter.js';
+import {
+  createInspectorExportArtifacts,
+  SPATIAL_HISTORY_BUDGET_BYTES
+} from '../telemetry/inspectorTelemetryExporter.js';
 import { TelemetryArtifactWriterAdapter } from '../telemetry/TelemetryArtifactWriterAdapter.js';
 import { buildTutorialTranscript } from '../tutorial/serializers/tutorialTranscriptSerializer.js';
 
@@ -556,6 +559,39 @@ export class SaveManager {
         errorMessage: error instanceof Error ? error.message : String(error),
       });
       throw error;
+    }
+
+    const spatialSnapshot = sanitizedSummary?.engine?.spatialHash ?? null;
+    if (spatialSnapshot) {
+      const budgetStatusPayload = {
+        type: 'spatialHash',
+        status: spatialSnapshot.payloadBudgetStatus ?? 'unknown',
+        payloadBytes: Number.isFinite(spatialSnapshot.payloadBytes)
+          ? spatialSnapshot.payloadBytes
+          : null,
+        budgetBytes:
+          spatialSnapshot.payloadBudgetBytes ?? SPATIAL_HISTORY_BUDGET_BYTES,
+        exceededBy: Number.isFinite(spatialSnapshot.payloadBudgetExceededBy)
+          ? spatialSnapshot.payloadBudgetExceededBy
+          : 0,
+        context,
+      };
+
+      if (
+        budgetStatusPayload.status === 'exceeds_budget' &&
+        typeof console !== 'undefined'
+      ) {
+        console.warn(
+          '[SaveManager] Inspector spatial telemetry payload exceeds budget',
+          {
+            payloadBytes: budgetStatusPayload.payloadBytes,
+            budgetBytes: budgetStatusPayload.budgetBytes,
+            exceededBy: budgetStatusPayload.exceededBy,
+          }
+        );
+      }
+
+      this.eventBus?.emit?.('telemetry:export_budget_status', budgetStatusPayload);
     }
 
     return {

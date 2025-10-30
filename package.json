@@ -24,6 +24,7 @@
     "art:plan-placeholder-schedule": "node scripts/art/planPlaceholderReplacements.js",
     "art:stage-renderops": "node scripts/art/stageRenderOpsDelivery.js",
     "art:track-bespoke": "node scripts/art/trackBespokeDeliverables.js",
+    "art:summarize-neon-glow": "node scripts/art/summarizeNeonGlowApprovals.js",
     "telemetry:check-parity": "node scripts/telemetry/checkQuestTelemetryParity.js",
     "telemetry:ack": "node scripts/telemetry/outboxAcknowledgement.js",
     "telemetry:dispatch-summary": "node scripts/telemetry/dispatchQuestTelemetrySummary.js",

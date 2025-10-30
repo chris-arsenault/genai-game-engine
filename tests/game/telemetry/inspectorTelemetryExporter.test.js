@@ -1,4 +1,7 @@
-import { createInspectorExportArtifacts } from '../../../src/game/telemetry/inspectorTelemetryExporter.js';
+import {
+  createInspectorExportArtifacts,
+  SPATIAL_HISTORY_BUDGET_BYTES,
+} from '../../../src/game/telemetry/inspectorTelemetryExporter.js';
 
 describe('inspectorTelemetryExporter', () => {
   test('generates JSON and CSV artifacts from inspector summary', () => {
@@ -149,6 +152,9 @@ describe('inspectorTelemetryExporter', () => {
           expect.objectContaining({ cellCount: 58 }),
         ]),
         stats: expect.objectContaining({ insertions: 420, updates: 280 }),
+        payloadBudgetBytes: SPATIAL_HISTORY_BUDGET_BYTES,
+        payloadBudgetStatus: 'within_budget',
+        payloadBudgetExceededBy: 0,
       })
     );
 
@@ -165,6 +171,7 @@ describe('inspectorTelemetryExporter', () => {
     expect(parsed.engine.spatialHash.history[parsed.engine.spatialHash.history.length - 1]).toEqual(
       expect.objectContaining({ cellCount: 58, trackedEntities: 47 })
     );
+    expect(parsed.engine.spatialHash.payloadBudgetStatus).toBe('within_budget');
 
     const cascadeCsv = artifacts.find(
       (artifact) => artifact.type === 'csv' && artifact.section === 'cascade'
@@ -213,5 +220,41 @@ describe('inspectorTelemetryExporter', () => {
     const jsonArtifact = artifacts.find((artifact) => artifact.type === 'json');
     expect(jsonArtifact.filename).toMatch(/^save-inspector-summary-/);
     expect(JSON.parse(jsonArtifact.content).tutorial.snapshots).toEqual([]);
+  });
+
+  test('flags spatial telemetry payloads that exceed budget', () => {
+    const history = Array.from({ length: 256 }, (_, index) => ({
+      cellCount: String(40 + (index % 5)),
+      maxBucketSize: '6',
+      trackedEntities: String(60 + (index % 3)),
+      timestamp: String(1700001000000 + index * 16),
+    }));
+
+    const summary = {
+      generatedAt: Date.now(),
+      source: 'worldStateStore',
+      factions: {},
+      tutorial: {},
+      engine: {
+        spatialHash: {
+          cellSize: '128',
+          window: 256,
+          sampleCount: String(history.length),
+          lastSample: history[history.length - 1],
+          aggregates: {},
+          stats: {},
+          history,
+          payloadBytes: null,
+        },
+      },
+    };
+
+    const { summary: sanitized } = createInspectorExportArtifacts(summary);
+
+    expect(sanitized.engine.spatialHash.payloadBudgetStatus).toBe('exceeds_budget');
+    expect(sanitized.engine.spatialHash.payloadBudgetExceededBy).toBeGreaterThan(0);
+    expect(sanitized.engine.spatialHash.payloadBudgetBytes).toBe(
+      SPATIAL_HISTORY_BUDGET_BYTES
+    );
   });
 });

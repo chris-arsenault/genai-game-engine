@@ -18,6 +18,7 @@ import {
 
 const DEFAULT_PREFIX = 'save-inspector';
 const DEFAULT_FORMATS = ['json', 'csv'];
+export const SPATIAL_HISTORY_BUDGET_BYTES = 12 * 1024; // 12 KB guardrail for inspector payloads
 
 const FORMAT_ALIASES = new Map([
   ['json', 'json'],
@@ -137,6 +138,24 @@ function sanitizeSpatialTelemetry(spatial) {
     (history.length ? history[history.length - 1] : null);
 
   const cellSizeNumeric = Number(spatial.cellSize);
+  const budgetStatus = (() => {
+    if (!Number.isFinite(payloadBytes)) {
+      return {
+        status: 'unknown',
+        exceededBy: 0,
+      };
+    }
+    if (payloadBytes <= SPATIAL_HISTORY_BUDGET_BYTES) {
+      return {
+        status: 'within_budget',
+        exceededBy: 0,
+      };
+    }
+    return {
+      status: 'exceeds_budget',
+      exceededBy: payloadBytes - SPATIAL_HISTORY_BUDGET_BYTES,
+    };
+  })();
 
   return {
     cellSize: Number.isFinite(cellSizeNumeric) ? cellSizeNumeric : null,
@@ -151,6 +170,9 @@ function sanitizeSpatialTelemetry(spatial) {
     stats: sanitizeStats(spatial.stats),
     history,
     payloadBytes,
+    payloadBudgetBytes: SPATIAL_HISTORY_BUDGET_BYTES,
+    payloadBudgetStatus: budgetStatus.status,
+    payloadBudgetExceededBy: budgetStatus.exceededBy,
   };
 }
 

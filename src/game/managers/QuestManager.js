@@ -38,7 +38,8 @@ export class QuestManager {
 
     // Event unsubscriber references
     this._offEventHandlers = [];
-    this._entityRemovalWarnings = new Set();
+    this._npcRemovalWarnings = new Map();
+    this._npcAvailability = new Map();
   }
 
   /**
@@ -653,6 +654,20 @@ export class QuestManager {
   }
 
   /**
+   * Returns current availability state for an NPC tracked by quest objectives.
+   * Defaults to true (available) when NPC hasn't been marked otherwise.
+   * @param {string} npcId
+   * @returns {boolean}
+   */
+  isNpcAvailable(npcId) {
+    if (!npcId) {
+      return true;
+    }
+    const record = this._npcAvailability.get(npcId);
+    return record ? Boolean(record.available) : true;
+  }
+
+  /**
    * Serialize quest state for saving
    * @returns {Object}
    */
@@ -716,6 +731,13 @@ export class QuestManager {
   }
 
   onNPCInterviewed(data) {
+    if (data?.npcId) {
+      this._setNpcAvailability(data.npcId, true, {
+        reason: 'npc_interviewed',
+        npcName: data?.name ?? data?.npcName ?? null,
+        factionId: data?.factionId ?? null,
+      });
+    }
     this.updateObjectives('npc:interviewed', data);
   }
 
@@ -839,18 +861,128 @@ export class QuestManager {
       }
 
       if (blockedObjectives.length) {
-        const signature = `${narrative.npcId}:${blockedObjectives
-          .map((entry) => `${entry.questId}:${entry.objectiveId}`)
-          .join('|')}`;
-        if (!this._entityRemovalWarnings.has(signature)) {
-          console.warn(
-            '[QuestManager] Marked objectives blocked due to despawned NPC',
-            narrative.npcId,
-            blockedObjectives
-          );
-          this._entityRemovalWarnings.add(signature);
-        }
+        this._setNpcAvailability(narrative.npcId, false, {
+          reason: 'entity_destroyed',
+          entityId,
+          tag: metadata?.tag ?? null,
+          npcName: narrative.npcName ?? null,
+          factionId: narrative.factionId ?? null,
+          blockedObjectives,
+          signatures: blockedObjectives.map(
+            (entry) => `${entry.questId}:${entry.objectiveId}`
+          ),
+          timestamp: now,
+        });
       }
+    }
+  }
+
+  _setNpcAvailability(npcId, available, context = {}) {
+    if (!npcId) {
+      return;
+    }
+
+    const previous = this._npcAvailability.get(npcId);
+    const timestamp = context.timestamp ?? Date.now();
+    const blockedObjectives = Array.isArray(context.blockedObjectives)
+      ? [...context.blockedObjectives]
+      : [];
+    const npcName = context.npcName ?? previous?.npcName ?? null;
+    const factionId = context.factionId ?? previous?.factionId ?? null;
+
+    if (previous && previous.available === available) {
+      if (!available && blockedObjectives.length) {
+        const merged = Array.isArray(previous.blockedObjectives)
+          ? [...previous.blockedObjectives]
+          : [];
+        let changed = false;
+        for (const entry of blockedObjectives) {
+          if (
+            entry &&
+            !merged.some(
+              (existing) =>
+                existing.questId === entry.questId &&
+                existing.objectiveId === entry.objectiveId
+            )
+          ) {
+            merged.push(entry);
+            changed = true;
+          }
+        }
+        if (changed) {
+          this._npcAvailability.set(npcId, {
+            ...previous,
+            blockedObjectives: merged,
+            updatedAt: timestamp,
+          });
+        }
+        this.#registerNpcWarningSignatures(npcId, context.signatures);
+      }
+      return;
+    }
+
+    const state = {
+      npcId,
+      npcName,
+      factionId,
+      available,
+      updatedAt: timestamp,
+      blockedObjectives,
+    };
+
+    this._npcAvailability.set(npcId, state);
+
+    if (available) {
+      this._npcRemovalWarnings.delete(npcId);
+      if (previous && previous.available === false && typeof console !== 'undefined') {
+        console.log(
+          `[QuestManager] NPC ${npcName ?? npcId} availability restored`
+        );
+      }
+    } else {
+      this.#registerNpcWarningSignatures(npcId, context.signatures);
+      if (typeof console !== 'undefined') {
+        console.warn(
+          `[QuestManager] NPC ${npcName ?? npcId} unavailable; blocking objectives`,
+          blockedObjectives
+        );
+      }
+    }
+
+    this.eventBus?.emit?.('quest:npc_availability', {
+      npcId,
+      npcName,
+      factionId,
+      available,
+      updatedAt: timestamp,
+      reason:
+        context.reason ??
+        (available ? 'availability_restored' : 'entity_destroyed'),
+      entityId: context.entityId ?? null,
+      tag: context.tag ?? null,
+      objectives: blockedObjectives,
+    });
+  }
+
+  #registerNpcWarningSignatures(npcId, signatures) {
+    if (!npcId || !Array.isArray(signatures) || signatures.length === 0) {
+      return;
+    }
+
+    const existing = this._npcRemovalWarnings.get(npcId) ?? new Set();
+    let added = false;
+    for (const signature of signatures) {
+      if (typeof signature !== 'string') {
+        continue;
+      }
+      if (!existing.has(signature)) {
+        existing.add(signature);
+        added = true;
+      }
+    }
+
+    if (added) {
+      this._npcRemovalWarnings.set(npcId, existing);
     }
   }
 

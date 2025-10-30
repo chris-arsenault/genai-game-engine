@@ -5,8 +5,8 @@
 
 ## Document Overview
 
-**Version**: 1.1
-**Last Updated**: 2025-11-13
+**Version**: 1.2
+**Last Updated**: 2025-11-16
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
@@ -21,7 +21,17 @@
 | PERF-214 | P1 | Pending | Browser-level performance profiling for adaptive audio + overlay interactions to confirm <16 ms frame time budget. | Run Chromium/Firefox performance audits with combat/stealth transitions, log hotspots, and file perf follow-ups as needed. |
 | UX-173 | P1 | Pending | Improve debug audio overlay ergonomics (keyboard shortcuts, focus management). | Prototype keyboard navigation + focus traps, add Jest/Playwright coverage for accessibility interactions. |
 
-**Next Session Focus**: Assess QuestManager NPC availability notifications for entity lifecycle logs, secure neon signage approval for the Week 1 bespoke packet, and collect RenderOps feedback on the remaining Act 2 lighting segments.
+**Next Session Focus**: Share the neon glow approval summary with Narrative/RenderOps to capture sign-off on the neon district tileset, fold SaveManager telemetry budget events into CI/QA monitoring, and stage the next RenderOps lighting feedback pass.
+
+### Session #124 Backlog Updates
+
+#### M1-002 / M1-012: ECS/Narrative Integrations
+- Introduced proactive QuestManager NPC availability notifications (`quest:npc_availability`) that mark blocked objectives, emit availability events, and squash redundant despawn warnings; refreshed unit coverage to capture the new guardrails.
+- Extended SaveManager inspector exports with spatial telemetry payload budget tracking, emitting `telemetry:export_budget_status` events and warnings when histories exceed the 12 KB guard, plus added Jest coverage to enforce the budget.
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- Authored `scripts/art/summarizeNeonGlowApprovals.js` (`npm run art:summarize-neon-glow`) to generate `reports/art/neon-glow-approval-status.(json|md)`, consolidating neon signage/glow assets and flagging outstanding narrative approvals.
+- Updated `docs/assets/visual-asset-inventory.md` with the new reporting flow so Narrative and RenderOps have a live view of glow-pass approvals before final sign-off.
 
 ### Session #123 Backlog Updates
 
@@ -916,6 +926,8 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Jest coverage expanded with performance gates (10k create/destroy <200 ms) and pooling reuse assertions; validated via `npm test`.
 - **Session #121 Update**:
   - Authored integration harness (`tests/integration/entityLifecycle.questFaction.integration.test.js`) linking EntityManager → QuestManager/FactionManager, exercised NPC despawn/respawn to confirm objectives unblock and faction telemetry propagates; world state store selectors now capture removal history for analytics.
+- **Session #124 Update**:
+  - Added quest-facing NPC availability notifications and budget-guarded telemetry exports: `QuestManager` now emits `quest:npc_availability` events to pre-empt repeated despawn warnings, and SaveManager surfaces spatial telemetry payload budgets with warning/event hooks for CI/QA monitoring.
 
 #### M1-003: ComponentRegistry Implementation
 - **Priority**: P0

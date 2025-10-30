@@ -111,6 +111,10 @@
 - Approved entries now record commission licenses, reviewers, and approval timestamps; see new `statusHistory`, `bespokeApprovedOn`, and `bespokeNotes` fields in the manifest for compliance/audit trails.
 - Added `assets/bespoke/week1/README.md` to log vendor hand-offs and repository-visible exports while original source files remain in the studio vault.
 
+## Session 124 Updates
+- Authored `scripts/art/summarizeNeonGlowApprovals.js` and npm alias `art:summarize-neon-glow` to consolidate every neon signage/glow asset (AR-050 overlays, Memory Parlor lighting, neon district tileset) into `reports/art/neon-glow-approval-status.(json|md)`, highlighting pending narrative/RenderOps approvals and latest status contexts ahead of the glow pass sign-off push.
+- The markdown summary surfaces the lone Week 1 bespoke item (`image-ar-005-tileset-neon-district`) still awaiting narrative approval and inventories all derivative overlays, keeping RenderOps and narrative leads aligned on outstanding glow validations.
+
 ## Next Actions
 1. Distribute the latest RenderOps packet (`npm run art:package-renderops` then `npm run art:stage-renderops`) and attach the staged ZIP (`deliveries/renderops/.../*.zip`) plus `*-delivery.json` manifest when sharing with RenderOps; log feedback on actionable segments and regenerate after art tweaks.
 2. Follow `reports/art/placeholder-replacement-schedule.md` to drive weekly bespoke assignments and annotate `assets/images/requests.json` with source/licensing updates upon completion.

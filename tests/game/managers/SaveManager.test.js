@@ -1497,6 +1497,9 @@ describe('SaveManager', () => {
             expect.objectContaining({ cellCount: 42 }),
           ]),
           payloadBytes: expect.any(Number),
+          payloadBudgetBytes: expect.any(Number),
+          payloadBudgetStatus: 'within_budget',
+          payloadBudgetExceededBy: 0,
         })
       );
 
@@ -1511,6 +1514,62 @@ describe('SaveManager', () => {
       expect(parsed.engine.spatialHash.history[0]).toEqual(
         expect.objectContaining({ cellCount: 40, maxBucketSize: 3 })
       );
+      expect(parsed.engine.spatialHash.payloadBudgetStatus).toBe('within_budget');
+    });
+
+    test('emits budget status event when spatial telemetry exceeds budget', async () => {
+      mockManagers.worldStateStore = {
+        select: jest.fn(() => null),
+      };
+
+      const history = Array.from({ length: 256 }, (_, index) => ({
+        cellCount: String(50 + (index % 7)),
+        maxBucketSize: '6',
+        trackedEntities: String(70 + (index % 5)),
+        timestamp: String(1700002000000 + index * 12),
+      }));
+
+      mockManagers.spatialMetricsProvider = jest.fn(() => ({
+        cellSize: '128',
+        window: 256,
+        sampleCount: String(history.length),
+        lastSample: history[history.length - 1],
+        aggregates: {},
+        stats: {},
+        history,
+        payloadBytes: null,
+      }));
+
+      saveManager = new SaveManager(eventBus, mockManagers);
+
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const eventSpy = jest.spyOn(eventBus, 'emit');
+
+      const writer = jest.fn().mockResolvedValue();
+      await saveManager.exportInspectorSummary({ writer });
+
+      const budgetEvent = eventSpy.mock.calls.find(
+        ([eventName]) => eventName === 'telemetry:export_budget_status'
+      );
+
+      expect(budgetEvent).toBeDefined();
+      expect(budgetEvent[1]).toMatchObject({
+        type: 'spatialHash',
+        status: 'exceeds_budget',
+        budgetBytes: expect.any(Number),
+        exceededBy: expect.any(Number),
+      });
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[SaveManager] Inspector spatial telemetry payload exceeds budget',
+        expect.objectContaining({
+          payloadBytes: expect.any(Number),
+          budgetBytes: expect.any(Number),
+        })
+      );
+
+      warnSpy.mockRestore();
+      eventSpy.mockRestore();
     });
 
     test('should continue when writer throws', async () => {
