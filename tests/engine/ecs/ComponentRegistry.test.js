@@ -157,6 +157,32 @@ describe('ComponentRegistry', () => {
       expect(registry.hasComponent(entityId, 'Transform')).toBe(true);
       expect(registry.hasComponent(entityId, 'Velocity')).toBe(false);
     });
+
+    it('should return all components for an entity', () => {
+      const entityId = entityManager.createEntity();
+      const transform = new MockComponent('Transform');
+      const velocity = new MockComponent('Velocity');
+
+      registry.addComponent(entityId, transform);
+      registry.addComponent(entityId, velocity);
+
+      const components = registry.getComponentsForEntity(entityId);
+
+      expect(components.size).toBe(2);
+      expect(components.get('Transform')).toBe(transform);
+      expect(components.get('Velocity')).toBe(velocity);
+    });
+
+    it('should provide component signature set via entity manager', () => {
+      const entityId = entityManager.createEntity();
+      registry.addComponent(entityId, new MockComponent('Transform'));
+      registry.addComponent(entityId, new MockComponent('Velocity'));
+
+      const signature = registry.getComponentSignature(entityId);
+
+      expect(signature.has('Transform')).toBe(true);
+      expect(signature.has('Velocity')).toBe(true);
+    });
   });
 
   describe('Component Type Queries', () => {

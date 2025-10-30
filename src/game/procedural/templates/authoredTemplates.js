@@ -8,11 +8,15 @@ export const CRIME_SCENE_TEMPLATE_ID = 'act1_crime_scene_signature';
 export const VENDOR_STALL_TEMPLATE_ID = 'act1_vendor_corner';
 export const DETECTIVE_OFFICE_TEMPLATE_ID = 'act1_detective_office';
 export const ALLEY_HUB_TEMPLATE_ID = 'act1_alley_hub';
+export const PRECINCT_WAR_ROOM_TEMPLATE_ID = 'act1_precinct_war_room';
+export const ALLEY_SPUR_TEMPLATE_ID = 'act1_alley_spur';
 
 const CRIME_SCENE_BASE_TILEMAP = buildCrimeSceneBase();
 const VENDOR_BASE_TILEMAP = buildVendorBase();
 const DETECTIVE_OFFICE_BASE_TILEMAP = buildDetectiveOfficeBase();
 const ALLEY_HUB_BASE_TILEMAP = buildAlleyHubBase();
+const PRECINCT_WAR_ROOM_BASE_TILEMAP = buildPrecinctWarRoomBase();
+const ALLEY_SPUR_BASE_TILEMAP = buildAlleySpurBase();
 
 const CRIME_SCENE_BASE_SEAMS = [
   {
@@ -77,11 +81,59 @@ const ALLEY_HUB_BASE_SEAMS = [
     tags: ['south_branch'],
   },
 ];
+const PRECINCT_WAR_ROOM_BASE_SEAMS = [
+  {
+    x: Math.floor(PRECINCT_WAR_ROOM_BASE_TILEMAP.width / 2) - 1,
+    y: PRECINCT_WAR_ROOM_BASE_TILEMAP.height - 1,
+    tile: TileType.DOOR,
+    edge: 'south',
+    tags: ['primary_entry', 'briefing_flow'],
+  },
+  {
+    x: Math.floor(PRECINCT_WAR_ROOM_BASE_TILEMAP.width / 2),
+    y: PRECINCT_WAR_ROOM_BASE_TILEMAP.height - 1,
+    tile: TileType.DOOR,
+    edge: 'south',
+    tags: ['primary_entry', 'briefing_flow'],
+  },
+  {
+    x: 0,
+    y: Math.floor(PRECINCT_WAR_ROOM_BASE_TILEMAP.height / 2),
+    tile: TileType.DOOR,
+    edge: 'west',
+    tags: ['operations_link'],
+  },
+  {
+    x: PRECINCT_WAR_ROOM_BASE_TILEMAP.width - 1,
+    y: Math.floor(PRECINCT_WAR_ROOM_BASE_TILEMAP.height / 2),
+    tile: TileType.DOOR,
+    edge: 'east',
+    tags: ['balcony_access'],
+  },
+];
+const ALLEY_SPUR_BASE_SEAMS = [
+  {
+    x: Math.floor(ALLEY_SPUR_BASE_TILEMAP.width / 2),
+    y: ALLEY_SPUR_BASE_TILEMAP.height - 1,
+    tile: TileType.DOOR,
+    edge: 'south',
+    tags: ['hub_connection'],
+  },
+  {
+    x: ALLEY_SPUR_BASE_TILEMAP.width - 1,
+    y: Math.floor(ALLEY_SPUR_BASE_TILEMAP.height / 2),
+    tile: TileType.DOOR,
+    edge: 'east',
+    tags: ['side_exit'],
+  },
+];
 
 const CRIME_SCENE_VARIANTS = buildCrimeSceneVariants();
 const VENDOR_VARIANTS = buildVendorVariants();
 const DETECTIVE_OFFICE_VARIANTS = buildDetectiveOfficeVariants();
 const ALLEY_HUB_VARIANTS = buildAlleyHubVariants();
+const PRECINCT_WAR_ROOM_VARIANTS = buildPrecinctWarRoomVariants();
+const ALLEY_SPUR_VARIANTS = buildAlleySpurVariants();
 
 /**
  * Default manifest consumed by TemplateVariantResolver / DistrictGenerator.
@@ -260,6 +312,92 @@ export const templateVariantManifest = {
         },
       },
     },
+    [PRECINCT_WAR_ROOM_TEMPLATE_ID]: {
+      metadata: {
+        roomType: 'precinct_war_room',
+        variantFamily: 'act1_precinct_command',
+        moodHint: 'strategic_tension',
+      },
+      fallbackStrategy: 'rotate',
+      seams: {
+        base: PRECINCT_WAR_ROOM_BASE_SEAMS,
+      },
+      variants: {
+        '90': {
+          variantId: `${PRECINCT_WAR_ROOM_TEMPLATE_ID}_r90`,
+          rotation: 0,
+          tilemap: PRECINCT_WAR_ROOM_VARIANTS['90'].tilemap,
+          seams: PRECINCT_WAR_ROOM_VARIANTS['90'].seams,
+          metadata: {
+            orientation: 90,
+            commandFocus: 'evidence_matrix',
+          },
+        },
+        '180': {
+          variantId: `${PRECINCT_WAR_ROOM_TEMPLATE_ID}_r180`,
+          rotation: 0,
+          tilemap: PRECINCT_WAR_ROOM_VARIANTS['180'].tilemap,
+          seams: PRECINCT_WAR_ROOM_VARIANTS['180'].seams,
+          metadata: {
+            orientation: 180,
+            commandFocus: 'surveillance_wall',
+          },
+        },
+        '270': {
+          variantId: `${PRECINCT_WAR_ROOM_TEMPLATE_ID}_r270`,
+          rotation: 0,
+          tilemap: PRECINCT_WAR_ROOM_VARIANTS['270'].tilemap,
+          seams: PRECINCT_WAR_ROOM_VARIANTS['270'].seams,
+          metadata: {
+            orientation: 270,
+            commandFocus: 'strategic_projection',
+          },
+        },
+      },
+    },
+    [ALLEY_SPUR_TEMPLATE_ID]: {
+      metadata: {
+        roomType: 'alley_spur',
+        variantFamily: 'act1_side_alley',
+        moodHint: 'escape_route',
+      },
+      fallbackStrategy: 'rotate',
+      seams: {
+        base: ALLEY_SPUR_BASE_SEAMS,
+      },
+      variants: {
+        '90': {
+          variantId: `${ALLEY_SPUR_TEMPLATE_ID}_r90`,
+          rotation: 0,
+          tilemap: ALLEY_SPUR_VARIANTS['90'].tilemap,
+          seams: ALLEY_SPUR_VARIANTS['90'].seams,
+          metadata: {
+            orientation: 90,
+            branch: 'north_escape',
+          },
+        },
+        '180': {
+          variantId: `${ALLEY_SPUR_TEMPLATE_ID}_r180`,
+          rotation: 0,
+          tilemap: ALLEY_SPUR_VARIANTS['180'].tilemap,
+          seams: ALLEY_SPUR_VARIANTS['180'].seams,
+          metadata: {
+            orientation: 180,
+            branch: 'west_detour',
+          },
+        },
+        '270': {
+          variantId: `${ALLEY_SPUR_TEMPLATE_ID}_r270`,
+          rotation: 0,
+          tilemap: ALLEY_SPUR_VARIANTS['270'].tilemap,
+          seams: ALLEY_SPUR_VARIANTS['270'].seams,
+          metadata: {
+            orientation: 270,
+            branch: 'midnight_cache',
+          },
+        },
+      },
+    },
   },
 };
 
@@ -304,6 +442,24 @@ export function createAuthoredTemplateForRoomType(roomType) {
         metadata: {
           hubType: 'crossroads',
           moodHint: 'shadow_network',
+        },
+      };
+    case 'precinct_war_room':
+      return {
+        templateId: PRECINCT_WAR_ROOM_TEMPLATE_ID,
+        tilemap: PRECINCT_WAR_ROOM_BASE_TILEMAP.clone(),
+        metadata: {
+          commandTier: 'act1_precinct',
+          moodHint: 'strategic_tension',
+        },
+      };
+    case 'alley_spur':
+      return {
+        templateId: ALLEY_SPUR_TEMPLATE_ID,
+        tilemap: ALLEY_SPUR_BASE_TILEMAP.clone(),
+        metadata: {
+          branchRole: 'side_route',
+          moodHint: 'escape_route',
         },
       };
     default:
@@ -422,6 +578,64 @@ function buildAlleyHubBase() {
   return tilemap;
 }
 
+function buildPrecinctWarRoomBase() {
+  const width = 14;
+  const height = 10;
+  const tilemap = new TileMap(width, height);
+  tilemap.fill(TileType.FLOOR);
+
+  for (let x = 0; x < width; x++) {
+    tilemap.setTile(x, 0, TileType.WALL);
+    tilemap.setTile(x, height - 1, TileType.WALL);
+  }
+  for (let y = 0; y < height; y++) {
+    tilemap.setTile(0, y, TileType.WALL);
+    tilemap.setTile(width - 1, y, TileType.WALL);
+  }
+
+  const southMid = Math.floor(width / 2);
+  const midY = Math.floor(height / 2);
+  tilemap.setTile(southMid, height - 1, TileType.DOOR);
+  tilemap.setTile(southMid - 1, height - 1, TileType.DOOR);
+  tilemap.setTile(0, midY, TileType.DOOR);
+  tilemap.setTile(width - 1, midY, TileType.DOOR);
+
+  tilemap.fillRect(3, 3, width - 6, 1, TileType.DEBRIS);
+  tilemap.fillRect(3, 5, width - 6, 1, TileType.DEBRIS);
+  tilemap.fillRect(2, 2, 3, 1, TileType.EVIDENCE);
+  tilemap.fillRect(width - 5, 2, 3, 1, TileType.EVIDENCE);
+  tilemap.setTile(southMid, midY, TileType.EVIDENCE);
+
+  return tilemap;
+}
+
+function buildAlleySpurBase() {
+  const width = 7;
+  const height = 7;
+  const tilemap = new TileMap(width, height);
+  tilemap.fill(TileType.FLOOR);
+
+  for (let x = 0; x < width; x++) {
+    tilemap.setTile(x, 0, TileType.WALL);
+    tilemap.setTile(x, height - 1, TileType.WALL);
+  }
+  for (let y = 0; y < height; y++) {
+    tilemap.setTile(0, y, TileType.WALL);
+    tilemap.setTile(width - 1, y, TileType.WALL);
+  }
+
+  const midX = Math.floor(width / 2);
+  const midY = Math.floor(height / 2);
+  tilemap.setTile(midX, height - 1, TileType.DOOR);
+  tilemap.setTile(width - 1, midY, TileType.DOOR);
+
+  tilemap.fillRect(2, 2, 3, 1, TileType.DEBRIS);
+  tilemap.setTile(midX + 1, midY - 1, TileType.EVIDENCE);
+  tilemap.setTile(midX - 2, midY + 1, TileType.BLOOD);
+
+  return tilemap;
+}
+
 function buildCrimeSceneVariants() {
   return {
     '90': makeVariant(CRIME_SCENE_BASE_TILEMAP, CRIME_SCENE_BASE_SEAMS, 90, (map) => {
@@ -480,6 +694,55 @@ function buildAlleyHubVariants() {
     '270': makeVariant(ALLEY_HUB_BASE_TILEMAP, ALLEY_HUB_BASE_SEAMS, 270, (map) => {
       map.setTile(Math.floor(map.width / 2), 1, TileType.BLOOD);
       map.setTile(Math.floor(map.width / 2), map.height - 2, TileType.EVIDENCE);
+    }),
+  };
+}
+
+function buildPrecinctWarRoomVariants() {
+  return {
+    '90': makeVariant(
+      PRECINCT_WAR_ROOM_BASE_TILEMAP,
+      PRECINCT_WAR_ROOM_BASE_SEAMS,
+      90,
+      (map) => {
+        map.fillRect(1, Math.floor(map.height / 2) - 1, 1, 2, TileType.EVIDENCE);
+        map.setTile(map.width - 3, 2, TileType.DEBRIS);
+      }
+    ),
+    '180': makeVariant(
+      PRECINCT_WAR_ROOM_BASE_TILEMAP,
+      PRECINCT_WAR_ROOM_BASE_SEAMS,
+      180,
+      (map) => {
+        map.fillRect(Math.floor(map.width / 2) - 2, map.height - 3, 4, 1, TileType.DEBRIS);
+        map.setTile(Math.floor(map.width / 2), 2, TileType.EVIDENCE);
+      }
+    ),
+    '270': makeVariant(
+      PRECINCT_WAR_ROOM_BASE_TILEMAP,
+      PRECINCT_WAR_ROOM_BASE_SEAMS,
+      270,
+      (map) => {
+        map.setTile(2, Math.floor(map.height / 2), TileType.BLOOD);
+        map.fillRect(map.width - 4, 3, 2, 2, TileType.EVIDENCE);
+      }
+    ),
+  };
+}
+
+function buildAlleySpurVariants() {
+  return {
+    '90': makeVariant(ALLEY_SPUR_BASE_TILEMAP, ALLEY_SPUR_BASE_SEAMS, 90, (map) => {
+      map.setTile(map.width - 2, 1, TileType.EVIDENCE);
+      map.setTile(1, Math.floor(map.height / 2), TileType.DEBRIS);
+    }),
+    '180': makeVariant(ALLEY_SPUR_BASE_TILEMAP, ALLEY_SPUR_BASE_SEAMS, 180, (map) => {
+      map.fillRect(1, Math.floor(map.height / 2), 1, 2, TileType.DEBRIS);
+      map.setTile(map.width - 2, map.height - 2, TileType.EVIDENCE);
+    }),
+    '270': makeVariant(ALLEY_SPUR_BASE_TILEMAP, ALLEY_SPUR_BASE_SEAMS, 270, (map) => {
+      map.setTile(Math.floor(map.width / 2), 1, TileType.BLOOD);
+      map.setTile(1, Math.floor(map.height / 2), TileType.EVIDENCE);
     }),
   };
 }

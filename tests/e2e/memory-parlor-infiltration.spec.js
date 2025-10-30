@@ -236,6 +236,28 @@ test.describe('Memory Parlor infiltration', () => {
     );
     expect(blockedCountAfterCompletion).toBe(blockedCountBeforeCompletion);
 
+    await page.keyboard.press('F3');
+    await page.waitForSelector('#debug-overlay.visible', { timeout: 4000 });
+    await page.waitForFunction(() => {
+      const collisionSystem =
+        window.game?.gameSystems?.collision ?? window.game?.engine?.systemManager?.getSystem?.('collision') ?? null;
+      if (!collisionSystem?.spatialHash) {
+        return false;
+      }
+      collisionSystem.spatialHash.getMetrics();
+      const meta = document.getElementById('debug-spatial-meta');
+      return Boolean(meta && /Cells:/.test(meta.textContent || ''));
+    }, { timeout: 4000 });
+
+    const spatialMeta = await page.textContent('#debug-spatial-meta');
+    expect(spatialMeta).toMatch(/Cells:\s*\d+/);
+    expect(spatialMeta).toMatch(/Entities:\s*\d+/);
+
+    const rollingRow = page.locator('#debug-spatial-list .debug-world-row', {
+      hasText: 'Rolling avg cells',
+    });
+    await expect(rollingRow.first()).toContainText(/samples \d+\/\d+/);
+
     await page.evaluate(() => {
       window.game.gameSystems.investigation.unlockAbility('detective_vision');
     });

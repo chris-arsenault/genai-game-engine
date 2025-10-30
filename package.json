@@ -11,6 +11,25 @@
     "export-telemetry": "node scripts/telemetry/exportInspectorTelemetry.js",
     "telemetry:fallback-report": "node scripts/telemetry/analyzeFallbackUsage.js",
     "telemetry:performance": "node scripts/telemetry/performanceSnapshot.js",
+    "telemetry:performance:baseline": "node scripts/telemetry/performanceBaseline.js",
+    "telemetry:performance:summary": "node scripts/telemetry/summarizePerformanceBaseline.js",
+    "narrative:export-act2-dialogues": "node scripts/narrative/exportAct2BranchDialogues.js",
+    "narrative:bundle-act2-review": "node scripts/narrative/bundleAct2BranchDialoguesForReview.js",
+    "telemetry:dashboard": "node scripts/telemetry/exportQuestTelemetryDashboard.js",
+    "art:validate-crossroads": "node scripts/art/validateAct2CrossroadsArt.js",
+    "art:generate-crossroads-overlays": "node scripts/art/generateOverlayDerivatives.js --config assets/images/overlay-derivatives-act2-crossroads.json",
+    "art:package-generation-prompts": "node scripts/art/exportGenerationPrompts.js",
+    "art:package-renderops": "node scripts/art/packageRenderOpsLighting.js",
+    "art:audit-placeholders": "node scripts/art/auditPlaceholderAssets.js",
+    "art:plan-placeholder-schedule": "node scripts/art/planPlaceholderReplacements.js",
+    "art:stage-renderops": "node scripts/art/stageRenderOpsDelivery.js",
+    "art:track-bespoke": "node scripts/art/trackBespokeDeliverables.js",
+    "art:summarize-neon-glow": "node scripts/art/summarizeNeonGlowApprovals.js",
+    "telemetry:check-parity": "node scripts/telemetry/checkQuestTelemetryParity.js",
+    "telemetry:ack": "node scripts/telemetry/outboxAcknowledgement.js",
+    "telemetry:dispatch-summary": "node scripts/telemetry/dispatchQuestTelemetrySummary.js",
+    "telemetry:reminder": "node scripts/telemetry/remindParitySchedule.js",
+    "telemetry:stage-reminder": "node scripts/telemetry/stageParityReminder.js",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:e2e": "./run_playwright.sh test",
@@ -39,6 +58,7 @@
     "eslint-plugin-jest": "^28.8.3",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
+    "jimp": "^1.6.0",
     "prettier": "^3.3.3",
     "terser": "^5.44.0",
     "vite": "^5.4.8"
@@ -87,7 +107,8 @@
     },
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/src/$1",
-      "^(\\.{1,2}/.*)\\.js$": "$1"
+      "^(\\.{1,2}/.*)\\.js$": "$1",
+      "jimp$": "<rootDir>/node_modules/jimp/dist/esm/index.js"
     },
     "testPathIgnorePatterns": [
       "<rootDir>/tests/e2e/"
@@ -108,10 +129,14 @@
           ]
         }
       ]
-    }
+    },
+    "transformIgnorePatterns": [
+      "node_modules/(?!(?:@jimp|jimp)/)"
+    ]
   },
   "dependencies": {
     "@actions/artifact": "^2.2.1",
+    "jszip": "^3.10.1",
     "playwright": "^1.56.1"
   }
 }

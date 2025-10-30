@@ -739,4 +739,37 @@ describe('FactionManager', () => {
       expect(avgTime).toBeLessThan(0.05); // Should be very fast
     });
   });
+
+  describe('Entity lifecycle integration', () => {
+    it('records member removals and emits notifications', () => {
+      const components = new Map([
+        [
+          'FactionMember',
+          {
+            primaryFaction: 'cipher_collective',
+          },
+        ],
+        [
+          'NPC',
+          {
+            npcId: 'cipher_agent_alpha',
+            faction: 'cipher_collective',
+          },
+        ],
+      ]);
+
+      const summary = factionManager.handleEntityDestroyed(88, { tag: 'npc' }, components);
+
+      expect(summary).toMatchObject({
+        factionId: 'cipher_collective',
+        npcId: 'cipher_agent_alpha',
+        entityId: 88,
+      });
+      expect(mockEventBus.emit).toHaveBeenCalledWith(
+        'faction:member_removed',
+        expect.objectContaining({ factionId: 'cipher_collective', entityId: 88 })
+      );
+      expect(factionManager.getRecentMemberRemovals()).toHaveLength(1);
+    });
+  });
 });

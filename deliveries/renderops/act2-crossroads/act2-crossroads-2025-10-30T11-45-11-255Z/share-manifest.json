@@ -1,0 +1,63 @@
+{
+  "packetId": "d6ac9e46-dbc9-4413-b5a2-e70a054661b0",
+  "label": "act2-crossroads",
+  "createdAt": "2025-10-30T11:45:11.255Z",
+  "bundle": {
+    "format": "zip",
+    "relativePath": "../act2-crossroads-2025-10-30T11-45-11-255Z.zip"
+  },
+  "sharedAt": "2025-11-13T09:05:00.000Z",
+  "shareChannels": [
+    "renderops-secure-handoff"
+  ],
+  "status": "awaiting-feedback",
+  "notes": "Bundle delivered with PACKET_README.md; awaiting RenderOps response on skipped floor segments.",
+  "files": {
+    "report": "lighting-preview.json",
+    "summary": "lighting-preview-summary.md",
+    "readme": "PACKET_README.md",
+    "metadata": "metadata.json",
+    "shareManifest": "share-manifest.json"
+  },
+  "summary": {
+    "total": 11,
+    "statusCounts": {
+      "skipped": 2,
+      "ok": 9
+    },
+    "metadataDriftCount": 0,
+    "skippedCount": 2
+  },
+  "actionableSegmentCount": 2,
+  "actionableSegments": [
+    {
+      "segmentId": "crossroads_floor_safehouse",
+      "category": "floors",
+      "status": "skipped",
+      "presetId": "safehouse_idle",
+      "projected": {
+        "luminance": null,
+        "targetLuminance": null,
+        "deviation": null
+      },
+      "issues": []
+    },
+    {
+      "segmentId": "crossroads_branch_walkway",
+      "category": "floors",
+      "status": "skipped",
+      "presetId": "branch_idle",
+      "projected": {
+        "luminance": null,
+        "targetLuminance": null,
+        "deviation": null
+      },
+      "issues": []
+    }
+  ],
+  "instructions": [
+    "Share the generated ZIP bundle with the RenderOps team via the secure art handoff channel.",
+    "Include PACKET_README.md in the communication so context and actionable segments are visible up front.",
+    "After RenderOps responds, update the placeholder audit and regenerate the packet if art tweaks were requested."
+  ]
+}

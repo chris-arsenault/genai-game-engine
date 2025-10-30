@@ -187,6 +187,116 @@ describe('SpatialHash', () => {
     });
   });
 
+  describe('Update and Removal', () => {
+    it('should update entity position and move buckets', () => {
+      spatialHash.insert(1, 0, 0, 16, 16);
+
+      spatialHash.update(1, 128, 128, 16, 16);
+
+      const oldCell = spatialHash.query(0, 0, 32, 32);
+      const newCell = spatialHash.query(128, 128, 32, 32);
+
+      expect(oldCell).not.toContain(1);
+      expect(newCell).toContain(1);
+    });
+
+    it('should no-op update when bounds remain in same cells', () => {
+      spatialHash.insert(1, 0, 0, 16, 16);
+
+      spatialHash.update(1, 10, 10, 16, 16);
+
+      const results = spatialHash.query(0, 0, 32, 32);
+      expect(results).toContain(1);
+    });
+
+    it('should remove entity from hash', () => {
+      spatialHash.insert(1, 0, 0, 16, 16);
+
+      const removed = spatialHash.remove(1);
+      const results = spatialHash.query(0, 0, 32, 32);
+
+      expect(removed).toBe(true);
+      expect(results).not.toContain(1);
+    });
+
+    it('should return false when removing unknown entity', () => {
+      expect(spatialHash.remove(999)).toBe(false);
+    });
+
+    it('should rebuild from source data', () => {
+      const entityIds = [1, 2, 3];
+      const boundsMap = {
+        1: { x: 0, y: 0, width: 10, height: 10 },
+        2: { x: 100, y: 0, width: 10, height: 10 },
+        3: { x: 0, y: 100, width: 10, height: 10 },
+      };
+
+      spatialHash.rebuild(entityIds, (id) => boundsMap[id]);
+
+      expect(spatialHash.query(0, 0, 20, 20)).toContain(1);
+      expect(spatialHash.query(100, 0, 20, 20)).toContain(2);
+      expect(spatialHash.query(0, 100, 20, 20)).toContain(3);
+    });
+
+    it('should report metrics', () => {
+      spatialHash.insert(1, 0, 0, 16, 16);
+      spatialHash.insert(2, 0, 0, 16, 16);
+      spatialHash.insert(3, 64, 64, 16, 16);
+      spatialHash.update(3, 128, 128, 16, 16);
+      spatialHash.remove(2);
+
+      const metrics = spatialHash.getMetrics();
+
+      expect(metrics.cellCount).toBeGreaterThan(0);
+      expect(metrics.maxBucketSize).toBeGreaterThan(0);
+      expect(metrics.trackedEntities).toBe(2);
+      expect(metrics.stats.insertions).toBeGreaterThan(0);
+      expect(metrics.stats.updates).toBeGreaterThanOrEqual(1);
+      expect(metrics.stats.removals).toBeGreaterThan(0);
+      expect(metrics.rolling.sampleCount).toBeGreaterThan(0);
+      expect(metrics.rolling.window).toBeGreaterThan(0);
+      expect(metrics.rolling.maxBucketSize.average).toBeGreaterThan(0);
+    });
+
+    it('should respect configurable metrics window', () => {
+      spatialHash.setMetricsWindow(5);
+
+      for (let i = 0; i < 10; i++) {
+        spatialHash.insert(i, i * 10, i * 10, 16, 16);
+        spatialHash.getMetrics();
+      }
+
+      const historySample = spatialHash.getMetrics();
+      expect(historySample.rolling.sampleCount).toBeLessThanOrEqual(5);
+      expect(historySample.rolling.window).toBe(5);
+
+      spatialHash.resetMetricsHistory();
+      const resetMetrics = spatialHash.getMetrics({ collectSample: false });
+      expect(resetMetrics.rolling.sampleCount).toBe(0);
+    });
+
+    it('should snapshot metrics history with optional limit', () => {
+      spatialHash.resetMetricsHistory();
+      spatialHash.setMetricsWindow(10);
+
+      for (let i = 0; i < 6; i++) {
+        spatialHash.insert(i, i * 10, i * 10, 16, 16);
+        spatialHash.getMetrics();
+      }
+
+      const fullHistory = spatialHash.getMetricsHistorySnapshot();
+      expect(fullHistory.length).toBe(6);
+
+      const limitedHistory = spatialHash.getMetricsHistorySnapshot({ limit: 3 });
+      expect(limitedHistory.length).toBe(3);
+      expect(limitedHistory[0].timestamp).toBe(fullHistory[3].timestamp);
+
+      limitedHistory[0].cellCount = 999;
+      const freshSnapshot = spatialHash.getMetricsHistorySnapshot({ limit: 3 });
+      expect(freshSnapshot[0].cellCount).not.toBe(999);
+    });
+  });
+
   describe('Clear', () => {
     it('should clear all entities', () => {
       spatialHash.insert(1, 0, 0, 16, 16);
@@ -324,15 +434,14 @@ describe('SpatialHash', () => {
       expect(results).toContain(1);
     });
 
-    it('should handle same entity ID inserted multiple times', () => {
+    it('should replace previous location when reinserting same entity', () => {
       spatialHash.insert(1, 0, 0, 16, 16);
       spatialHash.insert(1, 100, 100, 16, 16);
 
       const results1 = spatialHash.query(0, 0, 20, 20);
       const results2 = spatialHash.query(100, 100, 20, 20);
 
-      // Entity should appear in both locations
-      expect(results1).toContain(1);
+      expect(results1).not.toContain(1);
       expect(results2).toContain(1);
     });
   });

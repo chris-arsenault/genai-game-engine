@@ -12,6 +12,7 @@ import { Collider } from '../components/Collider.js';
 import { FactionMember } from '../components/FactionMember.js';
 import { Disguise } from '../components/Disguise.js';
 import { GameConfig } from '../config/GameConfig.js';
+import { NavigationAgent } from '../components/NavigationAgent.js';
 
 /**
  * Create player entity
@@ -92,6 +93,16 @@ export function createPlayerEntity(entityManager, componentRegistry, x = 0, y = 
     equipped: false
   });
   componentRegistry.addComponent(entityId, 'Disguise', disguise);
+
+  const navigationAgent = new NavigationAgent({
+    allowedSurfaceTags: ['safehouse', 'indoor', 'walkway', 'transition', 'checkpoint'],
+    lockedSurfaceTags: ['transition', 'checkpoint'],
+    initialPosition: { x, y },
+    metadata: {
+      role: 'player',
+    },
+  });
+  componentRegistry.addComponent(entityId, 'NavigationAgent', navigationAgent);
 
   console.log(`[PlayerEntity] Created player entity at (${x}, ${y})`);
 

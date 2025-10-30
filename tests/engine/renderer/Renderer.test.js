@@ -3,8 +3,7 @@
  */
 import { Renderer } from '../../../src/engine/renderer/Renderer.js';
 import { Camera } from '../../../src/engine/renderer/Camera.js';
-import {describe} from "@jest/globals";
-import {ComponentRegistry} from "../../../src/engine/ecs/ComponentRegistry.js";
+import { describe } from '@jest/globals';
 
 describe('Renderer', () => {
   let canvas;
@@ -15,13 +14,21 @@ describe('Renderer', () => {
     canvas = document.createElement('canvas');
     canvas.width = 800;
     canvas.height = 600;
+    Object.defineProperty(canvas, 'clientWidth', {
+      configurable: true,
+      value: 800,
+    });
+    Object.defineProperty(canvas, 'clientHeight', {
+      configurable: true,
+      value: 600,
+    });
     renderer = new Renderer(canvas);
   });
 
   afterEach(() => {
-    if (renderer.resizeObserver) {
-      renderer.cleanup();
-    }
+    delete canvas.clientWidth;
+    delete canvas.clientHeight;
+    renderer.cleanup();
   });
 
   describe('constructor', () => {
@@ -168,9 +175,16 @@ describe('Renderer', () => {
 
   describe('handleResize', () => {
     it('should update dimensions on resize', () => {
-      canvas.width = 1024;
-      canvas.height = 768;
-      renderer.handleResize();
+      Object.defineProperty(canvas, 'clientWidth', {
+        configurable: true,
+        value: 1024,
+      });
+      Object.defineProperty(canvas, 'clientHeight', {
+        configurable: true,
+        value: 768,
+      });
+
+      window.dispatchEvent(new Event('resize'));
 
       expect(renderer.width).toBe(1024);
       expect(renderer.height).toBe(768);
@@ -183,7 +197,53 @@ describe('Renderer', () => {
     it('should render the scene', () => {
       const scene = renderer.render(null);
       expect(scene).toBeDefined();
-    })
+    });
+  });
+
+  describe('responsive sizing', () => {
+    it('resizes canvas in response to window resize events', () => {
+      renderer.cleanup();
+
+      renderer = new Renderer(canvas, { responsive: true });
+      expect(renderer.width).toBe(800);
+      expect(renderer.height).toBe(600);
+
+      Object.defineProperty(canvas, 'clientWidth', {
+        configurable: true,
+        value: 1280,
+      });
+      Object.defineProperty(canvas, 'clientHeight', {
+        configurable: true,
+        value: 720,
+      });
+
+      window.dispatchEvent(new Event('resize'));
+
+      expect(renderer.width).toBe(1280);
+      expect(renderer.height).toBe(720);
+    });
+
+    it('can disable responsive behavior', () => {
+      renderer.cleanup();
+
+      renderer = new Renderer(canvas, { responsive: false });
+      expect(renderer.width).toBe(800);
+      expect(renderer.height).toBe(600);
+
+      Object.defineProperty(canvas, 'clientWidth', {
+        configurable: true,
+        value: 640,
+      });
+      Object.defineProperty(canvas, 'clientHeight', {
+        configurable: true,
+        value: 360,
+      });
+
+      window.dispatchEvent(new Event('resize'));
+
+      expect(renderer.width).toBe(800);
+      expect(renderer.height).toBe(600);
+    });
   });
 
   describe('cleanup', () => {
@@ -193,6 +253,13 @@ describe('Renderer', () => {
         renderer.cleanup();
         expect(spy).toHaveBeenCalled();
       }
+    });
+
+    it('removes window resize listener', () => {
+      const spy = jest.spyOn(window, 'removeEventListener');
+      renderer.cleanup();
+      expect(spy).toHaveBeenCalledWith('resize', expect.any(Function));
+      spy.mockRestore();
     });
   });
 });

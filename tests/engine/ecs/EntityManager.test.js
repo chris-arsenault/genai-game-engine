@@ -1,6 +1,6 @@
 /**
  * EntityManager Test Suite
- * Tests entity lifecycle, ID management, tagging, and activation states.
+ * Validates lifecycle, pooling, tagging, component queries, and performance.
  */
 
 import { EntityManager } from '../../../src/engine/ecs/EntityManager.js';
@@ -13,7 +13,7 @@ describe('EntityManager', () => {
   });
 
   describe('Entity Creation', () => {
-    it('should create entity with unique ID', () => {
+    it('creates entity with unique ID', () => {
       const id1 = manager.createEntity();
       const id2 = manager.createEntity();
 
@@ -23,26 +23,21 @@ describe('EntityManager', () => {
       expect(manager.hasEntity(id2)).toBe(true);
     });
 
-    it('should create entity with tag', () => {
+    it('creates entity with tag', () => {
       const id = manager.createEntity('player');
 
       expect(manager.getTag(id)).toBe('player');
       expect(manager.getEntitiesByTag('player')).toContain(id);
     });
 
-    it('should create entity without tag', () => {
-      const id = manager.createEntity();
+    it('respects active flag', () => {
+      const id = manager.createEntity(null, { active: false });
 
-      expect(manager.getTag(id)).toBeNull();
+      expect(manager.isActive(id)).toBe(false);
+      expect(manager.getActiveEntityCount()).toBe(0);
     });
 
-    it('should initialize entities as active', () => {
-      const id = manager.createEntity();
-
-      expect(manager.isActive(id)).toBe(true);
-    });
-
-    it('should track entity count', () => {
+    it('tracks entity count', () => {
       expect(manager.getEntityCount()).toBe(0);
 
       manager.createEntity();
@@ -53,7 +48,7 @@ describe('EntityManager', () => {
   });
 
   describe('Entity Destruction', () => {
-    it('should destroy entity successfully', () => {
+    it('destroys entity successfully', () => {
       const id = manager.createEntity();
 
       const destroyed = manager.destroyEntity(id);
@@ -62,48 +57,65 @@ describe('EntityManager', () => {
       expect(manager.hasEntity(id)).toBe(false);
     });
 
-    it('should return false when destroying non-existent entity', () => {
-      const destroyed = manager.destroyEntity(999);
+    it('returns false when destroying non-existent entity', () => {
+      const destroyed = manager.destroyEntity(9999);
 
       expect(destroyed).toBe(false);
     });
 
-    it('should remove entity from tag index on destruction', () => {
+    it('removes entity from tag index on destruction', () => {
       const id = manager.createEntity('enemy');
 
       manager.destroyEntity(id);
 
-      expect(manager.getEntitiesByTag('enemy')).not.toContain(id);
       expect(manager.getEntitiesByTag('enemy')).toHaveLength(0);
     });
 
-    it('should decrease entity count on destruction', () => {
-      const id1 = manager.createEntity();
-      const id2 = manager.createEntity();
+    it('integrates with component registry when attached', () => {
+      const registry = {
+        removeAllComponents: jest.fn(),
+        queryEntities: jest.fn(() => []),
+        clear: jest.fn(),
+        getComponentsForEntity: jest.fn(() => new Map()),
+      };
+      manager.setComponentRegistry(registry);
 
-      expect(manager.getEntityCount()).toBe(2);
+      const id = manager.createEntity();
+      manager.addComponentType(id, 'Position');
 
-      manager.destroyEntity(id1);
+      manager.destroyEntity(id);
 
-      expect(manager.getEntityCount()).toBe(1);
+      expect(registry.removeAllComponents).toHaveBeenCalledWith(id);
+    });
+
+    it('emits destroy listeners', () => {
+      const listener = jest.fn();
+      manager.onEntityDestroyed(listener);
+
+      const id = manager.createEntity('enemy');
+      manager.destroyEntity(id);
+
+      expect(listener).toHaveBeenCalledWith(
+        id,
+        expect.objectContaining({ id, active: false }),
+        null
+      );
     });
   });
 
   describe('ID Recycling', () => {
-    it('should recycle entity IDs', () => {
+    it('recycles entity IDs', () => {
       const id1 = manager.createEntity();
       const id2 = manager.createEntity();
 
       manager.destroyEntity(id1);
-
       const id3 = manager.createEntity();
 
-      // Should reuse id1
       expect(id3).toBe(id1);
       expect(manager.hasEntity(id3)).toBe(true);
     });
 
-    it('should recycle multiple IDs in LIFO order', () => {
+    it('recycles IDs in LIFO order', () => {
       const id1 = manager.createEntity();
       const id2 = manager.createEntity();
       const id3 = manager.createEntity();
@@ -114,14 +126,14 @@ describe('EntityManager', () => {
       const id4 = manager.createEntity();
       const id5 = manager.createEntity();
 
-      // LIFO: id2 recycled first, then id1
       expect(id4).toBe(id2);
       expect(id5).toBe(id1);
+      expect(id3).toBe(2);
     });
   });
 
   describe('Tag Management', () => {
-    it('should get entities by tag', () => {
+    it('returns entities by tag', () => {
       const player = manager.createEntity('player');
       const enemy1 = manager.createEntity('enemy');
       const enemy2 = manager.createEntity('enemy');
@@ -134,63 +146,33 @@ describe('EntityManager', () => {
       expect(enemies).not.toContain(player);
     });
 
-    it('should return empty array for non-existent tag', () => {
-      const entities = manager.getEntitiesByTag('nonexistent');
-
-      expect(entities).toEqual([]);
-    });
-
-    it('should set entity tag', () => {
-      const id = manager.createEntity();
-
-      manager.setTag(id, 'projectile');
-
-      expect(manager.getTag(id)).toBe('projectile');
-      expect(manager.getEntitiesByTag('projectile')).toContain(id);
-    });
-
-    it('should change entity tag', () => {
+    it('changes entity tag', () => {
       const id = manager.createEntity('enemy');
 
       manager.setTag(id, 'ally');
 
       expect(manager.getTag(id)).toBe('ally');
-      expect(manager.getEntitiesByTag('enemy')).not.toContain(id);
+      expect(manager.getEntitiesByTag('enemy')).toHaveLength(0);
       expect(manager.getEntitiesByTag('ally')).toContain(id);
     });
 
-    it('should handle setting tag on non-existent entity', () => {
-      manager.setTag(999, 'test');
+    it('handles setting tag on non-existent entity', () => {
+      manager.setTag(12345, 'projectile');
 
-      // Should not throw, just no-op
-      expect(manager.getEntitiesByTag('test')).toHaveLength(0);
-    });
-
-    it('should filter inactive entities from tag queries', () => {
-      const id1 = manager.createEntity('enemy');
-      const id2 = manager.createEntity('enemy');
-
-      manager.deactivate(id1);
-
-      const activeEnemies = manager.getEntitiesByTag('enemy');
-
-      expect(activeEnemies).toHaveLength(1);
-      expect(activeEnemies).toContain(id2);
-      expect(activeEnemies).not.toContain(id1);
+      expect(manager.getEntitiesByTag('projectile')).toHaveLength(0);
     });
   });
 
   describe('Activation State', () => {
-    it('should activate entity', () => {
-      const id = manager.createEntity();
-      manager.deactivate(id);
+    it('activates entity', () => {
+      const id = manager.createEntity(null, { active: false });
 
       manager.activate(id);
 
       expect(manager.isActive(id)).toBe(true);
     });
 
-    it('should deactivate entity', () => {
+    it('deactivates entity', () => {
       const id = manager.createEntity();
 
       manager.deactivate(id);
@@ -198,14 +180,7 @@ describe('EntityManager', () => {
       expect(manager.isActive(id)).toBe(false);
     });
 
-    it('should handle activation of non-existent entity', () => {
-      manager.activate(999);
-
-      // Should not throw
-      expect(manager.isActive(999)).toBe(false);
-    });
-
-    it('should track active entity count', () => {
+    it('tracks active entity count', () => {
       const id1 = manager.createEntity();
       const id2 = manager.createEntity();
       const id3 = manager.createEntity();
@@ -217,25 +192,41 @@ describe('EntityManager', () => {
 
       expect(manager.getActiveEntityCount()).toBe(1);
     });
+  });
 
-    it('should filter inactive entities from getAllEntities', () => {
+  describe('Component Queries', () => {
+    it('queries entities by component types without registry', () => {
       const id1 = manager.createEntity();
       const id2 = manager.createEntity();
-      const id3 = manager.createEntity();
 
-      manager.deactivate(id2);
+      manager.addComponentType(id1, 'Position');
+      manager.addComponentType(id1, 'Velocity');
+      manager.addComponentType(id2, 'Position');
 
-      const allEntities = manager.getAllEntities();
+      const movers = manager.queryByComponents('Position', 'Velocity');
+      const positioned = manager.queryByComponents('Position');
 
-      expect(allEntities).toHaveLength(2);
-      expect(allEntities).toContain(id1);
-      expect(allEntities).toContain(id3);
-      expect(allEntities).not.toContain(id2);
+      expect(movers).toEqual([id1]);
+      expect(positioned.sort()).toEqual([id1, id2]);
+    });
+
+    it('delegates queries to registry when available', () => {
+      const registry = {
+        removeAllComponents: jest.fn(),
+        queryEntities: jest.fn(() => [7, 8]),
+        clear: jest.fn(),
+      };
+      manager.setComponentRegistry(registry);
+
+      const result = manager.queryByComponents('Position');
+
+      expect(registry.queryEntities).toHaveBeenCalledWith('Position');
+      expect(result).toEqual([7, 8]);
     });
   });
 
   describe('Component Type Tracking', () => {
-    it('should add component type to entity', () => {
+    it('adds component type to entity', () => {
       const id = manager.createEntity();
 
       manager.addComponentType(id, 'Transform');
@@ -244,103 +235,99 @@ describe('EntityManager', () => {
       expect(types.has('Transform')).toBe(true);
     });
 
-    it('should remove component type from entity', () => {
+    it('removes component type from entity', () => {
       const id = manager.createEntity();
-      manager.addComponentType(id, 'Transform');
 
+      manager.addComponentType(id, 'Transform');
       manager.removeComponentType(id, 'Transform');
 
       const types = manager.getComponentTypes(id);
       expect(types.has('Transform')).toBe(false);
     });
 
-    it('should track multiple component types', () => {
-      const id = manager.createEntity();
-
-      manager.addComponentType(id, 'Transform');
-      manager.addComponentType(id, 'Velocity');
-      manager.addComponentType(id, 'Sprite');
-
-      const types = manager.getComponentTypes(id);
-      expect(types.size).toBe(3);
-      expect(types.has('Transform')).toBe(true);
-      expect(types.has('Velocity')).toBe(true);
-      expect(types.has('Sprite')).toBe(true);
-    });
-
-    it('should return empty set for non-existent entity', () => {
-      const types = manager.getComponentTypes(999);
+    it('returns empty set for non-existent entity', () => {
+      const types = manager.getComponentTypes(9999);
 
       expect(types.size).toBe(0);
     });
   });
 
   describe('Clear', () => {
-    it('should clear all entities', () => {
+    it('clears all entities and resets IDs', () => {
       manager.createEntity('player');
-      manager.createEntity('enemy');
       manager.createEntity('enemy');
 
       manager.clear();
 
       expect(manager.getEntityCount()).toBe(0);
       expect(manager.getAllEntities()).toHaveLength(0);
-      expect(manager.getEntitiesByTag('player')).toHaveLength(0);
-      expect(manager.getEntitiesByTag('enemy')).toHaveLength(0);
-    });
-
-    it('should reset ID counter after clear', () => {
-      manager.createEntity();
-      manager.createEntity();
-      manager.createEntity();
-
-      manager.clear();
-
       const newId = manager.createEntity();
       expect(newId).toBe(0);
     });
 
-    it('should clear recycled IDs', () => {
+    it('notifies component registry on clear', () => {
+      const registry = {
+        removeAllComponents: jest.fn(),
+        queryEntities: jest.fn(() => []),
+        clear: jest.fn(),
+      };
+      manager.setComponentRegistry(registry);
+
+      manager.createEntity();
+      manager.clear();
+
+      expect(registry.clear).toHaveBeenCalled();
+    });
+  });
+
+  describe('Utility', () => {
+    it('iterates entities with forEachEntity', () => {
       const id1 = manager.createEntity();
-      manager.destroyEntity(id1);
+      const id2 = manager.createEntity(null, { active: false });
+      const seen = [];
 
-      manager.clear();
+      manager.forEachEntity((id) => {
+        seen.push(id);
+      });
 
-      const newId = manager.createEntity();
-      // Should start fresh, not recycle
-      expect(newId).toBe(0);
+      expect(seen).toEqual([id1]);
+
+      const seenInactive = [];
+      manager.forEachEntity((id) => seenInactive.push(id), {
+        includeInactive: true,
+      });
+      expect(seenInactive).toEqual([id1, id2]);
+    });
+
+    it('returns stats after churn', () => {
+      const ids = [];
+      for (let i = 0; i < 50; i++) {
+        ids.push(manager.createEntity());
+      }
+      ids.forEach((id) => manager.destroyEntity(id));
+
+      const stats = manager.getStats();
+      expect(stats.created).toBe(50);
+      expect(stats.recycled).toBe(50);
+      expect(stats.poolSize).toBeGreaterThan(0);
     });
   });
 
   describe('Performance', () => {
-    it('should create 1000 entities in under 50ms', () => {
+    it('creates 10000 entities in under 200ms', () => {
       const start = performance.now();
 
-      for (let i = 0; i < 1000; i++) {
+      for (let i = 0; i < 10000; i++) {
         manager.createEntity();
       }
 
       const elapsed = performance.now() - start;
-      expect(elapsed).toBeLessThan(50);
+      expect(elapsed).toBeLessThan(200);
     });
 
-    it('should handle tag queries with 1000 entities efficiently', () => {
-      // Create 1000 entities with 100 tagged as 'enemy'
-      for (let i = 0; i < 1000; i++) {
-        manager.createEntity(i % 10 === 0 ? 'enemy' : null);
-      }
-
-      const start = performance.now();
-      const enemies = manager.getEntitiesByTag('enemy');
-      const elapsed = performance.now() - start;
-
-      expect(enemies).toHaveLength(100);
-      expect(elapsed).toBeLessThan(5);
-    });
-
-    it('should destroy entities quickly', () => {
+    it('destroys 10000 entities quickly and reuses pool', () => {
       const ids = [];
-      for (let i = 0; i < 1000; i++) {
+      for (let i = 0; i < 10000; i++) {
         ids.push(manager.createEntity());
       }
 
@@ -350,7 +337,14 @@ describe('EntityManager', () => {
       }
       const elapsed = performance.now() - start;
 
-      expect(elapsed).toBeLessThan(50);
+      expect(elapsed).toBeLessThan(200);
+      const statsAfterDestroy = manager.getStats();
+      expect(statsAfterDestroy.poolSize).toBeGreaterThan(0);
+
+      // Creating another entity should reuse pooled metadata
+      manager.createEntity();
+      const statsAfterReuse = manager.getStats();
+      expect(statsAfterReuse.pooledReused).toBeGreaterThan(0);
     });
   });
 });

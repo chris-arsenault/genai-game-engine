@@ -10,6 +10,11 @@
 
 import { System } from '../../engine/ecs/System.js';
 import { GameConfig } from '../config/GameConfig.js';
+import {
+  buildSurfaceCache,
+  findSurfaceForPoint,
+  isSurfaceLockedForAgent,
+} from '../navigation/navigationUtils.js';
 
 export class PlayerMovementSystem extends System {
   constructor(componentRegistry, eventBus, inputState) {
@@ -18,6 +23,13 @@ export class PlayerMovementSystem extends System {
     this.priority = 10;
     this._offPause = null;
     this._offResume = null;
+    this.navigationMesh = null;
+    // Cached walkable surface data for quick containment lookups
+    this._surfaceCache = [];
+    this._activeSceneId = null;
+    this.globalUnlockedTags = new Set();
+    this.globalLockedTags = new Set();
+    this._unsubscribes = [];
   }
 
   /**
@@ -32,6 +44,24 @@ export class PlayerMovementSystem extends System {
     this._offResume = this.eventBus.on('game:resume', () => {
       this.paused = false;
     });
+
+    this._unsubscribes.push(
+      this.eventBus.on(
+        'navigation:unlockSurfaceTag',
+        (payload) => this.handleUnlockTag(payload),
+        this,
+        22
+      )
+    );
+
+    this._unsubscribes.push(
+      this.eventBus.on(
+        'navigation:lockSurfaceTag',
+        (payload) => this.handleLockTag(payload),
+        this,
+        22
+      )
+    );
 
     this.paused = false;
   }
@@ -96,6 +126,17 @@ export class PlayerMovementSystem extends System {
     transform.x += controller.velocityX * deltaTime;
     transform.y += controller.velocityY * deltaTime;
 
+    const constraintsResult = this.applyNavigationConstraints(
+      entityId,
+      transform,
+      { x: oldX, y: oldY }
+    );
+
+    if (constraintsResult.blocked) {
+      controller.velocityX = 0;
+      controller.velocityY = 0;
+    }
+
     // Emit position change event if moved significantly
     const distMoved = Math.sqrt(
       (transform.x - oldX) ** 2 + (transform.y - oldY) ** 2
@@ -140,5 +181,93 @@ export class PlayerMovementSystem extends System {
       this._offResume();
       this._offResume = null;
     }
+    for (const off of this._unsubscribes) {
+      if (typeof off === 'function') {
+        off();
+      }
+    }
+    this._unsubscribes.length = 0;
+  }
+
+  /**
+   * Receive navigation mesh updates from NavigationMeshService.
+   * @param {Object|null} mesh
+   * @param {Object} [info]
+   */
+  setNavigationMesh(mesh, info = {}) {
+    this.navigationMesh = mesh ? JSON.parse(JSON.stringify(mesh)) : null;
+    this._activeSceneId = info.sceneId || null;
+    this._surfaceCache = buildSurfaceCache(this.navigationMesh);
+  }
+
+  handleUnlockTag(payload = {}) {
+    const tag = payload?.tag;
+    if (!tag) {
+      return;
+    }
+
+    this.globalLockedTags.delete(tag);
+    this.globalUnlockedTags.add(tag);
+  }
+
+  handleLockTag(payload = {}) {
+    const tag = payload?.tag;
+    if (!tag) {
+      return;
+    }
+
+    this.globalUnlockedTags.delete(tag);
+    this.globalLockedTags.add(tag);
+  }
+
+  applyNavigationConstraints(entityId, transform, previousPosition) {
+    if (!this.navigationMesh || !this._surfaceCache.length) {
+      return { blocked: false };
+    }
+
+    const agent = this.getComponent(entityId, 'NavigationAgent');
+    if (!agent) {
+      return { blocked: false };
+    }
+
+    if (agent.sceneId && this._activeSceneId && agent.sceneId !== this._activeSceneId) {
+      return { blocked: false };
+    }
+
+    const currentPosition = { x: transform.x, y: transform.y };
+    const match = findSurfaceForPoint(currentPosition, this._surfaceCache, agent);
+
+    if (!match) {
+      if (agent.lastValidPosition) {
+        transform.x = agent.lastValidPosition.x;
+        transform.y = agent.lastValidPosition.y;
+      } else {
+        transform.x = previousPosition.x;
+        transform.y = previousPosition.y;
+      }
+      this.eventBus.emit('navigation:movement_blocked', {
+        entityId,
+        reason: 'outside_nav_mesh',
+        sceneId: this._activeSceneId,
+      });
+      return { blocked: true };
+    }
+
+    if (isSurfaceLockedForAgent(agent, match.surface, this.globalUnlockedTags, this.globalLockedTags)) {
+      transform.x = previousPosition.x;
+      transform.y = previousPosition.y;
+      this.eventBus.emit('navigation:movement_blocked', {
+        entityId,
+        reason: 'locked_surface',
+        surfaceId: match.surface.id || null,
+        surfaceTags: Array.isArray(match.surface.tags) ? match.surface.tags.slice() : [],
+        sceneId: this._activeSceneId,
+      });
+      return { blocked: true };
+    }
+
+    agent.currentSurfaceId = match.surface.id || null;
+    agent.lastValidPosition = { x: transform.x, y: transform.y };
+    return { blocked: false };
   }
 }

@@ -1,4 +1,7 @@
-import { createInspectorExportArtifacts } from '../../../src/game/telemetry/inspectorTelemetryExporter.js';
+import {
+  createInspectorExportArtifacts,
+  SPATIAL_HISTORY_BUDGET_BYTES,
+} from '../../../src/game/telemetry/inspectorTelemetryExporter.js';
 
 describe('inspectorTelemetryExporter', () => {
   test('generates JSON and CSV artifacts from inspector summary', () => {
@@ -36,6 +39,16 @@ describe('inspectorTelemetryExporter', () => {
               occurredAt: Date.UTC(2025, 9, 30, 17, 4, 30),
             },
             sources: ['vanguard_prime'],
+          },
+        ],
+        recentMemberRemovals: [
+          {
+            factionId: 'luminari_syndicate',
+            factionName: 'The Luminari Syndicate',
+            npcId: 'operative_echo',
+            entityId: 512,
+            tag: 'npc',
+            removedAt: Date.UTC(2025, 9, 30, 17, 4, 50),
           },
         ],
       },
@@ -82,6 +95,32 @@ describe('inspectorTelemetryExporter', () => {
           },
         ],
       },
+      engine: {
+        spatialHash: {
+          cellSize: '128',
+          window: 180.8,
+          sampleCount: '4',
+          lastSample: {
+            cellCount: '58',
+            maxBucketSize: '5',
+            trackedEntities: '47',
+            timestamp: '1700001004000',
+          },
+          aggregates: {
+            cellCount: { average: '52.5', min: '48', max: '60' },
+            maxBucketSize: { average: '4.2', min: '3', max: '6' },
+            trackedEntities: { average: '45.1', min: '40', max: '50' },
+          },
+          stats: { insertions: '420', updates: '280', removals: undefined },
+          history: [
+            { cellCount: '50', maxBucketSize: '4', trackedEntities: '42', timestamp: '1700001001000' },
+            { cellCount: '52', maxBucketSize: '4', trackedEntities: '43', timestamp: '1700001002000' },
+            { cellCount: '54', maxBucketSize: '5', trackedEntities: '45', timestamp: '1700001003000' },
+            { cellCount: '58', maxBucketSize: '5', trackedEntities: '47', timestamp: '1700001004000' },
+          ],
+          payloadBytes: null,
+        },
+      },
     };
 
     const { artifacts, summary: sanitized } = createInspectorExportArtifacts(summary, {
@@ -93,8 +132,30 @@ describe('inspectorTelemetryExporter', () => {
     expect(sanitized.factions.metrics.cascadeTargetCount).toBe(2);
     expect(sanitized.tutorial.metrics.snapshotCount).toBe(2);
     expect(sanitized.tutorial.metrics.transcriptCount).toBe(1);
+    expect(sanitized.factions.metrics.recentMemberRemovalCount).toBe(1);
+    expect(sanitized.factions.recentMemberRemovals).toHaveLength(1);
+    expect(sanitized.factions.recentMemberRemovals[0]).toMatchObject({
+      factionId: 'luminari_syndicate',
+      npcId: 'operative_echo',
+      removedIso: new Date(Date.UTC(2025, 9, 30, 17, 4, 50)).toISOString(),
+    });
     expect(sanitized.tutorial.transcript[0]).toEqual(
       expect.objectContaining({ promptId: 'intro', sequence: 0 })
+    );
+    expect(sanitized.engine.spatialHash).toEqual(
+      expect.objectContaining({
+        cellSize: 128,
+        window: 180,
+        sampleCount: 4,
+        history: expect.arrayContaining([
+          expect.objectContaining({ cellCount: 50 }),
+          expect.objectContaining({ cellCount: 58 }),
+        ]),
+        stats: expect.objectContaining({ insertions: 420, updates: 280 }),
+        payloadBudgetBytes: SPATIAL_HISTORY_BUDGET_BYTES,
+        payloadBudgetStatus: 'within_budget',
+        payloadBudgetExceededBy: 0,
+      })
     );
 
     expect(artifacts).toHaveLength(5);
@@ -105,6 +166,12 @@ describe('inspectorTelemetryExporter', () => {
     expect(jsonArtifact.mimeType).toBe('application/json');
     const parsed = JSON.parse(jsonArtifact.content);
     expect(parsed.factions.cascadeTargets[0].factionId).toBe('luminari_syndicate');
+    expect(parsed.factions.recentMemberRemovals[0].npcId).toBe('operative_echo');
+    expect(parsed.engine.spatialHash.sampleCount).toBe(4);
+    expect(parsed.engine.spatialHash.history[parsed.engine.spatialHash.history.length - 1]).toEqual(
+      expect.objectContaining({ cellCount: 58, trackedEntities: 47 })
+    );
+    expect(parsed.engine.spatialHash.payloadBudgetStatus).toBe('within_budget');
 
     const cascadeCsv = artifacts.find(
       (artifact) => artifact.type === 'csv' && artifact.section === 'cascade'
@@ -144,12 +211,50 @@ describe('inspectorTelemetryExporter', () => {
 
     expect(summary.source).toBe('unavailable');
     expect(summary.factions.cascadeTargets).toEqual([]);
+    expect(summary.factions.recentMemberRemovals).toEqual([]);
     expect(summary.tutorial.snapshots).toEqual([]);
     expect(summary.tutorial.transcript).toEqual([]);
+    expect(summary.engine.spatialHash).toBeNull();
     expect(artifacts.length).toBe(3);
 
     const jsonArtifact = artifacts.find((artifact) => artifact.type === 'json');
     expect(jsonArtifact.filename).toMatch(/^save-inspector-summary-/);
     expect(JSON.parse(jsonArtifact.content).tutorial.snapshots).toEqual([]);
+  });
+
+  test('flags spatial telemetry payloads that exceed budget', () => {
+    const history = Array.from({ length: 256 }, (_, index) => ({
+      cellCount: String(40 + (index % 5)),
+      maxBucketSize: '6',
+      trackedEntities: String(60 + (index % 3)),
+      timestamp: String(1700001000000 + index * 16),
+    }));
+
+    const summary = {
+      generatedAt: Date.now(),
+      source: 'worldStateStore',
+      factions: {},
+      tutorial: {},
+      engine: {
+        spatialHash: {
+          cellSize: '128',
+          window: 256,
+          sampleCount: String(history.length),
+          lastSample: history[history.length - 1],
+          aggregates: {},
+          stats: {},
+          history,
+          payloadBytes: null,
+        },
+      },
+    };
+
+    const { summary: sanitized } = createInspectorExportArtifacts(summary);
+
+    expect(sanitized.engine.spatialHash.payloadBudgetStatus).toBe('exceeds_budget');
+    expect(sanitized.engine.spatialHash.payloadBudgetExceededBy).toBeGreaterThan(0);
+    expect(sanitized.engine.spatialHash.payloadBudgetBytes).toBe(
+      SPATIAL_HISTORY_BUDGET_BYTES
+    );
   });
 });

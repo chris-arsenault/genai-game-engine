@@ -138,6 +138,20 @@
       max-width: 320px;
     }
 
+    #debug-systems {
+      margin-top: 8px;
+      border-top: 1px solid rgba(0, 255, 255, 0.35);
+      padding-top: 6px;
+      max-width: 320px;
+    }
+
+    #debug-spatial {
+      margin-top: 8px;
+      border-top: 1px solid rgba(0, 255, 255, 0.35);
+      padding-top: 6px;
+      max-width: 320px;
+    }
+
     .debug-meta {
       font-size: 11px;
       margin-bottom: 4px;
@@ -186,6 +200,26 @@
 
     .debug-world-row[data-tone="flag-inactive"] {
       color: rgba(200, 200, 200, 0.72);
+    }
+
+    .debug-world-row[data-tone="system-ok"] {
+      color: #9ef5c3;
+    }
+
+    .debug-world-row[data-tone="system-warn"] {
+      color: #ffd166;
+    }
+
+    .debug-world-row[data-tone="system-over"] {
+      color: #ff7b7b;
+    }
+
+    .debug-world-row[data-tone="npc-alert"] {
+      color: #ffb347;
+    }
+
+    .debug-world-row[data-tone="npc-restored"] {
+      color: #8ef9d3;
     }
 
     .debug-world-row.empty {
@@ -448,6 +482,58 @@
     #debug-dialogue .debug-transcript-empty {
       color: rgba(255, 255, 255, 0.6);
     }
+
+    #debug-systems-controls {
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: #9be7ff;
+    }
+
+    #debug-systems-controls label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .debug-systems-input {
+      width: 52px;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(0, 255, 255, 0.3);
+      border-radius: 3px;
+      padding: 2px 4px;
+      color: #d7fff4;
+      font-size: 11px;
+      text-align: right;
+    }
+
+    .debug-systems-input:focus {
+      outline: none;
+      border-color: rgba(0, 255, 255, 0.7);
+      box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.15);
+    }
+
+    .debug-systems-button {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(0, 255, 190, 0.4);
+      border-radius: 3px;
+      color: #7fffd4;
+      font-size: 10px;
+      padding: 2px 6px;
+      cursor: pointer;
+      transition: border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .debug-systems-button:hover {
+      border-color: rgba(0, 255, 190, 0.7);
+      color: #baffff;
+    }
+
+    .debug-systems-button:active {
+      border-color: rgba(0, 255, 190, 0.9);
+      color: #ffffff;
+    }
   </style>
 </head>
 <body>
@@ -466,6 +552,33 @@
       <div id="debug-entities">Entities: 0</div>
       <div id="debug-memory">Memory: 0 MB</div>
       <div id="debug-frame-time">Frame: 0 ms</div>
+      <div id="debug-spatial">
+        <div class="debug-title">Spatial Hash</div>
+        <div id="debug-spatial-meta" class="debug-meta">Spatial hash: n/a</div>
+        <div id="debug-spatial-list" class="debug-world-list">
+          <div class="debug-world-row empty">No spatial data</div>
+        </div>
+      </div>
+      <div id="debug-systems">
+        <div class="debug-title">Systems</div>
+        <div id="debug-systems-meta" class="debug-meta">Frame metrics: n/a</div>
+        <div id="debug-systems-controls">
+          <label for="debug-systems-budget">Budget (ms)</label>
+          <input
+            id="debug-systems-budget"
+            class="debug-systems-input"
+            type="number"
+            min="0.5"
+            max="50"
+            step="0.25"
+            value="4"
+          />
+          <button id="debug-systems-budget-reset" type="button" class="debug-systems-button">Reset</button>
+        </div>
+        <div id="debug-systems-list" class="debug-world-list">
+          <div class="debug-world-row empty">No system metrics</div>
+        </div>
+      </div>
       <div id="debug-ui-overlays">
         <div class="debug-title">UI Overlays</div>
         <div id="debug-ui-overlays-list" class="debug-overlays-list">
@@ -493,6 +606,17 @@
             <div class="debug-world-row empty">No cascade data</div>
           </div>
           <div id="debug-faction-cascade-meta" class="debug-meta">Last cascade: n/a</div>
+        </div>
+        <div class="debug-world-section">
+          <div class="debug-subtitle">NPC Availability</div>
+          <div id="debug-npc-meta" class="debug-meta">NPCs tracked: 0</div>
+          <div id="debug-npc-list" class="debug-world-list">
+            <div class="debug-world-row empty">No NPC availability data</div>
+          </div>
+          <div class="debug-subtitle">Recent Events</div>
+          <div id="debug-npc-history" class="debug-world-list">
+            <div class="debug-world-row empty">No availability events</div>
+          </div>
         </div>
       </div>
       <div id="debug-tutorial">

@@ -169,6 +169,11 @@ function measureFactionPerformance(iterations = 200) {
 function measureBspGeneration(runs = 5) {
   const generator = new BSPGenerator();
   const samples = [];
+
+  // Warm up generator to avoid counting JIT and first-allocation overhead
+  // in performance telemetry samples.
+  generator.generate(100, 100, 98765);
+
   for (let i = 0; i < runs; i += 1) {
     const start = performance.now();
     generator.generate(100, 100, 12345 + i);

@@ -1,20 +1,26 @@
 import { createSelector } from '../utils/memoize.js';
 
+const NPC_AVAILABILITY_HISTORY_LIMIT = 20;
+
 const initialQuestState = {
   byId: {},
   activeIds: [],
   completedIds: [],
   failedIds: [],
   lastActionAt: null,
+  npcAvailability: {},
+  npcAvailabilityHistory: [],
 };
 
 function cloneQuestState(state) {
   return {
-    byId: { ...state.byId },
-    activeIds: [...state.activeIds],
-    completedIds: [...state.completedIds],
-    failedIds: [...state.failedIds],
-    lastActionAt: state.lastActionAt,
+    byId: { ...(state?.byId || {}) },
+    activeIds: [...(state?.activeIds || [])],
+    completedIds: [...(state?.completedIds || [])],
+    failedIds: [...(state?.failedIds || [])],
+    lastActionAt: state?.lastActionAt ?? null,
+    npcAvailability: { ...(state?.npcAvailability || {}) },
+    npcAvailabilityHistory: [...(state?.npcAvailabilityHistory || [])],
   };
 }
 
@@ -174,6 +180,35 @@ function ensureQuestRecord(state, payload) {
 
   state.byId[payload.questId] = record;
   return record;
+}
+
+function normalizeNpcObjective(entry, fallbackRecordedAt) {
+  if (!entry || typeof entry !== 'object') {
+    return null;
+  }
+
+  const questId = entry.questId ?? entry.id ?? null;
+  const objectiveId = entry.objectiveId ?? null;
+  if (!questId || !objectiveId) {
+    return null;
+  }
+
+  const recordedAt =
+    Number.isFinite(entry.recordedAt) && entry.recordedAt > 0
+      ? entry.recordedAt
+      : fallbackRecordedAt;
+
+  return {
+    questId,
+    questTitle: entry.questTitle ?? null,
+    questType: entry.questType ?? null,
+    objectiveId,
+    objectiveTitle: entry.objectiveTitle ?? null,
+    reason: entry.reason ?? null,
+    requirement: entry.requirement ?? null,
+    message: entry.message ?? null,
+    recordedAt,
+  };
 }
 
 function updateListsForStatus(state, questId, newStatus) {
@@ -391,6 +426,159 @@ export const questSlice = {
         break;
       }
 
+      case 'QUEST_NPC_AVAILABILITY': {
+        const npcId = payload.npcId;
+        if (!npcId) {
+          break;
+        }
+
+        const recordedAt =
+          Number.isFinite(payload.updatedAt) && payload.updatedAt > 0
+            ? payload.updatedAt
+            : action.timestamp ?? Date.now();
+
+        const previous = next.npcAvailability?.[npcId] ?? null;
+        const objectives = Array.isArray(payload.objectives)
+          ? payload.objectives
+              .map((entry) => normalizeNpcObjective(entry, recordedAt))
+              .filter(Boolean)
+          : [];
+
+        const nextNpcAvailability = {
+          ...(next.npcAvailability || {}),
+          [npcId]: {
+            npcId,
+            npcName: payload.npcName ?? previous?.npcName ?? null,
+            factionId: payload.factionId ?? previous?.factionId ?? null,
+            tag: payload.tag ?? previous?.tag ?? null,
+            entityId: payload.entityId ?? previous?.entityId ?? null,
+            available: Boolean(payload.available),
+            updatedAt: recordedAt,
+            reason:
+              payload.reason ??
+              (payload.available ? 'availability_restored' : previous?.reason ?? 'unavailable'),
+            objectives,
+          },
+        };
+
+        next.npcAvailability = nextNpcAvailability;
+
+        const historyEntry = {
+          npcId,
+          npcName: payload.npcName ?? previous?.npcName ?? null,
+          factionId: payload.factionId ?? previous?.factionId ?? null,
+          available: Boolean(payload.available),
+          recordedAt,
+          reason: payload.reason ?? null,
+          tag: payload.tag ?? null,
+          objectiveCount: objectives.length,
+        };
+
+        const history = [historyEntry, ...(next.npcAvailabilityHistory || [])];
+        if (history.length > NPC_AVAILABILITY_HISTORY_LIMIT) {
+          history.length = NPC_AVAILABILITY_HISTORY_LIMIT;
+        }
+        next.npcAvailabilityHistory = history;
+
+        if (payload.available) {
+          let mutatedAnyQuest = false;
+          for (const questId of Object.keys(next.byId)) {
+            const questRecord = next.byId[questId];
+            if (!questRecord?.blockedObjectives) {
+              continue;
+            }
+            const existingBlocked = questRecord.blockedObjectives;
+            let questMutated = false;
+            const updatedBlocked = { ...existingBlocked };
+            for (const [objectiveId, blockedEntry] of Object.entries(existingBlocked)) {
+              if (blockedEntry?.npcId === npcId) {
+                delete updatedBlocked[objectiveId];
+                questMutated = true;
+              }
+            }
+
+            if (questMutated) {
+              const quest = ensureQuestRecord(next, { questId });
+              quest.blockedObjectives = updatedBlocked;
+              const remainingEntries = Object.values(updatedBlocked);
+              if (remainingEntries.length === 0) {
+                quest.blockedObjectives = {};
+                if (quest.lastBlocked?.npcId === npcId) {
+                  quest.lastBlocked = null;
+                }
+                if (quest.lastBlocked?.npcId === npcId || !quest.lastBlocked) {
+                  quest.lastBlockedAt = null;
+                }
+              } else if (quest.lastBlocked?.npcId === npcId) {
+                const latest = remainingEntries
+                  .slice()
+                  .sort((a, b) => (b?.recordedAt ?? 0) - (a?.recordedAt ?? 0))[0];
+                quest.lastBlocked = {
+                  objectiveId: latest?.objectiveId ?? quest.lastBlocked.objectiveId ?? null,
+                  questId,
+                  npcId: latest?.npcId ?? null,
+                  reason: latest?.reason ?? null,
+                  message: latest?.message ?? null,
+                  recordedAt: latest?.recordedAt ?? quest.lastBlockedAt ?? recordedAt,
+                };
+                quest.lastBlockedAt = latest?.recordedAt ?? quest.lastBlockedAt ?? recordedAt;
+              }
+              mutatedAnyQuest = true;
+            }
+          }
+          if (mutatedAnyQuest) {
+            hasChange = true;
+          }
+        } else if (objectives.length > 0) {
+        for (const objective of objectives) {
+          const quest = ensureQuestRecord(next, {
+            questId: objective.questId,
+            title: objective.questTitle ?? undefined,
+            type: objective.questType ?? undefined,
+          });
+          if (!quest.blockedObjectives) {
+            quest.blockedObjectives = {};
+          }
+          const existingBlocked = quest.blockedObjectives[objective.objectiveId] ?? {};
+          const derivedReason =
+            objective.reason ??
+            existingBlocked.reason ??
+            (payload.reason && !payload.available ? payload.reason : null) ??
+            (payload.available ? 'availability_restored' : 'npc_unavailable');
+          const derivedRequirement =
+            objective.requirement ?? existingBlocked.requirement ?? null;
+          const derivedMessage =
+            objective.message ?? existingBlocked.message ?? null;
+          quest.blockedObjectives[objective.objectiveId] = {
+            questId: objective.questId,
+            questTitle: objective.questTitle ?? quest.title ?? objective.questId,
+            questType: objective.questType ?? quest.type ?? null,
+            objectiveId: objective.objectiveId,
+            objectiveTitle: objective.objectiveTitle ?? objective.objectiveId,
+            reason: derivedReason,
+            requirement: derivedRequirement,
+            message: derivedMessage,
+            recordedAt: objective.recordedAt ?? recordedAt,
+            npcId,
+            npcName: payload.npcName ?? null,
+          };
+            quest.lastBlockedAt = recordedAt;
+            quest.lastBlocked = {
+              objectiveId: objective.objectiveId,
+              questId: objective.questId,
+              npcId,
+              reason: objective.reason ?? payload.reason ?? null,
+              message: objective.message ?? null,
+              recordedAt,
+            };
+            hasChange = true;
+          }
+        }
+
+        hasChange = true;
+        break;
+      }
+
       case 'WORLDSTATE_HYDRATE': {
         if (!payload?.quests) break;
         return cloneQuestState({
@@ -417,6 +605,8 @@ export const questSlice = {
       activeIds: state.activeIds,
       completedIds: state.completedIds,
       failedIds: state.failedIds,
+      npcAvailability: state.npcAvailability,
+      npcAvailabilityHistory: state.npcAvailabilityHistory,
     };
   },
 
@@ -524,6 +714,51 @@ export const questSlice = {
           return bTime - aTime;
         });
       }
+    ),
+    selectNpcAvailabilityState: createSelector(
+      (state) => state.quest,
+      (questState) => questState.npcAvailability || {}
+    ),
+    selectNpcAvailabilityRecords: createSelector(
+      (state) => state.quest,
+      (questState) => {
+        const availability = questState.npcAvailability || {};
+        return Object.values(availability)
+          .map((record) => ({
+            npcId: record?.npcId ?? null,
+            npcName: record?.npcName ?? null,
+            factionId: record?.factionId ?? null,
+            tag: record?.tag ?? null,
+            entityId: record?.entityId ?? null,
+            available: Boolean(record?.available),
+            updatedAt: record?.updatedAt ?? null,
+            reason: record?.reason ?? null,
+            objectives: Array.isArray(record?.objectives)
+              ? record.objectives.map((objective) => ({ ...objective }))
+              : [],
+          }))
+          .sort((a, b) => {
+            if (a.available !== b.available) {
+              return a.available ? 1 : -1;
+            }
+            const timeA = a.updatedAt ?? 0;
+            const timeB = b.updatedAt ?? 0;
+            return timeB - timeA;
+          });
+      }
+    ),
+    selectUnavailableNpcRecords: createSelector(
+      (state) => state.quest,
+      (questState) => {
+        const availability = questState.npcAvailability || {};
+        return Object.values(availability)
+          .filter((record) => record && record.available === false)
+          .sort((a, b) => (b?.updatedAt ?? 0) - (a?.updatedAt ?? 0));
+      }
+    ),
+    selectNpcAvailabilityHistory: createSelector(
+      (state) => state.quest,
+      (questState) => [...(questState.npcAvailabilityHistory || [])]
     ),
   },
 };

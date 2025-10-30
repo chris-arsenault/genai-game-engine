@@ -99,7 +99,14 @@ describe('telemetry export CLI', () => {
     });
 
     expect(result.exportResult.summary.source).toBe('worldStateStore');
-    expect(result.exportResult.artifacts).toHaveLength(5);
+    expect(result.exportResult.artifacts).toHaveLength(7);
+    expect(
+      result.exportResult.artifacts.some((artifact) => artifact.filename.endsWith('budget-status.json'))
+    ).toBe(true);
+    expect(
+      result.exportResult.artifacts.some((artifact) => artifact.filename.endsWith('budget-status.md'))
+    ).toBe(true);
+    expect(result.budgetStatus).toBeDefined();
 
     const expectedFiles = result.exportResult.artifacts.map((artifact) =>
       path.join(artifactDir, artifact.filename)
@@ -112,12 +119,13 @@ describe('telemetry export CLI', () => {
 
     const metadata = JSON.parse(await fs.readFile(metadataPath, 'utf8'));
     expect(metadata.dryRun).toBe(true);
-    expect(metadata.artifacts).toHaveLength(5);
+    expect(metadata.artifacts).toHaveLength(7);
     expect(metadata.context).toEqual(
       expect.objectContaining({
         missionId: 'cascade',
         branch: 'integration-test',
         prefix: 'integration',
+        budgetStatus: expect.objectContaining({ status: expect.any(String) }),
       })
     );
     expect(result.publishResult.commandResults).toEqual([]);
@@ -147,6 +155,7 @@ describe('telemetry export CLI', () => {
       commandRunner,
     });
 
+    expect(result.budgetStatus).toBeDefined();
     expect(commandRunner).toHaveBeenCalledWith(
       'echo',
       ['upload'],
@@ -193,6 +202,7 @@ describe('telemetry export CLI', () => {
       commandRunner,
     });
 
+    expect(result.budgetStatus).toBeDefined();
     expect(commandRunner).toHaveBeenCalledWith(
       'echo',
       ['from-file'],
@@ -206,6 +216,118 @@ describe('telemetry export CLI', () => {
         command: 'echo',
         exitCode: 0,
       })
+    );
+  });
+
+  test('sends budget webhook notification when overruns detected', async () => {
+    const artifactDir = path.join(tempDir, 'artifacts-webhook');
+    const metadataPath = path.join(tempDir, 'ci', 'webhook-manifest.json');
+    const { eventBus, worldStateStore } = createSeededWorldStateStore();
+    const fetchMock = jest.fn().mockResolvedValue({ ok: true, status: 200, text: async () => 'ok' });
+
+    const fakeSaveManager = {
+      exportInspectorSummary: jest.fn(async () => {
+        eventBus.emit('telemetry:export_budget_status', {
+          status: 'exceeds_budget',
+          payloadBytes: 13000,
+          budgetBytes: 12000,
+          exceededBy: 1000,
+          context: { label: 'spatial-history' },
+          updatedAt: Date.UTC(2025, 9, 30, 18, 15, 0),
+        });
+
+        return {
+          summary: {
+            source: 'worldStateStore',
+            generatedAt: Date.UTC(2025, 9, 30, 18, 15, 0),
+            engine: {
+              spatialHash: {
+                payloadBudgetStatus: 'exceeds_budget',
+                payloadBytes: 13000,
+                payloadBudgetBytes: 12000,
+                payloadBudgetExceededBy: 1000,
+              },
+            },
+          },
+          artifacts: [],
+          metrics: {},
+        };
+      }),
+    };
+
+    const result = await runTelemetryExport({
+      artifactDir,
+      metadataPath,
+      prefix: 'webhook',
+      env: { CI: 'true', TELEMETRY_BUDGET_WEBHOOK_URL: 'https://hooks.example.com/test' },
+      eventBus,
+      worldStateStore,
+      saveManager: fakeSaveManager,
+      filesystemWriter: { write: jest.fn(), finalize: jest.fn() },
+      fetchImpl: fetchMock,
+      dryRun: true,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toBe('https://hooks.example.com/test');
+    expect(options).toEqual(
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
+        body: expect.any(String),
+      })
+    );
+    const payload = JSON.parse(options.body);
+    expect(payload.text).toContain('Telemetry payload budget status');
+    expect(payload.text).toContain('exceeds_budget');
+    expect(result.budgetWebhook).toEqual(
+      expect.objectContaining({ attempted: true, sent: true, url: 'https://hooks.example.com/test' })
+    );
+  });
+
+  test('does not send budget webhook when status not configured', async () => {
+    const artifactDir = path.join(tempDir, 'artifacts-webhook-none');
+    const metadataPath = path.join(tempDir, 'ci', 'webhook-none-manifest.json');
+    const { eventBus, worldStateStore } = createSeededWorldStateStore();
+    const fetchMock = jest.fn();
+
+    const fakeSaveManager = {
+      exportInspectorSummary: jest.fn(async () => ({
+        summary: {
+          source: 'worldStateStore',
+          generatedAt: Date.UTC(2025, 9, 30, 18, 30, 0),
+          engine: {
+            spatialHash: {
+              payloadBudgetStatus: 'within_budget',
+              payloadBytes: 8200,
+              payloadBudgetBytes: 12000,
+              payloadBudgetExceededBy: 0,
+            },
+          },
+        },
+        artifacts: [],
+        metrics: {},
+      })),
+    };
+
+    const result = await runTelemetryExport({
+      artifactDir,
+      metadataPath,
+      prefix: 'webhook-none',
+      env: { CI: 'true', TELEMETRY_BUDGET_WEBHOOK_URL: 'https://hooks.example.com/test' },
+      eventBus,
+      worldStateStore,
+      saveManager: fakeSaveManager,
+      filesystemWriter: { write: jest.fn(), finalize: jest.fn() },
+      fetchImpl: fetchMock,
+      dryRun: true,
+      budgetWebhookStatuses: ['exceeds_budget'],
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.budgetWebhook).toEqual(
+      expect.objectContaining({ attempted: false, sent: false, url: 'https://hooks.example.com/test' })
     );
   });
 

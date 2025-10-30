@@ -1,3 +1,5 @@
+import { seedAct2CrossroadsTriggers } from '../data/quests/act2TriggerDefinitions.js';
+
 /**
  * QuestTriggerRegistry
  *
@@ -107,6 +109,9 @@ export const QuestTriggerRegistry = {
   },
 };
 
+// Seed outstanding Act 2 hub triggers so migration reports surface remaining work.
+seedAct2CrossroadsTriggers(QuestTriggerRegistry);
+
 function normaliseDefinition(definition = {}) {
   const id = sanitiseId(
     definition.id ??
@@ -172,4 +177,3 @@ function normaliseNumber(value, fallback) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
-

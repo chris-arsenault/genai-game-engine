@@ -18,6 +18,7 @@ import {
 
 const DEFAULT_PREFIX = 'save-inspector';
 const DEFAULT_FORMATS = ['json', 'csv'];
+export const SPATIAL_HISTORY_BUDGET_BYTES = 12 * 1024; // 12 KB guardrail for inspector payloads
 
 const FORMAT_ALIASES = new Map([
   ['json', 'json'],
@@ -53,16 +54,146 @@ function normalizeFormats(formats) {
   return unique.size ? Array.from(unique) : [...DEFAULT_FORMATS];
 }
 
+function sanitizeAggregate(aggregate) {
+  if (!aggregate || typeof aggregate !== 'object') {
+    return null;
+  }
+  const safe = (value) => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
+  };
+  return {
+    average: safe(aggregate.average),
+    min: safe(aggregate.min),
+    max: safe(aggregate.max),
+  };
+}
+
+function sanitizeSample(sample) {
+  if (!sample || typeof sample !== 'object') {
+    return null;
+  }
+  const safe = (value) => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
+  };
+  return {
+    cellCount: safe(sample.cellCount),
+    maxBucketSize: safe(sample.maxBucketSize),
+    trackedEntities: safe(sample.trackedEntities),
+    timestamp: safe(sample.timestamp),
+  };
+}
+
+function sanitizeStats(stats) {
+  if (!stats || typeof stats !== 'object') {
+    return null;
+  }
+  const safe = (value) => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : 0;
+  };
+  return {
+    insertions: safe(stats.insertions),
+    updates: safe(stats.updates),
+    removals: safe(stats.removals),
+  };
+}
+
+function sanitizeSpatialTelemetry(spatial) {
+  if (!spatial || typeof spatial !== 'object') {
+    return null;
+  }
+
+  const history = Array.isArray(spatial.history)
+    ? spatial.history.map(sanitizeSample).filter(Boolean)
+    : [];
+
+  const payloadBytesNumeric = Number(spatial.payloadBytes);
+  let payloadBytes = Number.isFinite(payloadBytesNumeric)
+    ? payloadBytesNumeric
+    : null;
+  if (!payloadBytes) {
+    try {
+      payloadBytes = JSON.stringify(history).length;
+    } catch (error) {
+      console.warn('[TelemetryExporter] Failed to estimate spatial history payload size', error);
+      payloadBytes = null;
+    }
+  }
+
+  const windowNumeric = Number(spatial.window);
+  const windowSize = Number.isFinite(windowNumeric)
+    ? Math.max(1, Math.floor(windowNumeric))
+    : null;
+
+  const sampleCountNumeric = Number(spatial.sampleCount);
+  const sampleCountField = Number.isFinite(sampleCountNumeric)
+    ? Math.max(0, Math.floor(sampleCountNumeric))
+    : null;
+  const sampleCount = sampleCountField ?? history.length;
+
+  const lastSample =
+    sanitizeSample(spatial.lastSample) ??
+    (history.length ? history[history.length - 1] : null);
+
+  const cellSizeNumeric = Number(spatial.cellSize);
+  const budgetStatus = (() => {
+    if (!Number.isFinite(payloadBytes)) {
+      return {
+        status: 'unknown',
+        exceededBy: 0,
+      };
+    }
+    if (payloadBytes <= SPATIAL_HISTORY_BUDGET_BYTES) {
+      return {
+        status: 'within_budget',
+        exceededBy: 0,
+      };
+    }
+    return {
+      status: 'exceeds_budget',
+      exceededBy: payloadBytes - SPATIAL_HISTORY_BUDGET_BYTES,
+    };
+  })();
+
+  return {
+    cellSize: Number.isFinite(cellSizeNumeric) ? cellSizeNumeric : null,
+    window: windowSize,
+    sampleCount,
+    lastSample,
+    aggregates: {
+      cellCount: sanitizeAggregate(spatial.aggregates?.cellCount),
+      maxBucketSize: sanitizeAggregate(spatial.aggregates?.maxBucketSize),
+      trackedEntities: sanitizeAggregate(spatial.aggregates?.trackedEntities),
+    },
+    stats: sanitizeStats(spatial.stats),
+    history,
+    payloadBytes,
+    payloadBudgetBytes: SPATIAL_HISTORY_BUDGET_BYTES,
+    payloadBudgetStatus: budgetStatus.status,
+    payloadBudgetExceededBy: budgetStatus.exceededBy,
+  };
+}
+
 function sanitizeSummary(summary) {
   const generatedAt = summary?.generatedAt ?? Date.now();
   const source = summary?.source ?? 'unavailable';
 
   const factions = summary?.factions ?? {};
-  const cascadeTargets = Array.isArray(factions.cascadeTargets) ? factions.cascadeTargets : [];
+  const cascadeTargets = Array.isArray(factions.cascadeTargets)
+    ? factions.cascadeTargets
+    : [];
+  const recentMemberRemovals = Array.isArray(factions.recentMemberRemovals)
+    ? factions.recentMemberRemovals
+    : [];
 
   const tutorial = summary?.tutorial ?? {};
   const snapshots = Array.isArray(tutorial.snapshots) ? tutorial.snapshots : [];
   const transcript = Array.isArray(tutorial.transcript) ? tutorial.transcript : [];
+
+  const engine = summary?.engine ?? {};
+  const spatialHash = sanitizeSpatialTelemetry(engine.spatialHash);
 
   return {
     generatedAt,
@@ -71,9 +202,23 @@ function sanitizeSummary(summary) {
     factions: {
       lastCascadeEvent: factions.lastCascadeEvent ?? null,
       cascadeTargets,
+      recentMemberRemovals: recentMemberRemovals.map((entry) => ({
+        factionId: entry?.factionId ?? null,
+        factionName: entry?.factionName ?? null,
+        npcId: entry?.npcId ?? null,
+        entityId: entry?.entityId ?? null,
+        tag: entry?.tag ?? null,
+        removedAt: entry?.removedAt ?? null,
+        removedIso: entry?.removedAt
+          ? new Date(entry.removedAt).toISOString()
+          : null,
+      })),
       metrics: {
         cascadeTargetCount: cascadeTargets.length,
-        activeCascadeTargets: cascadeTargets.filter((target) => (target?.cascadeCount ?? 0) > 0).length,
+        activeCascadeTargets: cascadeTargets.filter(
+          (target) => (target?.cascadeCount ?? 0) > 0
+        ).length,
+        recentMemberRemovalCount: recentMemberRemovals.length,
       },
     },
     tutorial: {
@@ -84,6 +229,9 @@ function sanitizeSummary(summary) {
         snapshotCount: snapshots.length,
         transcriptCount: transcript.length,
       },
+    },
+    engine: {
+      spatialHash,
     },
   };
 }
@@ -241,6 +389,7 @@ export function createInspectorExportArtifacts(summary, options = {}) {
       source: sanitizedSummary.source,
       factions: sanitizedSummary.factions,
       tutorial: sanitizedSummary.tutorial,
+      engine: sanitizedSummary.engine,
     };
     artifacts.push({
       type: 'json',

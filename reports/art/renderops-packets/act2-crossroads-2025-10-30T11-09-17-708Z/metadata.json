@@ -1,0 +1,49 @@
+{
+  "packetId": "61b9e659-8506-4567-957f-2305ed341a5b",
+  "label": "act2-crossroads",
+  "createdAt": "2025-10-30T11:09:17.708Z",
+  "sourcePaths": {
+    "report": "/home/tsonu/src/genai-game-engine/reports/art/act2-crossroads-lighting-preview.json",
+    "summary": "/home/tsonu/src/genai-game-engine/reports/art/act2-crossroads-lighting-preview-summary.md"
+  },
+  "files": {
+    "report": "lighting-preview.json",
+    "summary": "lighting-preview-summary.md",
+    "readme": "PACKET_README.md"
+  },
+  "summary": {
+    "total": 11,
+    "statusCounts": {
+      "skipped": 2,
+      "ok": 9
+    },
+    "metadataDriftCount": 0,
+    "skippedCount": 2
+  },
+  "actionableSegments": [
+    {
+      "segmentId": "crossroads_floor_safehouse",
+      "category": "floors",
+      "status": "skipped",
+      "presetId": "safehouse_idle",
+      "projected": {
+        "luminance": null,
+        "targetLuminance": null,
+        "deviation": null
+      },
+      "issues": []
+    },
+    {
+      "segmentId": "crossroads_branch_walkway",
+      "category": "floors",
+      "status": "skipped",
+      "presetId": "branch_idle",
+      "projected": {
+        "luminance": null,
+        "targetLuminance": null,
+        "deviation": null
+      },
+      "issues": []
+    }
+  ]
+}

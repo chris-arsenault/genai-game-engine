@@ -51,11 +51,13 @@ Restricted areas, quest gates, and scene transitions now rely on the engine-leve
 
 ### Quest Trigger Registry & Migration Toolkit
 - Register quest trigger metadata centrally via `QuestTriggerRegistry` so definitions stay in sync with quest data (`questId`, `objectiveId`, prompts, optional metadata such as `moodHint` for adaptive audio).
+- Act 2 hub seeds live in `ACT2_CROSSROADS_TRIGGER_DEFINITIONS` (see `docs/guides/act2-trigger-authoring.md`) and remain flagged as outstanding migrations until the Crossroads scene attaches them.
 - Use `TriggerMigrationToolkit` (see `src/game/quests/TriggerMigrationToolkit.js`) to attach standardized `Trigger` components to scene entities; the toolkit records migration status and ensures payload shape consistency.
 - Definitions can include `metadata.moodHint` to influence adaptive audio bridges; hints expire automatically after a configurable duration.
 - QuestSystem only reacts to `area:entered`/`area:exited` payloads coming from `Trigger` components. Legacy `InteractionZone` polling has been removed, so always attach a trigger before expecting quest progression.
 - Act 1 vendors (`witness_street_vendor`, `black_market_broker`, `cipher_quartermaster`) now have registry-backed definitions that attach quest metadata and adaptive audio hints when the player enters their dialogue radius. See `docs/guides/act1-trigger-authoring.md` for designer-ready reference sheets.
 - Memory Parlor infiltration zones (entrance scan, interior firewall check, alloy exit) are registered up front and attached via `TriggerMigrationToolkit` during scene load. Registry metadata captures `narrativeBeat`, `requiresScrambler`, and designer prompts so quest objectives, adaptive audio, and UI copy stay synchronized.
+- The tutorial investigation scene migrates to registry-backed triggers for the Detective Vision training pad, deduction board, and precinct exit. Definitions carry `tutorialStage` metadata, keeping onboarding prompts synchronized with quest objectives while marking outstanding migrations complete.
 - Unit coverage lives in `tests/game/quests/TriggerMigrationToolkit.test.js`; scene-level migrations are captured in `tests/game/scenes/Act1Scene.triggers.test.js`.
 
 ### Memory Parlor Restricted Areas
@@ -118,4 +120,4 @@ componentRegistry.addComponent(entityId, 'Trigger', new Trigger({
 - Game integration: `src/game/Game.js`, `src/game/scenes/MemoryParlorScene.js`, `src/game/scenes/Act1Scene.js`
 - Quest wiring: `src/game/systems/QuestSystem.js`
 - Act 1 designer notes: `docs/guides/act1-trigger-authoring.md`
-- Tests: `tests/game/systems/QuestSystem.trigger.test.js`, `tests/game/scenes/Act1Scene.triggers.test.js`
+- Tests: `tests/game/systems/QuestSystem.trigger.test.js`, `tests/game/scenes/Act1Scene.triggers.test.js`, `tests/game/scenes/TutorialScene.triggers.test.js`

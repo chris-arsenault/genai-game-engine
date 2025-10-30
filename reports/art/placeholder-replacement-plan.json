@@ -1,0 +1,382 @@
+{
+  "generatedAt": "2025-10-30T11:45:44.999Z",
+  "summary": {
+    "generatedAt": "2025-10-30T11:45:44.999Z",
+    "total": 16,
+    "missingFileCount": 0,
+    "tiers": {
+      "urgent": 0,
+      "high": 0,
+      "standard": 16
+    },
+    "groups": [
+      {
+        "arId": "AR-002",
+        "pendingCount": 5,
+        "missingCount": 0,
+        "highestTier": "standard",
+        "exampleAssets": [
+          "image-ar-002-generic-marker",
+          "image-ar-002-blood-spatter",
+          "image-ar-002-document"
+        ],
+        "topPriorityScore": 85
+      },
+      {
+        "arId": "AR-001",
+        "pendingCount": 4,
+        "missingCount": 0,
+        "highestTier": "standard",
+        "exampleAssets": [
+          "image-ar-001-clue-node-pack",
+          "image-ar-001-deduction-board-bg",
+          "image-ar-001-evidence-icon-set"
+        ],
+        "topPriorityScore": 85
+      },
+      {
+        "arId": "AR-005",
+        "pendingCount": 4,
+        "missingCount": 0,
+        "highestTier": "standard",
+        "exampleAssets": [
+          "image-ar-005-tileset-neon-district",
+          "image-ar-005-tileset-archive-undercity",
+          "image-ar-005-tileset-corporate-spires"
+        ],
+        "topPriorityScore": 85
+      },
+      {
+        "arId": "AR-004",
+        "pendingCount": 2,
+        "missingCount": 0,
+        "highestTier": "standard",
+        "exampleAssets": [
+          "image-ar-004-npc-civilian-pack",
+          "image-ar-004-npc-guard-pack"
+        ],
+        "topPriorityScore": 55
+      },
+      {
+        "arId": "AR-003",
+        "pendingCount": 1,
+        "missingCount": 0,
+        "highestTier": "standard",
+        "exampleAssets": [
+          "image-ar-003-player-kira-sprite"
+        ],
+        "topPriorityScore": 55
+      }
+    ]
+  },
+  "schedule": [
+    {
+      "id": "image-ar-001-clue-node-pack",
+      "arId": "AR-001",
+      "title": "Clue Node Sprite Variations",
+      "placeholderExists": true,
+      "missingFile": false,
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-001-clue-node-pack.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-001-clue-node-pack.png",
+      "notes": "Requires at least three variations with animated pulse option for narrative emphasis. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
+      "priorityScore": 85,
+      "priorityTier": "standard",
+      "reasons": [
+        "requirements-noted",
+        "prompt-ready"
+      ],
+      "daysSincePlaceholder": 0.03,
+      "recommendedAction": "Schedule bespoke art replacement and capture licensing updates once approved. Leverage the drafted prompt to queue the generation batch.",
+      "rank": 1,
+      "groupRank": 1
+    },
+    {
+      "id": "image-ar-001-deduction-board-bg",
+      "arId": "AR-001",
+      "title": "Deduction Board UI Background",
+      "placeholderExists": true,
+      "missingFile": false,
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-001-deduction-board-bg.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-001-deduction-board-bg.png",
+      "notes": "Needs layered neon corkboard vibe with space for clue nodes and narrative callouts. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
+      "priorityScore": 85,
+      "priorityTier": "standard",
+      "reasons": [
+        "requirements-noted",
+        "prompt-ready"
+      ],
+      "daysSincePlaceholder": 0.03,
+      "recommendedAction": "Schedule bespoke art replacement and capture licensing updates once approved. Leverage the drafted prompt to queue the generation batch.",
+      "rank": 2,
+      "groupRank": 2
+    },
+    {
+      "id": "image-ar-002-generic-marker",
+      "arId": "AR-002",
+      "title": "Generic Evidence Marker",
+      "placeholderExists": true,
+      "missingFile": false,
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-002-generic-marker.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-002-generic-marker.png",
+      "notes": "Needs blank label area for procedural numbering. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
+      "priorityScore": 85,
+      "priorityTier": "standard",
+      "reasons": [
+        "requirements-noted",
+        "prompt-ready"
+      ],
+      "daysSincePlaceholder": 0.03,
+      "recommendedAction": "Schedule bespoke art replacement and capture licensing updates once approved. Leverage the drafted prompt to queue the generation batch.",
+      "rank": 3,
+      "groupRank": 1
+    },
+    {
+      "id": "image-ar-005-tileset-neon-district",
+      "arId": "AR-005",
+      "title": "Neon District Tileset",
+      "placeholderExists": true,
+      "missingFile": false,
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-005-tileset-neon-district.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-005-tileset-neon-district.png",
+      "notes": "Needs wet reflections, signage layers, and animated neon strips. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
+      "priorityScore": 85,
+      "priorityTier": "standard",
+      "reasons": [
+        "requirements-noted",
+        "prompt-ready"
+      ],
+      "daysSincePlaceholder": 0.03,
+      "recommendedAction": "Schedule bespoke art replacement and capture licensing updates once approved. Leverage the drafted prompt to queue the generation batch.",
+      "rank": 4,
+      "groupRank": 1
+    },
+    {
+      "id": "image-ar-001-evidence-icon-set",
+      "arId": "AR-001",
+      "title": "Evidence Type Icon Set",
+      "placeholderExists": true,
+      "missingFile": false,
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-001-evidence-icon-set.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-001-evidence-icon-set.png",
+      "notes": "Icons must read at small sizes; include monochrome and color treatments. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
+      "priorityScore": 55,
+      "priorityTier": "standard",
+      "reasons": [
+        "prompt-ready"
+      ],
+      "daysSincePlaceholder": 0.03,
+      "recommendedAction": "Schedule bespoke art replacement and capture licensing updates once approved. Leverage the drafted prompt to queue the generation batch.",
+      "rank": 5,
+      "groupRank": 3
+    },
+    {
+      "id": "image-ar-001-ui-button-pack",
+      "arId": "AR-001",
+      "title": "Core UI Button Pack",
+      "placeholderExists": true,
+      "missingFile": false,
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-001-ui-button-pack.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-001-ui-button-pack.png",
+      "notes": "Target 64x32 sprites with hover/pressed states; neon noir styling. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
+      "priorityScore": 55,
+      "priorityTier": "standard",
+      "reasons": [
+        "prompt-ready"
+      ],
+      "daysSincePlaceholder": 0.03,
+      "recommendedAction": "Schedule bespoke art replacement and capture licensing updates once approved. Leverage the drafted prompt to queue the generation batch.",
+      "rank": 6,
+      "groupRank": 4
+    },
+    {
+      "id": "image-ar-002-blood-spatter",
+      "arId": "AR-002",
+      "title": "Blood Spatter Evidence Sprite",
+      "placeholderExists": true,
+      "missingFile": false,
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-002-blood-spatter.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-002-blood-spatter.png",
+      "notes": "Stylise to remain readable while respecting M2 rating guidelines. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
+      "priorityScore": 55,
+      "priorityTier": "standard",
+      "reasons": [
+        "prompt-ready"
+      ],
+      "daysSincePlaceholder": 0.03,
+      "recommendedAction": "Schedule bespoke art replacement and capture licensing updates once approved. Leverage the drafted prompt to queue the generation batch.",
+      "rank": 7,
+      "groupRank": 2
+    },
+    {
+      "id": "image-ar-002-document",
+      "arId": "AR-002",
+      "title": "Confidential Document Sprite",
+      "placeholderExists": true,
+      "missingFile": false,
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-002-document.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-002-document.png",
+      "notes": "Add subtle fold and holographic seal for narrative flair. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
+      "priorityScore": 55,
+      "priorityTier": "standard",
+      "reasons": [
+        "prompt-ready"
+      ],
+      "daysSincePlaceholder": 0.03,
+      "recommendedAction": "Schedule bespoke art replacement and capture licensing updates once approved. Leverage the drafted prompt to queue the generation batch.",
+      "rank": 8,
+      "groupRank": 3
+    },
+    {
+      "id": "image-ar-002-fingerprint",
+      "arId": "AR-002",
+      "title": "Fingerprint Evidence Sprite",
+      "placeholderExists": true,
+      "missingFile": false,
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-002-fingerprint.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-002-fingerprint.png",
+      "notes": "Supports neon-guided cyan lighting to align with Memory Parlor palette. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
+      "priorityScore": 55,
+      "priorityTier": "standard",
+      "reasons": [
+        "prompt-ready"
+      ],
+      "daysSincePlaceholder": 0.03,
+      "recommendedAction": "Schedule bespoke art replacement and capture licensing updates once approved. Leverage the drafted prompt to queue the generation batch.",
+      "rank": 9,
+      "groupRank": 4
+    },
+    {
+      "id": "image-ar-002-neural-extractor",
+      "arId": "AR-002",
+      "title": "Neural Extractor Sprite",
+      "placeholderExists": true,
+      "missingFile": false,
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-002-neural-extractor.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-002-neural-extractor.png",
+      "notes": "Depict compact tech device with blue accent lights and removable prongs. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
+      "priorityScore": 55,
+      "priorityTier": "standard",
+      "reasons": [
+        "prompt-ready"
+      ],
+      "daysSincePlaceholder": 0.03,
+      "recommendedAction": "Schedule bespoke art replacement and capture licensing updates once approved. Leverage the drafted prompt to queue the generation batch.",
+      "rank": 10,
+      "groupRank": 5
+    },
+    {
+      "id": "image-ar-003-player-kira-sprite",
+      "arId": "AR-003",
+      "title": "Kira Player Sprite Sheet",
+      "placeholderExists": true,
+      "missingFile": false,
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-003-player-kira-sprite.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-003-player-kira-sprite.png",
+      "notes": "Detective coat silhouette with readable silhouette; 6 frames per animation recommended. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
+      "priorityScore": 55,
+      "priorityTier": "standard",
+      "reasons": [
+        "prompt-ready"
+      ],
+      "daysSincePlaceholder": 0.03,
+      "recommendedAction": "Schedule bespoke art replacement and capture licensing updates once approved. Leverage the drafted prompt to queue the generation batch.",
+      "rank": 11,
+      "groupRank": 1
+    },
+    {
+      "id": "image-ar-004-npc-civilian-pack",
+      "arId": "AR-004",
+      "title": "Civilian NPC Sprite Pack",
+      "placeholderExists": true,
+      "missingFile": false,
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-004-npc-civilian-pack.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-004-npc-civilian-pack.png",
+      "notes": "Represent faction-aligned outfits; include gender-diverse silhouettes. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
+      "priorityScore": 55,
+      "priorityTier": "standard",
+      "reasons": [
+        "prompt-ready"
+      ],
+      "daysSincePlaceholder": 0.03,
+      "recommendedAction": "Schedule bespoke art replacement and capture licensing updates once approved. Leverage the drafted prompt to queue the generation batch.",
+      "rank": 12,
+      "groupRank": 1
+    },
+    {
+      "id": "image-ar-004-npc-guard-pack",
+      "arId": "AR-004",
+      "title": "Security Guard NPC Sprite Pack",
+      "placeholderExists": true,
+      "missingFile": false,
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-004-npc-guard-pack.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-004-npc-guard-pack.png",
+      "notes": "Include visor glow for detection cues; integrate faction insignia. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
+      "priorityScore": 55,
+      "priorityTier": "standard",
+      "reasons": [
+        "prompt-ready"
+      ],
+      "daysSincePlaceholder": 0.03,
+      "recommendedAction": "Schedule bespoke art replacement and capture licensing updates once approved. Leverage the drafted prompt to queue the generation batch.",
+      "rank": 13,
+      "groupRank": 2
+    },
+    {
+      "id": "image-ar-005-tileset-archive-undercity",
+      "arId": "AR-005",
+      "title": "Archive Undercity Tileset",
+      "placeholderExists": true,
+      "missingFile": false,
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-005-tileset-archive-undercity.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-005-tileset-archive-undercity.png",
+      "notes": "Blend corroded metal with glowing conduits and dust particles. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
+      "priorityScore": 55,
+      "priorityTier": "standard",
+      "reasons": [
+        "prompt-ready"
+      ],
+      "daysSincePlaceholder": 0.03,
+      "recommendedAction": "Schedule bespoke art replacement and capture licensing updates once approved. Leverage the drafted prompt to queue the generation batch.",
+      "rank": 14,
+      "groupRank": 2
+    },
+    {
+      "id": "image-ar-005-tileset-corporate-spires",
+      "arId": "AR-005",
+      "title": "Corporate Spires Tileset",
+      "placeholderExists": true,
+      "missingFile": false,
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-005-tileset-corporate-spires.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-005-tileset-corporate-spires.png",
+      "notes": "Feature frosted glass, chrome flooring, and light columns. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
+      "priorityScore": 55,
+      "priorityTier": "standard",
+      "reasons": [
+        "prompt-ready"
+      ],
+      "daysSincePlaceholder": 0.03,
+      "recommendedAction": "Schedule bespoke art replacement and capture licensing updates once approved. Leverage the drafted prompt to queue the generation batch.",
+      "rank": 15,
+      "groupRank": 3
+    },
+    {
+      "id": "image-ar-005-tileset-zenith-sector",
+      "arId": "AR-005",
+      "title": "Zenith Sector Tileset",
+      "placeholderExists": true,
+      "missingFile": false,
+      "manifestSource": "assets/generated/ar-placeholders/image-ar-005-tileset-zenith-sector.png",
+      "placeholderPath": "/home/tsonu/src/genai-game-engine/assets/generated/ar-placeholders/image-ar-005-tileset-zenith-sector.png",
+      "notes": "Incorporate holographic banners and elevated rail tracks. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
+      "priorityScore": 55,
+      "priorityTier": "standard",
+      "reasons": [
+        "prompt-ready"
+      ],
+      "daysSincePlaceholder": 0.03,
+      "recommendedAction": "Schedule bespoke art replacement and capture licensing updates once approved. Leverage the drafted prompt to queue the generation batch.",
+      "rank": 16,
+      "groupRank": 4
+    }
+  ]
+}

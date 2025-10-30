@@ -101,6 +101,7 @@ describe('Game.initializeGameSystems', () => {
     const expectedSystemKeys = [
       'tutorial',
       'playerMovement',
+      'navigationConstraint',
       'npcMemory',
       'firewallScrambler',
       'disguise',
@@ -112,6 +113,7 @@ describe('Game.initializeGameSystems', () => {
       'knowledgeProgression',
       'dialogue',
       'cameraFollow',
+      'collision',
       'trigger',
       'render',
     ];

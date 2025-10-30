@@ -1,0 +1,49 @@
+{
+  "weekNumber": 1,
+  "generatedAt": "2025-10-30T13:35:23.801Z",
+  "updatesApplied": 5,
+  "plannedCount": 5,
+  "statusBreakdown": {
+    "bespoke-approved": 3,
+    "bespoke-pending": 1,
+    "bespoke-in-review": 1
+  },
+  "applied": [
+    {
+      "id": "image-ar-001-deduction-board-bg",
+      "status": "bespoke-approved",
+      "artist": "Helena Voss",
+      "approvedOn": "2025-11-14",
+      "receivedOn": null
+    },
+    {
+      "id": "image-ar-001-clue-node-pack",
+      "status": "bespoke-approved",
+      "artist": "Helena Voss",
+      "approvedOn": "2025-11-16",
+      "receivedOn": "2025-11-13"
+    },
+    {
+      "id": "image-ar-001-evidence-icon-set",
+      "status": "bespoke-approved",
+      "artist": "Helena Voss",
+      "approvedOn": "2025-11-15",
+      "receivedOn": null
+    },
+    {
+      "id": "image-ar-002-generic-marker",
+      "status": "bespoke-pending",
+      "artist": null,
+      "approvedOn": null,
+      "receivedOn": null
+    },
+    {
+      "id": "image-ar-005-tileset-neon-district",
+      "status": "bespoke-in-review",
+      "artist": "Axiom Studio",
+      "approvedOn": null,
+      "receivedOn": "2025-11-15"
+    }
+  ],
+  "skipped": []
+}

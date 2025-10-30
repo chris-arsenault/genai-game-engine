@@ -1,0 +1,44 @@
+{
+  "generatedAt": "2025-10-30T11:51:37.476Z",
+  "schedulePath": "/home/tsonu/src/genai-game-engine/telemetry-artifacts/analytics/parity-schedule.json",
+  "warningThresholdDays": 3,
+  "nextCheckAt": "2025-11-13T11:00:21.857740+00:00",
+  "dueInDays": 13.96440255787037,
+  "dueInHours": 335.14566138888887,
+  "status": "scheduled",
+  "overdueFlag": false,
+  "alertLevel": "info",
+  "alerts": [
+    "Next parity checkpoint scheduled for 2025-11-13T11:00:21.857740+00:00 (13.96 days remaining)."
+  ],
+  "calendar": {
+    "eventId": "telemetry-parity-20251113T110021857Z",
+    "summary": "Telemetry Parity Check",
+    "description": "Next parity checkpoint is scheduled for 2025-11-13T11:00:21.857740+00:00. Monitor incoming analytics requests and be ready to acknowledge ahead of the deadline if data changes.",
+    "location": "Remote",
+    "start": "2025-11-13T11:00:21.857Z",
+    "end": "2025-11-13T12:00:21.857Z",
+    "alarmMinutes": 4320,
+    "generatedAt": "2025-10-30T11:51:37.476Z"
+  },
+  "recommendedAction": "Next parity checkpoint is scheduled for 2025-11-13T11:00:21.857740+00:00. Monitor incoming analytics requests and be ready to acknowledge ahead of the deadline if data changes.",
+  "latestDispatch": {
+    "label": "act2-crossroads-20251112",
+    "dispatchedAt": "2025-10-30T07:52:43.968Z",
+    "nextSteps": [
+      "Share summary with analytics for ingestion confirmation.",
+      "Schedule next parity run when new telemetry batches arrive."
+    ],
+    "manifestPath": "telemetry-artifacts/analytics/outbox/act2-crossroads-20251112/dispatch-manifest.json"
+  },
+  "latestAcknowledgement": {
+    "label": "act2-crossroads-20251112",
+    "acknowledgedAt": "2025-10-30T11:00:21.857740+00:00",
+    "acknowledgedBy": "Codex Session 115",
+    "method": "manual-review",
+    "note": "Parity check re-run; dataset matches schema."
+  },
+  "pendingDispatches": [],
+  "daysSinceLastCheck": 0.035597442129629626,
+  "historyCount": 1
+}

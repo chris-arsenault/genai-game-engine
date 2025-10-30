@@ -21,6 +21,7 @@ import { QuestSystem } from './systems/QuestSystem.js';
 import { FirewallScramblerSystem } from './systems/FirewallScramblerSystem.js';
 import { ForensicSystem } from './systems/ForensicSystem.js';
 import { DeductionSystem } from './systems/DeductionSystem.js';
+import { NavigationConstraintSystem } from './systems/NavigationConstraintSystem.js';
 import { TutorialTranscriptRecorder } from './tutorial/TutorialTranscriptRecorder.js';
 
 // State
@@ -45,6 +46,7 @@ import { MovementIndicatorOverlay } from './ui/MovementIndicatorOverlay.js';
 import { QuestLogUI } from './ui/QuestLogUI.js';
 import { CaseFileUI } from './ui/CaseFileUI.js';
 import { DeductionBoard } from './ui/DeductionBoard.js';
+import { CrossroadsBranchLandingOverlay } from './ui/CrossroadsBranchLandingOverlay.js';
 import { InventoryOverlay } from './ui/InventoryOverlay.js';
 import { AudioFeedbackController } from './audio/AudioFeedbackController.js';
 import { SFXCatalogLoader } from './audio/SFXCatalogLoader.js';
@@ -52,6 +54,9 @@ import { AdaptiveMoodEmitter } from './audio/AdaptiveMoodEmitter.js';
 import { SuspicionMoodMapper } from './audio/SuspicionMoodMapper.js';
 import { GameplayAdaptiveAudioBridge } from './audio/GameplayAdaptiveAudioBridge.js';
 import { SaveInspectorOverlay } from './ui/SaveInspectorOverlay.js';
+import { CrossroadsPromptController } from './narrative/CrossroadsPromptController.js';
+import { CrossroadsBranchTransitionController } from './narrative/CrossroadsBranchTransitionController.js';
+import { NavigationMeshService } from './navigation/NavigationMeshService.js';
 
 // Managers
 import { FactionManager } from './managers/FactionManager.js';
@@ -59,13 +64,20 @@ import { QuestManager } from './managers/QuestManager.js';
 import { StoryFlagManager } from './managers/StoryFlagManager.js';
 import { CaseManager } from './managers/CaseManager.js';
 import { SaveManager } from './managers/SaveManager.js';
+import { QuestTriggerTelemetryBridge } from './telemetry/QuestTriggerTelemetryBridge.js';
 
 // Quest data
 import { registerAct1Quests } from './data/quests/act1Quests.js';
+import { registerAct2CrossroadsQuest } from './data/quests/act2CrossroadsQuest.js';
+import { registerAct2NeuroSyncQuest } from './data/quests/act2NeuroSyncQuest.js';
+import { registerAct2ResistanceQuest } from './data/quests/act2ResistanceQuest.js';
+import { registerAct2PersonalInvestigationQuest } from './data/quests/act2PersonalInvestigationQuest.js';
 import { tutorialCase } from './data/cases/tutorialCase.js';
 
 // Dialogue data
 import { registerAct1Dialogues } from './data/dialogues/Act1Dialogues.js';
+import { registerAct2CrossroadsDialogues } from './data/dialogues/Act2CrossroadsDialogue.js';
+import { registerAct2BranchObjectiveDialogues } from './data/dialogues/Act2BranchObjectiveDialogues.js';
 
 // Entity factories
 import { createPlayerEntity } from './entities/PlayerEntity.js';
@@ -75,6 +87,9 @@ import { createNPCEntity } from './entities/NPCEntity.js';
 // Scenes
 import { loadAct1Scene } from './scenes/Act1Scene.js';
 import { loadMemoryParlorScene } from './scenes/MemoryParlorScene.js';
+import { loadAct2CorporateInfiltrationScene } from './scenes/Act2CorporateInfiltrationScene.js';
+import { loadAct2ResistanceHideoutScene } from './scenes/Act2ResistanceHideoutScene.js';
+import { loadAct2PersonalInvestigationScene } from './scenes/Act2PersonalInvestigationScene.js';
 
 // Configuration
 import { GameConfig } from './config/GameConfig.js';
@@ -85,6 +100,7 @@ import { Transform } from './components/Transform.js';
 import { Collider } from './components/Collider.js';
 import { Sprite } from './components/Sprite.js';
 import { TriggerSystem } from '../engine/physics/TriggerSystem.js';
+import { CollisionSystem } from '../engine/physics/CollisionSystem.js';
 
 const ACT1_RETURN_SPAWN = { x: 220, y: 360 };
 const DEFAULT_FORENSIC_TOOL_LABELS = Object.freeze({
@@ -107,6 +123,21 @@ const FORENSIC_DIFFICULTY_DESCRIPTORS = Object.freeze({
   1: 'Routine',
   2: 'Challenging',
   3: 'Expert',
+});
+
+const ACT2_THREAD_SCENE_LOADERS = Object.freeze({
+  act2_thread_corporate_infiltration: Object.freeze({
+    sceneId: 'act2_corporate_interior',
+    loader: loadAct2CorporateInfiltrationScene,
+  }),
+  act2_thread_resistance_contact: Object.freeze({
+    sceneId: 'act2_resistance_hideout',
+    loader: loadAct2ResistanceHideoutScene,
+  }),
+  act2_thread_personal_investigation: Object.freeze({
+    sceneId: 'act2_personal_archive',
+    loader: loadAct2PersonalInvestigationScene,
+  }),
 });
 
 /**
@@ -136,6 +167,7 @@ export class Game {
     this.suspicionMoodMapper = null;
     this.adaptiveMoodEmitter = null;
     this.gameplayAdaptiveAudioBridge = null;
+    this.questTriggerTelemetryBridge = null;
 
     // Game state
     this.inputState = new InputState(engine.eventBus);
@@ -165,10 +197,13 @@ export class Game {
       npcMemory: null,
       firewallScrambler: null,
       disguise: null,
+      collision: null,
       trigger: null,
       quest: null,
       render: null  // RenderSystem (engine system managed by game)
     };
+
+    this._onEntityDestroyed = null;
 
     // UI overlays
     this.tutorialOverlay = null;
@@ -178,6 +213,7 @@ export class Game {
     this.questLogUI = null;
     this.questTrackerHUD = null;
     this.questNotification = null;
+    this.crossroadsBranchOverlay = null;
     this.inventoryOverlay = null;
     this.interactionPromptOverlay = null;
     this.movementIndicatorOverlay = null;
@@ -185,6 +221,9 @@ export class Game {
     this.deductionBoard = null;
     this.audioFeedback = null;
     this.saveInspectorOverlay = null;
+    this.crossroadsPromptController = null;
+    this.crossroadsBranchTransitionController = null;
+    this.navigationMeshService = null;
 
     // Forensic prompt plumbing
     this._forensicPromptQueue = [];
@@ -215,8 +254,10 @@ export class Game {
     };
     this._memoryParlorSceneLoaded = false;
     this._sceneTransitionInFlight = false;
+    this._pendingAct2ThreadTransition = null;
 
     this.handleObjectiveCompleted = this.handleObjectiveCompleted.bind(this);
+    this.handleAct2ThreadLoadRequest = this.handleAct2ThreadLoadRequest.bind(this);
   }
 
   /**
@@ -231,10 +272,14 @@ export class Game {
     // Initialize game systems
     this.initializeGameSystems();
 
+    this.initializeNavigationServices();
+
     // Initialize UI overlays
     this.initializeUIOverlays();
     // Initialize audio integrations that respond to UI/gameplay feedback
     await this.initializeAudioIntegrations();
+
+    this.initializeNarrativeControllers();
 
     if (typeof this.engine.setFrameHooks === 'function') {
       this._detachFrameHooks = this.engine.setFrameHooks({
@@ -300,6 +345,18 @@ export class Game {
     registerAct1Quests(this.questManager);
     console.log('[Game] Act 1 quests registered');
 
+    // Register Act 2 thread quests
+    registerAct2NeuroSyncQuest(this.questManager);
+    console.log('[Game] Act 2 NeuroSync quest registered');
+    registerAct2ResistanceQuest(this.questManager);
+    console.log('[Game] Act 2 Resistance quest registered');
+    registerAct2PersonalInvestigationQuest(this.questManager);
+    console.log('[Game] Act 2 Personal quest registered');
+
+    // Register Act 2 crossroads quest scaffolding after thread quests so branch metadata resolves
+    registerAct2CrossroadsQuest(this.questManager);
+    console.log('[Game] Act 2 Crossroads quest registered');
+
     // Initialize TutorialTranscriptRecorder prior to SaveManager wiring
     this.tutorialTranscriptRecorder = new TutorialTranscriptRecorder(this.eventBus);
     console.log('[Game] TutorialTranscriptRecorder initialized');
@@ -320,6 +377,8 @@ export class Game {
     this.tutorialTranscriptRecorder.start();
     console.log('[Game] TutorialTranscriptRecorder started');
 
+    this._registerEntityLifecycleHooks();
+
     // Create investigation system (needed by other systems)
     this.gameSystems.investigation = new InvestigationSystem(
       this.componentRegistry,
@@ -336,6 +395,15 @@ export class Game {
       this.componentRegistry,
       this.eventBus,
       this.inputState
+    );
+
+    this.gameSystems.navigationConstraint = new NavigationConstraintSystem(
+      this.componentRegistry,
+      this.eventBus,
+      {
+        entityManager: this.entityManager,
+        worldStateStore: this.worldStateStore,
+      }
     );
 
     // Create faction reputation system (now receives FactionManager)
@@ -364,6 +432,14 @@ export class Game {
     // Register Act 1 dialogues
     registerAct1Dialogues(this.gameSystems.dialogue);
     console.log('[Game] Act 1 dialogues registered');
+
+    // Register Act 2 crossroads dialogue
+    registerAct2CrossroadsDialogues(this.gameSystems.dialogue);
+    console.log('[Game] Act 2 Crossroads dialogues registered');
+
+    // Register Act 2 branch objective dialogues
+    registerAct2BranchObjectiveDialogues(this.gameSystems.dialogue);
+    console.log('[Game] Act 2 branch objective dialogues registered');
 
     // Create camera follow system
     this.gameSystems.cameraFollow = new CameraFollowSystem(
@@ -404,6 +480,105 @@ export class Game {
       this.factionManager
     );
 
+    // Broad-phase collision instrumentation (metrics only for stealth tuning)
+    this.gameSystems.collision = new CollisionSystem(
+      this.componentRegistry,
+      this.eventBus,
+      {
+        resolveCollisions: false,
+      }
+    );
+    if (this.saveManager?.registerSpatialMetricsProvider) {
+      this.saveManager.registerSpatialMetricsProvider(() => {
+        const collision = this.gameSystems?.collision;
+        const spatialHash = collision?.spatialHash;
+        if (
+          !spatialHash ||
+          typeof spatialHash.getMetrics !== 'function' ||
+          typeof spatialHash.getMetricsHistorySnapshot !== 'function'
+        ) {
+          return null;
+        }
+
+        const metrics = spatialHash.getMetrics({ collectSample: false }) ?? {};
+        const history = spatialHash.getMetricsHistorySnapshot({
+          limit: spatialHash.metricsWindow,
+        });
+
+        const rolling = metrics.rolling ?? {};
+
+        const sanitizeAggregate = (aggregate) => {
+          if (!aggregate) {
+            return null;
+          }
+          const safe = (value) =>
+            Number.isFinite(value) ? value : null;
+          return {
+            average: safe(aggregate.average),
+            min: safe(aggregate.min),
+            max: safe(aggregate.max),
+          };
+        };
+
+        const sanitizeSample = (sample) => {
+          if (!sample) {
+            return null;
+          }
+          const safe = (value) =>
+            Number.isFinite(value) ? value : null;
+          return {
+            cellCount: safe(sample.cellCount),
+            maxBucketSize: safe(sample.maxBucketSize),
+            trackedEntities: safe(sample.trackedEntities),
+            timestamp: safe(sample.timestamp),
+          };
+        };
+
+        const sanitizeStats = (stats) => {
+          if (!stats || typeof stats !== 'object') {
+            return null;
+          }
+          const safe = (value) =>
+            Number.isFinite(value) ? value : 0;
+          return {
+            insertions: safe(stats.insertions),
+            updates: safe(stats.updates),
+            removals: safe(stats.removals),
+          };
+        };
+
+        const payloadBytes = (() => {
+          try {
+            return JSON.stringify(history).length;
+          } catch (error) {
+            console.warn('[Game] Failed to estimate spatial metrics payload size', error);
+            return null;
+          }
+        })();
+
+        return {
+          cellSize: Number.isFinite(spatialHash.cellSize) ? spatialHash.cellSize : null,
+          window: Number.isFinite(rolling.window)
+            ? rolling.window
+            : Number.isFinite(spatialHash.metricsWindow)
+            ? spatialHash.metricsWindow
+            : null,
+          sampleCount: Number.isFinite(rolling.sampleCount)
+            ? rolling.sampleCount
+            : history.length,
+          lastSample: sanitizeSample(rolling.lastSample ?? history[history.length - 1] ?? null),
+          aggregates: {
+            cellCount: sanitizeAggregate(rolling.cellCount),
+            maxBucketSize: sanitizeAggregate(rolling.maxBucketSize),
+            trackedEntities: sanitizeAggregate(rolling.trackedEntities),
+          },
+          stats: sanitizeStats(metrics.stats),
+          history: history.map((sample) => sanitizeSample(sample)).filter(Boolean),
+          payloadBytes,
+        };
+      });
+    }
+
     // Create trigger system (engine physics layer for area triggers)
     this.gameSystems.trigger = new TriggerSystem(
       this.componentRegistry,
@@ -437,9 +612,11 @@ export class Game {
     const systemRegistrationOrder = [
       ['tutorial', this.gameSystems.tutorial],
       ['playerMovement', this.gameSystems.playerMovement],
+      ['navigationConstraint', this.gameSystems.navigationConstraint],
       ['npcMemory', this.gameSystems.npcMemory],
       ['firewallScrambler', this.gameSystems.firewallScrambler],
       ['disguise', this.gameSystems.disguise],
+      ['collision', this.gameSystems.collision],
       ['trigger', this.gameSystems.trigger],
       ['factionReputation', this.gameSystems.factionReputation],
       ['quest', this.gameSystems.quest],
@@ -461,6 +638,120 @@ export class Game {
     }
 
     console.log('[Game] Game systems initialized');
+  }
+
+  _registerEntityLifecycleHooks() {
+    if (!this.entityManager || !this.eventBus) {
+      return;
+    }
+
+    if (this._onEntityDestroyed) {
+      this.entityManager.offEntityDestroyed(this._onEntityDestroyed);
+      this._onEntityDestroyed = null;
+    }
+
+    this._onEntityDestroyed = (entityId, metadata, componentSnapshot) => {
+      const payload = this._createEntityDestructionPayload(
+        entityId,
+        metadata,
+        componentSnapshot
+      );
+      if (payload) {
+        this.eventBus.emit('entity:destroyed', payload);
+      }
+
+      if (this.questManager?.handleEntityDestroyed) {
+        this.questManager.handleEntityDestroyed(
+          entityId,
+          metadata,
+          componentSnapshot
+        );
+      }
+
+      if (this.factionManager?.handleEntityDestroyed) {
+        this.factionManager.handleEntityDestroyed(
+          entityId,
+          metadata,
+          componentSnapshot
+        );
+      }
+    };
+
+    this.entityManager.onEntityDestroyed(this._onEntityDestroyed);
+  }
+
+  _createEntityDestructionPayload(entityId, metadata, componentSnapshot) {
+    const payload = {
+      entityId,
+      tag: metadata?.tag ?? null,
+      wasActive: Boolean(metadata?.active),
+      timestamp: Date.now(),
+      components: [],
+    };
+
+    const narrative = {};
+
+    if (componentSnapshot instanceof Map) {
+      payload.components = Array.from(componentSnapshot.keys());
+
+      const npc = componentSnapshot.get('NPC');
+      const factionMember = componentSnapshot.get('FactionMember');
+      const questComponent = componentSnapshot.get('Quest');
+
+      if (npc) {
+        if (npc.npcId) {
+          narrative.npcId = npc.npcId;
+        }
+        if (npc.name) {
+          narrative.npcName = npc.name;
+        }
+        if (npc.faction) {
+          narrative.factionId = npc.faction;
+        }
+      }
+
+      if (factionMember && !narrative.factionId && factionMember.primaryFaction) {
+        narrative.factionId = factionMember.primaryFaction;
+      }
+
+      if (questComponent) {
+        if (questComponent.questId || questComponent.startQuestId) {
+          narrative.questId = questComponent.questId || questComponent.startQuestId;
+        }
+        if (questComponent.objectiveId) {
+          narrative.objectiveId = questComponent.objectiveId;
+        }
+      }
+    } else if (componentSnapshot && typeof componentSnapshot === 'object') {
+      const snapshotNarrative = componentSnapshot.narrative;
+      if (snapshotNarrative && typeof snapshotNarrative === 'object') {
+        Object.assign(narrative, snapshotNarrative);
+      }
+    }
+
+    if (Object.keys(narrative).length > 0) {
+      payload.narrative = narrative;
+    }
+
+    return payload;
+  }
+
+  initializeNavigationServices() {
+    if (this.navigationMeshService && typeof this.navigationMeshService.dispose === 'function') {
+      this.navigationMeshService.dispose();
+    }
+
+    this.navigationMeshService = new NavigationMeshService(this.eventBus, {});
+    if (typeof this.navigationMeshService.init === 'function') {
+      this.navigationMeshService.init();
+    }
+
+    if (this.gameSystems?.playerMovement) {
+      this.navigationMeshService.addConsumer(this.gameSystems.playerMovement);
+    }
+    if (this.gameSystems?.navigationConstraint) {
+      this.navigationMeshService.addConsumer(this.gameSystems.navigationConstraint);
+    }
   }
 
   initializeUIOverlays() {
@@ -517,6 +808,13 @@ export class Game {
       y: 20
     });
     this.questNotification.init();
+
+    this.crossroadsBranchOverlay = new CrossroadsBranchLandingOverlay(
+      this.engine.canvas,
+      this.eventBus,
+      {}
+    );
+    this.crossroadsBranchOverlay.init();
 
     // Create quest tracker HUD
     this.questTrackerHUD = new QuestTrackerHUD({
@@ -613,6 +911,65 @@ export class Game {
     }
 
     console.log('[Game] UI overlays initialized');
+  }
+
+  initializeNarrativeControllers() {
+    if (this.crossroadsPromptController && typeof this.crossroadsPromptController.dispose === 'function') {
+      this.crossroadsPromptController.dispose();
+    }
+
+    if (
+      this.crossroadsBranchTransitionController &&
+      typeof this.crossroadsBranchTransitionController.dispose === 'function'
+    ) {
+      this.crossroadsBranchTransitionController.dispose();
+    }
+
+    this.crossroadsPromptController = new CrossroadsPromptController({
+      eventBus: this.eventBus,
+      dialogueSystem: this.gameSystems.dialogue,
+      questManager: this.questManager,
+      storyFlagManager: this.storyFlagManager,
+      config: GameConfig?.narrative?.act2?.crossroads || {},
+      dialogueId: GameConfig?.narrative?.act2?.crossroads?.briefingDialogueId,
+      questId: GameConfig?.narrative?.act2?.crossroads?.questId,
+    });
+
+    if (typeof this.crossroadsPromptController.init === 'function') {
+      this.crossroadsPromptController.init();
+    }
+
+    this.crossroadsBranchTransitionController =
+      new CrossroadsBranchTransitionController({
+        eventBus: this.eventBus,
+        questManager: this.questManager,
+        config: GameConfig?.narrative?.act2?.crossroads || {},
+      });
+
+    if (
+      this.crossroadsBranchTransitionController &&
+      typeof this.crossroadsBranchTransitionController.init === 'function'
+    ) {
+      this.crossroadsBranchTransitionController.init();
+    }
+
+    this._ensureQuestTriggerTelemetryBridge();
+  }
+
+  _ensureQuestTriggerTelemetryBridge() {
+    if (!this.eventBus) {
+      return;
+    }
+    if (!this.questTriggerTelemetryBridge) {
+      this.questTriggerTelemetryBridge = new QuestTriggerTelemetryBridge(this.eventBus, {
+        priority: 18,
+        source: 'quest_trigger',
+        getActiveScene: () => this.activeScene || null,
+      });
+    }
+    if (this.questTriggerTelemetryBridge && typeof this.questTriggerTelemetryBridge.attach === 'function') {
+      this.questTriggerTelemetryBridge.attach();
+    }
   }
 
   /**
@@ -960,6 +1317,211 @@ export class Game {
     }
   }
 
+  handleAct2ThreadLoadRequest(payload = {}) {
+    void this.loadAct2ThreadScene(payload);
+  }
+
+  async loadAct2ThreadScene(options = {}) {
+    if (this._sceneTransitionInFlight) {
+      console.warn('[Game] Cannot load Act 2 thread scene; another transition is in flight.');
+      return null;
+    }
+
+    if (this.playerEntityId == null) {
+      console.warn('[Game] Cannot load Act 2 thread scene before player is initialized');
+      return null;
+    }
+
+    const branchId =
+      options.branchId ||
+      options.threadConfig?.id ||
+      null;
+    const threadConfig =
+      options.threadConfig ||
+      this._resolveAct2ThreadConfig(branchId) ||
+      null;
+
+    const loaderEntry = branchId ? ACT2_THREAD_SCENE_LOADERS[branchId] : null;
+    const loader = loaderEntry?.loader || null;
+    const questId =
+      options.questId ||
+      threadConfig?.questId ||
+      null;
+    const originQuestId = options.originQuestId || null;
+    const sceneId =
+      options.sceneId ||
+      threadConfig?.sceneId ||
+      loaderEntry?.sceneId ||
+      (branchId ? `${branchId}_scene_stub` : 'act2_thread_stub');
+
+    this._sceneTransitionInFlight = true;
+
+    const transitionContext = {
+      branchId,
+      sceneId,
+      questId,
+      originQuestId,
+      threadConfig: threadConfig ? { ...threadConfig } : null,
+    };
+
+    try {
+      this._pendingAct2ThreadTransition = { ...transitionContext };
+      this.eventBus.emit('scene:transition:act2_thread:start', { ...transitionContext });
+
+      if (!loader) {
+        this._applyAct2ThreadFallbackScene(transitionContext);
+        this.eventBus.emit('scene:transition:act2_thread:ready', { ...transitionContext });
+        return transitionContext.sceneId;
+      }
+
+      this._destroySceneEntities();
+
+      const sceneData = await loader(
+        this.entityManager,
+        this.componentRegistry,
+        this.eventBus,
+        {
+          ...options,
+          branchId,
+          questId,
+          originQuestId,
+          threadConfig,
+          playerEntityId: this.playerEntityId,
+          audioManager: this.audioManager,
+        }
+      );
+
+      const resolvedSceneId = sceneData?.sceneName || transitionContext.sceneId;
+      const spawnPoint = sceneData?.spawnPoint || { x: 240, y: 520 };
+
+      this.activeScene = {
+        id: resolvedSceneId,
+        entities: Array.isArray(sceneData?.sceneEntities)
+          ? [...sceneData.sceneEntities]
+          : [],
+        cleanup: typeof sceneData?.cleanup === 'function' ? sceneData.cleanup : null,
+        metadata: {
+          ...(sceneData?.metadata || {}),
+          branchId,
+          questId,
+          originQuestId,
+          threadConfig: threadConfig ? { ...threadConfig } : null,
+          transitionSource: 'act2_thread',
+        },
+      };
+
+      this._activeAmbientController = this.activeScene.metadata?.ambientAudioController || null;
+      if (this._activeAmbientController &&
+        typeof this._activeAmbientController.getAdaptiveMusic === 'function') {
+        this._registerAdaptiveMusic(
+          this._activeAmbientController.getAdaptiveMusic(),
+          { source: resolvedSceneId }
+        );
+      } else {
+        this._registerAdaptiveMusic(null, { reason: 'act2_thread_scene_no_ambient' });
+      }
+
+      const playerTransform = this.componentRegistry.getComponent(this.playerEntityId, 'Transform');
+      if (playerTransform) {
+        playerTransform.x = spawnPoint.x;
+        playerTransform.y = spawnPoint.y;
+      }
+
+      const playerController = this.componentRegistry.getComponent(this.playerEntityId, 'PlayerController');
+      if (playerController) {
+        playerController.velocityX = 0;
+        playerController.velocityY = 0;
+      }
+
+      this.gameSystems.cameraFollow.snapTo(spawnPoint.x, spawnPoint.y);
+
+      this._pendingAct2ThreadTransition = null;
+      this._memoryParlorSceneLoaded = false;
+
+      const readyPayload = {
+        ...transitionContext,
+        sceneId: resolvedSceneId,
+        spawnPoint,
+      };
+
+      this.eventBus.emit('scene:transition:act2_thread:ready', readyPayload);
+      this.eventBus.emit('scene:loaded', {
+        sceneId: resolvedSceneId,
+        spawnPoint,
+        reason: 'act2_thread_transition',
+        navigationMesh: this.activeScene.metadata?.navigationMesh || null,
+        branchId,
+        questId,
+        originQuestId,
+      });
+
+      return resolvedSceneId;
+    } catch (error) {
+      console.error('[Game] Failed to load Act 2 thread scene', error);
+      this.eventBus.emit('scene:transition:act2_thread:error', {
+        ...transitionContext,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      this._applyAct2ThreadFallbackScene(transitionContext);
+      return transitionContext.sceneId;
+    } finally {
+      this._sceneTransitionInFlight = false;
+    }
+  }
+
+  _resolveAct2ThreadConfig(branchId) {
+    if (!branchId) {
+      return null;
+    }
+    const threads = GameConfig?.narrative?.act2?.crossroads?.threads;
+    if (!Array.isArray(threads)) {
+      return null;
+    }
+    return threads.find((thread) => thread.id === branchId) || null;
+  }
+
+  _applyAct2ThreadFallbackScene(context = {}) {
+    const {
+      sceneId = 'act2_thread_stub',
+      branchId = null,
+      questId = null,
+      originQuestId = null,
+      threadConfig = null,
+    } = context;
+
+    if (!this.activeScene) {
+      this.activeScene = {
+        id: null,
+        entities: [],
+        cleanup: null,
+        metadata: {},
+      };
+    }
+
+    this.activeScene.id = sceneId;
+    this.activeScene.entities = Array.isArray(this.activeScene.entities)
+      ? this.activeScene.entities
+      : [];
+    this.activeScene.cleanup = typeof this.activeScene.cleanup === 'function'
+      ? this.activeScene.cleanup
+      : null;
+    this.activeScene.metadata = {
+      ...(this.activeScene.metadata || {}),
+      branchId,
+      questId,
+      originQuestId,
+      threadConfig: threadConfig ? { ...threadConfig } : null,
+      transitionSource: 'act2_thread',
+      placeholder: true,
+    };
+
+    this._pendingAct2ThreadTransition = null;
+    this._activeAmbientController = null;
+    this._registerAdaptiveMusic(null, { reason: 'act2_thread_placeholder' });
+
+    return this.activeScene.id;
+  }
+
   /**
    * Create collision boundary
    * @param {number} x
@@ -1227,6 +1789,12 @@ export class Game {
       });
     }));
 
+    this._offGameEventHandlers.push(
+      this.eventBus.on('scene:load:act2_thread', (data = {}) => {
+        this.handleAct2ThreadLoadRequest(data);
+      })
+    );
+
     // Player movement
     this._offGameEventHandlers.push(this.eventBus.on('player:moved', () => {
       // Could add footstep sounds here
@@ -1268,6 +1836,11 @@ export class Game {
     }
 
     this._clearForensicPromptState({ hidePrompt: true });
+
+    if (this._onEntityDestroyed) {
+      this.entityManager.offEntityDestroyed(this._onEntityDestroyed);
+      this._onEntityDestroyed = null;
+    }
 
     const offAvailable = this.eventBus.on('forensic:available', (payload) => {
       this._handleForensicAvailable(payload);
@@ -1772,6 +2345,9 @@ export class Game {
     }
     if (this.questNotification) {
       this.questNotification.update(deltaTime);
+    }
+    if (this.crossroadsBranchOverlay) {
+      this.crossroadsBranchOverlay.update(deltaTime);
     }
     if (this.questTrackerHUD) {
       this.questTrackerHUD.update(deltaTime);
@@ -2400,6 +2976,9 @@ export class Game {
     if (this.questNotification) {
       this.questNotification.render(ctx);
     }
+    if (this.crossroadsBranchOverlay) {
+      this.crossroadsBranchOverlay.render(ctx);
+    }
 
     if (this.inventoryOverlay) {
       this.inventoryOverlay.render(ctx);
@@ -2506,6 +3085,9 @@ export class Game {
     if (this.questNotification && this.questNotification.cleanup) {
       this.questNotification.cleanup();
     }
+    if (this.crossroadsBranchOverlay && this.crossroadsBranchOverlay.cleanup) {
+      this.crossroadsBranchOverlay.cleanup();
+    }
     if (this.saveInspectorOverlay && this.saveInspectorOverlay.cleanup) {
       this.saveInspectorOverlay.cleanup();
     }
@@ -2564,6 +3146,10 @@ export class Game {
       }
       this._audioTelemetryUnbind = null;
     }
+    if (this.questTriggerTelemetryBridge && typeof this.questTriggerTelemetryBridge.dispose === 'function') {
+      this.questTriggerTelemetryBridge.dispose();
+    }
+    this.questTriggerTelemetryBridge = null;
     this.audioTelemetry = { currentState: null, history: [] };
     this._cleanupAdaptiveMoodHandlers();
     this._registerAdaptiveMusic(null, { reason: 'cleanup' });

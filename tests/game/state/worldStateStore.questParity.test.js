@@ -77,4 +77,75 @@ describe('WorldStateStore quest invariants', () => {
     const completedQuests = store.select(questSlice.selectors.selectCompletedQuests);
     expect(completedQuests.some((quest) => quest.id === questDefinition.id)).toBe(true);
   });
+
+  test('NPC availability events mirror into quest slice state', () => {
+    const questDefinition = {
+      id: 'quest_availability',
+      title: 'Silent Archives',
+      type: 'side',
+      objectives: [
+        {
+          id: 'obj_meet_lira',
+          title: 'Meet Archivist Lira',
+          trigger: { event: 'dialogue:completed', count: 1 },
+        },
+      ],
+    };
+
+    questManager.registerQuest(questDefinition);
+    questManager.startQuest(questDefinition.id);
+
+    const availabilityTimestamp = Date.now();
+    eventBus.emit('quest:npc_availability', {
+      npcId: 'npc_lira',
+      npcName: 'Archivist Lira',
+      factionId: 'archivists',
+      available: false,
+      updatedAt: availabilityTimestamp,
+      objectives: [
+        {
+          questId: questDefinition.id,
+          questTitle: questDefinition.title,
+          objectiveId: 'obj_meet_lira',
+          objectiveTitle: 'Meet Archivist Lira',
+        },
+      ],
+      reason: 'entity_destroyed',
+      tag: 'dialogue-trigger',
+    });
+
+    const availabilityRecords = store.select(questSlice.selectors.selectNpcAvailabilityRecords);
+    expect(availabilityRecords[0]).toMatchObject({
+      npcId: 'npc_lira',
+      available: false,
+    });
+    expect(availabilityRecords[0].objectives[0]).toMatchObject({
+      questId: questDefinition.id,
+      objectiveId: 'obj_meet_lira',
+    });
+
+    const blockedObjectives = store.select(
+      questSlice.selectors.selectQuestBlockedObjectives,
+      questDefinition.id
+    );
+    expect(blockedObjectives).toHaveLength(1);
+    expect(blockedObjectives[0].npcId).toBe('npc_lira');
+
+    eventBus.emit('quest:npc_availability', {
+      npcId: 'npc_lira',
+      npcName: 'Archivist Lira',
+      available: true,
+      updatedAt: availabilityTimestamp + 1000,
+      reason: 'availability_restored',
+    });
+
+    const updatedRecords = store.select(questSlice.selectors.selectNpcAvailabilityRecords);
+    expect(updatedRecords.find((record) => record.npcId === 'npc_lira')?.available).toBe(true);
+
+    const clearedObjectives = store.select(
+      questSlice.selectors.selectQuestBlockedObjectives,
+      questDefinition.id
+    );
+    expect(clearedObjectives).toHaveLength(0);
+  });
 });

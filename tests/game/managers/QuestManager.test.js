@@ -232,6 +232,179 @@ describe('QuestManager', () => {
     });
   });
 
+  describe('Entity destruction handling', () => {
+    test('marks objectives blocked when quest-critical NPC despawns', () => {
+      const quest = {
+        id: 'npc_support_quest',
+        title: 'Witness Testimony',
+        type: 'main',
+        objectives: [
+          {
+            id: 'speak_to_witness',
+            description: 'Interview the street witness',
+            trigger: { event: 'npc:interviewed', npcId: 'witness_alpha' },
+            optional: false,
+          },
+        ],
+      };
+
+      questManager.registerQuest(quest);
+      questManager.startQuest(quest.id);
+
+      const blockedListener = jest.fn();
+      eventBus.on('objective:blocked', blockedListener);
+
+      const npcComponent = {
+        npcId: 'witness_alpha',
+        name: 'Witness Alpha',
+        faction: 'civilian',
+      };
+      const components = new Map([['NPC', npcComponent]]);
+
+      questManager.handleEntityDestroyed(512, { tag: 'npc' }, components);
+
+      expect(blockedListener).toHaveBeenCalledTimes(1);
+      const payload = blockedListener.mock.calls[0][0];
+      expect(payload.questId).toBe('npc_support_quest');
+      expect(payload.objectiveId).toBe('speak_to_witness');
+      expect(payload.reason).toBe('npc_unavailable');
+
+      const activeQuest = questManager.activeQuests.get('npc_support_quest');
+      const objectiveState = activeQuest.objectiveStates.get('speak_to_witness');
+      expect(objectiveState.status).toBe('blocked');
+      expect(objectiveState.blocked).toMatchObject({
+        reason: 'npc_unavailable',
+        requirement: 'witness_alpha',
+      });
+    });
+
+    test('emits NPC availability event and suppresses duplicate warnings for repeated despawns', () => {
+      const quest = {
+        id: 'npc_support_quest',
+        title: 'Witness Testimony',
+        type: 'main',
+        objectives: [
+          {
+            id: 'speak_to_witness',
+            description: 'Interview the street witness',
+            trigger: { event: 'npc:interviewed', npcId: 'witness_alpha' },
+            optional: false,
+          },
+        ],
+      };
+
+      questManager.registerQuest(quest);
+      questManager.startQuest(quest.id);
+
+      const availabilityListener = jest.fn();
+      eventBus.on('quest:npc_availability', availabilityListener);
+
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const npcComponent = {
+        npcId: 'witness_alpha',
+        name: 'Witness Alpha',
+        faction: 'civilian',
+      };
+      const components = new Map([
+        ['NPC', npcComponent],
+        ['FactionMember', { primaryFaction: 'civilian' }],
+      ]);
+
+      questManager.handleEntityDestroyed(512, { tag: 'npc' }, components);
+
+      expect(availabilityListener).toHaveBeenCalledTimes(1);
+      expect(availabilityListener.mock.calls[0][0]).toMatchObject({
+        npcId: 'witness_alpha',
+        available: false,
+        objectives: [
+          {
+            questId: 'npc_support_quest',
+            objectiveId: 'speak_to_witness',
+          },
+        ],
+      });
+      expect(questManager.isNpcAvailable('witness_alpha')).toBe(false);
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+
+      questManager.handleEntityDestroyed(513, { tag: 'npc' }, components);
+      expect(availabilityListener).toHaveBeenCalledTimes(1);
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+
+      warnSpy.mockRestore();
+    });
+
+    test('restores NPC availability on interaction and re-emits notifications on subsequent despawns', () => {
+      const quest = {
+        id: 'npc_support_quest',
+        title: 'Witness Testimony',
+        type: 'main',
+        objectives: [
+          {
+            id: 'speak_to_witness',
+            description: 'Interview the street witness',
+            trigger: { event: 'npc:interviewed', npcId: 'witness_alpha' },
+          },
+        ],
+      };
+
+      questManager.registerQuest(quest);
+      questManager.startQuest(quest.id);
+
+      const availabilityEvents = [];
+      eventBus.on('quest:npc_availability', (payload) => {
+        availabilityEvents.push(payload);
+      });
+
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+
+      const components = new Map([
+        [
+          'NPC',
+          {
+            npcId: 'witness_alpha',
+            name: 'Witness Alpha',
+            faction: 'civilian',
+          },
+        ],
+        ['FactionMember', { primaryFaction: 'civilian' }],
+      ]);
+
+      questManager.handleEntityDestroyed(512, { tag: 'npc' }, components);
+      expect(availabilityEvents).toHaveLength(1);
+      expect(availabilityEvents[0]).toMatchObject({
+        npcId: 'witness_alpha',
+        available: false,
+      });
+      expect(questManager.isNpcAvailable('witness_alpha')).toBe(false);
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+
+      questManager.onNPCInterviewed({
+        npcId: 'witness_alpha',
+        name: 'Witness Alpha',
+        factionId: 'civilian',
+      });
+
+      expect(availabilityEvents).toHaveLength(2);
+      expect(availabilityEvents[1]).toMatchObject({
+        npcId: 'witness_alpha',
+        available: true,
+        reason: 'npc_interviewed',
+      });
+      expect(questManager.isNpcAvailable('witness_alpha')).toBe(true);
+      expect(logSpy).toHaveBeenCalled();
+
+      questManager.handleEntityDestroyed(600, { tag: 'npc' }, components);
+      expect(availabilityEvents).toHaveLength(2);
+      expect(questManager.isNpcAvailable('witness_alpha')).toBe(true);
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+
+      warnSpy.mockRestore();
+      logSpy.mockRestore();
+    });
+  });
+
   describe('Objective Tracking', () => {
     let testQuest;
 

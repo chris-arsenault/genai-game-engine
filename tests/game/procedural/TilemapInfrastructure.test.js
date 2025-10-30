@@ -9,6 +9,8 @@ import {
   VENDOR_STALL_TEMPLATE_ID,
   DETECTIVE_OFFICE_TEMPLATE_ID,
   ALLEY_HUB_TEMPLATE_ID,
+  PRECINCT_WAR_ROOM_TEMPLATE_ID,
+  ALLEY_SPUR_TEMPLATE_ID,
 } from '../../../src/game/procedural/templates/authoredTemplates.js';
 import { DistrictGenerator } from '../../../src/game/procedural/DistrictGenerator.js';
 
@@ -242,6 +244,100 @@ describe('Procedural tilemap infrastructure', () => {
           expect.objectContaining({
             edge: 'west',
             tags: expect.arrayContaining(['south_branch']),
+          }),
+        ])
+      );
+    });
+
+    it('registers precinct war room variants with command metadata and seam tags', () => {
+      const entry = templateVariantManifest.templates[PRECINCT_WAR_ROOM_TEMPLATE_ID];
+      expect(entry).toBeDefined();
+      expect(entry.metadata).toEqual(
+        expect.objectContaining({
+          roomType: 'precinct_war_room',
+          moodHint: 'strategic_tension',
+        })
+      );
+      expect(entry.seams.base).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            tags: expect.arrayContaining(['primary_entry']),
+          }),
+          expect.objectContaining({
+            tags: expect.arrayContaining(['operations_link']),
+          }),
+        ])
+      );
+
+      const resolver = new TemplateVariantResolver(templateVariantManifest);
+      const authored = createAuthoredTemplateForRoomType('precinct_war_room');
+      expect(authored).not.toBeNull();
+      const result = resolver.resolve({
+        room: {
+          id: 'precinct_command_1',
+          type: 'precinct_war_room',
+          templateId: authored.templateId,
+        },
+        template: { id: authored.templateId, tilemap: authored.tilemap.clone() },
+        rotation: 270,
+      });
+
+      expect(result.variantId).toBe(`${PRECINCT_WAR_ROOM_TEMPLATE_ID}_r270`);
+      expect(result.metadata).toEqual(
+        expect.objectContaining({
+          commandFocus: 'strategic_projection',
+          moodHint: 'strategic_tension',
+        })
+      );
+      expect(result.seams).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            tags: expect.arrayContaining(['balcony_access']),
+          }),
+        ])
+      );
+    });
+
+    it('exposes alley spur variants for corridor painter seams', () => {
+      const entry = templateVariantManifest.templates[ALLEY_SPUR_TEMPLATE_ID];
+      expect(entry).toBeDefined();
+      expect(entry.metadata).toEqual(
+        expect.objectContaining({
+          roomType: 'alley_spur',
+          variantFamily: 'act1_side_alley',
+        })
+      );
+      expect(entry.seams.base).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            tags: expect.arrayContaining(['hub_connection']),
+          }),
+        ])
+      );
+
+      const resolver = new TemplateVariantResolver(templateVariantManifest);
+      const authored = createAuthoredTemplateForRoomType('alley_spur');
+      const result = resolver.resolve({
+        room: {
+          id: 'alley_spur_branch',
+          type: 'alley_spur',
+          templateId: authored.templateId,
+        },
+        template: { id: authored.templateId, tilemap: authored.tilemap.clone() },
+        rotation: 90,
+      });
+
+      expect(result.variantId).toBe(`${ALLEY_SPUR_TEMPLATE_ID}_r90`);
+      expect(result.metadata).toEqual(
+        expect.objectContaining({
+          branch: 'north_escape',
+          moodHint: 'escape_route',
+        })
+      );
+      expect(result.seams).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            tags: expect.arrayContaining(['side_exit']),
           }),
         ])
       );

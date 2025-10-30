@@ -48,6 +48,7 @@ describe('SaveManager', () => {
       },
       worldStateStore: null,
       storage: localStorageMock,
+      spatialMetricsProvider: null,
     };
 
     eventBus = new EventBus();
@@ -1218,11 +1219,15 @@ describe('SaveManager', () => {
       expect(summary.factions).toEqual({
         lastCascadeEvent: null,
         cascadeTargets: [],
+        recentMemberRemovals: [],
       });
       expect(summary.tutorial).toEqual({
         latestSnapshot: null,
         snapshots: [],
         transcript: [],
+      });
+      expect(summary.engine).toEqual({
+        spatialHash: null,
       });
       expect(summary.generatedAt).toEqual(expect.any(Number));
     });
@@ -1271,10 +1276,47 @@ describe('SaveManager', () => {
         promptHistory: [],
       };
 
+      const recentRemovals = [
+        {
+          factionId: 'cipher_collective',
+          factionName: 'Cipher Collective',
+          npcId: 'cipher_agent_alpha',
+          entityId: 404,
+          tag: 'npc',
+          removedAt: 111,
+        },
+      ];
+      const spatialSnapshot = {
+        cellSize: 128,
+        window: 120,
+        sampleCount: 80,
+        lastSample: {
+          cellCount: 40,
+          maxBucketSize: 3,
+          trackedEntities: 42,
+          timestamp: 111111,
+        },
+        aggregates: {
+          cellCount: { average: 40.5, min: 35, max: 45 },
+          maxBucketSize: { average: 2.5, min: 2, max: 4 },
+          trackedEntities: { average: 41.5, min: 30, max: 52 },
+        },
+        stats: { insertions: 120, updates: 60, removals: 20 },
+        history: [
+          { cellCount: 38, maxBucketSize: 3, trackedEntities: 40, timestamp: 111100 },
+          { cellCount: 39, maxBucketSize: 3, trackedEntities: 41, timestamp: 111105 },
+          { cellCount: 40, maxBucketSize: 3, trackedEntities: 42, timestamp: 111111 },
+        ],
+        payloadBytes: 1024,
+      };
+
       const store = {
         select: jest.fn((selector) => {
           if (selector === factionSlice.selectors.selectFactionCascadeSummary) {
             return cascadeSummary;
+          }
+          if (selector === factionSlice.selectors.selectRecentMemberRemovals) {
+            return recentRemovals;
           }
           if (selector === tutorialSlice.selectors.selectPromptHistorySnapshots) {
             return tutorialSnapshots;
@@ -1287,16 +1329,22 @@ describe('SaveManager', () => {
       };
 
       mockManagers.worldStateStore = store;
+      mockManagers.spatialMetricsProvider = jest.fn(() => spatialSnapshot);
       saveManager = new SaveManager(eventBus, mockManagers);
 
       const summary = saveManager.getInspectorSummary();
 
       expect(summary.source).toBe('worldStateStore');
-      expect(summary.factions).toEqual(cascadeSummary);
+      expect(summary.factions).toEqual({
+        ...cascadeSummary,
+        recentMemberRemovals: recentRemovals,
+      });
       expect(summary.tutorial.snapshots).toEqual(tutorialSnapshots);
       expect(summary.tutorial.latestSnapshot).toEqual(latestSnapshot);
       expect(summary.tutorial.transcript).toEqual([]);
-      expect(store.select).toHaveBeenCalledTimes(3);
+      expect(summary.engine.spatialHash).toBe(spatialSnapshot);
+      expect(store.select).toHaveBeenCalledTimes(4);
+      expect(mockManagers.spatialMetricsProvider).toHaveBeenCalledTimes(1);
     });
 
     test('should include tutorial transcript when recorder provided', () => {
@@ -1388,6 +1436,29 @@ describe('SaveManager', () => {
       };
 
       mockManagers.worldStateStore = store;
+      mockManagers.spatialMetricsProvider = jest.fn(() => ({
+        cellSize: '128',
+        window: 120.6,
+        sampleCount: '3',
+        lastSample: {
+          cellCount: '42',
+          maxBucketSize: '4',
+          trackedEntities: '40',
+          timestamp: '1700000000000',
+        },
+        aggregates: {
+          cellCount: { average: '41.2', min: '36', max: '45' },
+          maxBucketSize: { average: '3.2', min: '2', max: '5' },
+          trackedEntities: { average: '39.4', min: '30', max: '48' },
+        },
+        stats: { insertions: '120', updates: '60', removals: undefined },
+        history: [
+          { cellCount: '40', maxBucketSize: '3', trackedEntities: '38', timestamp: '1700000000000' },
+          { cellCount: '41', maxBucketSize: '4', trackedEntities: '39', timestamp: '1700000001000' },
+          { cellCount: '42', maxBucketSize: '4', trackedEntities: '40', timestamp: '1700000002000' },
+        ],
+        payloadBytes: null,
+      }));
       saveManager = new SaveManager(eventBus, mockManagers);
 
       const writer = jest.fn().mockResolvedValue();
@@ -1404,6 +1475,101 @@ describe('SaveManager', () => {
           prefix: 'ci-artifact',
         })
       );
+      expect(result.summary.engine.spatialHash).toEqual(
+        expect.objectContaining({
+          cellSize: 128,
+          window: 120,
+          sampleCount: 3,
+          lastSample: expect.objectContaining({
+            cellCount: 42,
+            maxBucketSize: 4,
+            trackedEntities: 40,
+            timestamp: 1700000000000,
+          }),
+          aggregates: expect.objectContaining({
+            cellCount: expect.objectContaining({ average: 41.2 }),
+            maxBucketSize: expect.objectContaining({ average: 3.2 }),
+            trackedEntities: expect.objectContaining({ average: 39.4 }),
+          }),
+          stats: expect.objectContaining({ insertions: 120, updates: 60 }),
+          history: expect.arrayContaining([
+            expect.objectContaining({ cellCount: 40 }),
+            expect.objectContaining({ cellCount: 42 }),
+          ]),
+          payloadBytes: expect.any(Number),
+          payloadBudgetBytes: expect.any(Number),
+          payloadBudgetStatus: 'within_budget',
+          payloadBudgetExceededBy: 0,
+        })
+      );
+
+      const jsonArtifactCall = writer.mock.calls.find(
+        ([artifact]) => artifact && artifact.type === 'json'
+      );
+      expect(jsonArtifactCall).toBeDefined();
+      const jsonContent = jsonArtifactCall[0].content;
+      const parsed = JSON.parse(jsonContent);
+      expect(parsed.engine.spatialHash.window).toBe(120);
+      expect(parsed.engine.spatialHash.history.length).toBe(3);
+      expect(parsed.engine.spatialHash.history[0]).toEqual(
+        expect.objectContaining({ cellCount: 40, maxBucketSize: 3 })
+      );
+      expect(parsed.engine.spatialHash.payloadBudgetStatus).toBe('within_budget');
+    });
+
+    test('emits budget status event when spatial telemetry exceeds budget', async () => {
+      mockManagers.worldStateStore = {
+        select: jest.fn(() => null),
+      };
+
+      const history = Array.from({ length: 256 }, (_, index) => ({
+        cellCount: String(50 + (index % 7)),
+        maxBucketSize: '6',
+        trackedEntities: String(70 + (index % 5)),
+        timestamp: String(1700002000000 + index * 12),
+      }));
+
+      mockManagers.spatialMetricsProvider = jest.fn(() => ({
+        cellSize: '128',
+        window: 256,
+        sampleCount: String(history.length),
+        lastSample: history[history.length - 1],
+        aggregates: {},
+        stats: {},
+        history,
+        payloadBytes: null,
+      }));
+
+      saveManager = new SaveManager(eventBus, mockManagers);
+
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const eventSpy = jest.spyOn(eventBus, 'emit');
+
+      const writer = jest.fn().mockResolvedValue();
+      await saveManager.exportInspectorSummary({ writer });
+
+      const budgetEvent = eventSpy.mock.calls.find(
+        ([eventName]) => eventName === 'telemetry:export_budget_status'
+      );
+
+      expect(budgetEvent).toBeDefined();
+      expect(budgetEvent[1]).toMatchObject({
+        type: 'spatialHash',
+        status: 'exceeds_budget',
+        budgetBytes: expect.any(Number),
+        exceededBy: expect.any(Number),
+      });
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[SaveManager] Inspector spatial telemetry payload exceeds budget',
+        expect.objectContaining({
+          payloadBytes: expect.any(Number),
+          budgetBytes: expect.any(Number),
+        })
+      );
+
+      warnSpy.mockRestore();
+      eventSpy.mockRestore();
     });
 
     test('should continue when writer throws', async () => {

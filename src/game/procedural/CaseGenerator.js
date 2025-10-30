@@ -613,8 +613,14 @@ export class CaseGenerator {
     // Place evidence in center of room (avoiding walls)
     const margin = 2;
     return {
-      x: room.x + rng.nextInt(margin, Math.max(margin + 1, (room.width || 10) - margin)),
-      y: room.y + rng.nextInt(margin, Math.max(margin + 1, (room.height || 10) - margin)),
+      x: room.x + rng.nextInt(
+        margin,
+        Math.max(margin + 1, (room.layoutWidth ?? room.width ?? 10) - margin)
+      ),
+      y: room.y + rng.nextInt(
+        margin,
+        Math.max(margin + 1, (room.layoutHeight ?? room.height ?? 10) - margin)
+      ),
     };
   }
 }

@@ -38,6 +38,8 @@ export class QuestManager {
 
     // Event unsubscriber references
     this._offEventHandlers = [];
+    this._npcRemovalWarnings = new Map();
+    this._npcAvailability = new Map();
   }
 
   /**
@@ -54,7 +56,9 @@ export class QuestManager {
       this.eventBus.on('ability:unlocked', (data) => this.onAbilityUnlocked(data)),
       this.eventBus.on('area:entered', (data) => this.onAreaEntered(data)),
       this.eventBus.on('faction:reputation:changed', (data) => this.onReputationChanged(data)),
-      this.eventBus.on('knowledge:learned', (data) => this.onKnowledgeLearned(data))
+      this.eventBus.on('knowledge:learned', (data) => this.onKnowledgeLearned(data)),
+      this.eventBus.on('narrative:crossroads_prompt', (data) => this.onCrossroadsPrompt(data)),
+      this.eventBus.on('crossroads:thread_selected', (data) => this.onCrossroadsThreadSelected(data))
     ];
 
     console.log('[QuestManager] Initialized');
@@ -299,6 +303,8 @@ export class QuestManager {
     if (trigger.npcId && eventData.npcId !== trigger.npcId) return { matched: false };
     if (trigger.areaId && eventData.areaId !== trigger.areaId) return { matched: false };
     if (trigger.abilityId && eventData.abilityId !== trigger.abilityId) return { matched: false };
+    if (trigger.questId && eventData.questId && eventData.questId !== trigger.questId) return { matched: false };
+    if (trigger.branchId && eventData.branchId !== trigger.branchId) return { matched: false };
 
     const requirementResult = this.evaluateObjectiveRequirements(objective.requirements, eventData);
     if (!requirementResult.met) {
@@ -378,6 +384,9 @@ export class QuestManager {
    * @param {Object} state
    */
   progressObjective(questId, objectiveId, quest, state) {
+    if (state.blocked) {
+      delete state.blocked;
+    }
     state.progress++;
 
     // Emit progress event
@@ -645,6 +654,20 @@ export class QuestManager {
   }
 
   /**
+   * Returns current availability state for an NPC tracked by quest objectives.
+   * Defaults to true (available) when NPC hasn't been marked otherwise.
+   * @param {string} npcId
+   * @returns {boolean}
+   */
+  isNpcAvailable(npcId) {
+    if (!npcId) {
+      return true;
+    }
+    const record = this._npcAvailability.get(npcId);
+    return record ? Boolean(record.available) : true;
+  }
+
+  /**
    * Serialize quest state for saving
    * @returns {Object}
    */
@@ -708,6 +731,13 @@ export class QuestManager {
   }
 
   onNPCInterviewed(data) {
+    if (data?.npcId) {
+      this._setNpcAvailability(data.npcId, true, {
+        reason: 'npc_interviewed',
+        npcName: data?.name ?? data?.npcName ?? null,
+        factionId: data?.factionId ?? null,
+      });
+    }
     this.updateObjectives('npc:interviewed', data);
   }
 
@@ -725,6 +755,276 @@ export class QuestManager {
 
   onKnowledgeLearned(data) {
     this.updateObjectives('knowledge:learned', data);
+  }
+
+  onCrossroadsPrompt(data) {
+    this.updateObjectives('narrative:crossroads_prompt', data);
+  }
+
+  onCrossroadsThreadSelected(data) {
+    if (this.storyFlags && data) {
+      const worldFlags = Array.isArray(data?.worldFlags)
+        ? data.worldFlags
+        : Array.isArray(data?.metadata?.worldFlags)
+          ? data.metadata.worldFlags
+          : null;
+
+      if (Array.isArray(worldFlags)) {
+        for (const flagId of worldFlags) {
+          if (typeof flagId === 'string' && flagId.trim().length > 0) {
+            this.storyFlags.setFlag(flagId, true, {
+              source: 'crossroads_thread_selected',
+              branchId: data?.branchId || null,
+            });
+          }
+        }
+      }
+    }
+
+    this.updateObjectives('crossroads:thread_selected', data);
+  }
+
+  /**
+   * Handles entity destruction by marking dependent objectives as blocked.
+   * @param {number} entityId
+   * @param {object|null} metadata
+   * @param {Map<string,*>|object|null} componentSnapshot
+   */
+  handleEntityDestroyed(entityId, metadata = null, componentSnapshot = null) {
+    const narrative = this.#resolveNarrativeEntityData(componentSnapshot, metadata);
+    if (!narrative) {
+      return;
+    }
+
+    const now = Date.now();
+    const blockedObjectives = [];
+
+    if (narrative.npcId) {
+      for (const [questId, quest] of this.activeQuests) {
+        const objectives = Array.isArray(quest.objectives) ? quest.objectives : [];
+        for (const objective of objectives) {
+          if (!objective?.trigger || objective.trigger.event !== 'npc:interviewed') {
+            continue;
+          }
+          if (objective.trigger.npcId !== narrative.npcId) {
+            continue;
+          }
+
+          const state = quest.objectiveStates?.get(objective.id);
+          if (!state || state.status === 'completed') {
+            continue;
+          }
+
+          if (
+            state.blocked &&
+            state.blocked.reason === 'npc_unavailable' &&
+            state.blocked.requirement === narrative.npcId
+          ) {
+            continue;
+          }
+
+          state.status = 'blocked';
+          state.blocked = {
+            reason: 'npc_unavailable',
+            requirement: narrative.npcId,
+            recordedAt: now,
+            entityId,
+            tag: metadata?.tag ?? null,
+          };
+
+          const blockedMessage =
+            objective.blockedMessage ||
+            `The contact ${narrative.npcName ?? narrative.npcId} is no longer available.`;
+
+          this.eventBus.emit('objective:blocked', {
+            questId,
+            questTitle: quest.title,
+            questType: quest.type,
+            objectiveId: objective.id,
+            objectiveDescription: objective.description,
+            blockedMessage,
+            reason: 'npc_unavailable',
+            requirement: narrative.npcId,
+            requirements: objective.requirements || null,
+            eventType: 'entity:destroyed',
+            eventData: {
+              npcId: narrative.npcId,
+              npcName: narrative.npcName ?? null,
+              entityId,
+              tag: metadata?.tag ?? null,
+              factionId: narrative.factionId ?? null,
+            },
+          });
+
+          blockedObjectives.push({ questId, objectiveId: objective.id });
+        }
+      }
+
+      if (blockedObjectives.length) {
+        this._setNpcAvailability(narrative.npcId, false, {
+          reason: 'entity_destroyed',
+          entityId,
+          tag: metadata?.tag ?? null,
+          npcName: narrative.npcName ?? null,
+          factionId: narrative.factionId ?? null,
+          blockedObjectives,
+          signatures: blockedObjectives.map(
+            (entry) => `${entry.questId}:${entry.objectiveId}`
+          ),
+          timestamp: now,
+        });
+      }
+    }
+  }
+
+  _setNpcAvailability(npcId, available, context = {}) {
+    if (!npcId) {
+      return;
+    }
+
+    const previous = this._npcAvailability.get(npcId);
+    const timestamp = context.timestamp ?? Date.now();
+    const blockedObjectives = Array.isArray(context.blockedObjectives)
+      ? [...context.blockedObjectives]
+      : [];
+    const npcName = context.npcName ?? previous?.npcName ?? null;
+    const factionId = context.factionId ?? previous?.factionId ?? null;
+
+    if (previous && previous.available === available) {
+      if (!available && blockedObjectives.length) {
+        const merged = Array.isArray(previous.blockedObjectives)
+          ? [...previous.blockedObjectives]
+          : [];
+        let changed = false;
+        for (const entry of blockedObjectives) {
+          if (
+            entry &&
+            !merged.some(
+              (existing) =>
+                existing.questId === entry.questId &&
+                existing.objectiveId === entry.objectiveId
+            )
+          ) {
+            merged.push(entry);
+            changed = true;
+          }
+        }
+        if (changed) {
+          this._npcAvailability.set(npcId, {
+            ...previous,
+            blockedObjectives: merged,
+            updatedAt: timestamp,
+          });
+        }
+        this.#registerNpcWarningSignatures(npcId, context.signatures);
+      }
+      return;
+    }
+
+    const state = {
+      npcId,
+      npcName,
+      factionId,
+      available,
+      updatedAt: timestamp,
+      blockedObjectives,
+    };
+
+    this._npcAvailability.set(npcId, state);
+
+    if (available) {
+      this._npcRemovalWarnings.delete(npcId);
+      if (previous && previous.available === false && typeof console !== 'undefined') {
+        console.log(
+          `[QuestManager] NPC ${npcName ?? npcId} availability restored`
+        );
+      }
+    } else {
+      this.#registerNpcWarningSignatures(npcId, context.signatures);
+      if (typeof console !== 'undefined') {
+        console.warn(
+          `[QuestManager] NPC ${npcName ?? npcId} unavailable; blocking objectives`,
+          blockedObjectives
+        );
+      }
+    }
+
+    this.eventBus?.emit?.('quest:npc_availability', {
+      npcId,
+      npcName,
+      factionId,
+      available,
+      updatedAt: timestamp,
+      reason:
+        context.reason ??
+        (available ? 'availability_restored' : 'entity_destroyed'),
+      entityId: context.entityId ?? null,
+      tag: context.tag ?? null,
+      objectives: blockedObjectives,
+    });
+  }
+
+  #registerNpcWarningSignatures(npcId, signatures) {
+    if (!npcId || !Array.isArray(signatures) || signatures.length === 0) {
+      return;
+    }
+
+    const existing = this._npcRemovalWarnings.get(npcId) ?? new Set();
+    let added = false;
+    for (const signature of signatures) {
+      if (typeof signature !== 'string') {
+        continue;
+      }
+      if (!existing.has(signature)) {
+        existing.add(signature);
+        added = true;
+      }
+    }
+
+    if (added) {
+      this._npcRemovalWarnings.set(npcId, existing);
+    }
+  }
+
+  #resolveNarrativeEntityData(source, metadata) {
+    if (!source) {
+      return null;
+    }
+
+    if (source instanceof Map) {
+      const npcComponent = source.get('NPC');
+      const factionComponent = source.get('FactionMember');
+
+      if (!npcComponent && !factionComponent) {
+        return null;
+      }
+
+      return {
+        npcId: npcComponent?.npcId ?? null,
+        npcName: npcComponent?.name ?? null,
+        factionId:
+          npcComponent?.faction ??
+          factionComponent?.primaryFaction ??
+          metadata?.tag ??
+          null,
+      };
+    }
+
+    if (typeof source === 'object' && source !== null) {
+      const narrative = source.narrative || source;
+      const npcId = narrative?.npcId ?? null;
+      const factionId = narrative?.factionId ?? null;
+      if (!npcId && !factionId) {
+        return null;
+      }
+      return {
+        npcId,
+        npcName: narrative?.npcName ?? null,
+        factionId,
+      };
+    }
+
+    return null;
   }
 
   /**

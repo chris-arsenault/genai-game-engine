@@ -229,5 +229,18 @@ describe('WorldStateStore', () => {
     expect(lastReset.reason).toBe('QA reset');
     expect(lastReset.initiatedBy).toBe('dev_console');
     expect(store.select(factionSlice.selectors.selectFactionCascadeSummary).lastCascadeEvent).toBeNull();
+
+    eventBus.emit('faction:member_removed', {
+      factionId: 'faction_delta',
+      factionName: 'Faction Delta',
+      npcId: 'operative_x',
+      entityId: 404,
+      tag: 'npc',
+      removedAt: Date.now(),
+    });
+
+    const removals = store.select(factionSlice.selectors.selectRecentMemberRemovals);
+    expect(removals).toHaveLength(1);
+    expect(removals[0].npcId).toBe('operative_x');
   });
 });

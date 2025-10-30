@@ -1,3 +1,8 @@
+import {
+  Act2CrossroadsArtConfig,
+  ACT2_CROSSROADS_ART_MANIFEST_URL,
+} from '../data/sceneArt/Act2CrossroadsArtConfig.js';
+
 /**
  * GameConfig
  *
@@ -198,6 +203,50 @@ export const GameConfig = {
       },
     },
 
+    act2CrossroadsAmbient: {
+      trackId: 'music-act2-crossroads-ambient-001',
+      trackUrl: '/music/act2/crossroads-ambient.ogg',
+      baseVolume: 0.58,
+      scramblerBoost: 0.18,
+      fadeDuration: 1.4,
+      scramblerFadeDuration: 0.6,
+      loopStart: 0,
+      loopEnd: null,
+      tensionTrackId: 'music-act2-crossroads-strings-001',
+      tensionTrackUrl: '/music/act2/crossroads-strings.ogg',
+      tensionBaseVolume: 0.72,
+      tensionLoopStart: 0,
+      tensionLoopEnd: null,
+      combatTrackId: 'music-act2-crossroads-percussion-001',
+      combatTrackUrl: '/music/act2/crossroads-percussion.ogg',
+      combatBaseVolume: 0.85,
+      combatLoopStart: 0,
+      combatLoopEnd: null,
+      defaultAdaptiveState: 'ambient',
+      states: {
+        ambient: {
+          ambient_base: 0.88,
+          tension_layer: 0,
+          combat_layer: 0,
+        },
+        decision: {
+          ambient_base: 0.72,
+          tension_layer: 0.35,
+          combat_layer: 0,
+        },
+        tension: {
+          ambient_base: 0.62,
+          tension_layer: 0.78,
+          combat_layer: 0.18,
+        },
+        alert: {
+          ambient_base: 0.55,
+          tension_layer: 0.7,
+          combat_layer: 0.25,
+        },
+      },
+    },
+
     // Adaptive music
     layerTransitionTime: 1.5, // seconds
     musicStates: {
@@ -213,6 +262,58 @@ export const GameConfig = {
       toolLabels: {},
       skillLabels: {},
       typeLabels: {},
+    },
+  },
+
+  narrative: {
+    act2: {
+      crossroads: {
+        briefingDialogueId: 'dialogue_act2_crossroads_briefing',
+        questId: 'main-act2-crossroads',
+        npcId: 'zara_crossroads',
+        threads: [
+          {
+            id: 'act2_thread_corporate_infiltration',
+            title: 'Corporate Infiltration',
+            summary: "Slip into NeuroSync HQ using Zara's forged credentials to expose what the corporation is hiding.",
+            questId: 'main-act2-neurosync-infiltration',
+            telemetryTag: 'act2_thread_selection_corporate',
+            worldFlags: ['act2_branch_corporate_selected'],
+            sceneId: 'act2_corporate_interior',
+            defaultUnlocked: true,
+          },
+          {
+            id: 'act2_thread_resistance_contact',
+            title: 'Resistance Contact',
+            summary: 'Meet the Archivists in the under-city, navigate faction politics, and unlock alternate infiltration routes.',
+            questId: 'main-act2-archivist-alliance',
+            telemetryTag: 'act2_thread_selection_resistance',
+            worldFlags: ['act2_branch_resistance_selected'],
+            sceneId: 'act2_resistance_hideout',
+            defaultUnlocked: true,
+          },
+          {
+            id: 'act2_thread_personal_investigation',
+            title: 'Personal Investigation',
+            summary: "Dig into Mid-City archives to uncover what really happened to Kira's old cases and missing allies.",
+            questId: 'main-act2-personal-investigation',
+            telemetryTag: 'act2_thread_selection_personal',
+            worldFlags: ['act2_branch_personal_selected'],
+            sceneId: 'act2_personal_archive',
+            defaultUnlocked: true,
+          },
+        ],
+      },
+    },
+  },
+
+  sceneArt: {
+    // Override the hybrid geometry sprites for the Act 2 Crossroads hub once bespoke art lands.
+    // Each array mirrors the fallback segments defined in Act2CrossroadsScene.
+    act2Crossroads: {
+      manifestUrl: ACT2_CROSSROADS_ART_MANIFEST_URL,
+      overrides: Act2CrossroadsArtConfig,
+      variant: 'act2_crossroads_bespoke_bundle_v1',
     },
   },
 

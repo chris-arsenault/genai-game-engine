@@ -5,21 +5,118 @@
 
 ## Document Overview
 
-**Version**: 1.1
-**Last Updated**: 2025-10-31
+**Version**: 1.2
+**Last Updated**: 2025-11-16
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
+**Team Structure**: Solo developer; no external approvals required for sign-off.
 
 ### Current High-Priority Focus (Groomed 2025-10-29)
 
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
+| AR-050 | P0 | In Progress | Visual asset sourcing pipeline now covers Act 2 Crossroads selection conduit/pad, checkpoint glow/plaza, safehouse arc, boundary walls, and column beam overlays with CC0/CC-BY references captured in manifests; Session 112 calibrated tint/alpha parameters (~0.13 columns/conduits, ~0.75 boundaries), Session 113 added a lighting preview harness plus queued the AR-001–AR-005 generation batch, Session 114 boosted conduit/glow/column luminance so previewed segments meet thresholds, Session 115 delivered placeholder atlases for AR-001–AR-005, Session 116 layered RenderOps packet/placeholder audit automation, Session 117 shipped prioritized replacement plans, Session 118 produced a four-week bespoke art sprint schedule plus delivery staging CLI, and Session 121 automated week-one bespoke status ingestion with licensing approvals recorded in manifests/reports. | Monitor RenderOps feedback on the shared packet, drive Week 1 bespoke assignments per `reports/art/placeholder-replacement-schedule.md`, and update `assets/images/requests.json` as approvals land. |
 | TUT-201 | P0 | Completed | Tutorial case blocked at step 3 (`evidence_detection`) because legacy scene entities bypassed ECS detection events. | ECS-aligned tutorial scene entities shipped Session #51; re-run tutorial smoke tests after combat audio validation. |
 | AUDIO-351 | P0 | Completed | Validate live combat/disguise trigger routing through `AmbientSceneAudioController` using real combat loop events. | Adaptive audio routing now responds to gameplay emits; telemetry verified by Jest/Playwright suites and new infiltration benchmark. |
 | PERF-214 | P1 | Pending | Browser-level performance profiling for adaptive audio + overlay interactions to confirm <16 ms frame time budget. | Run Chromium/Firefox performance audits with combat/stealth transitions, log hotspots, and file perf follow-ups as needed. |
 | UX-173 | P1 | Pending | Improve debug audio overlay ergonomics (keyboard shortcuts, focus management). | Prototype keyboard navigation + focus traps, add Jest/Playwright coverage for accessibility interactions. |
 
-**Next Session Focus**: AUDIO-351 closed — focus shifts to AUDIO-351 follow-up benchmarks and manual tutorial QA instrumentation.
+**Next Session Focus**: Share the neon glow approval summary with Narrative/RenderOps to capture sign-off on the neon district tileset, fold SaveManager telemetry budget events into CI/QA monitoring, and stage the next RenderOps lighting feedback pass.
+
+### Session #124 Backlog Updates
+
+#### M1-002 / M1-012: ECS/Narrative Integrations
+- Introduced proactive QuestManager NPC availability notifications (`quest:npc_availability`) that mark blocked objectives, emit availability events, and squash redundant despawn warnings; refreshed unit coverage to capture the new guardrails.
+- Extended SaveManager inspector exports with spatial telemetry payload budget tracking, emitting `telemetry:export_budget_status` events and warnings when histories exceed the 12 KB guard, plus added Jest coverage to enforce the budget.
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- Authored `scripts/art/summarizeNeonGlowApprovals.js` (`npm run art:summarize-neon-glow`) to generate `reports/art/neon-glow-approval-status.(json|md)`, consolidating neon signage/glow assets and flagging outstanding narrative approvals.
+- Updated `docs/assets/visual-asset-inventory.md` with the new reporting flow so Narrative and RenderOps have a live view of glow-pass approvals before final sign-off.
+
+### Session #125 Backlog Updates
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- Narrative signed off on `image-ar-005-tileset-neon-district`, advancing manifest status to `bespoke-approved` and bundling the neon glow approval summaries with every RenderOps packet via `scripts/art/packageRenderOpsLighting.js` attachment support.
+- Neon glow approval consolidation now lives in `reports/art/neon-glow-approval-status.(json|md)` so RenderOps and narrative leads can confirm which lighting assets remain under review.
+
+### Session #126 Backlog Updates
+
+#### M1-002 / M1-012: ECS/Narrative Integrations
+- Quest log overlay now surfaces NPC availability metadata from the world state store, including blocked objective callouts and a dedicated availability panel, giving designers a player-facing view of quest gating outside the debug HUD. New Jest coverage (`tests/game/ui/helpers/questViewModel.test.js`) protects the aggregation path.
+
+#### Telemetry Export
+- `scripts/telemetry/exportInspectorTelemetry.js` gained Slack/webhook escalation for payload budget overruns (configured via `TELEMETRY_BUDGET_WEBHOOK_URL`), and integration tests verify both notification and suppression paths.
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- Added `scripts/art/importRenderOpsFeedback.js` plus baseline `reports/art/renderops-feedback.(json|md)` artifacts so RenderOps reviews are normalized for follow-up and can be linked directly to manifest notes.
+
+### Session #123 Backlog Updates
+
+#### M1-002 / M1-012: ECS/Narrative Integrations
+- Persisted spatial hash rolling history into SaveManager inspector exports via the collision system provider, hardened exporter sanitization, and added `SpatialHash.getMetricsHistorySnapshot()` alongside refreshed Jest coverage.
+- Extended the Memory Parlor infiltration Playwright fixture with debug overlay spatial hash assertions to validate stealth density telemetry during live patrol encounters; reran targeted Playwright and full Jest suites.
+
+### Session #122 Backlog Updates
+
+#### M1-002 / M1-012: ECS/Narrative Integrations
+- Added Playwright coverage (`tests/e2e/debug-overlay-spatial-metrics.spec.js`) to assert rolling spatial hash telemetry in the debug HUD across window adjustments, protecting respawn-driven overlay updates.
+- Authored `scripts/telemetry/profileSpatialHashWindows.js` and published `reports/telemetry/spatial-hash-window-profile.(json|md)` to benchmark retention windows versus payload/CPU cost for stealth profiling.
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- Logged Week 1 bespoke revisions via `scripts/art/trackBespokeDeliverables.js --week=1`, refreshing `assets/images/requests.json`, `assets/bespoke/week1/README.md`, and `reports/art/week1-bespoke-progress.json` with approvals/licensing notes for the glow loop and neon district updates.
+
+### Session #121 Backlog Updates
+
+#### M1-002 / M1-012: ECS/Narrative Integrations
+- Added integration coverage (`tests/integration/entityLifecycle.questFaction.integration.test.js`) linking entity lifecycle events to Quest/Faction managers; validated NPC respawn unblocks objectives and ensures faction telemetry logs feed world state selectors.
+- Extended `SpatialHash` instrumentation with rolling averages + configurable window and refreshed debug overlay copy; collision system now passes window config and metrics history can be reset for profiling.
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- Delivered bespoke week-one tracking automation (`scripts/art/trackBespokeDeliverables.js`) and ingested vendor status into `assets/images/requests.json`; generated `reports/art/week1-bespoke-progress.json` and updated docs/assets/visual-asset-inventory.md with approval/licensing details plus new week-one README under `assets/bespoke/week1/`.
+
+### Session #120 Backlog Updates
+
+#### M1-002 / M1-012: ECS/Narrative Integrations
+- Wired `EntityManager` destroy listeners into `QuestManager` and `FactionManager`, blocking quest objectives when key NPCs despawn and logging faction member removals for telemetry.
+- Surfaced `SpatialHash.getMetrics()` through the debug overlay to monitor cell counts, bucket load, and operation totals during stealth scenes.
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- Shared the staged Act 2 Crossroads RenderOps packet (2025-10-30T11-45-11-255Z) and logged the hand-off in `deliveries/renderops/.../handoff-readme.md` / `share-manifest.json`.
+- Kicked off Week 1 of the bespoke replacement schedule; relevant manifest entries now flagged `bespoke-scheduled` with scheduling metadata.
+
+#### TEL-021: Parity Schedule Reminder Automation
+- Distributed the telemetry reminder bundle and confirmed `.ics` import with analytics; staging manifest updated to reflect the share.
+- Lowered the warning threshold from 3 to 2 days to allow earlier alerting before the 2025-11-13 checkpoint.
+
+### Session #118 Backlog Updates
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- **Enhancement**: Generated `reports/art/placeholder-replacement-schedule.(json|md)` via `scripts/art/planPlaceholderReplacements.js`, mapping AR-001 – AR-005 bespoke work into four weekly sprints (five assets per week starting 2025-11-03).
+- **Automation**: Added `scripts/art/stageRenderOpsDelivery.js` (`npm run art:stage-renderops`) to mirror packets into `deliveries/renderops/<label>/<timestamp>/` with staging-manifest + handoff README for immediate share-outs.
+- **Follow-up**: Assign art leads per scheduled slot and update `assets/images/requests.json` notes/licensing as bespoke assets land.
+
+#### TEL-021: Parity Schedule Reminder Automation
+- **Enhancement**: Introduced `scripts/telemetry/stageParityReminder.js` (`npm run telemetry:stage-reminder`) to package reminder JSON/Markdown/ICS into `deliveries/telemetry/<dispatch-label>/...` with share-ready notes.
+- **Follow-up**: When running `npm run telemetry:reminder`, stage the output and circulate the `.ics`/README bundle to analytics while tracking acknowledgements in the staging manifest.
+
+### Session #117 Backlog Updates
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- **Enhancement**: RenderOps packets now ship with share-ready ZIP archives and delivery manifests (`share-manifest.json`, `<label>-delivery.json`) produced by `RenderOpsPacketBuilder`, ensuring recipients have checksums and actionable metadata alongside the bundle. Placeholder automation now publishes prioritized replacement plans (`reports/art/placeholder-replacement-plan.json|md`) that rank bespoke art for AR-001 – AR-005 by urgency, missing files, and manifest notes.
+- **Action**: Reference the replacement plan when scheduling bespoke illustration sessions and attach the ZIP + delivery manifest when handing packets to RenderOps.
+
+#### TEL-021: Parity Schedule Reminder Automation
+- **Enhancement**: Reminder outputs now include alert levels, proactive messaging, and optional calendar invites (`reports/telemetry/parity-schedule-reminder.ics`) so cadence checkpoints appear on shared calendars.
+- **Action**: Distribute the ICS invite to analytics stakeholders and monitor the `alerts` payload for warning/critical escalations ahead of parity deadlines.
+
+### Session #116 Backlog Updates
+
+#### TEL-021: Parity Schedule Reminder Automation
+- **Priority**: P1 (Completed)
+- **Tags**: `telemetry`, `automation`, `ops`
+- **Summary**: Delivered `evaluateTelemetrySchedule` helpers plus `scripts/telemetry/remindParitySchedule.js` (npm alias `telemetry:reminder`) to emit JSON/markdown cadence reminders, eliminating manual parity schedule polling.
+- **Verification**: `npm test -- TelemetryScheduleReminder`, `npm run telemetry:reminder`.
+- **Follow-up**: Trigger the reminder script before each analytics checkpoint to keep cadence risks visible.
 
 _Historical session handoffs (Sessions 2–44) now live under `archive/docs/reports/` for reference._
 
@@ -315,6 +412,13 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Threshold adjustments (if any) documented and linked to raw data.
   - Failing runs emit actionable messaging for engineers.
 - **Progress (Session #84)**: Authored `scripts/telemetry/performanceSnapshot.js`, exposed `npm run telemetry:performance`, and captured a seed run producing `telemetry-artifacts/performance/performance-metrics.json`; pending work: wiring into CI for ongoing guardrails.
+- **Progress (Session #85)**: Introduced `scripts/telemetry/performanceBaseline.js` with npm alias `telemetry:performance:baseline`, added a GitHub Actions stage to capture five-run baselines per CI execution, and verified aggregated artifacts (`telemetry-artifacts/performance/ci-baseline.json`) via local smoke runs.
+- **Progress (Session #86)**: Executed the first five-run CI-aligned baseline, added `telemetry:performance:summary` to generate markdown guardrail reports, and documented retention/alert policies in `docs/performance/performance-baseline-guardrails.md` (warning raised for BSP peak spikes to monitor in follow-up runs).
+- **Progress (Session #87)**: Patched `performanceSnapshot.js` to warm up BSP generation outside the measured window, introduced `scripts/telemetry/postPerformanceSummary.js` for CI job summaries, wired the new step into `.github/workflows/ci.yml`, and refreshed baseline artifacts with warning-free metrics plus updated guardrail docs.
+- **Progress (Session #88)**: Added baseline delta comparisons to `postPerformanceSummary.js`, appended comparison tables/notices to CI summaries, and documented the workflow in `docs/performance/performance-baseline-guardrails.md`; next up is backfilling at least one history artifact and continuing BSP trend monitoring before tightening thresholds.
+- **Progress (Session #89)**: Automated baseline history archival inside `postPerformanceSummary.js`, exported helpers for unit testing, and added Jest coverage/temporary-dir smoke to validate timestamped filenames + copy semantics; baseline doc now references the auto-archive flow.
+- **Progress (Session #90)**: Seeded baseline history automatically when archives are empty, surfaced baseline/history paths in markdown summaries, refreshed guardrail docs with the retention workflow, and expanded Jest coverage to lock the new seeding + reporting behaviour.
+- **Progress (Session #91)**: Exported `listHistoryEntries` to inventory archived baselines, taught `postPerformanceSummary.js` to log recent history files, and extended Jest coverage to validate the directory scanning helper.
 
 #### CI-014: Playwright Smoke Integration
 - **Priority**: P3
@@ -426,11 +530,34 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Progress (Session #82)**: Converted Act 1 vendor NPCs to toolkit-backed quest triggers with mood hint metadata, updated `TriggerMigrationToolkit` to seed Quest components, and extended Jest suites (`tests/game/quests/TriggerMigrationToolkit.test.js`, `tests/game/scenes/Act1Scene.triggers.test.js`) to cover vendor migrations.
 - **Progress (Session #83)**: Pruned QuestSystem's legacy polling path, fortified `tests/game/systems/QuestSystem.trigger.test.js`, and published the Act 1 trigger authoring cheat sheet (`docs/guides/act1-trigger-authoring.md`).
 - **Progress (Session #84)**: Memory Parlor entrance/interior/exit triggers now register through the toolkit with quest metadata + mood hints, `MemoryParlorScene` attaches Quest components via registry definitions, and Jest coverage (`tests/game/scenes/MemoryParlorScene.triggers.test.js`) locks the migration.
+- **Progress (Session #85)**: TutorialScene onboarding zones (Detective Vision pad, deduction board, precinct exit) migrated to registry-backed triggers with helper geometry, TriggerMigrationToolkit wiring, refreshed docs (`docs/tech/trigger-authoring.md`), and new Jest coverage (`tests/game/scenes/TutorialScene.triggers.test.js`).
 - **Acceptance Criteria**:
   - Migrated triggers emit `area:entered`/`area:exited` with quest metadata aligned to the schema.
   - QuestSystem progression and resets validated via updated regression tests.
   - Designer-facing docs updated with Act 1 trigger examples.
 - **References**: `docs/plans/quest-trigger-migration-plan.md`, `src/game/quests/TriggerMigrationToolkit.js`, `src/game/quests/QuestTriggerRegistry.js`, MCP backlog item `QUEST-442`.
+
+#### QUEST-610: Act 2 Crossroads Trigger Migration
+- **Priority**: P1
+- **Tags**: `quest`, `narrative`, `trigger`
+- **Effort**: 3 hours
+- **Status**: In progress — Crossroads transitions load all three branch interiors; automated readiness/diff/parity passes are active with RenderOps lighting validation pending and analytics ingestion blocked until `telemetry-artifacts/quest-telemetry-dashboard.json` returns.
+- **Summary**: Attach Act 2 Crossroads hub volumes (checkpoint, Zara briefing table, thread selection console) to TriggerMigrationToolkit so branching choices feed QuestSystem, telemetry, and designer tooling consistently with Act 1.
+- **Progress (Session #86)**: Seeded Act 2 Crossroads trigger definitions in `QuestTriggerRegistry`, added regression coverage (`tests/game/quests/Act2TriggerDefinitions.test.js`), generated authoring notes (`docs/guides/act2-trigger-authoring.md`), and ensured outstanding migration reports surface the Act 2 work.
+- **Progress (Session #87)**: Authored `src/game/scenes/Act2CrossroadsScene.js` to attach registry-backed triggers, added Jest coverage (`tests/game/scenes/Act2CrossroadsScene.triggers.test.js`) verifying branching metadata, and refreshed designer notes with migration status.
+- **Progress (Session #88)**: Layered Crossroads hub geometry, navigation mesh metadata, ambient audio config, and trigger-driven UI/narrative events; expanded Jest coverage (`tests/game/scenes/Act2CrossroadsScene.layout.test.js`, `.prompts.test.js`) and documented the new workflow in `docs/guides/act2-trigger-authoring.md`.
+- **Progress (Session #89)**: Introduced `CrossroadsPromptController` + Act 2 quest scaffolding to drive Zara's briefing/branch selection UI, seeded `NavigationMeshService` + `PlayerMovementSystem` consumer to expose hub nav metadata, and added targeted Jest coverage for narrative/navigational plumbing.
+- **Progress (Session #90)**: Enforced navigation mesh consumption across PlayerMovement + NPC agents via `NavigationConstraintSystem`, unlocked branch landing overlays with checkpoint instructions, and expanded Jest coverage for navigation guardrails and prompt flows.
+- **Progress (Session #91)**: Delivered `CrossroadsBranchTransitionController` to pair landing events with checkpoint entry, emitted `scene:load:act2_thread` requests through `Game.loadAct2ThreadScene`, and added Jest coverage (`tests/game/narrative/CrossroadsBranchTransitionController.test.js`) to lock the branch transition handshake.
+- **Progress (Session #92)**: Implemented `loadAct2CorporateInfiltrationScene` with registry-backed triggers, navigation mesh, and geometry metadata; updated `Game.loadAct2ThreadScene` to resolve loader mappings with spawn handling + fallback coverage; registered the NeuroSync quest (`main-act2-neurosync-infiltration`) and added targeted Jest coverage (`tests/game/scenes/Act2CorporateInfiltrationScene.test.js`, `tests/game/Game.act2ThreadScene.test.js`).
+- **Progress (Session #93)**: Delivered `loadAct2ResistanceHideoutScene` with trigger toolkit wiring, navigation mesh, and geometry metadata; registered the Archivist alliance quest (`main-act2-archivist-alliance`), updated Act 2 thread loader/config to include the resistance branch, and added regression coverage (`tests/game/scenes/Act2ResistanceHideoutScene.test.js`, `tests/game/Game.act2ThreadScene.test.js`).
+- **Progress (Session #94)**: Authored `loadAct2PersonalInvestigationScene` with registry-backed triggers, navigation mesh, and geometry metadata; registered the personal investigation quest (`main-act2-personal-investigation`), wired the branch into `Game.loadAct2ThreadScene`/`GameConfig`, refreshed designer docs with the new trigger map, and extended regression coverage (`tests/game/scenes/Act2PersonalInvestigationScene.test.js`, `tests/game/Game.act2ThreadScene.test.js`).
+- **Progress (Session #102)**: Ran the readiness/diff/parity CLI guardrails; art validator highlighted missing lighting metadata for `crossroads_briefing_pad` and four light columns (collision coverage passed), narrative exporter produced a zero-diff Markdown + JSON bundle, and telemetry parity ingested `telemetry-artifacts/samples/quest-telemetry-act2-crossroads-2025-11-12.jsonl` (4 events, 100% coverage) for analytics review.
+- **Acceptance Criteria**:
+  - Crossroads triggers attach registry-backed Quest + Trigger components via the toolkit and mark definitions migrated.
+  - Scene-level Jest coverage verifies branching metadata (`branchingChoice`, `telemetryTag`) and objective progression without legacy listeners.
+  - Designer documentation references Act 2 trigger IDs/prompts and maps telemetry tags to narrative analytics dashboards.
+- **References**: `docs/plans/quest-trigger-migration-plan.md`, `docs/guides/act2-trigger-authoring.md`, MCP backlog item `QUEST-610`.
 
 #### PROC-221: Tilemap Rotation Fidelity
 - **Priority**: P1
@@ -444,6 +571,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Progress (Session #82)**: Implemented manifest-driven variant resolution, corridor seam painting, expanded `TilemapInfrastructure` tests for variants/seams, and benchmarked rotated generation (avg 29.76 ms across three samples).
 - **Progress (Session #83)**: Added authored manifest variants for Act 1 crime scenes and vendor bays (`src/game/procedural/templates/authoredTemplates.js`), defaulted DistrictGenerator to the manifest, extended regression tests, and re-benchmarked rotation overhead (avg 28.86 ms across three seeds).
 - **Progress (Session #84)**: Authored detective office + alley hub manifest variants with multi-edge seam metadata, updated factory helpers, and extended Jest coverage to lock orientation metadata and seam propagation.
+- **Progress (Session #85)**: Added precinct war room and alley spur authored variants with seam tags for command staging + side-route escapes, refreshed manifest metadata, documented the families in `docs/guides/procedural-generation-integration.md`, and expanded Jest coverage.
 - **Acceptance Criteria**:
   - Rotated rooms display correct tile orientation without misaligned seams.
   - Corridor seam painter places door tiles matching rotation.
@@ -596,6 +724,36 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - `SaveManager.getInspectorSummary()` returns cascade and tutorial telemetry for console inspection.
   - Playwright smoke verifies cascade and tutorial telemetry render in the overlay.
   - Benchmark dispatch latency remains under the 0.25 ms guardrail.
+
+---
+
+### Session #107 System Metrics Overlay
+
+#### DEBUG-318: Surface SystemManager Metrics in Debug HUD
+- **Priority**: P0
+- **Tags**: `debug`, `engine`, `telemetry`
+- **Effort**: 2 hours
+- **Dependencies**: M1-004
+- **Status**: ✅ Completed — Session #107 added a SystemManager metrics panel with budget highlighting, reusable formatting helper, and Jest coverage.
+- **Description**: Expose SystemManager profiling metrics within the developer debug overlay so performance insights surface without manual logging.
+- **Acceptance Criteria**:
+  - Debug overlay lists each registered system with last-frame query/update timings plus rolling averages.
+  - Overlay highlights systems exceeding configurable frame budget thresholds.
+  - SystemManager metrics refresh each frame without regressing overlay performance.
+  - Jest coverage validates metrics formatting utilities or overlay rendering logic.
+
+#### DEBUG-332: Debug overlay budget control UI
+- **Priority**: P1
+- **Tags**: `debug`, `ux`, `engine`
+- **Effort**: 1 hour
+- **Dependencies**: DEBUG-318
+- **Status**: ✅ Completed — Session #108 surfaced an in-overlay budget input + reset control backed by sanitisation helpers and Jest coverage.
+- **Description**: Replace the `window.debugSystemBudgetMs` console hook with first-class debug HUD controls so QA can adjust profiler thresholds during play without touching devtools.
+- **Acceptance Criteria**:
+  - Debug overlay renders a numeric budget input alongside a reset action.
+  - Input updates immediately adjust SystemManager budget highlighting and remain clamped to safe bounds.
+  - Reset restores the 4 ms default and synchronises the global override used by scripted tooling.
+  - Jest coverage validates sanitisation helpers for invalid/edge-case inputs.
 
 ---
 
@@ -761,6 +919,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Priority**: P0
 - **Tags**: `engine`, `ecs`
 - **Effort**: 4 hours
+- **Status**: Completed (Session #119 – 2025-11-13)
 - **Dependencies**: M1-001
 - **Description**: Core entity lifecycle management system
 - **Files**:
@@ -778,6 +937,14 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Zero memory leaks after 1000 create/destroy cycles
   - Entity IDs never collide
   - Unit tests pass with >80% coverage
+- **Session #119 Update**:
+  - Added pooled metadata reuse with destroy listeners and component registry cleanup hooks; `queryByComponents` now bridges to registry queries or local component signatures.
+  - `forEachEntity` and `getStats()` provide iteration helpers plus instrumentation for profiling spawn/despawn waves.
+  - Jest coverage expanded with performance gates (10k create/destroy <200 ms) and pooling reuse assertions; validated via `npm test`.
+- **Session #121 Update**:
+  - Authored integration harness (`tests/integration/entityLifecycle.questFaction.integration.test.js`) linking EntityManager → QuestManager/FactionManager, exercised NPC despawn/respawn to confirm objectives unblock and faction telemetry propagates; world state store selectors now capture removal history for analytics.
+- **Session #124 Update**:
+  - Added quest-facing NPC availability notifications and budget-guarded telemetry exports: `QuestManager` now emits `quest:npc_availability` events to pre-empt repeated despawn warnings, and SaveManager surfaces spatial telemetry payload budgets with warning/event hooks for CI/QA monitoring.
 
 #### M1-003: ComponentRegistry Implementation
 - **Priority**: P0
@@ -805,6 +972,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Priority**: P0
 - **Tags**: `engine`, `ecs`
 - **Effort**: 4 hours
+- **Status**: Completed (Session #106 – 2025-11-12)
 - **Dependencies**: M1-002, M1-003
 - **Description**: System orchestration and update loop
 - **Files**:
@@ -870,6 +1038,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Priority**: P0
 - **Tags**: `engine`, `rendering`
 - **Effort**: 3 hours
+- **Status**: Completed (Session #106 – 2025-11-12)
 - **Dependencies**: M1-001
 - **Description**: Canvas initialization and core rendering infrastructure
 - **Files**:
@@ -980,6 +1149,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Priority**: P0
 - **Tags**: `engine`, `physics`
 - **Effort**: 5 hours
+- **Status**: Completed (Session #119 – 2025-11-13)
 - **Dependencies**: M1-003
 - **Description**: Spatial partitioning for collision detection
 - **Files**:
@@ -996,6 +1166,12 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - 1000 entities = <1000 collision checks per frame
   - 98%+ reduction vs naive approach
   - Unit tests pass with >80% coverage
+- **Session #119 Update**:
+  - Implemented per-entity cell tracking with `insert`, `update`, and `remove` to prevent phantom collisions and minimize bucket churn.
+  - Added `rebuild` + `getMetrics()` for profiling; buckets now use `Set` for O(1) removal and instrumentation counters track insert/update/remove rates.
+  - Expanded Jest suite to cover update/remove flows and performance thresholds (1000 entity queries <10 ms); validated via `npm test`.
+- **Session #121 Update**:
+  - Added rolling metrics history + configurable window (`setMetricsWindow`) to `SpatialHash`, updated collision system wiring, and enhanced debug overlay messaging to surface averages; extended tests to cover history trimming/reset.
 
 #### M1-013: Collision Detection Algorithms
 - **Priority**: P0
@@ -2268,6 +2444,7 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Evidence type icons (32x32 each: physical, digital, testimonial, forensic)
   - UI buttons (play, pause, settings, etc.)
 - **File**: `assets/images/requests.json`
+- **Status**: Prompt briefs packaged via `art:package-generation-prompts` into `assets/images/generation-payloads/ar-001-005.json`; OpenAI run + QA pending.
 
 #### AR-002: Evidence Placeholder Sprites (M2)
 - **Type**: Images
@@ -2281,6 +2458,7 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Neural extractor sprite
   - Blood spatter sprite
 - **File**: `assets/images/requests.json`
+- **Status**: Prompt briefs packaged via `art:package-generation-prompts` into `assets/images/generation-payloads/ar-001-005.json`; sprite generation review pending.
 
 #### AR-003: Player Character Sprite (M2)
 - **Type**: Images
@@ -2292,6 +2470,7 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Detective coat, distinctive look
   - 4-direction or 8-direction movement
 - **File**: `assets/images/requests.json`
+- **Status**: Prompt brief packaged via `art:package-generation-prompts` (see `assets/images/generation-payloads/ar-001-005.json`); awaiting sprite generation + review.
 
 ### High Priority Assets (P1 - Required for M3-M6)
 
@@ -2305,6 +2484,7 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Guard NPCs (3 variations, 32x32)
   - Faction-specific clothing/colors
 - **File**: `assets/images/requests.json`
+- **Status**: Prompt briefs packaged via `art:package-generation-prompts` for civilian/guard packs (`assets/images/generation-payloads/ar-001-005.json`); generation QA pending.
 
 #### AR-005: District Tilesets (M4)
 - **Type**: Images
@@ -2317,6 +2497,7 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Archive Undercity: Dark, ancient tech (16x16 tiles)
   - Zenith Sector: Futuristic, imposing (16x16 tiles)
 - **File**: `assets/images/requests.json`
+- **Status**: Prompt briefs covering all four districts packaged via `art:package-generation-prompts` (`assets/images/generation-payloads/ar-001-005.json`); awaiting asset generation and collision annotation.
 
 #### AR-006: UI Sound Effects (M2-M6)
 - **Type**: Audio

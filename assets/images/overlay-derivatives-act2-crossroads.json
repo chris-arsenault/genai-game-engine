@@ -1,0 +1,346 @@
+{
+  "outputDir": "assets/overlays/act2-crossroads",
+  "defaults": {
+    "operations": {
+      "resize": {
+        "height": 1280
+      },
+      "centerCropWidth": 420,
+      "desaturate": 80,
+      "normalize": true,
+      "brightness": 0.12,
+      "contrast": 0.25,
+      "gaussian": 1,
+      "alphaFromLuma": {
+        "threshold": 105,
+        "softness": 90,
+        "floor": 0,
+        "ceiling": 255
+      },
+      "opacity": 0.92
+    }
+  },
+  "entries": [
+    {
+      "id": "image-ar-050-crossroads-column-safehouse-left",
+      "openverseId": "7fa5629a-8c5f-4bd2-a247-fe6517d17409",
+      "sourceUrl": "https://live.staticflickr.com/1372/634955994_00178bb35d_b.jpg",
+      "output": "act2_crossroads_column_safehouse_left.png",
+      "operations": {
+        "trimTop": 120,
+        "trimBottom": 100,
+        "tint": {
+          "color": "#7ad6ff",
+          "amount": 52
+        },
+        "gaussian": 2,
+        "alphaFromLuma": {
+          "threshold": 74,
+          "softness": 92,
+          "floor": 150,
+          "ceiling": 238
+        },
+        "postBlur": 1,
+        "opacity": 0.9
+      }
+    },
+    {
+      "id": "image-ar-050-crossroads-column-safehouse-right",
+      "openverseId": "2c443bc9-e3ab-4fff-ba46-a52ef76b7457",
+      "sourceUrl": "https://live.staticflickr.com/4804/39790468613_c3c5326f7b_b.jpg",
+      "output": "act2_crossroads_column_safehouse_right.png",
+      "operations": {
+        "centerCropWidth": 380,
+        "trimTop": 40,
+        "trimBottom": 60,
+        "tint": {
+          "color": "#82dbff",
+          "amount": 50
+        },
+        "gaussian": 1,
+        "alphaFromLuma": {
+          "threshold": 76,
+          "softness": 90,
+          "floor": 146,
+          "ceiling": 236
+        },
+        "postBlur": 1,
+        "opacity": 0.9
+      }
+    },
+    {
+      "id": "image-ar-050-crossroads-column-checkpoint-north",
+      "openverseId": "d373ad62-282c-455f-b85a-2e58b2f0fa9f",
+      "sourceUrl": "https://live.staticflickr.com/6080/6135445492_364217264d_b.jpg",
+      "output": "act2_crossroads_column_checkpoint_north.png",
+      "operations": {
+        "centerCropWidth": 360,
+        "trimTop": 0,
+        "trimBottom": 0,
+        "tint": {
+          "color": "#fff4c1",
+          "amount": 44
+        },
+        "contrast": 0.32,
+        "alphaFromLuma": {
+          "threshold": 82,
+          "softness": 95,
+          "floor": 175,
+          "ceiling": 250
+        },
+        "opacity": 1
+      }
+    },
+    {
+      "id": "image-ar-050-crossroads-column-checkpoint-south",
+      "openverseId": "7baeb847-c6de-4d96-983a-75a130697e06",
+      "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/6/62/NYC_World_Trade_Center_Tribute_in_Light_2012.jpg",
+      "output": "act2_crossroads_column_checkpoint_south.png",
+      "operations": {
+        "centerCropWidth": 360,
+        "trimTop": 20,
+        "trimBottom": 40,
+        "tint": {
+          "color": "#fff6c9",
+          "amount": 42
+        },
+        "contrast": 0.28,
+        "alphaFromLuma": {
+          "threshold": 84,
+          "softness": 94,
+          "floor": 172,
+          "ceiling": 248
+        },
+        "postBlur": 1,
+        "opacity": 1
+      }
+    },
+    {
+      "id": "image-ar-050-crossroads-selection-pad",
+      "openverseId": "67a16c30-eb3c-4b8e-88f5-f1e31bfddb5a",
+      "sourceUrl": "https://live.staticflickr.com/65535/52845556684_5e179a56aa_b.jpg",
+      "output": "act2_crossroads_selection_pad.png",
+      "operations": {
+        "resize": {
+          "width": 1600
+        },
+        "centerCropWidth": 1200,
+        "trimTop": 80,
+        "trimBottom": 80,
+        "gaussian": 2,
+        "tint": {
+          "color": "#63faff",
+          "amount": 36
+        },
+        "alphaFromLuma": {
+          "threshold": 140,
+          "softness": 58,
+          "floor": 34,
+          "ceiling": 235
+        },
+        "opacity": 0.85
+      }
+    },
+    {
+      "id": "image-ar-050-crossroads-checkpoint-plaza",
+      "openverseId": "1d101862-fda2-4591-8160-d799b6e2b39c",
+      "sourceUrl": "https://live.staticflickr.com/7146/13462190584_74c39d0849_b.jpg",
+      "output": "act2_crossroads_checkpoint_plaza.png",
+      "operations": {
+        "resize": {
+          "width": 1800
+        },
+        "centerCropWidth": 1500,
+        "trimTop": 200,
+        "trimBottom": 220,
+        "desaturate": 50,
+        "contrast": 0.18,
+        "tint": {
+          "color": "#ffd685",
+          "amount": 28
+        },
+        "alphaFromLuma": {
+          "threshold": 128,
+          "softness": 68,
+          "floor": 30,
+          "ceiling": 215
+        },
+        "opacity": 0.88
+      }
+    },
+    {
+      "id": "image-ar-050-crossroads-safehouse-arc",
+      "openverseId": "958a108e-b4ee-4fef-800a-5a8a48e68a2b",
+      "sourceUrl": "https://live.staticflickr.com/2886/33570800220_c826f1ccb6_b.jpg",
+      "output": "act2_crossroads_safehouse_arc.png",
+      "operations": {
+        "resize": {
+          "height": 1080
+        },
+        "centerCropWidth": 900,
+        "trimBottom": 200,
+        "gaussian": 3,
+        "tint": {
+          "color": "#5df0ff",
+          "amount": 46
+        },
+        "alphaFromLuma": {
+          "threshold": 110,
+          "softness": 88,
+          "floor": 34,
+          "ceiling": 210
+        },
+        "postBlur": 2,
+        "opacity": 0.82
+      }
+    },
+    {
+      "id": "image-ar-050-crossroads-selection-conduit",
+      "openverseId": "f4fa7dce-2bdf-4e52-a9bf-943aa0ea3dec",
+      "sourceUrl": "https://live.staticflickr.com/4095/4778327737_7d1aa2b424_b.jpg",
+      "output": "act2_crossroads_selection_conduit.png",
+      "operations": {
+        "resize": {
+          "height": 1024
+        },
+        "centerCropWidth": 900,
+        "trimTop": 100,
+        "trimBottom": 120,
+        "gaussian": 1,
+        "tint": {
+          "color": "#ffd27a",
+          "amount": 56
+        },
+        "alphaFromLuma": {
+          "threshold": 76,
+          "softness": 90,
+          "floor": 160,
+          "ceiling": 245
+        },
+        "opacity": 1
+      }
+    },
+    {
+      "id": "image-ar-050-crossroads-checkpoint-glow",
+      "openverseId": "3f514b03-b6b2-48b8-baa8-7264b0d42f77",
+      "sourceUrl": "https://live.staticflickr.com/7832/32827022948_61eebe1deb_b.jpg",
+      "output": "act2_crossroads_checkpoint_glow.png",
+      "operations": {
+        "resize": {
+          "height": 1080
+        },
+        "centerCropWidth": 1200,
+        "trimTop": 150,
+        "trimBottom": 150,
+        "tint": {
+          "color": "#fff2c2",
+          "amount": 38
+        },
+        "alphaFromLuma": {
+          "threshold": 82,
+          "softness": 92,
+          "floor": 170,
+          "ceiling": 250
+        },
+        "gaussian": 1,
+        "opacity": 1
+      }
+    },
+    {
+      "id": "image-ar-050-crossroads-boundary-west",
+      "openverseId": "cffc95f8-a10c-4ea1-9403-75989f5c510c",
+      "sourceUrl": "https://live.staticflickr.com/3197/2814805163_163595e211_b.jpg",
+      "output": "act2_crossroads_boundary_west.png",
+      "operations": {
+        "resize": {
+          "height": 1200
+        },
+        "centerCropWidth": 1400,
+        "desaturate": 45,
+        "contrast": 0.22,
+        "alphaFromLuma": {
+          "threshold": 150,
+          "softness": 78,
+          "invert": true,
+          "floor": 48,
+          "ceiling": 196
+        },
+        "opacity": 0.85
+      }
+    },
+    {
+      "id": "image-ar-050-crossroads-boundary-east",
+      "openverseId": "9d2a5d45-5ba9-47ac-a910-e8ec191e2ed2",
+      "sourceUrl": "https://live.staticflickr.com/8237/8567491153_2652a2a633_b.jpg",
+      "output": "act2_crossroads_boundary_east.png",
+      "operations": {
+        "resize": {
+          "height": 1200
+        },
+        "centerCropWidth": 1400,
+        "desaturate": 35,
+        "contrast": 0.2,
+        "tint": {
+          "color": "#78d5ff",
+          "amount": 18
+        },
+        "alphaFromLuma": {
+          "threshold": 142,
+          "softness": 72,
+          "invert": true,
+          "floor": 44,
+          "ceiling": 192
+        },
+        "opacity": 0.82
+      }
+    },
+    {
+      "id": "image-ar-050-crossroads-boundary-north",
+      "openverseId": "8cac3eaf-712d-4ab1-9fa9-cc6a0860d66b",
+      "sourceUrl": "https://live.staticflickr.com/2906/14373826104_1833bd61aa_b.jpg",
+      "output": "act2_crossroads_boundary_north.png",
+      "operations": {
+        "resize": {
+          "height": 1200
+        },
+        "centerCropWidth": 1400,
+        "desaturate": 50,
+        "contrast": 0.24,
+        "alphaFromLuma": {
+          "threshold": 146,
+          "softness": 74,
+          "invert": true,
+          "floor": 46,
+          "ceiling": 194
+        },
+        "opacity": 0.84
+      }
+    },
+    {
+      "id": "image-ar-050-crossroads-boundary-south",
+      "openverseId": "7b9870f8-1647-4fa6-a29b-62361aa1f4f7",
+      "sourceUrl": "https://live.staticflickr.com/2536/4048656050_532443554b_b.jpg",
+      "output": "act2_crossroads_boundary_south.png",
+      "operations": {
+        "resize": {
+          "height": 1200
+        },
+        "centerCropWidth": 1400,
+        "desaturate": 45,
+        "contrast": 0.26,
+        "tint": {
+          "color": "#ffc36c",
+          "amount": 20
+        },
+        "alphaFromLuma": {
+          "threshold": 142,
+          "softness": 76,
+          "invert": true,
+          "floor": 46,
+          "ceiling": 192
+        },
+        "opacity": 0.84
+      }
+    }
+  ]
+}

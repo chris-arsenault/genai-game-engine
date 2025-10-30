@@ -7,7 +7,14 @@ import { buildDialogueViewModel } from './game/ui/helpers/dialogueViewModel.js';
 import {
   buildQuestDebugSummary,
   buildStoryDebugSummary,
+  buildNpcAvailabilityDebugSummary,
 } from './game/ui/helpers/worldStateDebugView.js';
+import { buildSystemMetricsDebugView } from './game/ui/helpers/systemMetricsDebugView.js';
+import {
+  DEFAULT_SYSTEM_BUDGET_MS,
+  formatDebugSystemBudget,
+  resolveDebugSystemBudget,
+} from './game/ui/helpers/systemBudget.js';
 import { factionSlice } from './game/state/slices/factionSlice.js';
 import { tutorialSlice } from './game/state/slices/tutorialSlice.js';
 
@@ -63,6 +70,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   const debugStoryList = document.getElementById('debug-story-list');
   const debugFactionCascadeList = document.getElementById('debug-faction-cascades');
   const debugFactionCascadeMeta = document.getElementById('debug-faction-cascade-meta');
+  const debugNpcMeta = document.getElementById('debug-npc-meta');
+  const debugNpcList = document.getElementById('debug-npc-list');
+  const debugNpcHistory = document.getElementById('debug-npc-history');
   const debugTutorialLatest = document.getElementById('debug-tutorial-latest');
   const debugTutorialSnapshots = document.getElementById('debug-tutorial-snapshots');
   const debugAudioState = document.getElementById('debug-audio-state');
@@ -71,6 +81,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   const debugSfxList = document.getElementById('debug-sfx-list');
   const debugSfxFilterInput = document.getElementById('debug-sfx-filter');
   const debugSfxTagFilters = document.getElementById('debug-sfx-tag-filters');
+  const debugSystemsMeta = document.getElementById('debug-systems-meta');
+  const debugSystemsList = document.getElementById('debug-systems-list');
+  const debugSystemsBudgetInput = document.getElementById('debug-systems-budget');
+  const debugSystemsBudgetReset = document.getElementById('debug-systems-budget-reset');
+  const debugSpatialMeta = document.getElementById('debug-spatial-meta');
+  const debugSpatialList = document.getElementById('debug-spatial-list');
 
   const formatClock = (timestamp) => {
     if (!timestamp || Number.isNaN(timestamp)) {
@@ -177,6 +193,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   let lastTutorialSnapshotSignature = null;
   let lastSfxSignature = null;
   let lastSfxTagSignature = null;
+  let lastNpcSummarySignature = null;
+  let lastNpcHistorySignature = null;
   let sfxFilterText = '';
   let sfxTagFilter = null;
   let lastAudioHistorySignature = null;
@@ -185,6 +203,56 @@ window.addEventListener('DOMContentLoaded', async () => {
   let factionCascadeSelectorErrorLogged = false;
   let tutorialSelectorErrorLogged = false;
   let audioBridgeErrorLogged = false;
+  let lastSystemMetricsSignature = null;
+  let systemMetricsErrorLogged = false;
+  let debugSystemBudgetOverride = DEFAULT_SYSTEM_BUDGET_MS;
+  let lastSpatialSignature = null;
+  let spatialMetricsErrorLogged = false;
+
+  const applyDebugSystemBudget = (rawValue, { syncInput = true, syncGlobal = true } = {}) => {
+    const resolved = resolveDebugSystemBudget(rawValue, DEFAULT_SYSTEM_BUDGET_MS);
+    debugSystemBudgetOverride = resolved;
+
+    if (syncGlobal && typeof window !== 'undefined') {
+      window.debugSystemBudgetMs = resolved;
+    }
+
+    if (syncInput && debugSystemsBudgetInput) {
+      debugSystemsBudgetInput.value = formatDebugSystemBudget(resolved);
+    }
+
+    return resolved;
+  };
+
+  const initialBudgetCandidate =
+    typeof window !== 'undefined' && Number.isFinite(window.debugSystemBudgetMs)
+      ? window.debugSystemBudgetMs
+      : DEFAULT_SYSTEM_BUDGET_MS;
+  applyDebugSystemBudget(initialBudgetCandidate);
+
+  if (debugSystemsBudgetInput) {
+    debugSystemsBudgetInput.value = formatDebugSystemBudget(debugSystemBudgetOverride);
+
+    const commitBudgetFromInput = () => {
+      applyDebugSystemBudget(debugSystemsBudgetInput.value);
+    };
+
+    debugSystemsBudgetInput.addEventListener('change', commitBudgetFromInput);
+    debugSystemsBudgetInput.addEventListener('blur', commitBudgetFromInput);
+
+    debugSystemsBudgetInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        commitBudgetFromInput();
+        debugSystemsBudgetInput.blur();
+      }
+    });
+  }
+
+  if (debugSystemsBudgetReset) {
+    debugSystemsBudgetReset.addEventListener('click', () => {
+      applyDebugSystemBudget(DEFAULT_SYSTEM_BUDGET_MS);
+    });
+  }
 
   if (debugDialogueControls) {
     debugDialogueControls.textContent = 'Controls: F3 toggle overlay · F4 pause/resume transcript';
@@ -350,6 +418,186 @@ window.addEventListener('DOMContentLoaded', async () => {
       frameTimeElement.textContent = `Frame: ${frameTime} ms`;
     }
 
+    if ((debugSystemsList || debugSystemsMeta) && typeof engine.getSystemManager === 'function') {
+      if (typeof window !== 'undefined' && Number.isFinite(window.debugSystemBudgetMs)) {
+        const globalBudget = resolveDebugSystemBudget(
+          window.debugSystemBudgetMs,
+          DEFAULT_SYSTEM_BUDGET_MS
+        );
+        if (Math.abs(globalBudget - debugSystemBudgetOverride) > 0.0001) {
+          debugSystemBudgetOverride = globalBudget;
+          if (debugSystemsBudgetInput) {
+            debugSystemsBudgetInput.value = formatDebugSystemBudget(globalBudget);
+          }
+        }
+      }
+
+      let metricsView = null;
+      try {
+        const systemManager = engine.getSystemManager();
+        if (
+          systemManager &&
+          typeof systemManager.getLastFrameMetrics === 'function'
+        ) {
+          const lastFrameMetrics = systemManager.getLastFrameMetrics();
+          const averageFrameTime =
+            typeof systemManager.getAverageFrameTime === 'function'
+              ? systemManager.getAverageFrameTime()
+              : null;
+          metricsView = buildSystemMetricsDebugView({
+            lastFrame: lastFrameMetrics,
+            averageFrameTime,
+            budgetMs: debugSystemBudgetOverride,
+          });
+        }
+      } catch (error) {
+        if (!systemMetricsErrorLogged) {
+          console.warn('[DebugOverlay] Failed to render system metrics', error);
+          systemMetricsErrorLogged = true;
+        }
+      }
+
+      const signature = metricsView
+        ? JSON.stringify({
+            summary: metricsView.summary,
+            rows: metricsView.rows.map(
+              (row) => `${row.id}:${row.state ?? 'none'}:${row.text}`
+            ),
+          })
+        : 'no-metrics';
+
+      if (signature !== lastSystemMetricsSignature) {
+        lastSystemMetricsSignature = signature;
+
+        if (debugSystemsMeta) {
+          debugSystemsMeta.textContent =
+            metricsView?.summary ?? 'Frame metrics: n/a';
+        }
+
+        if (debugSystemsList) {
+          debugSystemsList.innerHTML = '';
+
+          if (
+            !metricsView ||
+            !Array.isArray(metricsView.rows) ||
+            metricsView.rows.length === 0
+          ) {
+            const emptyRow = document.createElement('div');
+            emptyRow.className = 'debug-world-row empty';
+            emptyRow.textContent = 'No system metrics';
+            debugSystemsList.appendChild(emptyRow);
+          } else {
+            for (const entry of metricsView.rows) {
+              const row = document.createElement('div');
+              row.className = 'debug-world-row';
+              if (entry.state) {
+                row.dataset.tone = entry.state;
+              }
+              row.textContent = entry.text;
+              debugSystemsList.appendChild(row);
+            }
+          }
+        }
+      }
+    }
+
+    if ((debugSpatialMeta || debugSpatialList) && typeof engine.getSystemManager === 'function') {
+      let spatialSignature = 'no-data';
+      try {
+        const systemManager = engine.getSystemManager();
+        const collisionSystem =
+          systemManager && typeof systemManager.getSystem === 'function'
+            ? systemManager.getSystem('collision')
+            : null;
+        let metrics = null;
+
+        if (
+          collisionSystem &&
+          collisionSystem.spatialHash &&
+          typeof collisionSystem.spatialHash.getMetrics === 'function'
+        ) {
+          metrics = collisionSystem.spatialHash.getMetrics();
+          if (metrics) {
+            metrics.cellSize = collisionSystem.spatialHash.cellSize;
+            spatialSignature = [
+              metrics.cellCount,
+              metrics.trackedEntities,
+              metrics.maxBucketSize,
+              metrics.stats?.insertions ?? 0,
+              metrics.stats?.updates ?? 0,
+              metrics.stats?.removals ?? 0,
+              metrics.rolling?.lastSample?.timestamp ?? 0,
+            ].join('|');
+          }
+        }
+
+        if (spatialSignature !== lastSpatialSignature) {
+          lastSpatialSignature = spatialSignature;
+
+          if (debugSpatialMeta) {
+            if (!metrics) {
+              debugSpatialMeta.textContent = 'Spatial hash: n/a';
+            } else {
+              const rolling = metrics.rolling ?? null;
+              let metaText = `Cells: ${metrics.cellCount} · Entities: ${metrics.trackedEntities} · Max bucket: ${metrics.maxBucketSize}`;
+              if (
+                rolling &&
+                rolling.sampleCount > 1 &&
+                Number.isFinite(rolling.maxBucketSize?.average)
+              ) {
+                const averaged = rolling.maxBucketSize.average.toFixed(2);
+                metaText += ` · Avg max (${rolling.sampleCount}/${rolling.window}): ${averaged}`;
+              }
+              debugSpatialMeta.textContent = metaText;
+            }
+          }
+
+          if (debugSpatialList) {
+            if (!metrics) {
+              renderWorldList(debugSpatialList, [], 'No spatial data');
+            } else {
+              const rows = [
+                {
+                  text: `Cell size: ${metrics.cellSize}px · Buckets ${metrics.cellCount}`,
+                  tone: 'muted',
+                },
+                {
+                  text: `Ops — insert ${metrics.stats?.insertions ?? 0} · update ${
+                    metrics.stats?.updates ?? 0
+                  } · remove ${metrics.stats?.removals ?? 0}`,
+                  tone: 'muted',
+                },
+              ];
+
+              const rolling = metrics.rolling ?? null;
+              if (
+                rolling &&
+                rolling.sampleCount > 0 &&
+                Number.isFinite(rolling.cellCount?.average) &&
+                Number.isFinite(rolling.maxBucketSize?.average)
+              ) {
+                rows.push({
+                  text: `Rolling avg cells ${rolling.cellCount.average.toFixed(
+                    1
+                  )} · max bucket ${rolling.maxBucketSize.average.toFixed(
+                    2
+                  )} (samples ${rolling.sampleCount}/${rolling.window})`,
+                  tone: 'muted',
+                });
+              }
+              renderWorldList(debugSpatialList, rows, 'No spatial data');
+            }
+          }
+        }
+        spatialMetricsErrorLogged = false;
+      } catch (error) {
+        if (!spatialMetricsErrorLogged) {
+          console.warn('[DebugOverlay] Failed to read spatial hash metrics', error);
+          spatialMetricsErrorLogged = true;
+        }
+      }
+    }
+
     if (debugUiOverlayList && window.game?.getOverlayStateSnapshot) {
       let overlaySnapshot = [];
       try {
@@ -454,6 +702,96 @@ window.addEventListener('DOMContentLoaded', async () => {
             ].join(' · ');
           }
           lastWorldStateSignature = signature;
+        }
+
+        if (debugNpcList || debugNpcMeta || debugNpcHistory) {
+          const npcSummary = buildNpcAvailabilityDebugSummary(worldState.quest);
+
+          if (debugNpcMeta) {
+            const metaParts = [
+              `NPCs tracked: ${npcSummary.stats.tracked}`,
+              `Unavailable: ${npcSummary.stats.unavailable}`,
+            ];
+            if (npcSummary.stats.blockedObjectives > 0) {
+              metaParts.push(`Blocked objectives: ${npcSummary.stats.blockedObjectives}`);
+            }
+            debugNpcMeta.textContent = metaParts.join(' · ');
+          }
+
+          if (debugNpcList) {
+            const npcSignature = JSON.stringify({
+              stats: npcSummary.stats,
+              entries: npcSummary.entries.map((entry) => [
+                entry.npcId,
+                entry.available ? 1 : 0,
+                entry.updatedAt ?? 0,
+                Array.isArray(entry.objectives) ? entry.objectives.length : 0,
+              ]),
+            });
+
+            if (npcSignature !== lastNpcSummarySignature) {
+              const rows = npcSummary.entries.slice(0, 5).map((entry) => {
+                const name = entry.npcName ?? entry.npcId ?? 'Unknown NPC';
+                const factionLabel = entry.factionId ? formatFactionName(entry.factionId) : null;
+                const statusLabel = entry.available ? 'available' : 'unavailable';
+                const objectives = Array.isArray(entry.objectives) ? entry.objectives : [];
+                const objectivePreview = objectives.slice(0, 2).map((objective) => {
+                  const questTitle = objective.questTitle ?? objective.questId ?? 'quest';
+                  const objectiveTitle = objective.objectiveTitle ?? objective.objectiveId ?? 'objective';
+                  return `${questTitle}/${objectiveTitle}`;
+                });
+
+                const parts = [name];
+                if (factionLabel) {
+                  parts.push(`(${factionLabel})`);
+                }
+                parts.push(statusLabel);
+                if (!entry.available && objectivePreview.length) {
+                  const overflow = objectives.length - objectivePreview.length;
+                  parts.push(
+                    `blocks ${objectivePreview.join(', ')}${overflow > 0 ? ` +${overflow} more` : ''}`
+                  );
+                }
+                if (Number.isFinite(entry.updatedAt)) {
+                  parts.push(formatRelativeTime(entry.updatedAt, now));
+                }
+
+                return {
+                  text: parts.join(' · '),
+                  tone: entry.available ? 'npc-restored' : 'npc-alert',
+                };
+              });
+
+              renderWorldList(debugNpcList, rows, 'No NPC availability data');
+              lastNpcSummarySignature = npcSignature;
+            }
+          }
+
+          if (debugNpcHistory) {
+            const trimmedHistory = npcSummary.history.slice(0, 6);
+            const historySignature = JSON.stringify(
+              trimmedHistory.map((entry) => [entry.npcId, entry.available ? 1 : 0, entry.recordedAt ?? 0])
+            );
+            if (historySignature !== lastNpcHistorySignature) {
+              const rows = trimmedHistory.map((entry) => {
+                const name = entry.npcName ?? entry.npcId ?? 'NPC';
+                const statusLabel = entry.available ? 'available' : 'unavailable';
+                const parts = [`${name}: ${statusLabel}`];
+                if (entry.reason) {
+                  parts.push(entry.reason.replace(/_/g, ' '));
+                }
+                if (Number.isFinite(entry.recordedAt)) {
+                  parts.push(formatRelativeTime(entry.recordedAt, now));
+                }
+                return {
+                  text: parts.join(' · '),
+                  tone: entry.available ? 'npc-restored' : 'npc-alert',
+                };
+              });
+              renderWorldList(debugNpcHistory, rows, 'No availability events');
+              lastNpcHistorySignature = historySignature;
+            }
+          }
         }
       }
     }
