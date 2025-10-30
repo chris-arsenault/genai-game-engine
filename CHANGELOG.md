@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Authored template manifest now covers detective offices, alley hubs, precinct war rooms, and alley spurs with multi-edge seam metadata for variant-aware corridor painting.
 - Lightweight performance snapshot telemetry (`npm run telemetry:performance`) capturing forensic analysis, faction cascade, and BSP generation timings for CI dashboards.
 - CI performance baseline runner (`npm run telemetry:performance:baseline`) executes multiple snapshot passes, aggregates thresholds, and is invoked by GitHub Actions to archive per-run metrics.
+- Crossroads art validator now reports lighting/collision readiness, surfaced through `npm run art:validate-crossroads` for pre-sweep QA coordination.
+- Act 2 branch dialogue exporter emits change-tracking bundles (Markdown + JSON) so reviewers can focus on modified anchors using `npm run narrative:export-act2-branches --baseline ... --changes-out ...`.
+- Quest telemetry parity checker ingests sample log batches (`--samples=...`) and prints schema coverage summaries to catch analytics drift before warehouse ingestion.
 
 ### Changed
 - Migrated gameplay systems, managers, and UI overlays to use `EventBus.on`/`off` with stored unsubscribe handles, eliminating deprecated API warnings and ensuring clean teardown during `Game.cleanup`.

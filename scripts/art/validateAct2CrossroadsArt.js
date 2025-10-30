@@ -51,6 +51,26 @@ async function main() {
     }
   }
 
+  if (summary.readiness) {
+    const lighting = summary.readiness.lighting ?? { total: 0, ready: 0, missing: [] };
+    const collision = summary.readiness.collision ?? { total: 0, ready: 0, missing: [] };
+
+    const formatBucket = (label, bucket) => {
+      const total = bucket.total ?? 0;
+      const ready = bucket.ready ?? 0;
+      const missing = Array.isArray(bucket.missing) ? bucket.missing : [];
+      console.log(
+        `[validateAct2CrossroadsArt] ${label} readiness: ${ready}/${total} segments configured`
+      );
+      if (missing.length > 0) {
+        console.log(`  - Missing ${label.toLowerCase()} metadata for: ${missing.join(', ')}`);
+      }
+    };
+
+    formatBucket('Lighting', lighting);
+    formatBucket('Collision', collision);
+  }
+
   if (summary.status === 'fail') {
     console.error('[validateAct2CrossroadsArt] Validation failed');
     process.exitCode = 1;

@@ -4,8 +4,10 @@ import os from 'node:os';
 import {
   buildAct2BranchDialogueSummary,
   renderAct2BranchDialogueMarkdown,
+  compareAct2BranchDialogueSummaries,
   writeAct2BranchDialogueSummary,
   writeAct2BranchDialogueMarkdown,
+  writeAct2BranchDialogueChangeReport,
 } from '../../../src/game/tools/Act2BranchDialogueExporter.js';
 
 describe('Act2BranchDialogueExporter', () => {
@@ -96,5 +98,72 @@ describe('Act2BranchDialogueExporter', () => {
     const markdown = await readFile(outputPath, 'utf8');
     expect(markdown).toContain('## dialogue_act2_resistance_signal_array');
     expect(markdown).toContain('**Kira:** Cycle the encrypted burst on my mark. Zara will mirror the packet from the Crossroads relay.');
+  });
+
+  it('surfaces dialogue and line changes when comparing summaries', () => {
+    const baseline = buildAct2BranchDialogueSummary();
+    const current = JSON.parse(JSON.stringify(baseline));
+    const editedDialogue = current.dialogues.find(
+      (entry) => entry.dialogueId === 'dialogue_act2_corporate_encryption_clone'
+    );
+    expect(editedDialogue).toBeDefined();
+    if (editedDialogue) {
+      editedDialogue.lines[0].text = 'Kira recalibrates the encryption core while Zara watches the telemetry feed.';
+      editedDialogue.telemetryTag = 'act2_corporate_encryption_recalibrated';
+    }
+
+    const report = compareAct2BranchDialogueSummaries(current, baseline);
+
+    expect(report.changedDialogues).toHaveLength(1);
+    const change = report.changedDialogues[0];
+    expect(change.dialogueId).toBe('dialogue_act2_corporate_encryption_clone');
+    expect(change.metadataChanges).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          field: 'telemetryTag',
+          current: 'act2_corporate_encryption_recalibrated',
+        }),
+      ])
+    );
+    expect(change.lineChanges).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'modified',
+          changes: expect.objectContaining({
+            text: expect.objectContaining({
+              current: 'Kira recalibrates the encryption core while Zara watches the telemetry feed.',
+            }),
+          }),
+        }),
+      ])
+    );
+  });
+
+  it('records added dialogues when no baseline is supplied', () => {
+    const current = buildAct2BranchDialogueSummary();
+    const report = compareAct2BranchDialogueSummaries(current, null);
+
+    expect(report.baselineAvailable).toBe(false);
+    expect(report.addedDialogues).toHaveLength(current.dialogues.length);
+    expect(report.changedDialogues).toHaveLength(0);
+  });
+
+  it('writes change reports to disk', async () => {
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'act2-dialogue-changes-'));
+    const outputPath = path.join(tempDir, 'changes.json');
+    const baseline = buildAct2BranchDialogueSummary();
+    const current = JSON.parse(JSON.stringify(baseline));
+    current.dialogues[0].lines[0].text = 'Updated opening line for QA review.';
+
+    const report = compareAct2BranchDialogueSummaries(current, baseline);
+    const result = await writeAct2BranchDialogueChangeReport(outputPath, { report });
+
+    expect(result).toEqual({
+      outputPath,
+      changedDialogues: 1,
+    });
+
+    const written = JSON.parse(await readFile(outputPath, 'utf8'));
+    expect(written.changedDialogues).toHaveLength(1);
   });
 });

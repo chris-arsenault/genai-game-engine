@@ -29,6 +29,9 @@ const REQUIRED_SEGMENT_IDS = Object.freeze({
   ]),
 });
 
+const LIGHTING_CATEGORIES = Object.freeze(new Set(['floors', 'accents', 'lightColumns']));
+const COLLISION_CATEGORIES = Object.freeze(new Set(['boundaries']));
+
 /**
  * Load a Crossroads art manifest from disk.
  * @param {string} manifestPath
@@ -46,7 +49,7 @@ export async function loadAct2CrossroadsArtManifest(manifestPath) {
 /**
  * Validate Art2 Crossroads art data (config + manifest) to catch broken bundles before runtime.
  * @param {{ config?: object, manifest?: object }} [options]
- * @returns {{ ok: boolean, issues: Array<object>, coverage: Record<string, object>, stats: object }}
+ * @returns {{ ok: boolean, issues: Array<object>, coverage: Record<string, object>, stats: object, readiness: object }}
  */
 export function validateAct2CrossroadsArtBundle(options = {}) {
   const config = options.config && typeof options.config === 'object' ? options.config : Act2CrossroadsArtConfig;
@@ -61,6 +64,18 @@ export function validateAct2CrossroadsArtBundle(options = {}) {
     requiredSegments: 0,
     configSegments: totalSegments(configMaps),
     manifestSegments: totalSegments(manifestMaps),
+  };
+  const readiness = {
+    lighting: {
+      total: 0,
+      ready: 0,
+      missing: [],
+    },
+    collision: {
+      total: 0,
+      ready: 0,
+      missing: [],
+    },
   };
 
   for (const [category, requiredIds] of Object.entries(REQUIRED_SEGMENT_IDS)) {
@@ -96,6 +111,7 @@ export function validateAct2CrossroadsArtBundle(options = {}) {
       validateAlpha(mergedSegment, category, issues);
       validateAssetId(mergedSegment, category, issues);
       validateMetadata(mergedSegment, category, issues);
+      evaluateReadiness(mergedSegment, category, readiness, issues);
     }
 
     coverage[category] = categoryCoverage;
@@ -108,13 +124,14 @@ export function validateAct2CrossroadsArtBundle(options = {}) {
     issues: issues.sort(severityComparator),
     coverage,
     stats,
+    readiness,
   };
 }
 
 /**
  * Produce a shorthand summary for logging/reporting pipelines.
- * @param {{ issues: Array<object>, coverage: Record<string, object> }} result
- * @returns {{ status: 'pass'|'fail', missing: Record<string, string[]>, warnings: Array<object> }}
+ * @param {{ issues: Array<object>, coverage: Record<string, object>, readiness?: object }} result
+ * @returns {{ status: 'pass'|'fail', missing: Record<string, string[]>, warnings: Array<object>, readiness: object }}
  */
 export function summarizeAct2CrossroadsArtValidation(result) {
   if (!result || typeof result !== 'object') {
@@ -122,6 +139,10 @@ export function summarizeAct2CrossroadsArtValidation(result) {
       status: 'fail',
       missing: {},
       warnings: [{ severity: 'error', message: 'No validation result supplied' }],
+      readiness: {
+        lighting: { total: 0, ready: 0, missing: [] },
+        collision: { total: 0, ready: 0, missing: [] },
+      },
     };
   }
 
@@ -138,6 +159,7 @@ export function summarizeAct2CrossroadsArtValidation(result) {
     status: result.ok ? 'pass' : 'fail',
     missing,
     warnings,
+    readiness: summarizeReadiness(result.readiness),
   };
 }
 
@@ -271,4 +293,73 @@ function totalSegments(maps) {
 function severityComparator(a, b) {
   const weight = (issue) => (issue.severity === 'error' ? 0 : 1);
   return weight(a) - weight(b);
+}
+
+function evaluateReadiness(segment, category, readiness, issues) {
+  if (!segment || !category) {
+    return;
+  }
+
+  if (LIGHTING_CATEGORIES.has(category)) {
+    readiness.lighting.total += 1;
+    const lightingPreset =
+      typeof segment?.metadata?.lightingPreset === 'string' && segment.metadata.lightingPreset.length > 0
+        ? segment.metadata.lightingPreset
+        : null;
+    if (lightingPreset) {
+      readiness.lighting.ready += 1;
+    } else {
+      readiness.lighting.missing.push(segment.id);
+      issues.push({
+        severity: 'warning',
+        category,
+        segmentId: segment.id,
+        message: `Segment "${segment.id}" is missing a lightingPreset; lighting sweep cannot validate narrative cues`,
+      });
+    }
+  }
+
+  if (COLLISION_CATEGORIES.has(category)) {
+    readiness.collision.total += 1;
+    const metadataCollision =
+      typeof segment?.metadata?.collisionProfile === 'string' && segment.metadata.collisionProfile.length > 0;
+    const tagCollision = Array.isArray(segment?.tags)
+      ? segment.tags.some((tag) => tag === 'nav_blocker' || tag === 'collision')
+      : false;
+    if (metadataCollision || tagCollision) {
+      readiness.collision.ready += 1;
+    } else {
+      readiness.collision.missing.push(segment.id);
+      issues.push({
+        severity: 'warning',
+        category,
+        segmentId: segment.id,
+        message: `Segment "${segment.id}" lacks collision metadata; navigation blockers may fail in-engine`,
+      });
+    }
+  }
+}
+
+function summarizeReadiness(source) {
+  const initial = {
+    lighting: { total: 0, ready: 0, missing: [] },
+    collision: { total: 0, ready: 0, missing: [] },
+  };
+  const readiness = source && typeof source === 'object' ? source : initial;
+  return {
+    lighting: normalizeReadinessBucket(readiness.lighting),
+    collision: normalizeReadinessBucket(readiness.collision),
+  };
+}
+
+function normalizeReadinessBucket(bucket) {
+  const safeBucket = bucket && typeof bucket === 'object' ? bucket : {};
+  const total = Number.isFinite(safeBucket.total) ? safeBucket.total : 0;
+  const ready = Number.isFinite(safeBucket.ready) ? safeBucket.ready : 0;
+  const missing = Array.isArray(safeBucket.missing) ? [...safeBucket.missing] : [];
+  return {
+    total,
+    ready,
+    missing,
+  };
 }

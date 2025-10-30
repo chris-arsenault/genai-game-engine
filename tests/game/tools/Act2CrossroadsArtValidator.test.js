@@ -21,9 +21,23 @@ describe('Act2CrossroadsArtValidator', () => {
     });
 
     expect(result.ok).toBe(true);
-    expect(result.issues).toEqual([]);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          severity: 'warning',
+        }),
+      ])
+    );
     expect(result.coverage.floors.missing).toEqual([]);
     expect(result.coverage.boundaries.present).toBeGreaterThanOrEqual(4);
+
+    const summary = summarizeAct2CrossroadsArtValidation(result);
+    expect(summary.status).toBe('pass');
+    expect(summary.readiness.lighting.total).toBeGreaterThan(0);
+    expect(summary.readiness.lighting.missing).toEqual(
+      expect.arrayContaining(['crossroads_column_safehouse_left'])
+    );
+    expect(summary.readiness.collision.ready).toBe(summary.readiness.collision.total);
   });
 
   it('flags missing required segments as errors', () => {
@@ -101,6 +115,43 @@ describe('Act2CrossroadsArtValidator', () => {
         expect.objectContaining({
           segmentId: 'crossroads_floor_safehouse',
           message: expect.stringContaining('lacks metadata object'),
+        }),
+      ])
+    );
+    expect(summary.readiness.lighting.missing).toEqual(
+      expect.arrayContaining(['crossroads_floor_safehouse'])
+    );
+  });
+
+  it('highlights collision readiness gaps for boundary segments missing blockers', async () => {
+    const manifest = await loadAct2CrossroadsArtManifest(manifestPath);
+    const mutatedManifest = {
+      ...manifest,
+      boundaries: manifest.boundaries.map((entry) =>
+        entry?.id === 'crossroads_boundary_west'
+          ? {
+              ...entry,
+              metadata: {},
+              tags: [],
+            }
+          : { ...entry }
+      ),
+    };
+    const result = validateAct2CrossroadsArtBundle({
+      config: Act2CrossroadsArtConfig,
+      manifest: mutatedManifest,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.readiness.collision.missing).toContain('crossroads_boundary_west');
+
+    const summary = summarizeAct2CrossroadsArtValidation(result);
+    expect(summary.readiness.collision.missing).toContain('crossroads_boundary_west');
+    expect(summary.warnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          segmentId: 'crossroads_boundary_west',
+          message: expect.stringContaining('lacks collision metadata'),
         }),
       ])
     );

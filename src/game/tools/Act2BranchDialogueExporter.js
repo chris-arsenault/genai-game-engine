@@ -192,6 +192,110 @@ export async function writeAct2BranchDialogueMarkdown(outputPath, options = {}) 
   };
 }
 
+/**
+ * Compare two Act 2 branch dialogue summaries and surface dialogue/script deltas.
+ *
+ * @param {object} currentSummary
+ * @param {object|null} previousSummary
+ * @returns {{
+ *   generatedAt: string,
+ *   currentVersion: string|null,
+ *   baselineVersion: string|null,
+ *   totalDialogues: number,
+ *   addedDialogues: string[],
+ *   removedDialogues: string[],
+ *   changedDialogues: Array<object>,
+ *   baselineAvailable: boolean
+ * }}
+ */
+export function compareAct2BranchDialogueSummaries(currentSummary, previousSummary) {
+  const current = isDialogueSummary(currentSummary)
+    ? currentSummary
+    : buildAct2BranchDialogueSummary();
+  const hasBaseline = isDialogueSummary(previousSummary);
+  const previous = hasBaseline ? previousSummary : null;
+
+  const report = {
+    generatedAt: new Date().toISOString(),
+    currentVersion: current.version ?? null,
+    baselineVersion: previous?.version ?? null,
+    totalDialogues: current.dialogues.length,
+    addedDialogues: [],
+    removedDialogues: [],
+    changedDialogues: [],
+    baselineAvailable: hasBaseline,
+  };
+
+  const currentMap = new Map(
+    current.dialogues.map((entry) => [entry.dialogueId, entry])
+  );
+  const previousMap = hasBaseline
+    ? new Map(previous.dialogues.map((entry) => [entry.dialogueId, entry]))
+    : new Map();
+
+  for (const [dialogueId, entry] of currentMap.entries()) {
+    if (!previousMap.has(dialogueId)) {
+      report.addedDialogues.push(dialogueId);
+      continue;
+    }
+    const previousEntry = previousMap.get(dialogueId);
+    const diff = diffDialogueEntry(entry, previousEntry);
+    if (diff.hasChanges) {
+      report.changedDialogues.push({
+        dialogueId,
+        branchId: entry.branchId ?? null,
+        metadataChanges: diff.metadataChanges,
+        lineChanges: diff.lineChanges,
+      });
+    }
+  }
+
+  if (hasBaseline) {
+    for (const dialogueId of previousMap.keys()) {
+      if (!currentMap.has(dialogueId)) {
+        report.removedDialogues.push(dialogueId);
+      }
+    }
+  } else {
+    report.addedDialogues = current.dialogues.map((entry) => entry.dialogueId);
+  }
+
+  return report;
+}
+
+/**
+ * Write a dialogue change report to disk for reviewer distribution.
+ *
+ * @param {string} outputPath
+ * @param {{ report: object }} options
+ * @returns {Promise<{ outputPath: string, changedDialogues: number }>}
+ */
+export async function writeAct2BranchDialogueChangeReport(outputPath, options = {}) {
+  if (typeof outputPath !== 'string' || outputPath.length === 0) {
+    throw new Error('[writeAct2BranchDialogueChangeReport] outputPath is required');
+  }
+
+  const report = options.report && typeof options.report === 'object'
+    ? options.report
+    : null;
+  if (!report) {
+    throw new Error(
+      '[writeAct2BranchDialogueChangeReport] options.report is required'
+    );
+  }
+
+  const targetDir = path.dirname(outputPath);
+  await mkdir(targetDir, { recursive: true });
+  await writeFile(outputPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+
+  return {
+    outputPath,
+    changedDialogues: Array.isArray(report.changedDialogues)
+      ? report.changedDialogues.length
+      : 0,
+  };
+}
+
 function collectDialogueTrees() {
   const collector = {
     trees: new Map(),
@@ -288,7 +392,7 @@ function extractDialogueSequence(tree, options = {}) {
 }
 
 function isDialogueSummary(candidate) {
-  return (
+  return Boolean(
     candidate &&
     typeof candidate === 'object' &&
     Array.isArray(candidate.dialogues) &&
@@ -311,4 +415,180 @@ function formatChoiceLabel(choice, index, anchorId) {
     return `\`${anchorId ?? 'choice'}-C${String(index + 1).padStart(2, '0')}\``;
   }
   return '`choice`';
+}
+
+function diffDialogueEntry(currentEntry, previousEntry) {
+  const metadataChanges = diffMetadata(currentEntry, previousEntry);
+  const lineChanges = diffLines(currentEntry, previousEntry);
+  const hasChanges = metadataChanges.length > 0 || lineChanges.length > 0;
+  return { hasChanges, metadataChanges, lineChanges };
+}
+
+function diffMetadata(currentEntry, previousEntry) {
+  if (!previousEntry || !currentEntry) {
+    return [];
+  }
+  const trackedFields = [
+    'branchId',
+    'npcId',
+    'questId',
+    'objectiveId',
+    'telemetryTag',
+    'triggerId',
+    'areaId',
+  ];
+  const changes = [];
+  for (const field of trackedFields) {
+    const currentValue = currentEntry[field] ?? null;
+    const previousValue = previousEntry[field] ?? null;
+    if (!isMetadataValueEqual(currentValue, previousValue)) {
+      changes.push({
+        field,
+        previous: previousValue,
+        current: currentValue,
+      });
+    }
+  }
+  return changes;
+}
+
+function diffLines(currentEntry, previousEntry) {
+  if (!previousEntry || !currentEntry) {
+    return [];
+  }
+
+  const previousMap = new Map();
+  for (const line of previousEntry.lines ?? []) {
+    const key = line.nodeId ?? `${previousEntry.dialogueId}:${line.lineNumber}`;
+    previousMap.set(key, line);
+  }
+
+  const changes = [];
+  const matchedKeys = new Set();
+
+  for (const line of currentEntry.lines ?? []) {
+    const key = line.nodeId ?? `${currentEntry.dialogueId}:${line.lineNumber}`;
+    const previousLine = previousMap.get(key);
+    if (!previousLine) {
+      changes.push({
+        type: 'added',
+        nodeId: line.nodeId ?? null,
+        anchorId: line.anchorId ?? null,
+        current: summarizeLine(line),
+      });
+      continue;
+    }
+    matchedKeys.add(key);
+    const lineDiff = diffLine(line, previousLine);
+    if (lineDiff) {
+      changes.push(lineDiff);
+    }
+  }
+
+  for (const [key, previousLine] of previousMap.entries()) {
+    if (!matchedKeys.has(key)) {
+      changes.push({
+        type: 'removed',
+        nodeId: previousLine.nodeId ?? null,
+        anchorId: previousLine.anchorId ?? null,
+        previous: summarizeLine(previousLine),
+      });
+    }
+  }
+
+  return changes;
+}
+
+function diffLine(currentLine, previousLine) {
+  const changes = {};
+
+  if (!textEquals(currentLine.text, previousLine.text)) {
+    changes.text = {
+      previous: previousLine.text ?? '',
+      current: currentLine.text ?? '',
+    };
+  }
+
+  if ((currentLine.speaker ?? null) !== (previousLine.speaker ?? null)) {
+    changes.speaker = {
+      previous: previousLine.speaker ?? null,
+      current: currentLine.speaker ?? null,
+    };
+  }
+
+  const currentChoices = summarizeChoices(currentLine.choices);
+  const previousChoices = summarizeChoices(previousLine.choices);
+  if (!choicesEqual(currentChoices, previousChoices)) {
+    changes.choices = {
+      previous: previousChoices,
+      current: currentChoices,
+    };
+  }
+
+  if (Object.keys(changes).length === 0) {
+    return null;
+  }
+
+  return {
+    type: 'modified',
+    nodeId: currentLine.nodeId ?? previousLine.nodeId ?? null,
+    anchorId: currentLine.anchorId ?? previousLine.anchorId ?? null,
+    lineNumber: currentLine.lineNumber ?? previousLine.lineNumber ?? null,
+    changes,
+  };
+}
+
+function summarizeLine(line) {
+  return {
+    lineNumber: line?.lineNumber ?? null,
+    speaker: line?.speaker ?? null,
+    text: line?.text ?? '',
+    choices: summarizeChoices(line?.choices),
+  };
+}
+
+function summarizeChoices(choices) {
+  if (!Array.isArray(choices) || choices.length === 0) {
+    return [];
+  }
+  return choices.map((choice) => ({
+    text: choice?.text ?? '',
+    nextNode: choice?.nextNode ?? null,
+  }));
+}
+
+function textEquals(a, b) {
+  return (a ?? '') === (b ?? '');
+}
+
+function choicesEqual(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b)) {
+    return false;
+  }
+  if (a.length !== b.length) {
+    return false;
+  }
+  for (let index = 0; index < a.length; index += 1) {
+    const left = a[index];
+    const right = b[index];
+    if (left.text !== right.text || left.nextNode !== right.nextNode) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function isMetadataValueEqual(a, b) {
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) {
+      return false;
+    }
+    for (let index = 0; index < a.length; index += 1) {
+      if (a[index] !== b[index]) {
+        return false;
+      }
+    }
+    return true;
+  }
+  return a === b;
 }

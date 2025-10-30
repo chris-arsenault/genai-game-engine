@@ -1,4 +1,8 @@
-import { checkQuestTelemetrySchema } from '../../../src/game/telemetry/QuestTelemetrySchemaChecker.js';
+import {
+  buildQuestTelemetryDatasetFromSamples,
+  checkQuestTelemetrySchema,
+  summarizeQuestTelemetrySchemaCheck,
+} from '../../../src/game/telemetry/QuestTelemetrySchemaChecker.js';
 
 describe('QuestTelemetrySchemaChecker', () => {
   function buildSampleDataset(overrides = {}) {
@@ -107,5 +111,58 @@ describe('QuestTelemetrySchemaChecker', () => {
         }),
       ])
     );
+  });
+
+  it('builds datasets from telemetry samples', () => {
+    const samples = [
+      {
+        type: 'telemetry:trigger_entered',
+        timestamp: 1,
+        payload: {
+          telemetryTag: 'tag_a',
+          questId: 'quest-1',
+          objectiveId: 'obj-1',
+        },
+      },
+      {
+        type: 'telemetry:trigger_entered',
+        timestamp: 2,
+        payload: {
+          telemetryTag: 'tag_b',
+          questId: 'quest-1',
+          objectiveId: 'obj-2',
+        },
+      },
+    ];
+
+    const dataset = buildQuestTelemetryDatasetFromSamples(samples, {
+      schemaVersion: 'samples-1',
+    });
+
+    expect(dataset.schemaVersion).toBe('samples-1');
+    expect(dataset.totalEvents).toBe(2);
+    expect(dataset.uniqueTelemetryTags).toEqual(['tag_a', 'tag_b']);
+  });
+
+  it('summarizes parity for missing questId payloads', () => {
+    const dataset = buildSampleDataset({
+      events: [
+        {
+          type: 'telemetry:trigger_entered',
+          timestamp: 1_700_000_000_000,
+          payload: {
+            telemetryTag: 'missing_quest',
+            objectiveId: 'obj-a',
+          },
+        },
+      ],
+    });
+
+    const result = checkQuestTelemetrySchema(dataset);
+    const summary = summarizeQuestTelemetrySchemaCheck(result);
+
+    expect(summary.ok).toBe(false);
+    expect(summary.parity.payload.missingFieldNames).toContain('questId');
+    expect(summary.parity.dataset.coverage).toBe(1);
   });
 });
