@@ -25,6 +25,7 @@
 - **Target Performance**: 60 FPS (16ms frame budget) on mid-range hardware
 - **Scope**: Medium complexity, 4-6 month development timeline, 15-20k LOC
 - **Platform**: Web-based, cross-browser compatible
+- **Team**: Solo developer; workflows avoid external approval dependencies
 
 ---
 
@@ -2124,4 +2125,4 @@ These decisions will be formally stored in the MCP architecture decision log for
 
 **MCP References**
 - Research topics: `hybrid-genre-combinations-2d-action-adventure`, `standout-mechanics-systemic-differentiators-2d`, `ECS-architecture-JavaScript-Canvas-2D`
-- Architecture decisions: (to be stored post-approval)
+- Architecture decisions: (store immediately after decisions are made; no external approvals required)

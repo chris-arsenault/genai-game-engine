@@ -6,20 +6,22 @@
 ## Document Overview
 
 **Version**: 1.1
-**Last Updated**: 2025-11-06
+**Last Updated**: 2025-10-30
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
+**Team Structure**: Solo developer; no external approvals required for sign-off.
 
 ### Current High-Priority Focus (Groomed 2025-10-29)
 
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
+| AR-050 | P0 | Pending | Visual asset sourcing pipeline for outstanding manifests. | Inventory open requests, run web_search/OpenAI sourcing attempts, update manifests with selections + licensing notes. |
 | TUT-201 | P0 | Completed | Tutorial case blocked at step 3 (`evidence_detection`) because legacy scene entities bypassed ECS detection events. | ECS-aligned tutorial scene entities shipped Session #51; re-run tutorial smoke tests after combat audio validation. |
 | AUDIO-351 | P0 | Completed | Validate live combat/disguise trigger routing through `AmbientSceneAudioController` using real combat loop events. | Adaptive audio routing now responds to gameplay emits; telemetry verified by Jest/Playwright suites and new infiltration benchmark. |
 | PERF-214 | P1 | Pending | Browser-level performance profiling for adaptive audio + overlay interactions to confirm <16 ms frame time budget. | Run Chromium/Firefox performance audits with combat/stealth transitions, log hotspots, and file perf follow-ups as needed. |
 | UX-173 | P1 | Pending | Improve debug audio overlay ergonomics (keyboard shortcuts, focus management). | Prototype keyboard navigation + focus traps, add Jest/Playwright coverage for accessibility interactions. |
 
-**Next Session Focus**: Review RenderOps hardware feedback for any validator hotspot warnings, log actual reviewer approvals via the manifest-only CLI updates, and confirm analytics ingestion of `telemetry-artifacts/analytics/outbox/act2-crossroads-20251112` before scheduling the next telemetry sample run.
+**Next Session Focus**: Review RenderOps hardware feedback for any validator hotspot warnings, log self-review notes in the narrative bundle manifest as needed, and confirm analytics ingestion of `telemetry-artifacts/analytics/outbox/act2-crossroads-20251112` before scheduling the next telemetry sample run.
 
 _Historical session handoffs (Sessions 2–44) now live under `archive/docs/reports/` for reference._
 

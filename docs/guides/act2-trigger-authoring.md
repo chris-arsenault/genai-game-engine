@@ -151,7 +151,7 @@ strategy and acceptance criteria.
 - Run `npm run narrative:export-act2-dialogues` to export a JSON summary
   (`telemetry-artifacts/act2-branch-dialogues-summary.json`) mapping each branch
   objective dialogue to quest metadata, telemetry tags, and the ordered line list for
-  copy approval sessions.
+  solo copy review passes.
 - Run `npm run telemetry:dashboard -- --in=<eventLog>` to transform captured quest
   telemetry events into `telemetry-artifacts/quest-telemetry-dashboard.json`, matching
   the analytics warehouse schema (includes optional `--summary-only` flag to omit raw rows).
