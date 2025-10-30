@@ -51,6 +51,14 @@ strategy and acceptance criteria.
   `registerAct2CrossroadsQuest` seeds quest scaffolding for Act 2 hub objectives, and
   `NavigationMeshService` now broadcasts the authored navigation mesh to movement
   systems (with dedicated Jest coverage).
+- Session 90 enforced navigation mesh consumption throughout the hub via
+  `NavigationConstraintSystem` + `NavigationAgent` components linked to
+  `NavigationMeshService`. Player movement is now clamped to walkable surfaces until
+  `navigation:unlockSurfaceTag` events fire, and a dedicated branch landing overlay exposes
+  Zara's selected thread with checkpoint instructions (see
+  `tests/game/systems/NavigationConstraintSystem.test.js`,
+  `tests/game/systems/PlayerMovementSystem.navigation.test.js`, and
+  `tests/game/narrative/CrossroadsPromptController.test.js`).
 - Designer prompts now flow from the registry definitions through `ui:show_prompt`, and
   narrative/analytics listeners can subscribe to `narrative:crossroads_prompt` and
   `telemetry:trigger_entered` for branch selection deltas.

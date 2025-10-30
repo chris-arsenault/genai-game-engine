@@ -320,6 +320,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Progress (Session #87)**: Patched `performanceSnapshot.js` to warm up BSP generation outside the measured window, introduced `scripts/telemetry/postPerformanceSummary.js` for CI job summaries, wired the new step into `.github/workflows/ci.yml`, and refreshed baseline artifacts with warning-free metrics plus updated guardrail docs.
 - **Progress (Session #88)**: Added baseline delta comparisons to `postPerformanceSummary.js`, appended comparison tables/notices to CI summaries, and documented the workflow in `docs/performance/performance-baseline-guardrails.md`; next up is backfilling at least one history artifact and continuing BSP trend monitoring before tightening thresholds.
 - **Progress (Session #89)**: Automated baseline history archival inside `postPerformanceSummary.js`, exported helpers for unit testing, and added Jest coverage/temporary-dir smoke to validate timestamped filenames + copy semantics; baseline doc now references the auto-archive flow.
+- **Progress (Session #90)**: Seeded baseline history automatically when archives are empty, surfaced baseline/history paths in markdown summaries, refreshed guardrail docs with the retention workflow, and expanded Jest coverage to lock the new seeding + reporting behaviour.
 
 #### CI-014: Playwright Smoke Integration
 - **Priority**: P3

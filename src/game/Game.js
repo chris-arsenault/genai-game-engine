@@ -21,6 +21,7 @@ import { QuestSystem } from './systems/QuestSystem.js';
 import { FirewallScramblerSystem } from './systems/FirewallScramblerSystem.js';
 import { ForensicSystem } from './systems/ForensicSystem.js';
 import { DeductionSystem } from './systems/DeductionSystem.js';
+import { NavigationConstraintSystem } from './systems/NavigationConstraintSystem.js';
 import { TutorialTranscriptRecorder } from './tutorial/TutorialTranscriptRecorder.js';
 
 // State
@@ -45,6 +46,7 @@ import { MovementIndicatorOverlay } from './ui/MovementIndicatorOverlay.js';
 import { QuestLogUI } from './ui/QuestLogUI.js';
 import { CaseFileUI } from './ui/CaseFileUI.js';
 import { DeductionBoard } from './ui/DeductionBoard.js';
+import { CrossroadsBranchLandingOverlay } from './ui/CrossroadsBranchLandingOverlay.js';
 import { InventoryOverlay } from './ui/InventoryOverlay.js';
 import { AudioFeedbackController } from './audio/AudioFeedbackController.js';
 import { SFXCatalogLoader } from './audio/SFXCatalogLoader.js';
@@ -182,6 +184,7 @@ export class Game {
     this.questLogUI = null;
     this.questTrackerHUD = null;
     this.questNotification = null;
+    this.crossroadsBranchOverlay = null;
     this.inventoryOverlay = null;
     this.interactionPromptOverlay = null;
     this.movementIndicatorOverlay = null;
@@ -352,6 +355,15 @@ export class Game {
       this.inputState
     );
 
+    this.gameSystems.navigationConstraint = new NavigationConstraintSystem(
+      this.componentRegistry,
+      this.eventBus,
+      {
+        entityManager: this.entityManager,
+        worldStateStore: this.worldStateStore,
+      }
+    );
+
     // Create faction reputation system (now receives FactionManager)
     this.gameSystems.factionReputation = new FactionReputationSystem(
       this.componentRegistry,
@@ -455,6 +467,7 @@ export class Game {
     const systemRegistrationOrder = [
       ['tutorial', this.gameSystems.tutorial],
       ['playerMovement', this.gameSystems.playerMovement],
+      ['navigationConstraint', this.gameSystems.navigationConstraint],
       ['npcMemory', this.gameSystems.npcMemory],
       ['firewallScrambler', this.gameSystems.firewallScrambler],
       ['disguise', this.gameSystems.disguise],
@@ -493,6 +506,9 @@ export class Game {
 
     if (this.gameSystems?.playerMovement) {
       this.navigationMeshService.addConsumer(this.gameSystems.playerMovement);
+    }
+    if (this.gameSystems?.navigationConstraint) {
+      this.navigationMeshService.addConsumer(this.gameSystems.navigationConstraint);
     }
   }
 
@@ -550,6 +566,13 @@ export class Game {
       y: 20
     });
     this.questNotification.init();
+
+    this.crossroadsBranchOverlay = new CrossroadsBranchLandingOverlay(
+      this.engine.canvas,
+      this.eventBus,
+      {}
+    );
+    this.crossroadsBranchOverlay.init();
 
     // Create quest tracker HUD
     this.questTrackerHUD = new QuestTrackerHUD({
@@ -1826,6 +1849,9 @@ export class Game {
     if (this.questNotification) {
       this.questNotification.update(deltaTime);
     }
+    if (this.crossroadsBranchOverlay) {
+      this.crossroadsBranchOverlay.update(deltaTime);
+    }
     if (this.questTrackerHUD) {
       this.questTrackerHUD.update(deltaTime);
     }
@@ -2453,6 +2479,9 @@ export class Game {
     if (this.questNotification) {
       this.questNotification.render(ctx);
     }
+    if (this.crossroadsBranchOverlay) {
+      this.crossroadsBranchOverlay.render(ctx);
+    }
 
     if (this.inventoryOverlay) {
       this.inventoryOverlay.render(ctx);
@@ -2558,6 +2587,9 @@ export class Game {
     }
     if (this.questNotification && this.questNotification.cleanup) {
       this.questNotification.cleanup();
+    }
+    if (this.crossroadsBranchOverlay && this.crossroadsBranchOverlay.cleanup) {
+      this.crossroadsBranchOverlay.cleanup();
     }
     if (this.saveInspectorOverlay && this.saveInspectorOverlay.cleanup) {
       this.saveInspectorOverlay.cleanup();

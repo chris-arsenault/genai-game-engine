@@ -84,7 +84,33 @@ export async function persistBaselineHistory(baselinePath, summary) {
   return destinationPath;
 }
 
-async function findPreviousBaselineInfo(baselinePath) {
+export async function ensureHistorySeeded(baselinePath, summary) {
+  const historyDir = resolveHistoryDir(baselinePath);
+  let entries = [];
+  try {
+    entries = await fs.readdir(historyDir, { withFileTypes: true });
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      console.warn(
+        `[postPerformanceSummary] Unable to read baseline history directory ${historyDir} before seeding`,
+        error
+      );
+    }
+  }
+
+  const hasExistingEntries = entries.some((entry) => entry.isFile() && entry.name.endsWith('.json'));
+  if (hasExistingEntries) {
+    return null;
+  }
+
+  const seededPath = await persistBaselineHistory(baselinePath, summary);
+  console.log(
+    `::notice title=Performance baseline history::Seeded history archive with ${seededPath}`
+  );
+  return seededPath;
+}
+
+async function findPreviousBaselineInfo(baselinePath, options = {}) {
   const historyDir = resolveHistoryDir(baselinePath);
   let entries;
   try {
@@ -100,6 +126,11 @@ async function findPreviousBaselineInfo(baselinePath) {
   }
 
   const currentResolved = path.resolve(baselinePath);
+  const excludeResolved = new Set(
+    (options.excludePaths || [])
+      .filter((item) => typeof item === 'string' && item.length > 0)
+      .map((item) => path.resolve(item))
+  );
   const candidates = entries
     .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
     .map((entry) => {
@@ -110,7 +141,7 @@ async function findPreviousBaselineInfo(baselinePath) {
         resolved: path.resolve(candidatePath),
       };
     })
-    .filter((candidate) => candidate.resolved !== currentResolved)
+    .filter((candidate) => candidate.resolved !== currentResolved && !excludeResolved.has(candidate.resolved))
     .sort((a, b) => (a.name < b.name ? 1 : -1));
 
   if (candidates.length === 0) {
@@ -216,7 +247,11 @@ async function main() {
   }
 
   const summary = summariseBaseline(baseline);
-  const previousInfo = await findPreviousBaselineInfo(baselinePath);
+  summary.baselinePath = baselinePath;
+  const seededHistoryPath = await ensureHistorySeeded(baselinePath, summary);
+  const previousInfo = await findPreviousBaselineInfo(baselinePath, {
+    excludePaths: seededHistoryPath ? [seededHistoryPath] : [],
+  });
 
   if (previousInfo) {
     try {
@@ -243,6 +278,17 @@ async function main() {
     );
   }
 
+  let historyEntryPath = seededHistoryPath;
+  if (!historyEntryPath) {
+    historyEntryPath = await persistBaselineHistory(baselinePath, summary);
+  }
+  if (historyEntryPath) {
+    summary.historyEntry = {
+      path: historyEntryPath,
+      directory: path.dirname(historyEntryPath),
+    };
+  }
+
   const markdown = formatMarkdownSummary(summary);
 
   await ensureDirectory(outputPath);
@@ -251,8 +297,6 @@ async function main() {
   if (process.env.GITHUB_STEP_SUMMARY) {
     await fs.appendFile(process.env.GITHUB_STEP_SUMMARY, `${markdown}\n`);
   }
-
-  await persistBaselineHistory(baselinePath, summary);
 
   for (const metric of summary.metrics || []) {
     if (metric.status === 'critical') {

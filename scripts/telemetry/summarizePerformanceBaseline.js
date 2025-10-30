@@ -187,7 +187,14 @@ export function formatMarkdownSummary(summary = {}) {
     const generatedAt = summary.previousBaseline?.generatedAt
       ? ` (${summary.previousBaseline.generatedAt})`
       : '';
-    lines.push(`- Compared against: ${label}${generatedAt}`);
+    const location = summary.previousBaseline?.path ? ` — \`${summary.previousBaseline.path}\`` : '';
+    lines.push(`- Compared against: ${label}${generatedAt}${location}`);
+  }
+  if (summary.baselinePath) {
+    lines.push(`- Baseline JSON: \`${summary.baselinePath}\``);
+  }
+  if (summary.historyEntry?.path) {
+    lines.push(`- History archive entry: \`${summary.historyEntry.path}\``);
   }
   lines.push('');
 

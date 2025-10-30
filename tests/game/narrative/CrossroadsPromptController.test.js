@@ -85,6 +85,7 @@ describe('CrossroadsPromptController', () => {
       dialogueSystem,
       questManager,
       storyFlagManager: storyFlags,
+      questId: 'main-act2-crossroads',
     });
     controller.init();
 
@@ -112,6 +113,8 @@ describe('CrossroadsPromptController', () => {
     });
     controller.init();
 
+    controller.ensureCrossroadsQuestStarted();
+
     eventBus.emit('crossroads:thread_selected', {
       branchId: 'act2_thread_corporate_infiltration',
       telemetryTag: 'act2_thread_selection_corporate',
@@ -127,5 +130,64 @@ describe('CrossroadsPromptController', () => {
       branchId: 'act2_thread_corporate_infiltration',
       questId: 'main-act2-crossroads',
     });
+  });
+
+  test('unlocks navigation and raises landing overlay context on branch selection', () => {
+    const unlockedTags = [];
+    const unlockedIds = [];
+    const landingPayloads = [];
+    const questUpdates = [];
+
+    eventBus.on('navigation:unlockSurfaceTag', (payload) => {
+      if (payload?.tag) {
+        unlockedTags.push(payload.tag);
+      }
+    });
+    eventBus.on('navigation:unlockSurfaceId', (payload) => {
+      if (payload?.surfaceId) {
+        unlockedIds.push(payload.surfaceId);
+      }
+    });
+    eventBus.on('crossroads:branch_landing_ready', (payload) => {
+      landingPayloads.push(payload);
+    });
+    eventBus.on('quest:updated', (payload) => {
+      questUpdates.push(payload);
+    });
+
+    const controller = new CrossroadsPromptController({
+      eventBus,
+      dialogueSystem,
+      questManager,
+      storyFlagManager: storyFlags,
+      questId: 'main-act2-crossroads',
+    });
+    controller.init();
+
+    controller.ensureCrossroadsQuestStarted();
+
+    eventBus.emit('crossroads:thread_selected', {
+      branchId: 'act2_thread_corporate_infiltration',
+      telemetryTag: 'act2_thread_selection_corporate',
+      worldFlags: ['act2_branch_corporate_selected'],
+    });
+
+    expect(unlockedTags).toEqual(expect.arrayContaining(['transition', 'checkpoint']));
+    expect(unlockedIds).toEqual(expect.arrayContaining(['branch_walkway', 'checkpoint_plaza']));
+
+    expect(landingPayloads.length).toBeGreaterThan(0);
+    expect(landingPayloads[0]).toMatchObject({
+      branchId: 'act2_thread_corporate_infiltration',
+      questId: 'main-act2-crossroads',
+    });
+    expect(landingPayloads[0].instructions).toMatch(/checkpoint/i);
+
+    expect(questUpdates.length).toBeGreaterThan(0);
+    expect(questUpdates[0].questId).toBe('main-act2-crossroads');
+    expect(questUpdates[0].branchId).toBe('act2_thread_corporate_infiltration');
+
+    // Primary quest should have been started already and the branch quest queued when registered.
+    expect(questManager.started).toContain('main-act2-crossroads');
+    expect(questManager.started).toContain('main-act2-neurosync-infiltration');
   });
 });

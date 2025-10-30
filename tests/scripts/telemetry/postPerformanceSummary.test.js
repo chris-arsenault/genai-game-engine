@@ -4,6 +4,7 @@ import path from 'path';
 import {
   buildHistoryFileName,
   persistBaselineHistory,
+  ensureHistorySeeded,
 } from '../../../scripts/telemetry/postPerformanceSummary.js';
 
 async function createTempFile(prefix, content = '{}') {
@@ -42,5 +43,22 @@ describe('postPerformanceSummary helpers', () => {
     } finally {
       delete process.env.TELEMETRY_BASELINE_HISTORY_DIR;
     }
+  });
+
+  test('ensureHistorySeeded seeds archive when empty', async () => {
+    const { filePath } = await createTempFile('baseline-seed-');
+    const summary = {
+      generatedAt: '2025-10-31T10:00:00.000Z',
+      runs: 5,
+    };
+
+    const seededPath = await ensureHistorySeeded(filePath, summary);
+    expect(seededPath).toBeTruthy();
+    const stats = await fs.stat(seededPath);
+    expect(stats.isFile()).toBe(true);
+
+    // Second call should detect existing history and skip seeding.
+    const secondSeed = await ensureHistorySeeded(filePath, summary);
+    expect(secondSeed).toBeNull();
   });
 });

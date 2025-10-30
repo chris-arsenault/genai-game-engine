@@ -58,6 +58,10 @@ describe('summarizePerformanceBaseline utilities', () => {
     const summary = {
       generatedAt: '2025-10-30T01:51:29.522Z',
       runs: 5,
+      baselinePath: '/tmp/telemetry/ci-baseline.json',
+      historyEntry: {
+        path: '/tmp/telemetry/history/baseline-2025-10-30T01-51-29.522Z.json',
+      },
       metrics: [
         {
           name: 'stableMetric',
@@ -89,6 +93,8 @@ describe('summarizePerformanceBaseline utilities', () => {
     expect(markdown).toContain('| busyMetric | 9.6 | 10 | 96% | CRITICAL | 8 / 12 | 5 |');
     expect(markdown).toContain('## Alerts');
     expect(markdown).toContain('[CRITICAL]: busyMetric');
+    expect(markdown).toContain('Baseline JSON: `/tmp/telemetry/ci-baseline.json`');
+    expect(markdown).toContain('History archive entry: `/tmp/telemetry/history/baseline-2025-10-30T01-51-29.522Z.json`');
   });
 
   test('formatMarkdownSummary renders delta section when provided', () => {
@@ -98,6 +104,7 @@ describe('summarizePerformanceBaseline utilities', () => {
       previousBaseline: {
         label: '2025-10-30-ci-baseline.json',
         generatedAt: '2025-10-30T02:19:47.904Z',
+        path: '/tmp/telemetry/history/baseline-2025-10-30T02-19-47.904Z.json',
       },
       metrics: [],
       deltas: [
@@ -128,5 +135,6 @@ describe('summarizePerformanceBaseline utilities', () => {
     expect(markdown).toContain(
       '| factionModify | 0.01 | 0.02 | -0.0100 | -50.00% | IMPROVEMENT |'
     );
+    expect(markdown).toContain('Compared against: 2025-10-30-ci-baseline.json (2025-10-30T02:19:47.904Z) — `/tmp/telemetry/history/baseline-2025-10-30T02-19-47.904Z.json`');
   });
 });

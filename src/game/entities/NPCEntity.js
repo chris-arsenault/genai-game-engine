@@ -11,6 +11,7 @@ import { FactionMember } from '../components/FactionMember.js';
 import { Collider } from '../components/Collider.js';
 import { InteractionZone } from '../components/InteractionZone.js';
 import { NPC } from '../components/NPC.js';
+import { NavigationAgent } from '../components/NavigationAgent.js';
 
 function shouldLog() {
   if (typeof __DEV__ !== 'undefined') {
@@ -119,6 +120,19 @@ export function createNPCEntity(entityManager, componentRegistry, npcData) {
     });
     interactionZone.type = 'InteractionZone';
     componentRegistry.addComponent(entityId, interactionZone);
+  }
+
+  if (npcData?.navigationAgent) {
+    const navigationAgent = new NavigationAgent({
+      ...npcData.navigationAgent,
+      metadata: {
+        ...(npcData.navigationAgent.metadata || {}),
+        role: 'npc',
+        npcId: id,
+      },
+      initialPosition: { x, y },
+    });
+    componentRegistry.addComponent(entityId, 'NavigationAgent', navigationAgent);
   }
 
   if (shouldLog()) {
