@@ -4,10 +4,16 @@
  */
 export class SpatialHash {
   /**
-   * @param {number} [cellSize=64] Size of each spatial bucket in world units
+   * @param {number|object} [cellSize=64] Size of each spatial bucket in world units, or options object
+   * @param {object} [options={}] Additional configuration
    */
-  constructor(cellSize = 64) {
-    this.cellSize = cellSize;
+  constructor(cellSize = 64, options = {}) {
+    if (typeof cellSize === 'object' && cellSize !== null) {
+      options = cellSize;
+      cellSize = Number.isFinite(options.cellSize) ? options.cellSize : 64;
+    }
+
+    this.cellSize = Number.isFinite(cellSize) ? cellSize : 64;
     this.cells = new Map(); // key -> Set<entityId>
     this.entityCells = new Map(); // entityId -> Set<key>
     this.stats = {
@@ -15,6 +21,19 @@ export class SpatialHash {
       updates: 0,
       removals: 0,
     };
+
+    const metricsWindowCandidate =
+      (options.metrics && options.metrics.window) ??
+      options.metricsWindow ??
+      options.window ??
+      120;
+
+    const validatedWindow = Number.isFinite(metricsWindowCandidate)
+      ? Math.max(1, Math.floor(metricsWindowCandidate))
+      : 120;
+
+    this.metricsWindow = validatedWindow;
+    this._metricsHistory = [];
   }
 
   clear() {
@@ -185,9 +204,10 @@ export class SpatialHash {
 
   /**
    * Returns instrumentation metrics.
-   * @returns {{cellCount:number, maxBucketSize:number, trackedEntities:number, stats:object}}
+   * @param {{ collectSample?: boolean }} [options]
+   * @returns {{cellCount:number, maxBucketSize:number, trackedEntities:number, stats:object, rolling:object}}
    */
-  getMetrics() {
+  getMetrics(options = {}) {
     let maxBucketSize = 0;
     for (const bucket of this.cells.values()) {
       if (bucket.size > maxBucketSize) {
@@ -195,12 +215,51 @@ export class SpatialHash {
       }
     }
 
-    return {
+    const baseMetrics = {
       cellCount: this.cells.size,
       maxBucketSize,
       trackedEntities: this.entityCells.size,
       stats: { ...this.stats },
     };
+
+    if (options.collectSample !== false) {
+      this.#recordMetricsSample({
+        cellCount: baseMetrics.cellCount,
+        maxBucketSize: baseMetrics.maxBucketSize,
+        trackedEntities: baseMetrics.trackedEntities,
+      });
+    }
+
+    const rolling = this.#computeRollingMetrics();
+
+    return {
+      ...baseMetrics,
+      rolling,
+    };
+  }
+
+  /**
+   * Adjust rolling metrics window size.
+   * @param {number} windowSize
+   */
+  setMetricsWindow(windowSize) {
+    if (!Number.isFinite(windowSize) || windowSize < 1) {
+      return;
+    }
+    this.metricsWindow = Math.max(1, Math.floor(windowSize));
+    if (this._metricsHistory.length > this.metricsWindow) {
+      this._metricsHistory.splice(
+        0,
+        this._metricsHistory.length - this.metricsWindow
+      );
+    }
+  }
+
+  /**
+   * Clears rolling metrics history.
+   */
+  resetMetricsHistory() {
+    this._metricsHistory.length = 0;
   }
 
   #computeCellKeys(x, y, width, height) {
@@ -229,5 +288,65 @@ export class SpatialHash {
       }
     }
     return true;
+  }
+
+  #recordMetricsSample(sample) {
+    const entry = {
+      cellCount: sample.cellCount,
+      maxBucketSize: sample.maxBucketSize,
+      trackedEntities: sample.trackedEntities,
+      timestamp: Date.now(),
+    };
+
+    this._metricsHistory.push(entry);
+    if (this._metricsHistory.length > this.metricsWindow) {
+      this._metricsHistory.shift();
+    }
+  }
+
+  #computeRollingMetrics() {
+    const history = this._metricsHistory;
+    if (!history.length) {
+      return {
+        window: this.metricsWindow,
+        sampleCount: 0,
+        lastSample: null,
+        cellCount: { average: 0, min: 0, max: 0 },
+        maxBucketSize: { average: 0, min: 0, max: 0 },
+        trackedEntities: { average: 0, min: 0, max: 0 },
+      };
+    }
+
+    const aggregate = (key) => {
+      let sum = 0;
+      let min = Infinity;
+      let max = -Infinity;
+
+      for (const entry of history) {
+        const value = entry[key];
+        sum += value;
+        if (value < min) {
+          min = value;
+        }
+        if (value > max) {
+          max = value;
+        }
+      }
+
+      return {
+        average: sum / history.length,
+        min,
+        max,
+      };
+    };
+
+    return {
+      window: this.metricsWindow,
+      sampleCount: history.length,
+      lastSample: { ...history[history.length - 1] },
+      cellCount: aggregate('cellCount'),
+      maxBucketSize: aggregate('maxBucketSize'),
+      trackedEntities: aggregate('trackedEntities'),
+    };
   }
 }

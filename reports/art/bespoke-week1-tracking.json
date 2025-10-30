@@ -1,0 +1,46 @@
+{
+  "weekNumber": 1,
+  "generatedAt": "2025-11-14T09:20:00.000Z",
+  "updates": [
+    {
+      "id": "image-ar-001-deduction-board-bg",
+      "status": "bespoke-approved",
+      "artist": "Helena Voss",
+      "license": "Internal Commission – Full Rights (UI Systems)",
+      "deliverablePath": "assets/bespoke/week1/image-ar-001-deduction-board-bg.png",
+      "approvedOn": "2025-11-14",
+      "reviewedBy": "Art Lead: M. Cortez",
+      "notes": "Final 2048x1536 layered PSD approved; includes investigation overlays + branch callouts."
+    },
+    {
+      "id": "image-ar-001-clue-node-pack",
+      "status": "bespoke-in-review",
+      "artist": "Helena Voss",
+      "deliverablePath": "assets/bespoke/week1/image-ar-001-clue-node-pack.psd",
+      "receivedOn": "2025-11-13",
+      "reviewNotes": "Revision requested on animated glow variant; secondary pass due 2025-11-15."
+    },
+    {
+      "id": "image-ar-001-evidence-icon-set",
+      "status": "bespoke-approved",
+      "artist": "Helena Voss",
+      "license": "Internal Commission – UI Iconography Pack",
+      "deliverablePath": "assets/bespoke/week1/image-ar-001-evidence-icon-set.png",
+      "approvedOn": "2025-11-15",
+      "reviewedBy": "UX Lead: C. Marin",
+      "notes": "Includes monochrome + color variants; exported at 32px & 64px."
+    },
+    {
+      "id": "image-ar-002-generic-marker",
+      "status": "bespoke-pending",
+      "notes": "Vendor confirmed sketch delivery ETA 2025-11-16; awaiting thumbnails."
+    },
+    {
+      "id": "image-ar-005-tileset-neon-district",
+      "status": "bespoke-in-progress",
+      "artist": "Axiom Studio",
+      "receivedOn": "2025-11-14",
+      "reviewNotes": "Blocking pass delivered; needs reflection polish + signage layer."
+    }
+  ]
+}

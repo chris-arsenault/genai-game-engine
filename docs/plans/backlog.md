@@ -15,13 +15,22 @@
 
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
-| AR-050 | P0 | In Progress | Visual asset sourcing pipeline now covers Act 2 Crossroads selection conduit/pad, checkpoint glow/plaza, safehouse arc, boundary walls, and column beam overlays with CC0/CC-BY references captured in manifests; Session 112 calibrated tint/alpha parameters (~0.13 columns/conduits, ~0.75 boundaries), Session 113 added a lighting preview harness plus queued the AR-001–AR-005 generation batch, Session 114 boosted conduit/glow/column luminance so previewed segments meet thresholds, Session 115 delivered placeholder atlases for AR-001–AR-005, Session 116 layered RenderOps packet/placeholder audit automation, Session 117 shipped prioritized replacement plans, and Session 118 produced a four-week bespoke art sprint schedule plus delivery staging CLI. | Monitor RenderOps feedback on the shared packet, drive Week 1 bespoke assignments per `reports/art/placeholder-replacement-schedule.md`, and update `assets/images/requests.json` as approvals land. |
+| AR-050 | P0 | In Progress | Visual asset sourcing pipeline now covers Act 2 Crossroads selection conduit/pad, checkpoint glow/plaza, safehouse arc, boundary walls, and column beam overlays with CC0/CC-BY references captured in manifests; Session 112 calibrated tint/alpha parameters (~0.13 columns/conduits, ~0.75 boundaries), Session 113 added a lighting preview harness plus queued the AR-001–AR-005 generation batch, Session 114 boosted conduit/glow/column luminance so previewed segments meet thresholds, Session 115 delivered placeholder atlases for AR-001–AR-005, Session 116 layered RenderOps packet/placeholder audit automation, Session 117 shipped prioritized replacement plans, Session 118 produced a four-week bespoke art sprint schedule plus delivery staging CLI, and Session 121 automated week-one bespoke status ingestion with licensing approvals recorded in manifests/reports. | Monitor RenderOps feedback on the shared packet, drive Week 1 bespoke assignments per `reports/art/placeholder-replacement-schedule.md`, and update `assets/images/requests.json` as approvals land. |
 | TUT-201 | P0 | Completed | Tutorial case blocked at step 3 (`evidence_detection`) because legacy scene entities bypassed ECS detection events. | ECS-aligned tutorial scene entities shipped Session #51; re-run tutorial smoke tests after combat audio validation. |
 | AUDIO-351 | P0 | Completed | Validate live combat/disguise trigger routing through `AmbientSceneAudioController` using real combat loop events. | Adaptive audio routing now responds to gameplay emits; telemetry verified by Jest/Playwright suites and new infiltration benchmark. |
 | PERF-214 | P1 | Pending | Browser-level performance profiling for adaptive audio + overlay interactions to confirm <16 ms frame time budget. | Run Chromium/Firefox performance audits with combat/stealth transitions, log hotspots, and file perf follow-ups as needed. |
 | UX-173 | P1 | Pending | Improve debug audio overlay ergonomics (keyboard shortcuts, focus management). | Prototype keyboard navigation + focus traps, add Jest/Playwright coverage for accessibility interactions. |
 
 **Next Session Focus**: Track RenderOps/analytics feedback, continue Week 1 bespoke art production, and prep follow-up telemetry reminder adjustments after threshold change.
+
+### Session #121 Backlog Updates
+
+#### M1-002 / M1-012: ECS/Narrative Integrations
+- Added integration coverage (`tests/integration/entityLifecycle.questFaction.integration.test.js`) linking entity lifecycle events to Quest/Faction managers; validated NPC respawn unblocks objectives and ensures faction telemetry logs feed world state selectors.
+- Extended `SpatialHash` instrumentation with rolling averages + configurable window and refreshed debug overlay copy; collision system now passes window config and metrics history can be reset for profiling.
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- Delivered bespoke week-one tracking automation (`scripts/art/trackBespokeDeliverables.js`) and ingested vendor status into `assets/images/requests.json`; generated `reports/art/week1-bespoke-progress.json` and updated docs/assets/visual-asset-inventory.md with approval/licensing details plus new week-one README under `assets/bespoke/week1/`.
 
 ### Session #120 Backlog Updates
 
@@ -890,6 +899,8 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Added pooled metadata reuse with destroy listeners and component registry cleanup hooks; `queryByComponents` now bridges to registry queries or local component signatures.
   - `forEachEntity` and `getStats()` provide iteration helpers plus instrumentation for profiling spawn/despawn waves.
   - Jest coverage expanded with performance gates (10k create/destroy <200 ms) and pooling reuse assertions; validated via `npm test`.
+- **Session #121 Update**:
+  - Authored integration harness (`tests/integration/entityLifecycle.questFaction.integration.test.js`) linking EntityManager → QuestManager/FactionManager, exercised NPC despawn/respawn to confirm objectives unblock and faction telemetry propagates; world state store selectors now capture removal history for analytics.
 
 #### M1-003: ComponentRegistry Implementation
 - **Priority**: P0
@@ -1115,6 +1126,8 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Implemented per-entity cell tracking with `insert`, `update`, and `remove` to prevent phantom collisions and minimize bucket churn.
   - Added `rebuild` + `getMetrics()` for profiling; buckets now use `Set` for O(1) removal and instrumentation counters track insert/update/remove rates.
   - Expanded Jest suite to cover update/remove flows and performance thresholds (1000 entity queries <10 ms); validated via `npm test`.
+- **Session #121 Update**:
+  - Added rolling metrics history + configurable window (`setMetricsWindow`) to `SpatialHash`, updated collision system wiring, and enhanced debug overlay messaging to surface averages; extended tests to cover history trimming/reset.
 
 #### M1-013: Collision Detection Algorithms
 - **Priority**: P0

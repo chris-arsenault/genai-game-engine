@@ -1218,6 +1218,7 @@ describe('SaveManager', () => {
       expect(summary.factions).toEqual({
         lastCascadeEvent: null,
         cascadeTargets: [],
+        recentMemberRemovals: [],
       });
       expect(summary.tutorial).toEqual({
         latestSnapshot: null,
@@ -1271,10 +1272,24 @@ describe('SaveManager', () => {
         promptHistory: [],
       };
 
+      const recentRemovals = [
+        {
+          factionId: 'cipher_collective',
+          factionName: 'Cipher Collective',
+          npcId: 'cipher_agent_alpha',
+          entityId: 404,
+          tag: 'npc',
+          removedAt: 111,
+        },
+      ];
+
       const store = {
         select: jest.fn((selector) => {
           if (selector === factionSlice.selectors.selectFactionCascadeSummary) {
             return cascadeSummary;
+          }
+          if (selector === factionSlice.selectors.selectRecentMemberRemovals) {
+            return recentRemovals;
           }
           if (selector === tutorialSlice.selectors.selectPromptHistorySnapshots) {
             return tutorialSnapshots;
@@ -1292,11 +1307,14 @@ describe('SaveManager', () => {
       const summary = saveManager.getInspectorSummary();
 
       expect(summary.source).toBe('worldStateStore');
-      expect(summary.factions).toEqual(cascadeSummary);
+      expect(summary.factions).toEqual({
+        ...cascadeSummary,
+        recentMemberRemovals: recentRemovals,
+      });
       expect(summary.tutorial.snapshots).toEqual(tutorialSnapshots);
       expect(summary.tutorial.latestSnapshot).toEqual(latestSnapshot);
       expect(summary.tutorial.transcript).toEqual([]);
-      expect(store.select).toHaveBeenCalledTimes(3);
+      expect(store.select).toHaveBeenCalledTimes(4);
     });
 
     test('should include tutorial transcript when recorder provided', () => {

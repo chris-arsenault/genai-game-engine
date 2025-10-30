@@ -19,7 +19,13 @@ export class CollisionSystem extends System {
    */
   constructor(componentRegistry, eventBus, options = {}) {
     super(componentRegistry, eventBus, ['Transform', 'Collider']);
-    this.spatialHash = new SpatialHash(options.cellSize || 64);
+    const spatialConfig = {
+      cellSize: options.cellSize || 64,
+    };
+    if (Number.isFinite(options.metricsWindow)) {
+      spatialConfig.metricsWindow = options.metricsWindow;
+    }
+    this.spatialHash = new SpatialHash(spatialConfig);
     this.priority = 20;
     this.resolveCollisions = options.resolveCollisions !== false;
     this.layers = options.layers || {};

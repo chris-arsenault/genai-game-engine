@@ -520,6 +520,7 @@ window.addEventListener('DOMContentLoaded', async () => {
               metrics.stats?.insertions ?? 0,
               metrics.stats?.updates ?? 0,
               metrics.stats?.removals ?? 0,
+              metrics.rolling?.lastSample?.timestamp ?? 0,
             ].join('|');
           }
         }
@@ -528,9 +529,21 @@ window.addEventListener('DOMContentLoaded', async () => {
           lastSpatialSignature = spatialSignature;
 
           if (debugSpatialMeta) {
-            debugSpatialMeta.textContent = metrics
-              ? `Cells: ${metrics.cellCount} · Entities: ${metrics.trackedEntities} · Max bucket: ${metrics.maxBucketSize}`
-              : 'Spatial hash: n/a';
+            if (!metrics) {
+              debugSpatialMeta.textContent = 'Spatial hash: n/a';
+            } else {
+              const rolling = metrics.rolling ?? null;
+              let metaText = `Cells: ${metrics.cellCount} · Entities: ${metrics.trackedEntities} · Max bucket: ${metrics.maxBucketSize}`;
+              if (
+                rolling &&
+                rolling.sampleCount > 1 &&
+                Number.isFinite(rolling.maxBucketSize?.average)
+              ) {
+                const averaged = rolling.maxBucketSize.average.toFixed(2);
+                metaText += ` · Avg max (${rolling.sampleCount}/${rolling.window}): ${averaged}`;
+              }
+              debugSpatialMeta.textContent = metaText;
+            }
           }
 
           if (debugSpatialList) {
@@ -549,6 +562,23 @@ window.addEventListener('DOMContentLoaded', async () => {
                   tone: 'muted',
                 },
               ];
+
+              const rolling = metrics.rolling ?? null;
+              if (
+                rolling &&
+                rolling.sampleCount > 0 &&
+                Number.isFinite(rolling.cellCount?.average) &&
+                Number.isFinite(rolling.maxBucketSize?.average)
+              ) {
+                rows.push({
+                  text: `Rolling avg cells ${rolling.cellCount.average.toFixed(
+                    1
+                  )} · max bucket ${rolling.maxBucketSize.average.toFixed(
+                    2
+                  )} (samples ${rolling.sampleCount}/${rolling.window})`,
+                  tone: 'muted',
+                });
+              }
               renderWorldList(debugSpatialList, rows, 'No spatial data');
             }
           }

@@ -58,7 +58,12 @@ function sanitizeSummary(summary) {
   const source = summary?.source ?? 'unavailable';
 
   const factions = summary?.factions ?? {};
-  const cascadeTargets = Array.isArray(factions.cascadeTargets) ? factions.cascadeTargets : [];
+  const cascadeTargets = Array.isArray(factions.cascadeTargets)
+    ? factions.cascadeTargets
+    : [];
+  const recentMemberRemovals = Array.isArray(factions.recentMemberRemovals)
+    ? factions.recentMemberRemovals
+    : [];
 
   const tutorial = summary?.tutorial ?? {};
   const snapshots = Array.isArray(tutorial.snapshots) ? tutorial.snapshots : [];
@@ -71,9 +76,23 @@ function sanitizeSummary(summary) {
     factions: {
       lastCascadeEvent: factions.lastCascadeEvent ?? null,
       cascadeTargets,
+      recentMemberRemovals: recentMemberRemovals.map((entry) => ({
+        factionId: entry?.factionId ?? null,
+        factionName: entry?.factionName ?? null,
+        npcId: entry?.npcId ?? null,
+        entityId: entry?.entityId ?? null,
+        tag: entry?.tag ?? null,
+        removedAt: entry?.removedAt ?? null,
+        removedIso: entry?.removedAt
+          ? new Date(entry.removedAt).toISOString()
+          : null,
+      })),
       metrics: {
         cascadeTargetCount: cascadeTargets.length,
-        activeCascadeTargets: cascadeTargets.filter((target) => (target?.cascadeCount ?? 0) > 0).length,
+        activeCascadeTargets: cascadeTargets.filter(
+          (target) => (target?.cascadeCount ?? 0) > 0
+        ).length,
+        recentMemberRemovalCount: recentMemberRemovals.length,
       },
     },
     tutorial: {

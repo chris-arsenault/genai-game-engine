@@ -38,6 +38,16 @@ describe('inspectorTelemetryExporter', () => {
             sources: ['vanguard_prime'],
           },
         ],
+        recentMemberRemovals: [
+          {
+            factionId: 'luminari_syndicate',
+            factionName: 'The Luminari Syndicate',
+            npcId: 'operative_echo',
+            entityId: 512,
+            tag: 'npc',
+            removedAt: Date.UTC(2025, 9, 30, 17, 4, 50),
+          },
+        ],
       },
       tutorial: {
         latestSnapshot: {
@@ -93,6 +103,13 @@ describe('inspectorTelemetryExporter', () => {
     expect(sanitized.factions.metrics.cascadeTargetCount).toBe(2);
     expect(sanitized.tutorial.metrics.snapshotCount).toBe(2);
     expect(sanitized.tutorial.metrics.transcriptCount).toBe(1);
+    expect(sanitized.factions.metrics.recentMemberRemovalCount).toBe(1);
+    expect(sanitized.factions.recentMemberRemovals).toHaveLength(1);
+    expect(sanitized.factions.recentMemberRemovals[0]).toMatchObject({
+      factionId: 'luminari_syndicate',
+      npcId: 'operative_echo',
+      removedIso: new Date(Date.UTC(2025, 9, 30, 17, 4, 50)).toISOString(),
+    });
     expect(sanitized.tutorial.transcript[0]).toEqual(
       expect.objectContaining({ promptId: 'intro', sequence: 0 })
     );
@@ -105,6 +122,7 @@ describe('inspectorTelemetryExporter', () => {
     expect(jsonArtifact.mimeType).toBe('application/json');
     const parsed = JSON.parse(jsonArtifact.content);
     expect(parsed.factions.cascadeTargets[0].factionId).toBe('luminari_syndicate');
+    expect(parsed.factions.recentMemberRemovals[0].npcId).toBe('operative_echo');
 
     const cascadeCsv = artifacts.find(
       (artifact) => artifact.type === 'csv' && artifact.section === 'cascade'
@@ -144,6 +162,7 @@ describe('inspectorTelemetryExporter', () => {
 
     expect(summary.source).toBe('unavailable');
     expect(summary.factions.cascadeTargets).toEqual([]);
+    expect(summary.factions.recentMemberRemovals).toEqual([]);
     expect(summary.tutorial.snapshots).toEqual([]);
     expect(summary.tutorial.transcript).toEqual([]);
     expect(artifacts.length).toBe(3);

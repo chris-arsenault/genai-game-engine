@@ -402,6 +402,7 @@ export class SaveManager {
         factions: {
           lastCascadeEvent: null,
           cascadeTargets: [],
+          recentMemberRemovals: [],
         },
         tutorial: {
           latestSnapshot: null,
@@ -415,14 +416,25 @@ export class SaveManager {
       lastCascadeEvent: null,
       cascadeTargets: [],
     };
+    let recentMemberRemovals = [];
     let tutorialSnapshots = [];
     let latestSnapshot = null;
     let tutorialTranscript = [];
 
     try {
-      cascadeSummary = this.worldStateStore.select(factionSlice.selectors.selectFactionCascadeSummary);
+      cascadeSummary = this.worldStateStore.select(
+        factionSlice.selectors.selectFactionCascadeSummary
+      );
     } catch (error) {
       console.warn('[SaveManager] Failed to gather faction cascade summary for inspector', error);
+    }
+
+    try {
+      recentMemberRemovals = this.worldStateStore.select(
+        factionSlice.selectors.selectRecentMemberRemovals
+      );
+    } catch (error) {
+      console.warn('[SaveManager] Failed to gather faction removal telemetry for inspector', error);
     }
 
     try {
@@ -441,10 +453,17 @@ export class SaveManager {
       }
     }
 
+    const factionInspectorSummary = {
+      ...(cascadeSummary ?? { lastCascadeEvent: null, cascadeTargets: [] }),
+      recentMemberRemovals: Array.isArray(recentMemberRemovals)
+        ? recentMemberRemovals
+        : [],
+    };
+
     return {
       generatedAt,
       source: 'worldStateStore',
-      factions: cascadeSummary ?? { lastCascadeEvent: null, cascadeTargets: [] },
+      factions: factionInspectorSummary,
       tutorial: {
         latestSnapshot: latestSnapshot ?? null,
         snapshots: Array.isArray(tutorialSnapshots) ? tutorialSnapshots : [],

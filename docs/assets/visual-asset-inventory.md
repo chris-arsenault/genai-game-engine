@@ -8,6 +8,11 @@
   - `reference-selected` – candidate reference gathered, needs conversion or bespoke art.
   - `prompt-packaged` – OpenAI-ready brief packaged into JSON payloads and staged for generation.
   - `derivative-generated` – overlay or processed asset rendered into `assets/overlays/`.
+  - `bespoke-scheduled` – commission queued with vendor in the bespoke sprint schedule.
+  - `bespoke-in-progress` – vendor actively producing iterations during the commissioned window.
+  - `bespoke-in-review` – deliverable received, undergoing internal review or revision loop.
+  - `bespoke-approved` – final art approved/licensed; placeholder retired in manifests.
+  - `bespoke-pending` – waiting on vendor kickoff or materials despite being scheduled.
 
 ## Outstanding Requests
 
@@ -94,6 +99,17 @@
 - 2025-11-13: Week 1 sprint kicked off — AR-001, AR-002, and AR-005 entries now flagged `bespoke-scheduled` with briefs dispatched to art.
 - Assign owners straight from the schedule and update `assets/images/requests.json` notes when each bespoke asset is approved to keep the plan and manifest in sync.
 - Added `scripts/art/stageRenderOpsDelivery.js` to mirror the latest packet (ZIP, manifests, summaries) into `deliveries/renderops/<label>/<timestamp>/` complete with staging-manifest and handoff README for immediate share-out.
+
+## Session 121 Updates
+- Automated bespoke sprint tracking via `scripts/art/trackBespokeDeliverables.js`; run `npm run art:track-bespoke -- --week=1` to merge `reports/art/bespoke-week1-tracking.json` into `assets/images/requests.json` and emit `reports/art/week1-bespoke-progress.json`.
+- Week 1 deliverable snapshot:
+  - `image-ar-001-deduction-board-bg` → `bespoke-approved` (Helena Voss, Internal Commission – Full Rights). Final PSD mirrored at `assets/bespoke/week1/image-ar-001-deduction-board-bg.png`.
+  - `image-ar-001-evidence-icon-set` → `bespoke-approved` (Helena Voss, Internal Commission – UI Iconography Pack) with monochrome + color exports.
+  - `image-ar-001-clue-node-pack` → `bespoke-in-review` (revision requested on animated glow variant, follow-up due 2025-11-15).
+  - `image-ar-002-generic-marker` → `bespoke-pending` (awaiting vendor thumbnails; ETA 2025-11-16).
+  - `image-ar-005-tileset-neon-district` → `bespoke-in-progress` (Axiom Studio blocking pass received 2025-11-14; polishing reflections/signage).
+- Approved entries now record commission licenses, reviewers, and approval timestamps; see new `statusHistory`, `bespokeApprovedOn`, and `bespokeNotes` fields in the manifest for compliance/audit trails.
+- Added `assets/bespoke/week1/README.md` to log vendor hand-offs and repository-visible exports while original source files remain in the studio vault.
 
 ## Next Actions
 1. Distribute the latest RenderOps packet (`npm run art:package-renderops` then `npm run art:stage-renderops`) and attach the staged ZIP (`deliveries/renderops/.../*.zip`) plus `*-delivery.json` manifest when sharing with RenderOps; log feedback on actionable segments and regenerate after art tweaks.
