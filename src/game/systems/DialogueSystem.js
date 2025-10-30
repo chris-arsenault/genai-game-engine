@@ -152,6 +152,17 @@ export class DialogueSystem extends System {
       timestamp: startedAt,
     });
 
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId: 'dialogueStartPulse',
+      origin: 'dialogue',
+      npcId,
+      dialogueId,
+      nodeId: tree.startNode,
+      speaker: startNode.speaker ?? null,
+      title: tree.title ?? null,
+      timestamp: startedAt,
+    });
+
     console.log(`[DialogueSystem] Started dialogue: ${dialogueId} with NPC: ${npcId}`);
     return true;
   }
@@ -224,6 +235,17 @@ export class DialogueSystem extends System {
       choiceId: choice.id ?? `choice_${choiceIndex}`,
       choiceText: choice.text,
       nextNode: choice.nextNode,
+      timestamp,
+    });
+
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId: 'dialogueChoicePulse',
+      origin: 'dialogue',
+      npcId: this.activeDialogue.npcId,
+      dialogueId: this.activeDialogue.dialogueId,
+      nodeId: this.activeDialogue.currentNode,
+      choiceIndex,
+      choiceId: choice.id ?? `choice_${choiceIndex}`,
       timestamp,
     });
 
@@ -300,6 +322,17 @@ export class DialogueSystem extends System {
         previousNodeId,
       },
     });
+
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId: 'dialogueBeatPulse',
+      origin: 'dialogue',
+      npcId: this.activeDialogue.npcId,
+      dialogueId: this.activeDialogue.dialogueId,
+      nodeId,
+      speaker: nextNode.speaker ?? null,
+      previousNodeId,
+      timestamp,
+    });
   }
 
   /**
@@ -333,6 +366,17 @@ export class DialogueSystem extends System {
       choiceId: this.lastChoice?.choiceId ?? null,
       choiceText: this.lastChoice?.choiceText ?? null,
       completedAt: endedAt,
+    });
+
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId: 'dialogueCompleteBurst',
+      origin: 'dialogue',
+      npcId,
+      dialogueId,
+      nodeId: currentNode,
+      choiceId: this.lastChoice?.choiceId ?? null,
+      duration: 1.1,
+      timestamp: endedAt,
     });
 
     this.eventBus.emit('npc:interviewed', {

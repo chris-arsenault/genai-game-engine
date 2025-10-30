@@ -247,6 +247,15 @@ export class CaseManager {
     // Add to collected evidence
     caseFile.collectedEvidence.add(evidenceId);
 
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId: 'caseEvidencePulse',
+      origin: 'case',
+      caseId,
+      evidenceId,
+      objectiveCount: caseFile.objectives.length,
+      collectedEvidence: caseFile.collectedEvidence.size,
+    });
+
     // Check if objective completed
     this.checkObjectiveCompletion(caseId);
 
@@ -268,6 +277,15 @@ export class CaseManager {
 
     // Add to discovered clues
     caseFile.discoveredClues.add(clueId);
+
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId: 'caseCluePulse',
+      origin: 'case',
+      caseId,
+      clueId,
+      totalClues: caseFile.requiredClues.size,
+      discoveredClues: caseFile.discoveredClues.size,
+    });
 
     // Check if objective completed
     this.checkObjectiveCompletion(caseId);
@@ -312,6 +330,16 @@ export class CaseManager {
         this.eventBus.emit('case:objective_completed', {
           caseId,
           objective: objective.description
+        });
+
+        this.eventBus.emit('fx:overlay_cue', {
+          effectId: 'caseObjectivePulse',
+          origin: 'case',
+          caseId,
+          objectiveId: objective.id ?? objective.description,
+          objectiveType: objective.type,
+          completedObjectives: caseFile.objectives.filter(obj => obj.completed).length,
+          totalObjectives: caseFile.objectives.length,
         });
 
         console.log(`[CaseManager] Objective completed: ${objective.description}`);
@@ -502,6 +530,15 @@ export class CaseManager {
       title: caseFile.title,
       accuracy,
       rewards: caseFile.rewards
+    });
+
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId: 'caseSolvedBurst',
+      origin: 'case',
+      caseId,
+      title: caseFile.title,
+      accuracy,
+      duration: 1.15,
     });
 
     console.log(`[CaseManager] Case solved: ${caseFile.title} (${(accuracy * 100).toFixed(0)}% accuracy)`);

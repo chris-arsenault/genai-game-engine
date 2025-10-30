@@ -159,4 +159,40 @@ describe('FxOverlay', () => {
     overlay.render(ctxReveal);
     expect(ctxReveal.fillRect).toHaveBeenCalled();
   });
+
+  it('handles dialogue and case cue renders without throwing', () => {
+    const overlay = new FxOverlay(canvas, eventBus, {});
+    overlay.init();
+
+    const handler = getLastHandler('fx:overlay_cue');
+
+    handler({ effectId: 'dialogueStartPulse', duration: 0.4 });
+    const startCtx = createMockContext();
+    overlay.render(startCtx);
+    expect(startCtx.fillRect).toHaveBeenCalled();
+    overlay.update(0.5);
+
+    handler({ effectId: 'dialogueChoicePulse', duration: 0.35 });
+    const choiceCtx = createMockContext();
+    overlay.render(choiceCtx);
+    expect(choiceCtx.arc).toHaveBeenCalled();
+    overlay.update(0.4);
+
+    handler({ effectId: 'dialogueCompleteBurst', duration: 0.6 });
+    const completeCtx = createMockContext();
+    overlay.render(completeCtx);
+    expect(completeCtx.fillRect).toHaveBeenCalled();
+    overlay.update(0.7);
+
+    handler({ effectId: 'caseEvidencePulse', duration: 0.45 });
+    const evidenceCtx = createMockContext();
+    overlay.render(evidenceCtx);
+    expect(evidenceCtx.arc).toHaveBeenCalled();
+    overlay.update(0.5);
+
+    handler({ effectId: 'caseSolvedBurst', duration: 0.8 });
+    const solvedCtx = createMockContext();
+    overlay.render(solvedCtx);
+    expect(solvedCtx.fillRect).toHaveBeenCalled();
+  });
 });

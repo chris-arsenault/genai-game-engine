@@ -43,6 +43,14 @@
 - Emitted `fx:overlay_cue` from `QuestManager` (start/objective completion/quest completion) and `ForensicSystem` (availability/start/complete) with contextual metadata powering the new treatments.
 - Refreshed Jest coverage across `FxOverlay`, `QuestManager`, and `ForensicSystem` to lock in the cue emissions and renderer behaviour.
 
+### Session #142 Backlog Updates
+
+#### FX-236: Narrative FX Cue Coordination
+- `DialogueSystem` now emits `fx:overlay_cue` identifiers for dialogue start, choice, beat transitions, and completion so conversations surface HUD feedback with metadata shared to downstream consumers.
+- `CaseManager` broadcasts evidence/clue/objective/case completion cues (`caseEvidencePulse`, `caseCluePulse`, `caseObjectivePulse`, `caseSolvedBurst`), paired with updated Jest assertions to guarantee narrative milestones trigger FX.
+- Added `FxCueCoordinator` to gate `fx:overlay_cue` throughput, rebroadcast `fx:composite_cue` with concurrency metrics, and capped `FxOverlay` active effects while introducing dialogue/case renderers to prevent HUD overload.
+- Verification: `npm test -- --runTestsByPath tests/game/ui/FxOverlay.test.js tests/game/systems/DialogueSystem.test.js tests/game/managers/CaseManager.test.js tests/game/fx/FxCueCoordinator.test.js`.
+
 ### Session #129 Backlog Updates
 
 #### Tutorial Onboarding UX

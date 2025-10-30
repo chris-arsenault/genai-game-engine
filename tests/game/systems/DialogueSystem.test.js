@@ -186,6 +186,17 @@ describe('DialogueSystem', () => {
       expect(startEvent.data.text).toBe('Hello, Detective.');
     });
 
+    it('should emit fx cue when dialogue starts', () => {
+      system.startDialogue('npc_1', 'test_dialogue');
+
+      const fxEvent = emittedEvents.find(
+        (e) => e.eventType === 'fx:overlay_cue' && e.data.effectId === 'dialogueStartPulse'
+      );
+      expect(fxEvent).toBeDefined();
+      expect(fxEvent.data.dialogueId).toBe('test_dialogue');
+      expect(fxEvent.data.npcId).toBe('npc_1');
+    });
+
     it('should fail if dialogue already active', () => {
       system.startDialogue('npc_1', 'test_dialogue');
       const result = system.startDialogue('npc_2', 'test_dialogue');
@@ -230,6 +241,17 @@ describe('DialogueSystem', () => {
       expect(choiceEvent.data.nextNode).toBe('response_1');
     });
 
+    it('should emit fx cue on choice selection', () => {
+      system.selectChoice(0);
+
+      const fxEvent = emittedEvents.find(
+        (e) => e.eventType === 'fx:overlay_cue' && e.data.effectId === 'dialogueChoicePulse'
+      );
+      expect(fxEvent).toBeDefined();
+      expect(fxEvent.data.nodeId).toBe('start');
+      expect(fxEvent.data.dialogueId).toBe('test_dialogue');
+    });
+
     it('should emit dialogue:node_changed event', () => {
       system.selectChoice(0);
 
@@ -237,6 +259,17 @@ describe('DialogueSystem', () => {
       expect(nodeEvent).toBeDefined();
       expect(nodeEvent.data.nodeId).toBe('response_1');
       expect(nodeEvent.data.text).toBe('Nice to meet you.');
+    });
+
+    it('should emit fx cue on dialogue beat', () => {
+      system.selectChoice(0);
+
+      const fxEvent = emittedEvents.find(
+        (e) => e.eventType === 'fx:overlay_cue' && e.data.effectId === 'dialogueBeatPulse'
+      );
+      expect(fxEvent).toBeDefined();
+      expect(fxEvent.data.nodeId).toBe('response_1');
+      expect(fxEvent.data.previousNodeId).toBe('start');
     });
 
     it('should fail on invalid choice index', () => {
@@ -262,6 +295,20 @@ describe('DialogueSystem', () => {
       system.advanceDialogue(); // should end
 
       expect(system.activeDialogue).toBeNull();
+    });
+
+    it('should emit fx cue when dialogue completes', () => {
+      system.selectChoice(0); // response_1
+      system.advanceDialogue(); // advance to end node
+      emittedEvents = [];
+
+      system.advanceDialogue(); // triggers endDialogue
+
+      const fxEvent = emittedEvents.find(
+        (e) => e.eventType === 'fx:overlay_cue' && e.data.effectId === 'dialogueCompleteBurst'
+      );
+      expect(fxEvent).toBeDefined();
+      expect(fxEvent.data.dialogueId).toBe('test_dialogue');
     });
 
     it('should mark visited nodes', () => {

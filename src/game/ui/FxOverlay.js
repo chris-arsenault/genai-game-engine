@@ -18,6 +18,7 @@ export class FxOverlay {
     this.eventBus = eventBus;
     this.effects = [];
     this._unbindFx = null;
+    this.maxConcurrentEffects = Math.max(1, Number(options.maxConcurrentEffects) || 10);
 
     const { palette } = overlayTheme;
 
@@ -44,6 +45,21 @@ export class FxOverlay {
       forensicRevealColor: options.forensicRevealColor || 'rgba(80, 255, 200, 0.8)',
       forensicRevealRim: options.forensicRevealRim || 'rgba(40, 200, 160, 0.4)',
       forensicRevealDuration: options.forensicRevealDuration || 0.75,
+      dialogueStartTop: options.dialogueStartTop || 'rgba(130, 200, 255, 0.75)',
+      dialogueStartBottom: options.dialogueStartBottom || 'rgba(40, 80, 120, 0)',
+      dialogueBeatInner: options.dialogueBeatInner || 'rgba(230, 255, 255, 0.8)',
+      dialogueBeatOuter: options.dialogueBeatOuter || 'rgba(60, 120, 180, 0)',
+      dialogueChoiceAccent: options.dialogueChoiceAccent || 'rgba(200, 255, 210, 0.75)',
+      dialogueCompleteInner: options.dialogueCompleteInner || 'rgba(255, 240, 210, 0.9)',
+      dialogueCompleteOuter: options.dialogueCompleteOuter || 'rgba(255, 180, 90, 0.1)',
+      caseEvidenceInner: options.caseEvidenceInner || 'rgba(140, 210, 255, 0.7)',
+      caseEvidenceOuter: options.caseEvidenceOuter || 'rgba(50, 90, 140, 0)',
+      caseClueInner: options.caseClueInner || 'rgba(160, 255, 220, 0.7)',
+      caseClueOuter: options.caseClueOuter || 'rgba(40, 110, 90, 0)',
+      caseObjectiveInner: options.caseObjectiveInner || 'rgba(255, 215, 180, 0.75)',
+      caseObjectiveOuter: options.caseObjectiveOuter || 'rgba(180, 90, 40, 0)',
+      caseSolvedInner: options.caseSolvedInner || 'rgba(255, 255, 220, 0.9)',
+      caseSolvedOuter: options.caseSolvedOuter || 'rgba(255, 205, 130, 0.15)',
     };
   }
 
@@ -116,14 +132,45 @@ export class FxOverlay {
       case 'forensicRevealFlash':
         this._spawnForensicRevealEffect(payload);
         break;
+      case 'dialogueStartPulse':
+      case 'dialogueIntroPulse':
+        this._spawnDialogueStartEffect(payload);
+        break;
+      case 'dialogueBeatPulse':
+      case 'dialogueChoicePulse':
+        this._spawnDialogueBeatEffect(payload);
+        break;
+      case 'dialogueCompleteBurst':
+        this._spawnDialogueCompleteEffect(payload);
+        break;
+      case 'caseEvidencePulse':
+      case 'caseCluePulse':
+        this._spawnCaseProgressEffect(payload);
+        break;
+      case 'caseObjectivePulse':
+        this._spawnCaseObjectiveEffect(payload);
+        break;
+      case 'caseSolvedBurst':
+        this._spawnCaseSolvedEffect(payload);
+        break;
       default:
         break;
     }
   }
 
+  _enqueueEffect(effect) {
+    if (!effect) {
+      return;
+    }
+    if (this.effects.length >= this.maxConcurrentEffects) {
+      this.effects.shift();
+    }
+    this.effects.push(effect);
+  }
+
   _spawnActivationEffect(payload) {
     const duration = Math.max(0.18, Number(payload.duration) || this.theme.activationDuration);
-    this.effects.push({
+    this._enqueueEffect({
       id: 'detectiveVisionActivation',
       elapsed: 0,
       duration,
@@ -133,7 +180,7 @@ export class FxOverlay {
 
   _spawnDeactivationEffect(payload) {
     const duration = Math.max(0.16, Number(payload.cooldown) ? Math.min(Number(payload.cooldown), 1) : this.theme.deactivateDuration);
-    this.effects.push({
+    this._enqueueEffect({
       id: 'detectiveVisionDeactivate',
       elapsed: 0,
       duration,
@@ -143,7 +190,7 @@ export class FxOverlay {
 
   _spawnQuestMilestoneEffect(payload) {
     const duration = Math.max(0.3, Number(payload.duration) || this.theme.questPulseDuration);
-    this.effects.push({
+    this._enqueueEffect({
       id: 'questMilestonePulse',
       elapsed: 0,
       duration,
@@ -153,7 +200,7 @@ export class FxOverlay {
 
   _spawnQuestCompleteEffect(payload) {
     const duration = Math.max(0.4, Number(payload.duration) || this.theme.questCompleteDuration);
-    this.effects.push({
+    this._enqueueEffect({
       id: 'questCompleteBurst',
       elapsed: 0,
       duration,
@@ -163,7 +210,7 @@ export class FxOverlay {
 
   _spawnForensicPulseEffect(payload) {
     const duration = Math.max(0.25, Number(payload.duration) || this.theme.forensicPulseDuration);
-    this.effects.push({
+    this._enqueueEffect({
       id: 'forensicPulse',
       elapsed: 0,
       duration,
@@ -173,11 +220,76 @@ export class FxOverlay {
 
   _spawnForensicRevealEffect(payload) {
     const duration = Math.max(0.3, Number(payload.duration) || this.theme.forensicRevealDuration);
-    this.effects.push({
+    this._enqueueEffect({
       id: 'forensicRevealFlash',
       elapsed: 0,
       duration,
       render: this._renderForensicReveal.bind(this),
+    });
+  }
+
+  _spawnDialogueStartEffect(payload) {
+    const duration = Math.max(0.25, Number(payload.duration) || 0.6);
+    this._enqueueEffect({
+      id: 'dialogueStartPulse',
+      elapsed: 0,
+      duration,
+      render: this._renderDialogueStart.bind(this),
+    });
+  }
+
+  _spawnDialogueBeatEffect(payload) {
+    const id = payload.effectId === 'dialogueChoicePulse' ? 'dialogueChoicePulse' : 'dialogueBeatPulse';
+    const duration = Math.max(0.2, Number(payload.duration) || 0.5);
+    this._enqueueEffect({
+      id,
+      variant: id,
+      elapsed: 0,
+      duration,
+      render: this._renderDialogueBeat.bind(this),
+    });
+  }
+
+  _spawnDialogueCompleteEffect(payload) {
+    const duration = Math.max(0.35, Number(payload.duration) || 0.9);
+    this._enqueueEffect({
+      id: 'dialogueCompleteBurst',
+      elapsed: 0,
+      duration,
+      render: this._renderDialogueComplete.bind(this),
+    });
+  }
+
+  _spawnCaseProgressEffect(payload) {
+    const variant = payload.effectId === 'caseCluePulse' ? 'caseCluePulse' : 'caseEvidencePulse';
+    const duration = Math.max(0.25, Number(payload.duration) || 0.55);
+    this._enqueueEffect({
+      id: variant,
+      variant,
+      elapsed: 0,
+      duration,
+      render: this._renderCaseProgress.bind(this),
+    });
+  }
+
+  _spawnCaseObjectiveEffect(payload) {
+    const duration = Math.max(0.3, Number(payload.duration) || 0.65);
+    this._enqueueEffect({
+      id: 'caseObjectivePulse',
+      variant: 'caseObjectivePulse',
+      elapsed: 0,
+      duration,
+      render: this._renderCaseProgress.bind(this),
+    });
+  }
+
+  _spawnCaseSolvedEffect(payload) {
+    const duration = Math.max(0.45, Number(payload.duration) || 1.05);
+    this._enqueueEffect({
+      id: 'caseSolvedBurst',
+      elapsed: 0,
+      duration,
+      render: this._renderCaseSolved.bind(this),
     });
   }
 
@@ -206,6 +318,128 @@ export class FxOverlay {
     ctx.beginPath();
     ctx.arc(cx, cy, Math.max(canvas.width, canvas.height), 0, Math.PI * 2);
     ctx.stroke();
+    ctx.restore();
+  }
+
+  _renderDialogueStart(ctx, effect, canvas, theme) {
+    const progress = Math.min(1, effect.elapsed / effect.duration);
+    const eased = 1 - Math.pow(progress, 1.4);
+    const bandHeight = canvas.height * 0.32;
+
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, eased);
+
+    const gradient = ctx.createLinearGradient(0, 0, 0, bandHeight);
+    gradient.addColorStop(0, theme.dialogueStartTop);
+    gradient.addColorStop(1, theme.dialogueStartBottom);
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, bandHeight);
+    ctx.restore();
+  }
+
+  _renderDialogueBeat(ctx, effect, canvas, theme) {
+    const progress = Math.min(1, effect.elapsed / effect.duration);
+    const eased = 1 - Math.pow(progress, 1.6);
+    const radiusBase = Math.min(canvas.width, canvas.height) * 0.25;
+    const radius = radiusBase * (0.6 + 0.5 * (1 - eased));
+    const cx = canvas.width / 2;
+    const cy = canvas.height * 0.3;
+
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, eased);
+
+    const gradient = ctx.createRadialGradient(cx, cy, Math.max(0, radius * 0.1), cx, cy, radius);
+
+    if (effect.variant === 'dialogueChoicePulse') {
+      gradient.addColorStop(0, theme.dialogueChoiceAccent);
+      gradient.addColorStop(0.7, theme.dialogueBeatInner);
+    } else {
+      gradient.addColorStop(0, theme.dialogueBeatInner);
+      gradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.3)');
+    }
+    gradient.addColorStop(1, theme.dialogueBeatOuter);
+
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  _renderDialogueComplete(ctx, effect, canvas, theme) {
+    const progress = Math.min(1, effect.elapsed / effect.duration);
+    const eased = 1 - Math.pow(progress, 1.2);
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    const radius = Math.sqrt(cx * cx + cy * cy);
+
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, eased);
+
+    const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+    gradient.addColorStop(0, theme.dialogueCompleteInner);
+    gradient.addColorStop(0.55, theme.dialogueCompleteOuter);
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+  }
+
+  _renderCaseProgress(ctx, effect, canvas, theme) {
+    const progress = Math.min(1, effect.elapsed / effect.duration);
+    const eased = 1 - Math.pow(progress, 1.5);
+    let cx = canvas.width * 0.25;
+    let cy = canvas.height * 0.82;
+    let inner = theme.caseEvidenceInner;
+    let outer = theme.caseEvidenceOuter;
+
+    if (effect.variant === 'caseCluePulse') {
+      cx = canvas.width * 0.75;
+      inner = theme.caseClueInner;
+      outer = theme.caseClueOuter;
+    } else if (effect.variant === 'caseObjectivePulse') {
+      cx = canvas.width * 0.5;
+      cy = canvas.height * 0.88;
+      inner = theme.caseObjectiveInner;
+      outer = theme.caseObjectiveOuter;
+    }
+
+    const radius = Math.min(canvas.width, canvas.height) * 0.22;
+
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, eased);
+
+    const gradient = ctx.createRadialGradient(cx, cy, Math.max(0, radius * 0.2), cx, cy, radius);
+    gradient.addColorStop(0, inner);
+    gradient.addColorStop(0.8, outer);
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  _renderCaseSolved(ctx, effect, canvas, theme) {
+    const progress = Math.min(1, effect.elapsed / effect.duration);
+    const eased = 1 - Math.pow(progress, 1.1);
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    const radius = Math.sqrt(cx * cx + cy * cy);
+
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, eased);
+
+    const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+    gradient.addColorStop(0, theme.caseSolvedInner);
+    gradient.addColorStop(0.6, theme.caseSolvedOuter);
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.restore();
   }
 

@@ -51,6 +51,7 @@ import { InventoryOverlay } from './ui/InventoryOverlay.js';
 import { DetectiveVisionOverlay } from './ui/DetectiveVisionOverlay.js';
 import { ControlBindingsOverlay, CONTROL_BINDINGS_NAV_EVENT } from './ui/ControlBindingsOverlay.js';
 import { FxOverlay } from './ui/FxOverlay.js';
+import { FxCueCoordinator } from './fx/FxCueCoordinator.js';
 import { AudioFeedbackController } from './audio/AudioFeedbackController.js';
 import { SFXCatalogLoader } from './audio/SFXCatalogLoader.js';
 import { AdaptiveMoodEmitter } from './audio/AdaptiveMoodEmitter.js';
@@ -226,6 +227,7 @@ export class Game {
     this.controlBindingsOverlay = null;
     this.interactionPromptOverlay = null;
     this.fxOverlay = null;
+    this.fxCueCoordinator = null;
     this.movementIndicatorOverlay = null;
     this.caseFileUI = null;
     this.deductionBoard = null;
@@ -938,6 +940,20 @@ export class Game {
       {}
     );
     this.fxOverlay.init();
+
+    if (this.fxCueCoordinator) {
+      this.fxCueCoordinator.detach();
+    }
+    this.fxCueCoordinator = new FxCueCoordinator(this.eventBus, {
+      maxConcurrentGlobal: 6,
+      perEffectLimit: {
+        default: 3,
+        dialogueStartPulse: 1,
+        dialogueCompleteBurst: 1,
+        caseSolvedBurst: 1,
+      },
+    });
+    this.fxCueCoordinator.attach();
 
     // Create SaveManager inspector overlay (bottom-right)
     this.saveInspectorOverlay = new SaveInspectorOverlay(
@@ -2447,6 +2463,9 @@ export class Game {
     if (this.detectiveVisionOverlay) {
       this.detectiveVisionOverlay.update(deltaTime);
     }
+    if (this.fxCueCoordinator) {
+      this.fxCueCoordinator.update(deltaTime);
+    }
     if (this.fxOverlay) {
       this.fxOverlay.update(deltaTime);
     }
@@ -3278,6 +3297,10 @@ export class Game {
     }
     if (this.fxOverlay && this.fxOverlay.cleanup) {
       this.fxOverlay.cleanup();
+    }
+    if (this.fxCueCoordinator) {
+      this.fxCueCoordinator.detach();
+      this.fxCueCoordinator = null;
     }
     if (this.questNotification && this.questNotification.cleanup) {
       this.questNotification.cleanup();
