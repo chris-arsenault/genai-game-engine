@@ -87,6 +87,23 @@ export class CaseFileUI {
     this.onClose = options.onClose || (() => {});
   }
 
+  _emitFxCue(effectId, context = {}) {
+    if (!effectId || !this.eventBus || typeof this.eventBus.emit !== 'function') {
+      return;
+    }
+
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId,
+      source: 'CaseFileUI',
+      origin: 'caseFileOverlay',
+      caseId: this.caseData?.id ?? null,
+      context: {
+        overlay: 'caseFile',
+        ...context,
+      },
+    });
+  }
+
   /**
    * Render inline binding hints with dynamic labels.
    * @private
@@ -166,13 +183,67 @@ export class CaseFileUI {
    * @param {Object} updates - Partial case data updates
    */
   updateCase(updates) {
-    if (!this.caseData) return;
+    if (!this.caseData || !updates) return;
 
-    Object.assign(this.caseData, updates);
+    const prevEvidenceCount = Array.isArray(this.caseData.collectedEvidence)
+      ? this.caseData.collectedEvidence.length
+      : 0;
+    const prevClueCount = Array.isArray(this.caseData.discoveredClues)
+      ? this.caseData.discoveredClues.length
+      : 0;
+    const prevObjectives = Array.isArray(this.caseData.objectives)
+      ? this.caseData.objectives
+      : [];
+    const prevCompletedObjectives = prevObjectives.filter((objective) => objective?.completed).length;
+
+    const normalizedUpdates = { ...updates };
+    if (normalizedUpdates.collectedEvidence instanceof Set) {
+      normalizedUpdates.collectedEvidence = Array.from(normalizedUpdates.collectedEvidence);
+    } else if (Array.isArray(normalizedUpdates.collectedEvidence)) {
+      normalizedUpdates.collectedEvidence = [...normalizedUpdates.collectedEvidence];
+    }
+
+    if (normalizedUpdates.discoveredClues instanceof Set) {
+      normalizedUpdates.discoveredClues = Array.from(normalizedUpdates.discoveredClues);
+    } else if (Array.isArray(normalizedUpdates.discoveredClues)) {
+      normalizedUpdates.discoveredClues = [...normalizedUpdates.discoveredClues];
+    }
+
+    Object.assign(this.caseData, normalizedUpdates);
 
     // Update objectives if changed
-    if (updates.objectives) {
-      this.objectiveList.loadObjectives(updates.objectives);
+    if (normalizedUpdates.objectives) {
+      this.objectiveList.loadObjectives(normalizedUpdates.objectives);
+    }
+
+    const nextEvidenceCount = Array.isArray(this.caseData.collectedEvidence)
+      ? this.caseData.collectedEvidence.length
+      : 0;
+    if (nextEvidenceCount > prevEvidenceCount) {
+      this._emitFxCue('caseEvidencePulse', {
+        delta: nextEvidenceCount - prevEvidenceCount,
+        totalEvidence: nextEvidenceCount,
+      });
+    }
+
+    const nextClueCount = Array.isArray(this.caseData.discoveredClues)
+      ? this.caseData.discoveredClues.length
+      : 0;
+    if (nextClueCount > prevClueCount) {
+      this._emitFxCue('caseCluePulse', {
+        delta: nextClueCount - prevClueCount,
+        totalClues: nextClueCount,
+      });
+    }
+
+    if (normalizedUpdates.objectives) {
+      const nextCompleted = normalizedUpdates.objectives.filter((objective) => objective?.completed).length;
+      if (nextCompleted > prevCompletedObjectives) {
+        this._emitFxCue('caseObjectivePulse', {
+          delta: nextCompleted - prevCompletedObjectives,
+          totalCompleted: nextCompleted,
+        });
+      }
     }
   }
 
@@ -330,8 +401,10 @@ export class CaseFileUI {
 
       if (this.visible) {
         this.eventBus.emit('case_file:opened', { caseId });
+        this._emitFxCue('caseFileOverlayReveal', { source });
       } else {
         this.eventBus.emit('case_file:closed', { caseId });
+        this._emitFxCue('caseFileOverlayDismiss', { source });
       }
     }
 

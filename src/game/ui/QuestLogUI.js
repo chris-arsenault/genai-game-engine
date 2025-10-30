@@ -99,6 +99,23 @@ export class QuestLogUI {
     console.log('[QuestLogUI] Initialized');
   }
 
+  _emitFxCue(effectId, context = {}) {
+    if (!effectId || !this.eventBus || typeof this.eventBus.emit !== 'function') {
+      return;
+    }
+
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId,
+      source: 'QuestLogUI',
+      origin: 'questLogOverlay',
+      context: {
+        overlay: 'questLog',
+        tab: this.selectedTab,
+        ...context,
+      },
+    });
+  }
+
   /**
    * Subscribe to world state updates.
    * @private
@@ -227,6 +244,12 @@ export class QuestLogUI {
     emitOverlayVisibility(this.eventBus, 'questLog', this.visible, { source });
 
     if (this.visible) {
+      this._emitFxCue('questLogOverlayReveal', { source, tab: this.selectedTab });
+    } else {
+      this._emitFxCue('questLogOverlayDismiss', { source });
+    }
+
+    if (this.visible) {
       this._updateQuestList();
       // Auto-select first quest if none selected
       const quests = this._getQuestsForTab();
@@ -251,6 +274,7 @@ export class QuestLogUI {
     this.selectedQuest = null;
     this.scrollOffset = 0;
     this._updateQuestList();
+    this._emitFxCue('questLogTabPulse', { tab });
   }
 
   /**
@@ -264,8 +288,16 @@ export class QuestLogUI {
       return;
     }
 
+    const previousQuestId = this.selectedQuestId;
     this.selectedQuestId = quest.id;
     this.selectedQuest = buildQuestViewModel(this.worldStateStore, this.questManager, quest.id);
+
+    if (this.selectedQuestId && this.selectedQuestId !== previousQuestId) {
+      this._emitFxCue('questLogQuestSelected', {
+        questId: this.selectedQuestId,
+        status: this.selectedQuest?.status ?? quest.status ?? 'unknown',
+      });
+    }
   }
 
   /**

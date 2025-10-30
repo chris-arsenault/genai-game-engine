@@ -111,6 +111,20 @@ export class FxOverlay {
     }
 
     switch (payload.effectId) {
+      case 'caseFileOverlayReveal':
+        this._spawnCaseObjectiveEffect({ ...payload, effectId: 'caseObjectivePulse' });
+        break;
+      case 'caseFileOverlayDismiss':
+        this._spawnCaseProgressEffect({ ...payload, effectId: 'caseCluePulse' });
+        break;
+      case 'questLogOverlayReveal':
+      case 'questLogTabPulse':
+      case 'questLogOverlayDismiss':
+        this._spawnQuestMilestoneEffect({ ...payload, effectId: 'questMilestonePulse' });
+        break;
+      case 'questLogQuestSelected':
+        this._spawnQuestMilestoneEffect({ ...payload, effectId: 'questMilestonePulse' });
+        break;
       case 'detectiveVisionActivation':
         this._spawnActivationEffect(payload);
         break;

@@ -43,6 +43,22 @@
 - Emitted `fx:overlay_cue` from `QuestManager` (start/objective completion/quest completion) and `ForensicSystem` (availability/start/complete) with contextual metadata powering the new treatments.
 - Refreshed Jest coverage across `FxOverlay`, `QuestManager`, and `ForensicSystem` to lock in the cue emissions and renderer behaviour.
 
+### Session #143 Backlog Updates
+
+#### FX-237: Composite Cue Particle Bridge
+- Implemented `CompositeCueParticleBridge` to translate `fx:composite_cue` payloads into particle emitter descriptors with cooldowns, concurrency-aware intensity ramps, and standardized metadata.
+- Hooked the bridge into the `Game` lifecycle beside `FxCueCoordinator`, extended cue duration/limit tables, and added overlay mappings so new narrative cues flow through to particle consumers.
+- Added Jest coverage (`tests/game/fx/CompositeCueParticleBridge.test.js`) verifying mapping, cooldown enforcement, and lifecycle cleanup.
+
+#### FX-238: FxCue Performance Sampling
+- Authored `FxCueMetricsSampler` to capture coordinator throughput, maintain rolling averages/peaks, and emit warning payloads when the FX load approaches frame budget risk.
+- Registered the sampler inside `Game.update`, emitting `fx:metrics_sample`/`fx:metrics_warning` events for future HUD integration, and exercised the logic with dedicated Jest tests.
+
+#### FX-239: Narrative Overlay Secondary Cues
+- CaseFileUI now emits `fx:overlay_cue` events for overlay open/close and new evidence/clue/objective updates, aligning HUD beats with case progression (`src/game/ui/CaseFileUI.js`).
+- QuestLogUI broadcasts cues for visibility toggles, tab switches, and quest selection with FxOverlay support plus updated composite cue mappings to keep treatment consistent across HUD layers (`src/game/ui/QuestLogUI.js`, `src/game/ui/FxOverlay.js`).
+- Jest suites for both overlays confirm cue emission metadata to prevent regressions (`tests/game/ui/CaseFileUI.test.js`, `tests/game/ui/QuestLogUI.test.js`).
+
 ### Session #142 Backlog Updates
 
 #### FX-236: Narrative FX Cue Coordination

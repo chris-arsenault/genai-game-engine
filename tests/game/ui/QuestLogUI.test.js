@@ -26,6 +26,7 @@ jest.mock('../../../src/game/utils/controlBindingPrompts.js', () => ({
 
 import { QuestLogUI } from '../../../src/game/ui/QuestLogUI.js';
 import { getBindingLabels } from '../../../src/game/utils/controlBindingPrompts.js';
+import { buildQuestViewModel } from '../../../src/game/ui/helpers/questViewModel.js';
 
 function createMockContext() {
   return {
@@ -73,5 +74,58 @@ describe('QuestLogUI', () => {
     );
     expect(hintCall).toBeDefined();
     expect(hintCall[0]).toContain('Close: Q');
+  });
+
+  test('emits FX cue when overlay visibility changes', () => {
+    const emit = jest.fn();
+    ui = new QuestLogUI(640, 480, { questManager: {}, worldStateStore: {}, eventBus: { emit } });
+
+    ui.setVisible(true, 'hotkey');
+
+    expect(emit).toHaveBeenCalledWith(
+      'fx:overlay_cue',
+      expect.objectContaining({
+        effectId: 'questLogOverlayReveal',
+        context: expect.objectContaining({ source: 'hotkey' }),
+      }),
+    );
+
+    emit.mockClear();
+    ui.setVisible(false, 'close');
+    expect(emit).toHaveBeenCalledWith(
+      'fx:overlay_cue',
+      expect.objectContaining({ effectId: 'questLogOverlayDismiss' }),
+    );
+  });
+
+  test('emits FX cue when switching tabs', () => {
+    const emit = jest.fn();
+    ui = new QuestLogUI(640, 480, { questManager: {}, worldStateStore: {}, eventBus: { emit } });
+
+    ui.switchTab('completed');
+    expect(emit).toHaveBeenCalledWith(
+      'fx:overlay_cue',
+      expect.objectContaining({ effectId: 'questLogTabPulse', context: expect.objectContaining({ tab: 'completed' }) }),
+    );
+  });
+
+  test('emits FX cue when selecting a quest', () => {
+    const emit = jest.fn();
+    const quest = { id: 'q-1', status: 'active' };
+    const questView = { id: 'q-1', status: 'active' };
+
+    ui = new QuestLogUI(640, 480, { questManager: {}, worldStateStore: {}, eventBus: { emit } });
+
+    buildQuestViewModel.mockReturnValue(questView);
+
+    ui.selectQuest(quest);
+
+    expect(emit).toHaveBeenCalledWith(
+      'fx:overlay_cue',
+      expect.objectContaining({
+        effectId: 'questLogQuestSelected',
+        context: expect.objectContaining({ questId: 'q-1' }),
+      }),
+    );
   });
 });

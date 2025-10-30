@@ -52,6 +52,8 @@ import { DetectiveVisionOverlay } from './ui/DetectiveVisionOverlay.js';
 import { ControlBindingsOverlay, CONTROL_BINDINGS_NAV_EVENT } from './ui/ControlBindingsOverlay.js';
 import { FxOverlay } from './ui/FxOverlay.js';
 import { FxCueCoordinator } from './fx/FxCueCoordinator.js';
+import { CompositeCueParticleBridge } from './fx/CompositeCueParticleBridge.js';
+import { FxCueMetricsSampler } from './fx/FxCueMetricsSampler.js';
 import { AudioFeedbackController } from './audio/AudioFeedbackController.js';
 import { SFXCatalogLoader } from './audio/SFXCatalogLoader.js';
 import { AdaptiveMoodEmitter } from './audio/AdaptiveMoodEmitter.js';
@@ -228,6 +230,8 @@ export class Game {
     this.interactionPromptOverlay = null;
     this.fxOverlay = null;
     this.fxCueCoordinator = null;
+    this.compositeCueParticleBridge = null;
+    this.fxCueMetricsSampler = null;
     this.movementIndicatorOverlay = null;
     this.caseFileUI = null;
     this.deductionBoard = null;
@@ -954,6 +958,29 @@ export class Game {
       },
     });
     this.fxCueCoordinator.attach();
+
+    if (this.compositeCueParticleBridge) {
+      this.compositeCueParticleBridge.detach();
+    }
+    this.compositeCueParticleBridge = new CompositeCueParticleBridge(this.eventBus, {
+      getNow: () => this.engine?.clock?.now?.() ?? Date.now(),
+    });
+    this.compositeCueParticleBridge.attach();
+
+    if (this.fxCueMetricsSampler) {
+      this.fxCueMetricsSampler.stop();
+    }
+    this.fxCueMetricsSampler = new FxCueMetricsSampler(this.fxCueCoordinator, this.eventBus, {
+      getNow: () => {
+        if (this.engine?.clock && typeof this.engine.clock.getElapsedSeconds === 'function') {
+          return this.engine.clock.getElapsedSeconds();
+        }
+        return (typeof performance !== 'undefined' && performance.now)
+          ? performance.now() / 1000
+          : Date.now() / 1000;
+      },
+    });
+    this.fxCueMetricsSampler.start();
 
     // Create SaveManager inspector overlay (bottom-right)
     this.saveInspectorOverlay = new SaveInspectorOverlay(
@@ -2466,6 +2493,9 @@ export class Game {
     if (this.fxCueCoordinator) {
       this.fxCueCoordinator.update(deltaTime);
     }
+    if (this.fxCueMetricsSampler) {
+      this.fxCueMetricsSampler.update(deltaTime);
+    }
     if (this.fxOverlay) {
       this.fxOverlay.update(deltaTime);
     }
@@ -3301,6 +3331,14 @@ export class Game {
     if (this.fxCueCoordinator) {
       this.fxCueCoordinator.detach();
       this.fxCueCoordinator = null;
+    }
+    if (this.compositeCueParticleBridge) {
+      this.compositeCueParticleBridge.detach();
+      this.compositeCueParticleBridge = null;
+    }
+    if (this.fxCueMetricsSampler) {
+      this.fxCueMetricsSampler.stop();
+      this.fxCueMetricsSampler = null;
     }
     if (this.questNotification && this.questNotification.cleanup) {
       this.questNotification.cleanup();
