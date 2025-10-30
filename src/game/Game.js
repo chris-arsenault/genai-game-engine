@@ -55,6 +55,7 @@ import { SuspicionMoodMapper } from './audio/SuspicionMoodMapper.js';
 import { GameplayAdaptiveAudioBridge } from './audio/GameplayAdaptiveAudioBridge.js';
 import { SaveInspectorOverlay } from './ui/SaveInspectorOverlay.js';
 import { CrossroadsPromptController } from './narrative/CrossroadsPromptController.js';
+import { CrossroadsBranchTransitionController } from './narrative/CrossroadsBranchTransitionController.js';
 import { NavigationMeshService } from './navigation/NavigationMeshService.js';
 
 // Managers
@@ -193,6 +194,7 @@ export class Game {
     this.audioFeedback = null;
     this.saveInspectorOverlay = null;
     this.crossroadsPromptController = null;
+    this.crossroadsBranchTransitionController = null;
     this.navigationMeshService = null;
 
     // Forensic prompt plumbing
@@ -224,8 +226,10 @@ export class Game {
     };
     this._memoryParlorSceneLoaded = false;
     this._sceneTransitionInFlight = false;
+    this._pendingAct2ThreadTransition = null;
 
     this.handleObjectiveCompleted = this.handleObjectiveCompleted.bind(this);
+    this.handleAct2ThreadLoadRequest = this.handleAct2ThreadLoadRequest.bind(this);
   }
 
   /**
@@ -676,6 +680,13 @@ export class Game {
       this.crossroadsPromptController.dispose();
     }
 
+    if (
+      this.crossroadsBranchTransitionController &&
+      typeof this.crossroadsBranchTransitionController.dispose === 'function'
+    ) {
+      this.crossroadsBranchTransitionController.dispose();
+    }
+
     this.crossroadsPromptController = new CrossroadsPromptController({
       eventBus: this.eventBus,
       dialogueSystem: this.gameSystems.dialogue,
@@ -688,6 +699,20 @@ export class Game {
 
     if (typeof this.crossroadsPromptController.init === 'function') {
       this.crossroadsPromptController.init();
+    }
+
+    this.crossroadsBranchTransitionController =
+      new CrossroadsBranchTransitionController({
+        eventBus: this.eventBus,
+        questManager: this.questManager,
+        config: GameConfig?.narrative?.act2?.crossroads || {},
+      });
+
+    if (
+      this.crossroadsBranchTransitionController &&
+      typeof this.crossroadsBranchTransitionController.init === 'function'
+    ) {
+      this.crossroadsBranchTransitionController.init();
     }
   }
 
@@ -1036,6 +1061,68 @@ export class Game {
     }
   }
 
+  handleAct2ThreadLoadRequest(payload = {}) {
+    void this.loadAct2ThreadScene(payload);
+  }
+
+  async loadAct2ThreadScene(options = {}) {
+    if (this._sceneTransitionInFlight) {
+      console.warn('[Game] Cannot load Act 2 thread scene; another transition is in flight.');
+      return null;
+    }
+
+    const branchId =
+      options.branchId ||
+      options.threadConfig?.id ||
+      null;
+    const sceneId =
+      options.threadConfig?.sceneId ||
+      (branchId ? `${branchId}_scene_stub` : 'act2_thread_stub');
+
+    this._sceneTransitionInFlight = true;
+
+    try {
+      this._pendingAct2ThreadTransition = {
+        branchId,
+        questId: options.questId || null,
+        originQuestId: options.originQuestId || null,
+        sceneId,
+        threadConfig: options.threadConfig || null,
+      };
+
+      this.eventBus.emit('scene:transition:act2_thread:start', {
+        branchId,
+        sceneId,
+        questId: options.questId || null,
+        originQuestId: options.originQuestId || null,
+        threadConfig: options.threadConfig || null,
+      });
+
+      // Placeholder: actual scene loading will be implemented when branch interiors are ready.
+      this.activeScene.id = sceneId;
+      this.activeScene.metadata = {
+        ...(this.activeScene.metadata || {}),
+        branchId,
+        questId: options.questId || null,
+        originQuestId: options.originQuestId || null,
+        threadConfig: options.threadConfig || null,
+        transitionSource: 'act2_thread',
+      };
+
+      this.eventBus.emit('scene:transition:act2_thread:ready', {
+        branchId,
+        sceneId,
+        questId: options.questId || null,
+        originQuestId: options.originQuestId || null,
+        threadConfig: options.threadConfig || null,
+      });
+
+      return sceneId;
+    } finally {
+      this._sceneTransitionInFlight = false;
+    }
+  }
+
   /**
    * Create collision boundary
    * @param {number} x
@@ -1302,6 +1389,12 @@ export class Game {
         spawnPoint: data.spawnPoint || undefined
       });
     }));
+
+    this._offGameEventHandlers.push(
+      this.eventBus.on('scene:load:act2_thread', (data = {}) => {
+        this.handleAct2ThreadLoadRequest(data);
+      })
+    );
 
     // Player movement
     this._offGameEventHandlers.push(this.eventBus.on('player:moved', () => {

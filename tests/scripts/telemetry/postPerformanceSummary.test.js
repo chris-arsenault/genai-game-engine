@@ -5,6 +5,7 @@ import {
   buildHistoryFileName,
   persistBaselineHistory,
   ensureHistorySeeded,
+  listHistoryEntries,
 } from '../../../scripts/telemetry/postPerformanceSummary.js';
 
 async function createTempFile(prefix, content = '{}') {
@@ -60,5 +61,29 @@ describe('postPerformanceSummary helpers', () => {
     // Second call should detect existing history and skip seeding.
     const secondSeed = await ensureHistorySeeded(filePath, summary);
     expect(secondSeed).toBeNull();
+  });
+
+  test('listHistoryEntries reports recent history files', async () => {
+    const { dir, filePath } = await createTempFile('baseline-history-list-');
+    const historyDir = path.join(dir, 'history');
+    await fs.mkdir(historyDir);
+
+    const older = path.join(historyDir, 'baseline-2025-10-29T00-00-00.000Z-r05.json');
+    const newer = path.join(historyDir, 'baseline-2025-10-30T12-00-00.000Z-r05.json');
+
+    await fs.writeFile(filePath, '{}', 'utf8');
+    await fs.writeFile(older, '{}', 'utf8');
+    await fs.writeFile(newer, '{}', 'utf8');
+
+    const olderDate = new Date('2025-10-29T00:00:00.000Z');
+    const newerDate = new Date('2025-10-30T12:00:00.000Z');
+    await fs.utimes(older, olderDate, olderDate);
+    await fs.utimes(newer, newerDate, newerDate);
+
+    const entries = await listHistoryEntries(filePath, 5);
+    expect(entries.length).toBeGreaterThanOrEqual(2);
+    expect(entries[0].name).toBe('baseline-2025-10-30T12-00-00.000Z-r05.json');
+    expect(entries[0].modifiedAt).toBe(newerDate.toISOString());
+    expect(entries[1].name).toBe('baseline-2025-10-29T00-00-00.000Z-r05.json');
   });
 });

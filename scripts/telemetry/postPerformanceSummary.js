@@ -110,6 +110,63 @@ export async function ensureHistorySeeded(baselinePath, summary) {
   return seededPath;
 }
 
+export async function listHistoryEntries(baselinePath, limit = 5) {
+  const historyDir = resolveHistoryDir(baselinePath);
+  let entries;
+  try {
+    entries = await fs.readdir(historyDir, { withFileTypes: true });
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      console.warn(
+        `[postPerformanceSummary] Unable to read baseline history directory ${historyDir}`,
+        error
+      );
+    }
+    return [];
+  }
+
+  const files = entries
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+    .map((entry) => path.join(historyDir, entry.name));
+
+  const annotated = [];
+
+  for (const filePath of files) {
+    let stats;
+    try {
+      stats = await fs.stat(filePath);
+    } catch (error) {
+      console.warn(
+        `[postPerformanceSummary] Unable to stat history file ${filePath}`,
+        error
+      );
+      continue;
+    }
+
+    annotated.push({
+      name: path.basename(filePath),
+      path: filePath,
+      modifiedAt: stats.mtime ? stats.mtime.toISOString() : null,
+      size: Number.isFinite(stats.size) ? stats.size : null,
+    });
+  }
+
+  annotated.sort((a, b) => {
+    if (a.modifiedAt && b.modifiedAt && a.modifiedAt !== b.modifiedAt) {
+      return b.modifiedAt.localeCompare(a.modifiedAt);
+    }
+    if (a.name !== b.name) {
+      return b.name.localeCompare(a.name);
+    }
+    return 0;
+  });
+
+  if (Number.isFinite(limit) && limit > 0) {
+    return annotated.slice(0, limit);
+  }
+  return annotated;
+}
+
 async function findPreviousBaselineInfo(baselinePath, options = {}) {
   const historyDir = resolveHistoryDir(baselinePath);
   let entries;
@@ -287,6 +344,25 @@ async function main() {
       path: historyEntryPath,
       directory: path.dirname(historyEntryPath),
     };
+  }
+
+  const recentHistory = await listHistoryEntries(baselinePath, 5);
+  if (recentHistory.length > 0) {
+    const listSummary = recentHistory
+      .map((entry) => {
+        if (entry.modifiedAt) {
+          return `${entry.name} (${entry.modifiedAt})`;
+        }
+        return entry.name;
+      })
+      .join(', ');
+    console.log(
+      `::notice title=Performance history entries::Recent archive files: ${listSummary}`
+    );
+  } else {
+    console.log(
+      '::notice title=Performance history entries::No archived baseline files present.'
+    );
   }
 
   const markdown = formatMarkdownSummary(summary);
