@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 
 const DEFAULT_SCHEDULE_PATH = path.resolve(
   'telemetry-artifacts/analytics/parity-schedule.json'
@@ -48,6 +49,8 @@ export async function evaluateTelemetrySchedule(options = {}) {
       ? nextCheckAt.getTime() - now.getTime()
       : null;
   const dueInDays = diffMs !== null ? diffMs / MS_PER_DAY : null;
+  const dueInHours =
+    typeof dueInDays === 'number' ? dueInDays * 24 : null;
 
   const lastCheckStr =
     typeof schedule?.lastCheck?.checkedAt === 'string'
@@ -81,14 +84,34 @@ export async function evaluateTelemetrySchedule(options = {}) {
     warningThresholdDays,
   });
 
+  const { alertLevel, alerts } = buildAlertSummary({
+    status,
+    overdueFlag,
+    dueInDays,
+    warningThresholdDays,
+    nextCheckAtStr,
+  });
+
+  const calendar = buildCalendarEventMetadata({
+    schedule,
+    nextCheckAt,
+    warningThresholdDays,
+    recommendedAction,
+    generatedAt,
+  });
+
   return {
     generatedAt,
     schedulePath: resolvedSchedulePath,
     warningThresholdDays,
     nextCheckAt: nextCheckAtStr,
     dueInDays,
+    dueInHours,
     status,
     overdueFlag,
+    alertLevel,
+    alerts,
+    calendar,
     recommendedAction,
     latestDispatch: schedule?.latestDispatch ?? null,
     latestAcknowledgement: schedule?.latestAcknowledgement ?? null,
@@ -119,6 +142,7 @@ export function renderTelemetryReminderMarkdown(reminder) {
         ? reminder.dueInDays.toFixed(2)
         : 'n/a'
     }`,
+    `Alert level: ${reminder.alertLevel ?? 'n/a'}`,
     `Warning threshold (days): ${reminder.warningThresholdDays}`,
     `Days since last check: ${
       typeof reminder.daysSinceLastCheck === 'number'
@@ -130,6 +154,13 @@ export function renderTelemetryReminderMarkdown(reminder) {
     '',
     reminder.recommendedAction,
   ];
+
+  if (Array.isArray(reminder.alerts) && reminder.alerts.length > 0) {
+    lines.push('', '## Alerts', '');
+    for (const alert of reminder.alerts) {
+      lines.push(`- ${alert}`);
+    }
+  }
 
   if (reminder.latestDispatch) {
     lines.push(
@@ -165,6 +196,18 @@ export function renderTelemetryReminderMarkdown(reminder) {
     }
   }
 
+  if (reminder.calendar) {
+    lines.push(
+      '',
+      '## Calendar Event',
+      '',
+      `- Summary: ${reminder.calendar.summary ?? 'Telemetry Parity Check'}`,
+      `- Start: ${reminder.calendar.start ?? 'n/a'}`,
+      `- End: ${reminder.calendar.end ?? 'n/a'}`,
+      `- Alarm (minutes before): ${reminder.calendar.alarmMinutes ?? 'n/a'}`
+    );
+  }
+
   lines.push('', '');
   return lines.join('\n');
 }
@@ -192,4 +235,174 @@ function buildRecommendedAction({ status, nextCheckAtStr, warningThresholdDays }
         'Recreate the schedule or document the blocker before the next analytics review.',
       ].join(' ');
   }
+}
+
+function buildAlertSummary({
+  status,
+  overdueFlag,
+  dueInDays,
+  warningThresholdDays,
+  nextCheckAtStr,
+}) {
+  const alerts = [];
+  let alertLevel = 'info';
+
+  if (status === 'overdue') {
+    alertLevel = 'critical';
+    alerts.push(
+      'Telemetry parity checkpoint is overdue. Run `npm run telemetry:check-parity` immediately and refresh parity-schedule.json.'
+    );
+  } else if (status === 'due-soon') {
+    alertLevel = 'warning';
+    const remainingDays =
+      typeof dueInDays === 'number' ? dueInDays.toFixed(2) : 'unknown';
+    alerts.push(
+      `Parity checkpoint due within ${warningThresholdDays} days (${remainingDays} days remaining). Prepare telemetry samples and parity scripts.`
+    );
+  } else if (status === 'no-schedule') {
+    alertLevel = 'warning';
+    alerts.push(
+      'Parity schedule is unavailable. Restore telemetry-artifacts/analytics/parity-schedule.json before the next analytics review.'
+    );
+  } else {
+    alertLevel = 'info';
+    if (nextCheckAtStr) {
+      const remainingDays =
+        typeof dueInDays === 'number' ? dueInDays.toFixed(2) : 'unknown';
+      alerts.push(
+        `Next parity checkpoint scheduled for ${nextCheckAtStr} (${remainingDays} days remaining).`
+      );
+    }
+  }
+
+  if (overdueFlag && status !== 'overdue') {
+    alerts.push('Schedule flagged as overdue by analytics workflow. Confirm status manually.');
+  }
+
+  return { alertLevel, alerts };
+}
+
+function buildCalendarEventMetadata({
+  schedule,
+  nextCheckAt,
+  warningThresholdDays,
+  recommendedAction,
+  generatedAt,
+}) {
+  if (!(nextCheckAt instanceof Date) || Number.isNaN(nextCheckAt.valueOf())) {
+    return null;
+  }
+
+  const summary =
+    typeof schedule?.calendarSummary === 'string' && schedule.calendarSummary.length > 0
+      ? schedule.calendarSummary
+      : 'Telemetry Parity Check';
+
+  const durationMinutesRaw = schedule?.calendarDurationMinutes;
+  const durationMinutes =
+    typeof durationMinutesRaw === 'number' && Number.isFinite(durationMinutesRaw)
+      ? Math.max(15, durationMinutesRaw)
+      : 60;
+
+  const alarmMinutesRaw = schedule?.calendarAlarmMinutes;
+  const baseAlarm = warningThresholdDays * 24 * 60;
+  const alarmMinutes =
+    typeof alarmMinutesRaw === 'number' && Number.isFinite(alarmMinutesRaw)
+      ? Math.max(5, alarmMinutesRaw)
+      : Math.max(60, Math.round(baseAlarm));
+
+  const startIso = nextCheckAt.toISOString();
+  const endIso = new Date(
+    nextCheckAt.getTime() + durationMinutes * 60 * 1000
+  ).toISOString();
+
+  const eventId =
+    typeof schedule?.calendarEventId === 'string' && schedule.calendarEventId.length > 0
+      ? schedule.calendarEventId
+      : `telemetry-parity-${startIso.replace(/[^0-9A-Za-z]/g, '')}`;
+
+  return {
+    eventId,
+    summary,
+    description: recommendedAction,
+    location:
+      typeof schedule?.calendarLocation === 'string' && schedule.calendarLocation.length > 0
+        ? schedule.calendarLocation
+        : 'Remote',
+    start: startIso,
+    end: endIso,
+    alarmMinutes,
+    generatedAt,
+  };
+}
+
+export function createTelemetryReminderICS(reminder, options = {}) {
+  if (!reminder || !reminder.calendar) {
+    throw new Error('createTelemetryReminderICS: reminder.calendar is required');
+  }
+
+  const calendar = reminder.calendar;
+  const startDate = new Date(calendar.start);
+  const endDate = new Date(calendar.end);
+
+  if (Number.isNaN(startDate.valueOf()) || Number.isNaN(endDate.valueOf())) {
+    throw new Error('createTelemetryReminderICS: calendar start/end invalid');
+  }
+
+  const dtstamp = formatICSDate(
+    options.generatedAt
+      ? new Date(options.generatedAt)
+      : new Date(reminder.generatedAt ?? Date.now())
+  );
+  const dtstart = formatICSDate(startDate);
+  const dtend = formatICSDate(endDate);
+  const alarmMinutes =
+    typeof options.alarmMinutes === 'number' && Number.isFinite(options.alarmMinutes)
+      ? Math.max(5, Math.round(options.alarmMinutes))
+      : Math.max(5, Math.round(calendar.alarmMinutes ?? 60));
+  const uid = `${calendar.eventId ?? randomUUID()}@memory-syndicate`;
+  const summary = calendar.summary ?? 'Telemetry Parity Check';
+  const description = calendar.description ?? summary;
+  const location = calendar.location ?? 'Remote';
+
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//The Memory Syndicate//Telemetry Reminder//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    `UID:${uid}`,
+    `DTSTAMP:${dtstamp}`,
+    `DTSTART:${dtstart}`,
+    `DTEND:${dtend}`,
+    `SUMMARY:${escapeICS(summary)}`,
+    `DESCRIPTION:${escapeICS(description)}`,
+    `LOCATION:${escapeICS(location)}`,
+    'BEGIN:VALARM',
+    `TRIGGER:-PT${alarmMinutes}M`,
+    'ACTION:DISPLAY',
+    `DESCRIPTION:${escapeICS(summary)}`,
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR',
+    '',
+  ];
+
+  return lines.join('\r\n');
+}
+
+function formatICSDate(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.valueOf())) {
+    throw new TypeError('formatICSDate: Invalid Date provided');
+  }
+  return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+}
+
+function escapeICS(value) {
+  return String(value ?? '')
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\r?\n/g, '\\n');
 }

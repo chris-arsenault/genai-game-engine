@@ -32,6 +32,16 @@
 - **Verification**: `npm test -- TelemetryScheduleReminder`, `npm run telemetry:reminder`.
 - **Follow-up**: Trigger the reminder script before each analytics checkpoint to keep cadence risks visible.
 
+### Session #117 Backlog Updates
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- **Enhancement**: RenderOps packets now ship with share-ready ZIP archives and delivery manifests (`share-manifest.json`, `<label>-delivery.json`) produced by `RenderOpsPacketBuilder`, ensuring recipients have checksums and actionable metadata alongside the bundle. Placeholder automation now publishes prioritized replacement plans (`reports/art/placeholder-replacement-plan.json|md`) that rank bespoke art for AR-001 – AR-005 by urgency, missing files, and manifest notes.
+- **Action**: Reference the replacement plan when scheduling bespoke illustration sessions and attach the ZIP + delivery manifest when handing packets to RenderOps.
+
+#### TEL-021: Parity Schedule Reminder Automation
+- **Enhancement**: Reminder outputs now include alert levels, proactive messaging, and optional calendar invites (`reports/telemetry/parity-schedule-reminder.ics`) so cadence checkpoints appear on shared calendars.
+- **Action**: Distribute the ICS invite to analytics stakeholders and monitor the `alerts` payload for warning/critical escalations ahead of parity deadlines.
+
 _Historical session handoffs (Sessions 2–44) now live under `archive/docs/reports/` for reference._
 
 ### Purpose

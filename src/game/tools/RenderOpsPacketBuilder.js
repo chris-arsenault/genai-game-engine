@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
+import JSZip from 'jszip';
 
 const DEFAULT_LABEL = 'renderops-packet';
 
@@ -25,6 +26,8 @@ export async function buildRenderOpsPacket(options) {
     outputRoot,
     label = DEFAULT_LABEL,
     now = new Date(),
+    createArchive = true,
+    archiveFormat = 'zip',
   } = options ?? {};
 
   if (!reportPath || typeof reportPath !== 'string') {
@@ -57,11 +60,18 @@ export async function buildRenderOpsPacket(options) {
     throw wrapped;
   }
 
+  if (createArchive && archiveFormat !== 'zip') {
+    throw new Error(
+      `buildRenderOpsPacket: Unsupported archiveFormat "${archiveFormat}"; only "zip" is supported.`
+    );
+  }
+
   const packetId = randomUUID();
   const timestampIso = now.toISOString();
   const safeLabel = slugify(label ?? DEFAULT_LABEL) || DEFAULT_LABEL;
   const dirName = `${safeLabel}-${timestampIso.replace(/[:.]/g, '-')}`;
   const packetDir = path.join(resolvedOutputRoot, dirName);
+  const archiveFileName = `${dirName}.zip`;
 
   await fs.mkdir(packetDir, { recursive: true });
 
@@ -99,6 +109,9 @@ export async function buildRenderOpsPacket(options) {
     : [];
 
   const readmeFileName = 'PACKET_README.md';
+  const metadataFileName = 'metadata.json';
+  const shareManifestFileName = 'share-manifest.json';
+  const relativeBundlePath = createArchive ? `../${archiveFileName}` : null;
 
   const metadata = {
     packetId,
@@ -112,12 +125,20 @@ export async function buildRenderOpsPacket(options) {
       report: path.basename(packetReportPath),
       summary: path.basename(packetSummaryPath),
       readme: readmeFileName,
+      metadata: metadataFileName,
+      shareManifest: shareManifestFileName,
     },
     summary,
     actionableSegments,
+    bundle: createArchive
+      ? {
+          format: archiveFormat,
+          relativePath: relativeBundlePath,
+        }
+      : null,
   };
 
-  const metadataPath = path.join(packetDir, 'metadata.json');
+  const metadataPath = path.join(packetDir, metadataFileName);
   await fs.writeFile(metadataPath, `${JSON.stringify(metadata, null, 2)}\n`, {
     encoding: 'utf-8',
   });
@@ -131,10 +152,47 @@ export async function buildRenderOpsPacket(options) {
 
   metadata.files.readme = path.basename(readmePath);
 
+  const shareManifestPath = path.join(packetDir, shareManifestFileName);
+  const shareManifest = createShareManifest({ metadata, relativeBundlePath });
+  await fs.writeFile(
+    shareManifestPath,
+    `${JSON.stringify(shareManifest, null, 2)}\n`,
+    'utf-8'
+  );
+
+  let archiveInfo = null;
+  let deliveryManifestPath = null;
+  let deliveryManifest = null;
+
+  if (createArchive) {
+    const archivePath = path.join(resolvedOutputRoot, archiveFileName);
+    archiveInfo = await createPacketArchive({ packetDir, archivePath });
+    deliveryManifest = createDeliveryManifest({
+      metadata,
+      archiveInfo,
+      shareManifestPath,
+    });
+    deliveryManifestPath = path.join(
+      resolvedOutputRoot,
+      `${dirName}-delivery.json`
+    );
+    await fs.writeFile(
+      deliveryManifestPath,
+      `${JSON.stringify(deliveryManifest, null, 2)}\n`,
+      'utf-8'
+    );
+  }
+
   return {
     packetDir,
     metadataPath,
     metadata,
+    shareManifestPath,
+    shareManifest,
+    archivePath: archiveInfo?.archivePath ?? null,
+    archiveInfo,
+    deliveryManifestPath,
+    deliveryManifest,
   };
 }
 
@@ -194,6 +252,93 @@ export function summarizeLightingReport(report) {
     metadataDriftCount: metadataDriftArray.length,
     skippedCount,
   };
+}
+
+function createShareManifest({ metadata, relativeBundlePath }) {
+  return {
+    packetId: metadata.packetId,
+    label: metadata.label,
+    createdAt: metadata.createdAt,
+    bundle:
+      metadata.bundle && relativeBundlePath
+        ? {
+            format: metadata.bundle.format,
+            relativePath: relativeBundlePath,
+          }
+        : null,
+    files: metadata.files,
+    summary: metadata.summary,
+    actionableSegmentCount: Array.isArray(metadata.actionableSegments)
+      ? metadata.actionableSegments.length
+      : 0,
+    actionableSegments: metadata.actionableSegments,
+    instructions: [
+      'Share the generated ZIP bundle with the RenderOps team via the secure art handoff channel.',
+      `Include ${metadata.files.readme} in the communication so context and actionable segments are visible up front.`,
+      'After RenderOps responds, update the placeholder audit and regenerate the packet if art tweaks were requested.',
+    ],
+  };
+}
+
+function createDeliveryManifest({ metadata, archiveInfo, shareManifestPath }) {
+  return {
+    packetId: metadata.packetId,
+    label: metadata.label,
+    createdAt: metadata.createdAt,
+    bundle: archiveInfo
+      ? {
+          format: archiveInfo.format,
+          fileName: archiveInfo.fileName,
+          absolutePath: archiveInfo.archivePath,
+          checksumSha256: archiveInfo.checksumSha256,
+          sizeBytes: archiveInfo.sizeBytes,
+        }
+      : null,
+    shareManifestPath,
+    summary: metadata.summary,
+    actionableSegmentCount: Array.isArray(metadata.actionableSegments)
+      ? metadata.actionableSegments.length
+      : 0,
+  };
+}
+
+async function createPacketArchive({ packetDir, archivePath }) {
+  const zip = new JSZip();
+  await addDirectoryToZip({ zip, directoryPath: packetDir, basePath: packetDir });
+
+  const buffer = await zip.generateAsync({
+    type: 'nodebuffer',
+    compression: 'DEFLATE',
+    compressionOptions: { level: 9 },
+  });
+
+  await fs.writeFile(archivePath, buffer);
+
+  const checksumSha256 = createHash('sha256').update(buffer).digest('hex');
+
+  return {
+    format: 'zip',
+    archivePath,
+    fileName: path.basename(archivePath),
+    sizeBytes: buffer.byteLength,
+    checksumSha256,
+  };
+}
+
+async function addDirectoryToZip({ zip, directoryPath, basePath }) {
+  const entries = await fs.readdir(directoryPath, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const absolutePath = path.join(directoryPath, entry.name);
+    const relativePath = path.relative(basePath, absolutePath).replace(/\\/g, '/');
+
+    if (entry.isDirectory()) {
+      await addDirectoryToZip({ zip, directoryPath: absolutePath, basePath });
+    } else if (entry.isFile()) {
+      const data = await fs.readFile(absolutePath);
+      zip.file(relativePath, data);
+    }
+  }
 }
 
 function slugify(input) {

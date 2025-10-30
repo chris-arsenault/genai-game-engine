@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import {
   evaluateTelemetrySchedule,
   renderTelemetryReminderMarkdown,
+  createTelemetryReminderICS,
 } from '../../src/game/tools/TelemetryScheduleReminder.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -23,6 +24,10 @@ const DEFAULT_MD_OUT = path.resolve(
   __dirname,
   '../../reports/telemetry/parity-schedule-reminder.md'
 );
+const DEFAULT_ICS_OUT = path.resolve(
+  __dirname,
+  '../../reports/telemetry/parity-schedule-reminder.ics'
+);
 
 async function main() {
   const args = process.argv.slice(2);
@@ -31,6 +36,7 @@ async function main() {
     warningThresholdDays: 3,
     jsonOut: DEFAULT_JSON_OUT,
     markdownOut: DEFAULT_MD_OUT,
+    icsOut: DEFAULT_ICS_OUT,
   };
 
   for (const arg of args) {
@@ -45,6 +51,8 @@ async function main() {
       options.jsonOut = path.resolve(process.cwd(), arg.slice(11));
     } else if (arg.startsWith('--markdown-out=')) {
       options.markdownOut = path.resolve(process.cwd(), arg.slice(15));
+    } else if (arg.startsWith('--ics-out=')) {
+      options.icsOut = path.resolve(process.cwd(), arg.slice(10));
     } else if (arg === '--help' || arg === '-h') {
       printHelp();
       return;
@@ -59,6 +67,9 @@ async function main() {
 
     await ensureDirectory(options.jsonOut);
     await ensureDirectory(options.markdownOut);
+    if (options.icsOut) {
+      await ensureDirectory(options.icsOut);
+    }
 
     await fs.writeFile(
       options.jsonOut,
@@ -80,6 +91,13 @@ async function main() {
     process.stdout.write(
       `[remindParitySchedule] Markdown summary: ${options.markdownOut}\n`
     );
+    if (reminder.calendar && options.icsOut) {
+      const icsContent = createTelemetryReminderICS(reminder);
+      await fs.writeFile(options.icsOut, icsContent, 'utf-8');
+      process.stdout.write(
+        `[remindParitySchedule] Calendar invite: ${options.icsOut}\n`
+      );
+    }
   } catch (error) {
     process.stderr.write(
       `[remindParitySchedule] Failed to evaluate telemetry schedule: ${error.message}\n`
@@ -101,6 +119,7 @@ function printHelp() {
       '  --warning-days=<number>  Days before due date to flag as due-soon (default 3).',
       '  --json-out=<path>        Output path for JSON reminder.',
       '  --markdown-out=<path>    Output path for Markdown summary.',
+      '  --ics-out=<path>         Output path for calendar invite (.ics).',
       '  -h, --help               Show this help message.',
       '',
     ].join('\n')

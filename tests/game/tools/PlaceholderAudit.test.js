@@ -4,6 +4,7 @@ import path from 'node:path';
 import {
   auditPlaceholderStatus,
   renderPlaceholderAuditMarkdown,
+  renderPlaceholderReplacementPlanMarkdown,
 } from '../../../src/game/tools/PlaceholderAudit.js';
 
 describe('PlaceholderAudit', () => {
@@ -88,6 +89,16 @@ describe('PlaceholderAudit', () => {
       audit.placeholders.find((entry) => entry.id === 'placeholder-three')
         .placeholderExists
     ).toBe(true);
+
+    expect(Array.isArray(audit.replacementSchedule)).toBe(true);
+    expect(audit.replacementSchedule[0].id).toBe('placeholder-two');
+    expect(audit.replacementSchedule[0].priorityTier).toBe('urgent');
+    expect(audit.replacementSchedule[0].missingFile).toBe(true);
+    expect(audit.replacementSchedule[0].recommendedAction).toContain(
+      'Regenerate the placeholder asset'
+    );
+    expect(audit.replacementSummary.tiers.urgent).toBe(1);
+    expect(audit.replacementSummary.groups[0].arId).toBe('AR-010');
   });
 
   test('renderPlaceholderAuditMarkdown produces readable summary', async () => {
@@ -126,5 +137,47 @@ describe('PlaceholderAudit', () => {
     expect(markdown).toContain('| AR-010 | 2 | 1 | 1 |');
     expect(markdown).toContain('placeholder-two');
     expect(markdown).toContain('assets/generated/ar-placeholders/placeholder-one.png');
+  });
+
+  test('renderPlaceholderReplacementPlanMarkdown produces priority queue overview', () => {
+    const audit = {
+      generatedAt: '2025-11-13T12:00:00.000Z',
+      manifestPath: '/repo/assets/images/requests.json',
+      placeholderEntryCount: 2,
+      pendingReplacementCount: 2,
+      missingFileCount: 1,
+      replacementSchedule: [
+        {
+          rank: 1,
+          arId: 'AR-010',
+          id: 'placeholder-two',
+          priorityTier: 'urgent',
+          priorityScore: 320,
+          daysSincePlaceholder: 15,
+          reasons: ['missing-placeholder', 'placeholder-aged-14d'],
+          recommendedAction: 'Regenerate the placeholder asset immediately.',
+        },
+      ],
+      replacementSummary: {
+        tiers: { urgent: 1, high: 0, standard: 0 },
+        groups: [
+          {
+            arId: 'AR-010',
+            pendingCount: 1,
+            missingCount: 1,
+            highestTier: 'urgent',
+            exampleAssets: ['placeholder-two'],
+          },
+        ],
+      },
+    };
+
+    const markdown = renderPlaceholderReplacementPlanMarkdown(audit);
+
+    expect(markdown).toContain('# Placeholder Replacement Plan');
+    expect(markdown).toContain('Urgent queue size: 1');
+    expect(markdown).toContain('placeholder-two');
+    expect(markdown).toContain('Urgent (320)');
+    expect(markdown).toContain('Representative Assets');
   });
 });

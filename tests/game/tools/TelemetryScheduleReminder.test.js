@@ -4,6 +4,7 @@ import path from 'node:path';
 import {
   evaluateTelemetrySchedule,
   renderTelemetryReminderMarkdown,
+  createTelemetryReminderICS,
 } from '../../../src/game/tools/TelemetryScheduleReminder.js';
 
 describe('TelemetryScheduleReminder', () => {
@@ -44,6 +45,13 @@ describe('TelemetryScheduleReminder', () => {
     expect(reminder.recommendedAction).toContain('telemetry:check-parity');
     expect(reminder.dueInDays).toBeLessThan(0);
     expect(reminder.daysSinceLastCheck).toBeGreaterThan(20 / 1); // approx 21 days
+    expect(reminder.alertLevel).toBe('critical');
+    expect(reminder.alerts[0]).toContain('overdue');
+    expect(reminder.calendar).toBeTruthy();
+
+    const ics = createTelemetryReminderICS(reminder);
+    expect(ics).toContain('BEGIN:VCALENDAR');
+    expect(ics).toContain('SUMMARY:Telemetry Parity Check');
   });
 
   test('renderTelemetryReminderMarkdown documents due-soon status', async () => {
@@ -68,10 +76,16 @@ describe('TelemetryScheduleReminder', () => {
 
     expect(reminder.status).toBe('due-soon');
     expect(reminder.recommendedAction).toContain('Plan the next parity review');
+    expect(reminder.alertLevel).toBe('warning');
+    expect(reminder.alerts[0]).toContain('Parity checkpoint due within');
+    expect(reminder.calendar).toBeTruthy();
+    expect(reminder.calendar.alarmMinutes).toBeGreaterThan(0);
 
     const markdown = renderTelemetryReminderMarkdown(reminder);
     expect(markdown).toContain('# Telemetry Parity Schedule Reminder');
     expect(markdown).toContain('Status: due-soon');
     expect(markdown).toContain('Plan the next parity review');
+    expect(markdown).toContain('## Alerts');
+    expect(markdown).toContain('## Calendar Event');
   });
 });

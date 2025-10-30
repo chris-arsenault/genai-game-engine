@@ -45,13 +45,34 @@ async function main() {
   }
 
   try {
-    const { packetDir, metadata } = await buildRenderOpsPacket(options);
+    const {
+      packetDir,
+      metadata,
+      archivePath,
+      shareManifestPath,
+      deliveryManifestPath,
+    } = await buildRenderOpsPacket(options);
     process.stdout.write(
       `[packageRenderOpsLighting] Packet generated at ${packetDir}\n`
     );
     process.stdout.write(
       `[packageRenderOpsLighting] Segments evaluated: ${metadata.summary.total}, actionable segments: ${metadata.actionableSegments.length}\n`
     );
+    if (archivePath) {
+      process.stdout.write(
+        `[packageRenderOpsLighting] Shareable archive created at ${archivePath}\n`
+      );
+    }
+    if (shareManifestPath) {
+      process.stdout.write(
+        `[packageRenderOpsLighting] Share manifest available at ${shareManifestPath}\n`
+      );
+    }
+    if (deliveryManifestPath) {
+      process.stdout.write(
+        `[packageRenderOpsLighting] Delivery manifest written to ${deliveryManifestPath}\n`
+      );
+    }
   } catch (error) {
     process.stderr.write(
       `[packageRenderOpsLighting] Failed to generate packet: ${error.message}\n`

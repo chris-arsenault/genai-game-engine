@@ -131,6 +131,7 @@
   },
   "dependencies": {
     "@actions/artifact": "^2.2.1",
+    "jszip": "^3.10.1",
     "playwright": "^1.56.1"
   }
 }

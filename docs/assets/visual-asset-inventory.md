@@ -83,9 +83,11 @@
 
 ## Session 116 Updates
 - Built `scripts/art/packageRenderOpsLighting.js` + `RenderOpsPacketBuilder` to bundle lighting previews, summary markdown, and actionable metadata into timestamped share-out packets under `reports/art/renderops-packets/`.
+- Extended `RenderOpsPacketBuilder` in Session 117 to emit share-ready ZIP archives alongside per-packet delivery manifests (`metadata.json`, `share-manifest.json`, and `<label>-delivery.json`) so RenderOps hand-offs include checksum and bundle details out of the box.
 - Added `scripts/art/auditPlaceholderAssets.js` and companion `PlaceholderAudit` utilities to emit JSON/markdown audits (`reports/art/placeholder-audit.*`) highlighting all `placeholder-generated` manifest entries and whether source atlases exist.
+- Session 117 augments the placeholder audit with a prioritized replacement plan (`reports/art/placeholder-replacement-plan.json|md`) that ranks AR-001 – AR-005 bespoke work based on missing files, asset age, and manifest notes.
 - New npm aliases `art:package-renderops` and `art:audit-placeholders` keep RenderOps delivery and bespoke replacement planning on a repeatable cadence with test coverage in place.
 
 ## Next Actions
-1. Distribute the latest RenderOps packet (`npm run art:package-renderops`) to RenderOps, log follow-up feedback for segments flagged as actionable, and regenerate after any art tweaks.
-2. Use `reports/art/placeholder-audit.md` to prioritise bespoke replacements for AR-001 – AR-005, updating `assets/images/requests.json` with final licensing once art is approved.
+1. Distribute the latest RenderOps packet (`npm run art:package-renderops`) and attach the generated ZIP (`*.zip`) plus `*-delivery.json` manifest when sharing with RenderOps; log feedback on actionable segments and regenerate after art tweaks.
+2. Use `reports/art/placeholder-replacement-plan.md` (and supporting JSON) to schedule bespoke replacements for AR-001 – AR-005, updating `assets/images/requests.json` with final licensing once art is approved.

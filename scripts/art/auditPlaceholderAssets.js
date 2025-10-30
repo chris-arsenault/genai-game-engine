@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import {
   auditPlaceholderStatus,
   renderPlaceholderAuditMarkdown,
+  renderPlaceholderReplacementPlanMarkdown,
 } from '../../src/game/tools/PlaceholderAudit.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -24,6 +25,14 @@ const DEFAULT_MD_OUT = path.resolve(
   __dirname,
   '../../reports/art/placeholder-audit.md'
 );
+const DEFAULT_PLAN_JSON_OUT = path.resolve(
+  __dirname,
+  '../../reports/art/placeholder-replacement-plan.json'
+);
+const DEFAULT_PLAN_MD_OUT = path.resolve(
+  __dirname,
+  '../../reports/art/placeholder-replacement-plan.md'
+);
 
 async function main() {
   const args = process.argv.slice(2);
@@ -32,6 +41,8 @@ async function main() {
     placeholderDir: DEFAULT_PLACEHOLDER_DIR,
     jsonOut: DEFAULT_JSON_OUT,
     markdownOut: DEFAULT_MD_OUT,
+    planJsonOut: DEFAULT_PLAN_JSON_OUT,
+    planMarkdownOut: DEFAULT_PLAN_MD_OUT,
   };
 
   for (const arg of args) {
@@ -46,6 +57,10 @@ async function main() {
       options.jsonOut = path.resolve(process.cwd(), arg.slice(11));
     } else if (arg.startsWith('--markdown-out=')) {
       options.markdownOut = path.resolve(process.cwd(), arg.slice(15));
+    } else if (arg.startsWith('--plan-json-out=')) {
+      options.planJsonOut = path.resolve(process.cwd(), arg.slice(16));
+    } else if (arg.startsWith('--plan-markdown-out=')) {
+      options.planMarkdownOut = path.resolve(process.cwd(), arg.slice(20));
     } else if (arg === '--help' || arg === '-h') {
       printHelp();
       return;
@@ -59,6 +74,8 @@ async function main() {
     });
     await ensureDirectory(options.jsonOut);
     await ensureDirectory(options.markdownOut);
+    await ensureDirectory(options.planJsonOut);
+    await ensureDirectory(options.planMarkdownOut);
 
     await fs.writeFile(
       options.jsonOut,
@@ -70,6 +87,21 @@ async function main() {
       renderPlaceholderAuditMarkdown(audit),
       'utf-8'
     );
+    const replacementPlanPayload = {
+      generatedAt: audit.generatedAt,
+      summary: audit.replacementSummary,
+      schedule: audit.replacementSchedule,
+    };
+    await fs.writeFile(
+      options.planJsonOut,
+      `${JSON.stringify(replacementPlanPayload, null, 2)}\n`,
+      'utf-8'
+    );
+    await fs.writeFile(
+      options.planMarkdownOut,
+      renderPlaceholderReplacementPlanMarkdown(audit),
+      'utf-8'
+    );
 
     process.stdout.write(
       `[auditPlaceholderAssets] Placeholder entries: ${audit.placeholderEntryCount}, missing files: ${audit.missingFileCount}\n`
@@ -79,6 +111,12 @@ async function main() {
     );
     process.stdout.write(
       `[auditPlaceholderAssets] Markdown summary: ${options.markdownOut}\n`
+    );
+    process.stdout.write(
+      `[auditPlaceholderAssets] Replacement plan JSON: ${options.planJsonOut}\n`
+    );
+    process.stdout.write(
+      `[auditPlaceholderAssets] Replacement plan Markdown: ${options.planMarkdownOut}\n`
     );
   } catch (error) {
     process.stderr.write(
@@ -101,6 +139,8 @@ function printHelp() {
       '  --placeholder-dir=<path>  Directory that stores generated placeholders.',
       '  --json-out=<path>         Output path for the JSON audit report.',
       '  --markdown-out=<path>     Output path for the Markdown summary.',
+      '  --plan-json-out=<path>    Output path for the replacement plan JSON.',
+      '  --plan-markdown-out=<path> Output path for the replacement plan Markdown.',
       '  -h, --help                Show this message.',
       '',
     ].join('\n')
