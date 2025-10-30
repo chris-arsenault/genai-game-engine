@@ -23,6 +23,22 @@ describe('Act2BranchDialogueExporter', () => {
     expect(corporateEncryption.telemetryTag).toBe('act2_corporate_encryption_lab');
     expect(corporateEncryption.questId).toBe('main-act2-neurosync-infiltration');
     expect(corporateEncryption.objectiveId).toBe('obj_clone_encryption_core');
+    expect(corporateEncryption.lines[0]).toEqual(
+      expect.objectContaining({
+        lineNumber: 1,
+        anchorId: 'dialogue_act2_corporate_encryption_clone-L01',
+      })
+    );
+    const lineWithChoice = corporateEncryption.lines.find(
+      (line) => Array.isArray(line.choices) && line.choices.length > 0
+    );
+    if (lineWithChoice) {
+      expect(lineWithChoice.choices[0]).toEqual(
+        expect.objectContaining({
+          choiceId: expect.stringMatching(/-C01$/),
+        })
+      );
+    }
     expect(corporateEncryption.lines).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ speaker: 'Kira' }),
@@ -61,6 +77,8 @@ describe('Act2BranchDialogueExporter', () => {
     expect(markdown).toContain('dialogue_act2_corporate_encryption_clone');
     expect(markdown).toContain('## dialogue_act2_corporate_encryption_clone');
     expect(markdown).toContain('**Telemetry:** act2_corporate_encryption_lab');
+    expect(markdown).toContain('`L01` **Kira:**');
+    expect(markdown).toContain('(anchor: dialogue_act2_corporate_encryption_clone-L01)');
   });
 
   it('writes the markdown packet to disk', async () => {

@@ -23,7 +23,10 @@ export function buildAct2BranchDialogueSummary(options = {}) {
   const dialogues = Array.from(dialogueTrees.values()).map((tree) => {
     const metaFromTriggers = definitionIndex.get(tree.id) ?? {};
     const branchId = metaFromTriggers.branchId ?? resolveBranchFromId(tree.id);
-    const sequence = extractDialogueSequence(tree, { includeChoices });
+    const sequence = extractDialogueSequence(tree, {
+      includeChoices,
+      dialogueId: tree.id,
+    });
 
     return {
       dialogueId: tree.id,
@@ -139,11 +142,17 @@ export function renderAct2BranchDialogueMarkdown(summary, options = {}) {
     for (const line of entry.lines) {
       const speaker = line.speaker ? `**${line.speaker}:**` : '**Narration:**';
       const text = line.text ?? '';
-      lines.push(`- ${speaker} ${text}`);
+      const lineNumber = formatLineNumber(line.lineNumber);
+      const anchorNote = line.anchorId
+        ? ` _(anchor: ${line.anchorId})_`
+        : '';
+      lines.push(`- \`${lineNumber}\` ${speaker} ${text}${anchorNote}`);
       if (Array.isArray(line.choices) && line.choices.length > 0) {
-        for (const choice of line.choices) {
+        for (let index = 0; index < line.choices.length; index += 1) {
+          const choice = line.choices[index];
+          const choiceLabel = formatChoiceLabel(choice, index, line.anchorId);
           lines.push(
-            `  - Choice: ${choice.text ?? ''} → ${choice.nextNode ?? 'END'}`
+            `  - Choice ${choiceLabel}: ${choice.text ?? ''} → ${choice.nextNode ?? 'END'}`
           );
         }
       }
@@ -242,21 +251,30 @@ function resolveBranchFromId(dialogueId) {
 
 function extractDialogueSequence(tree, options = {}) {
   const includeChoices = options.includeChoices !== false;
+  const dialogueId =
+    typeof options.dialogueId === 'string' && options.dialogueId.length > 0
+      ? options.dialogueId
+      : tree?.id ?? 'dialogue_act2_branch';
   const visited = new Set();
   const lines = [];
   let node = tree.getStartNode();
 
   while (node && !visited.has(node.id)) {
     visited.add(node.id);
+    const lineNumber = lines.length + 1;
+    const anchorId = `${dialogueId}-L${String(lineNumber).padStart(2, '0')}`;
     const entry = {
       nodeId: node.id,
       speaker: node.speaker ?? null,
       text: node.text ?? '',
+      lineNumber,
+      anchorId,
     };
     if (includeChoices && Array.isArray(node.choices) && node.choices.length > 0) {
-      entry.choices = node.choices.map((choice) => ({
+      entry.choices = node.choices.map((choice, index) => ({
         text: choice.text ?? '',
         nextNode: choice.nextNode ?? null,
+        choiceId: `${anchorId}-C${String(index + 1).padStart(2, '0')}`,
       }));
     }
     lines.push(entry);
@@ -276,4 +294,21 @@ function isDialogueSummary(candidate) {
     Array.isArray(candidate.dialogues) &&
     typeof candidate.generatedAt === 'string'
   );
+}
+
+function formatLineNumber(lineNumber) {
+  if (Number.isInteger(lineNumber) && lineNumber > 0) {
+    return `L${String(lineNumber).padStart(2, '0')}`;
+  }
+  return 'L??';
+}
+
+function formatChoiceLabel(choice, index, anchorId) {
+  if (choice && typeof choice.choiceId === 'string' && choice.choiceId.length > 0) {
+    return `\`${choice.choiceId}\``;
+  }
+  if (typeof index === 'number') {
+    return `\`${anchorId ?? 'choice'}-C${String(index + 1).padStart(2, '0')}\``;
+  }
+  return '`choice`';
 }
