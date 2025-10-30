@@ -3,7 +3,9 @@ import path from 'node:path';
 import os from 'node:os';
 import {
   buildAct2BranchDialogueSummary,
+  renderAct2BranchDialogueMarkdown,
   writeAct2BranchDialogueSummary,
+  writeAct2BranchDialogueMarkdown,
 } from '../../../src/game/tools/Act2BranchDialogueExporter.js';
 
 describe('Act2BranchDialogueExporter', () => {
@@ -34,7 +36,11 @@ describe('Act2BranchDialogueExporter', () => {
     const tempDir = await mkdtemp(path.join(os.tmpdir(), 'act2-dialogue-export-'));
     const outputPath = path.join(tempDir, 'summary.json');
 
-    const result = await writeAct2BranchDialogueSummary(outputPath, { pretty: false });
+    const summary = buildAct2BranchDialogueSummary();
+    const result = await writeAct2BranchDialogueSummary(outputPath, {
+      pretty: false,
+      summary,
+    });
 
     expect(result).toEqual({
       outputPath,
@@ -44,5 +50,33 @@ describe('Act2BranchDialogueExporter', () => {
     const contents = await readFile(outputPath, 'utf8');
     const parsed = JSON.parse(contents);
     expect(parsed.dialogues).toHaveLength(6);
+  });
+
+  it('renders a markdown packet for narrative review', () => {
+    const summary = buildAct2BranchDialogueSummary();
+    const markdown = renderAct2BranchDialogueMarkdown(summary);
+
+    expect(markdown).toContain('# Act 2 Branch Dialogue Review Packet');
+    expect(markdown).toContain('| Dialogue ID | Branch | NPC | Quest | Objective | Lines | Telemetry Tag |');
+    expect(markdown).toContain('dialogue_act2_corporate_encryption_clone');
+    expect(markdown).toContain('## dialogue_act2_corporate_encryption_clone');
+    expect(markdown).toContain('**Telemetry:** act2_corporate_encryption_lab');
+  });
+
+  it('writes the markdown packet to disk', async () => {
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'act2-dialogue-markdown-'));
+    const outputPath = path.join(tempDir, 'summary.md');
+    const summary = buildAct2BranchDialogueSummary();
+
+    const result = await writeAct2BranchDialogueMarkdown(outputPath, { summary });
+
+    expect(result).toEqual({
+      outputPath,
+      dialogueCount: 6,
+    });
+
+    const markdown = await readFile(outputPath, 'utf8');
+    expect(markdown).toContain('## dialogue_act2_resistance_signal_array');
+    expect(markdown).toContain('**Kira:** Cycle the encrypted burst on my mark. Zara will mirror the packet from the Crossroads relay.');
   });
 });

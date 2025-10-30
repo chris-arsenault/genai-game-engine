@@ -55,7 +55,8 @@ describe('Act2CrossroadsScene art overrides', () => {
     );
 
     expect(selectionPad).toBeDefined();
-    expect(selectionPad.color).toBe('#102d44');
+    expect(selectionPad.color).toBe('#0f3f6c');
+    expect(selectionPad.assetId).toBe('act2_crossroads_selection_pad_v1');
     expect(scene.metadata.artSource?.resolved?.floors).toEqual(
       expect.arrayContaining([expect.objectContaining({ id: 'crossroads_selection_pad' })])
     );
@@ -139,8 +140,15 @@ describe('Act2CrossroadsScene art overrides', () => {
     expect(scene.metadata.artSource?.resolved?.variantId).toBe(manifestData.variantId);
     expect(scene.metadata.artSource?.resolved?.floors).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: 'crossroads_floor_safehouse' }),
-        expect.objectContaining({ id: 'crossroads_selection_pad', color: '#abcdef' }),
+        expect.objectContaining({
+          id: 'crossroads_floor_safehouse',
+          assetId: 'act2_crossroads_floor_safehouse_v1',
+        }),
+        expect.objectContaining({
+          id: 'crossroads_selection_pad',
+          color: '#abcdef',
+          assetId: 'act2_crossroads_selection_pad_v1',
+        }),
       ])
     );
   });

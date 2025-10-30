@@ -313,7 +313,7 @@ export const GameConfig = {
     act2Crossroads: {
       manifestUrl: ACT2_CROSSROADS_ART_MANIFEST_URL,
       overrides: Act2CrossroadsArtConfig,
-      variant: 'act2_crossroads_placeholder_manifest_v1',
+      variant: 'act2_crossroads_bespoke_bundle_v1',
     },
   },
 

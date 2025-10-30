@@ -1,87 +1,184 @@
 {
-  "variantId": "act2_crossroads_placeholder_manifest_v1",
-  "updatedAt": "2025-11-07T00:00:00Z",
-  "author": "Codex Placeholder Pipeline",
+  "variantId": "act2_crossroads_bespoke_bundle_v1",
+  "artist": "Neon Highrise Collective",
+  "updatedAt": "2025-11-12T00:00:00Z",
   "notes": [
-    "Mirrors the in-code placeholder palette so bespoke art drops can replace this file without touching scene logic.",
-    "Image-backed segments may specify either `imageUrl` or `assetId` once production art is available."
+    "Finalised Act 2 Crossroads hub bundle aligned with production tileset drop (Nov 2025).",
+    "Segment metadata mirrors TriggerMigrationToolkit IDs so narrative-driven lighting states can be toggled without art rebuilds.",
+    "Asset IDs map to the RenderOps texture manifest; keep asset naming stable when patching hotfix art."
   ],
   "floors": [
     {
       "id": "crossroads_floor_safehouse",
-      "color": "#101b28",
-      "alpha": 0.97
+      "color": "#141d2d",
+      "alpha": 0.98,
+      "assetId": "act2_crossroads_floor_safehouse_v1",
+      "metadata": {
+        "material": "woven_carbon",
+        "narrativeCue": "safehouse_staging"
+      },
+      "tags": ["safehouse", "floor"]
+    },
+    {
+      "id": "crossroads_briefing_pad",
+      "color": "#1f3050",
+      "alpha": 0.9,
+      "assetId": "act2_crossroads_briefing_pad_v1",
+      "metadata": {
+        "material": "glass_inlay",
+        "narrativeCue": "zara_briefing_focus"
+      },
+      "tags": ["briefing", "spotlight"]
     },
     {
       "id": "crossroads_branch_walkway",
-      "color": "#0f2438",
-      "alpha": 0.95
+      "color": "#182942",
+      "alpha": 0.94,
+      "assetId": "act2_crossroads_branch_walkway_v1",
+      "metadata": {
+        "material": "reinforced_runway",
+        "narrativeCue": "branch_split"
+      },
+      "tags": ["transition", "floor"]
     },
     {
       "id": "crossroads_selection_pad",
-      "color": "#102d44",
-      "alpha": 0.9
+      "color": "#0f3d68",
+      "alpha": 0.9,
+      "assetId": "act2_crossroads_selection_pad_v1",
+      "metadata": {
+        "material": "reactive_glass",
+        "narrativeCue": "thread_selection"
+      },
+      "tags": ["selection", "interactive"]
     },
     {
       "id": "crossroads_checkpoint_plaza",
-      "color": "#0b1a2a",
-      "alpha": 0.94
+      "color": "#0d1d30",
+      "alpha": 0.92,
+      "assetId": "act2_crossroads_checkpoint_plaza_v1",
+      "metadata": {
+        "material": "steel_inlay",
+        "narrativeCue": "checkpoint_ready"
+      },
+      "tags": ["checkpoint", "floor"]
     }
   ],
   "accents": [
     {
-      "id": "crossroads_selection_conduit",
-      "color": "#ff9f5c",
-      "alpha": 0.42
+      "id": "crossroads_safehouse_light_arc",
+      "color": "#2c6df0",
+      "alpha": 0.32,
+      "assetId": "act2_crossroads_safehouse_arc_v1",
+      "metadata": {
+        "lightingPreset": "safehouse_idle"
+      },
+      "tags": ["safehouse", "lighting"]
     },
     {
-      "id": "crossroads_safehouse_light_arc",
-      "color": "#3b6df2",
-      "alpha": 0.26
+      "id": "crossroads_selection_conduit",
+      "color": "#ff9f4d",
+      "alpha": 0.48,
+      "assetId": "act2_crossroads_selection_conduit_v1",
+      "metadata": {
+        "lightingPreset": "thread_ready",
+        "telemetryTag": "act2_selection_glow"
+      },
+      "tags": ["selection", "lighting"]
+    },
+    {
+      "id": "crossroads_checkpoint_glow",
+      "color": "#33a1ff",
+      "alpha": 0.28,
+      "assetId": "act2_crossroads_checkpoint_glow_v1",
+      "metadata": {
+        "lightingPreset": "checkpoint_active"
+      },
+      "tags": ["checkpoint", "lighting"]
     }
   ],
   "lightColumns": [
     {
-      "id": "crossroads_column_checkpoint_north",
-      "color": "#54c7ff",
-      "alpha": 0.46
-    },
-    {
-      "id": "crossroads_column_checkpoint_south",
-      "color": "#54c7ff",
-      "alpha": 0.46
-    },
-    {
       "id": "crossroads_column_safehouse_left",
-      "color": "#3a4d7f",
-      "alpha": 0.5
+      "color": "#395a8f",
+      "alpha": 0.52,
+      "assetId": "act2_crossroads_column_safehouse_left_v1",
+      "metadata": {
+        "beamProfile": "soft"
+      },
+      "tags": ["safehouse", "column"]
     },
     {
       "id": "crossroads_column_safehouse_right",
-      "color": "#3a4d7f",
-      "alpha": 0.5
+      "color": "#395a8f",
+      "alpha": 0.52,
+      "assetId": "act2_crossroads_column_safehouse_right_v1",
+      "metadata": {
+        "beamProfile": "soft"
+      },
+      "tags": ["safehouse", "column"]
+    },
+    {
+      "id": "crossroads_column_checkpoint_north",
+      "color": "#4bbfff",
+      "alpha": 0.5,
+      "assetId": "act2_crossroads_column_checkpoint_north_v1",
+      "metadata": {
+        "beamProfile": "tight"
+      },
+      "tags": ["checkpoint", "column"]
+    },
+    {
+      "id": "crossroads_column_checkpoint_south",
+      "color": "#4bbfff",
+      "alpha": 0.5,
+      "assetId": "act2_crossroads_column_checkpoint_south_v1",
+      "metadata": {
+        "beamProfile": "tight"
+      },
+      "tags": ["checkpoint", "column"]
     }
   ],
   "boundaries": [
     {
       "id": "crossroads_boundary_west",
       "color": "#050a12",
-      "alpha": 0.96
+      "alpha": 0.96,
+      "assetId": "act2_crossroads_boundary_west_v1",
+      "metadata": {
+        "collisionProfile": "solid_wall"
+      },
+      "tags": ["boundary", "nav_blocker"]
     },
     {
       "id": "crossroads_boundary_east",
       "color": "#050a12",
-      "alpha": 0.96
+      "alpha": 0.96,
+      "assetId": "act2_crossroads_boundary_east_v1",
+      "metadata": {
+        "collisionProfile": "solid_wall"
+      },
+      "tags": ["boundary", "nav_blocker"]
     },
     {
       "id": "crossroads_boundary_north",
       "color": "#050a12",
-      "alpha": 0.96
+      "alpha": 0.96,
+      "assetId": "act2_crossroads_boundary_north_v1",
+      "metadata": {
+        "collisionProfile": "solid_wall"
+      },
+      "tags": ["boundary", "nav_blocker"]
     },
     {
       "id": "crossroads_boundary_south",
       "color": "#050a12",
-      "alpha": 0.96
+      "alpha": 0.96,
+      "assetId": "act2_crossroads_boundary_south_v1",
+      "metadata": {
+        "collisionProfile": "solid_wall"
+      },
+      "tags": ["boundary", "nav_blocker"]
     }
   ]
 }

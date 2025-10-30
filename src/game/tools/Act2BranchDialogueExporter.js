@@ -73,12 +73,109 @@ export async function writeAct2BranchDialogueSummary(outputPath, options = {}) {
     throw new Error('[writeAct2BranchDialogueSummary] outputPath is required');
   }
 
-  const summary = buildAct2BranchDialogueSummary(options);
+  const summary =
+    options.summary && isDialogueSummary(options.summary)
+      ? options.summary
+      : buildAct2BranchDialogueSummary(options);
   const payload = options.pretty === false ? JSON.stringify(summary) : JSON.stringify(summary, null, 2);
 
   const targetDir = path.dirname(outputPath);
   await mkdir(targetDir, { recursive: true });
   await writeFile(outputPath, `${payload}\n`, 'utf8');
+
+  return {
+    outputPath,
+    dialogueCount: summary.dialogues.length,
+  };
+}
+
+/**
+ * Render the Act 2 branch dialogue summary as Markdown for narrative review.
+ *
+ * @param {object} summary
+ * @param {{ headingLevel?: number }} [options]
+ * @returns {string}
+ */
+export function renderAct2BranchDialogueMarkdown(summary, options = {}) {
+  const headingLevel = Number.isInteger(options.headingLevel) && options.headingLevel > 0
+    ? options.headingLevel
+    : 2;
+  const summaryData = isDialogueSummary(summary)
+    ? summary
+    : buildAct2BranchDialogueSummary(options);
+
+  const heading = (depth) => '#'.repeat(Math.max(1, headingLevel + depth - 1));
+
+  const lines = [];
+  lines.push('# Act 2 Branch Dialogue Review Packet');
+  lines.push('');
+  lines.push(`Generated: ${summaryData.generatedAt}`);
+  lines.push(`Version: ${summaryData.version}`);
+  lines.push('');
+  lines.push('## Overview');
+  lines.push('');
+  lines.push('| Dialogue ID | Branch | NPC | Quest | Objective | Lines | Telemetry Tag |');
+  lines.push('| --- | --- | --- | --- | --- | ---: | --- |');
+
+  for (const entry of summaryData.dialogues) {
+    lines.push(
+      `| ${entry.dialogueId} | ${entry.branchId ?? ''} | ${entry.npcId ?? ''} | ${entry.questId ?? ''} | ${entry.objectiveId ?? ''} | ${entry.lineCount} | ${entry.telemetryTag ?? ''} |`
+    );
+  }
+
+  lines.push('');
+
+  for (const entry of summaryData.dialogues) {
+    lines.push(`${heading(1)} ${entry.dialogueId}`);
+    lines.push('');
+    lines.push(`- **Branch:** ${entry.branchId ?? 'unknown'}`);
+    lines.push(`- **NPC:** ${entry.npcId ?? 'unknown'}`);
+    lines.push(`- **Quest Objective:** ${entry.questId ?? '—'}${entry.objectiveId ? ` / ${entry.objectiveId}` : ''}`);
+    lines.push(`- **Telemetry:** ${entry.telemetryTag ?? '—'}`);
+    lines.push(`- **Trigger:** ${entry.triggerId ?? '—'}`);
+    lines.push('');
+    lines.push(`${heading(2)} Script`);
+
+    for (const line of entry.lines) {
+      const speaker = line.speaker ? `**${line.speaker}:**` : '**Narration:**';
+      const text = line.text ?? '';
+      lines.push(`- ${speaker} ${text}`);
+      if (Array.isArray(line.choices) && line.choices.length > 0) {
+        for (const choice of line.choices) {
+          lines.push(
+            `  - Choice: ${choice.text ?? ''} → ${choice.nextNode ?? 'END'}`
+          );
+        }
+      }
+    }
+
+    lines.push('');
+  }
+
+  return lines.join('\n').trim();
+}
+
+/**
+ * Write the Act 2 branch dialogue Markdown review to disk.
+ *
+ * @param {string} outputPath
+ * @param {{ summary?: object }} [options]
+ * @returns {Promise<{ outputPath: string, dialogueCount: number }>}
+ */
+export async function writeAct2BranchDialogueMarkdown(outputPath, options = {}) {
+  if (typeof outputPath !== 'string' || outputPath.length === 0) {
+    throw new Error('[writeAct2BranchDialogueMarkdown] outputPath is required');
+  }
+
+  const summary =
+    options.summary && isDialogueSummary(options.summary)
+      ? options.summary
+      : buildAct2BranchDialogueSummary(options);
+  const markdown = renderAct2BranchDialogueMarkdown(summary, options);
+
+  const targetDir = path.dirname(outputPath);
+  await mkdir(targetDir, { recursive: true });
+  await writeFile(outputPath, `${markdown}\n`, 'utf8');
 
   return {
     outputPath,
@@ -170,4 +267,13 @@ function extractDialogueSequence(tree, options = {}) {
     nodeCount: visited.size,
     lines,
   };
+}
+
+function isDialogueSummary(candidate) {
+  return (
+    candidate &&
+    typeof candidate === 'object' &&
+    Array.isArray(candidate.dialogues) &&
+    typeof candidate.generatedAt === 'string'
+  );
 }

@@ -19,7 +19,7 @@
 | PERF-214 | P1 | Pending | Browser-level performance profiling for adaptive audio + overlay interactions to confirm <16 ms frame time budget. | Run Chromium/Firefox performance audits with combat/stealth transitions, log hotspots, and file perf follow-ups as needed. |
 | UX-173 | P1 | Pending | Improve debug audio overlay ergonomics (keyboard shortcuts, focus management). | Prototype keyboard navigation + focus traps, add Jest/Playwright coverage for accessibility interactions. |
 
-**Next Session Focus**: Swap the placeholder Act 2 Crossroads manifest (`assets/manifests/act2-crossroads-art.json`) for the bespoke art bundle, run the dialogue exporter for narrative copy sign-off, and feed captured quest telemetry through the new dashboard exporter to confirm analytics schema parity.
+**Next Session Focus**: Review the bespoke Act 2 Crossroads art bundle in-game (lighting + collision sweeps), circulate the Markdown dialogue packet with narrative/VO stakeholders for copy feedback, and exercise the telemetry dashboard exporter against fresh production captures to validate warehouse parity.
 
 _Historical session handoffs (Sessions 2–44) now live under `archive/docs/reports/` for reference._
 

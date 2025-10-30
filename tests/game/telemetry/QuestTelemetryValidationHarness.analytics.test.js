@@ -40,6 +40,7 @@ describe('QuestTelemetryValidationHarness analytics dataset', () => {
     const dataset = harness.generateAnalyticsDataset({ includeIssueDetails: true });
     expect(dataset.totalEvents).toBe(2);
     expect(dataset.events).toHaveLength(2);
+    expect(dataset.schemaVersion).toBe('1.0.0');
     expect(dataset.uniqueTelemetryTags).toEqual(
       expect.arrayContaining(['act2_branch_objective_entry', 'act2_branch_objective_exit'])
     );
@@ -63,6 +64,20 @@ describe('QuestTelemetryValidationHarness analytics dataset', () => {
     });
 
     expect(dataset.report.totalEvents).toBe(2);
+    expect(dataset.report.eventTypeCounts).toEqual(
+      expect.objectContaining({
+        'telemetry:trigger_entered': 1,
+        'telemetry:trigger_exited': 1,
+      })
+    );
+    expect(dataset.report.issues.details.missingFields).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          field: 'source',
+          eventType: 'telemetry:trigger_exited',
+        }),
+      ])
+    );
   });
 
   it('omits raw events when includeRawEvents is false', () => {

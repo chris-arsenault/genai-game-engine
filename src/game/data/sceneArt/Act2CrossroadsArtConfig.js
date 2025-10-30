@@ -1,70 +1,130 @@
-/**
- * Act 2 Crossroads art override configuration.
- * Provides a placeholder palette until bespoke art lands.
- */
 export const ACT2_CROSSROADS_ART_MANIFEST_URL =
   'assets/manifests/act2-crossroads-art.json';
 
 export const Act2CrossroadsArtConfig = Object.freeze({
-  variantId: 'placeholder_v1',
-  artist: 'Codex Placeholder',
-  updatedAt: '2025-11-06T00:00:00Z',
+  variantId: 'act2_crossroads_bespoke_overrides_v1',
+  artist: 'RenderOps Finishing Team',
+  updatedAt: '2025-11-12T12:00:00Z',
   description:
-    'Stopgap neon-laced floor accents so the Act 2 hub can preview branch signage before the final art drop.',
+    'Colour-corrected overrides tuned for the bespoke Crossroads art bundle. Maintains narrative lighting beats while giving designers scene-level knobs for story-critical callouts.',
   floors: Object.freeze([
     Object.freeze({
       id: 'crossroads_floor_safehouse',
-      color: '#101b28',
-      alpha: 0.97,
+      color: '#142031',
+      alpha: 0.98,
+      assetId: 'act2_crossroads_floor_safehouse_v1',
+      metadata: Object.freeze({
+        lightingPreset: 'safehouse_idle',
+        narrativeCue: 'safehouse_staging',
+      }),
+      tags: Object.freeze(['safehouse', 'floor']),
     }),
     Object.freeze({
       id: 'crossroads_branch_walkway',
-      color: '#0f2438',
-      alpha: 0.95,
+      color: '#182b44',
+      alpha: 0.94,
+      assetId: 'act2_crossroads_branch_walkway_v1',
+      metadata: Object.freeze({
+        lightingPreset: 'branch_idle',
+        narrativeCue: 'branch_split',
+      }),
+      tags: Object.freeze(['transition', 'floor']),
     }),
     Object.freeze({
       id: 'crossroads_selection_pad',
-      color: '#102d44',
+      color: '#0f3f6c',
       alpha: 0.9,
+      assetId: 'act2_crossroads_selection_pad_v1',
+      metadata: Object.freeze({
+        lightingPreset: 'selection_ready',
+        telemetryTag: 'act2_selection_glow',
+      }),
+      tags: Object.freeze(['selection', 'interactive']),
     }),
     Object.freeze({
       id: 'crossroads_checkpoint_plaza',
-      color: '#0b1a2a',
-      alpha: 0.94,
+      color: '#0d2134',
+      alpha: 0.92,
+      assetId: 'act2_crossroads_checkpoint_plaza_v1',
+      metadata: Object.freeze({
+        lightingPreset: 'checkpoint_idle',
+        narrativeCue: 'checkpoint_ready',
+      }),
+      tags: Object.freeze(['checkpoint', 'floor']),
     }),
   ]),
   accents: Object.freeze([
     Object.freeze({
       id: 'crossroads_selection_conduit',
-      color: '#ff9f5c',
-      alpha: 0.42,
+      color: '#ff9b45',
+      alpha: 0.48,
+      assetId: 'act2_crossroads_selection_conduit_v1',
+      metadata: Object.freeze({
+        lightingPreset: 'thread_ready',
+      }),
+      tags: Object.freeze(['selection', 'lighting']),
     }),
     Object.freeze({
       id: 'crossroads_safehouse_light_arc',
-      color: '#3b6df2',
-      alpha: 0.26,
+      color: '#2c6df0',
+      alpha: 0.32,
+      assetId: 'act2_crossroads_safehouse_arc_v1',
+      metadata: Object.freeze({
+        lightingPreset: 'safehouse_idle',
+      }),
+      tags: Object.freeze(['safehouse', 'lighting']),
+    }),
+    Object.freeze({
+      id: 'crossroads_checkpoint_glow',
+      color: '#33a1ff',
+      alpha: 0.28,
+      assetId: 'act2_crossroads_checkpoint_glow_v1',
+      metadata: Object.freeze({
+        lightingPreset: 'checkpoint_active',
+      }),
+      tags: Object.freeze(['checkpoint', 'lighting']),
     }),
   ]),
   lightColumns: Object.freeze([
     Object.freeze({
       id: 'crossroads_column_checkpoint_north',
-      color: '#54c7ff',
-      alpha: 0.46,
+      color: '#4bbfff',
+      alpha: 0.5,
+      assetId: 'act2_crossroads_column_checkpoint_north_v1',
+      metadata: Object.freeze({
+        beamProfile: 'tight',
+      }),
+      tags: Object.freeze(['checkpoint', 'column']),
     }),
     Object.freeze({
       id: 'crossroads_column_checkpoint_south',
-      color: '#54c7ff',
-      alpha: 0.46,
+      color: '#4bbfff',
+      alpha: 0.5,
+      assetId: 'act2_crossroads_column_checkpoint_south_v1',
+      metadata: Object.freeze({
+        beamProfile: 'tight',
+      }),
+      tags: Object.freeze(['checkpoint', 'column']),
     }),
     Object.freeze({
       id: 'crossroads_column_safehouse_left',
-      color: '#3a4d7f',
-      alpha: 0.5,
+      color: '#395a8f',
+      alpha: 0.52,
+      assetId: 'act2_crossroads_column_safehouse_left_v1',
+      metadata: Object.freeze({
+        beamProfile: 'soft',
+      }),
+      tags: Object.freeze(['safehouse', 'column']),
     }),
     Object.freeze({
       id: 'crossroads_column_safehouse_right',
-      color: '#3a4d7f',
-      alpha: 0.5,
+      color: '#395a8f',
+      alpha: 0.52,
+      assetId: 'act2_crossroads_column_safehouse_right_v1',
+      metadata: Object.freeze({
+        beamProfile: 'soft',
+      }),
+      tags: Object.freeze(['safehouse', 'column']),
     }),
   ]),
   boundaries: Object.freeze([
@@ -77,6 +137,11 @@ export const Act2CrossroadsArtConfig = Object.freeze({
       id: 'crossroads_boundary_east',
       color: '#050a12',
       alpha: 0.96,
+      assetId: 'act2_crossroads_boundary_east_v1',
+      metadata: Object.freeze({
+        collisionProfile: 'solid_wall',
+      }),
+      tags: Object.freeze(['boundary', 'nav_blocker']),
     }),
   ]),
 });
