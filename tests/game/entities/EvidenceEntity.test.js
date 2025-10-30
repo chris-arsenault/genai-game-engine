@@ -37,7 +37,7 @@ describe('EvidenceEntity', () => {
 
     resetBindings();
   });
-  it('preserves custom prompt that already includes a keybinding', () => {
+  it('rewrites custom prompt binding to current interact key', () => {
     const entityManager = new EntityManager();
     const componentRegistry = new ComponentRegistry(entityManager);
 
@@ -50,7 +50,26 @@ describe('EvidenceEntity', () => {
     });
 
     const interactionZone = componentRegistry.getComponent(entityId, 'InteractionZone');
-    expect(interactionZone.prompt).toBe('Press F to analyze evidence');
+    expect(interactionZone.prompt).toBe('Press E to analyze evidence');
+  });
+
+  it('applies remapped interact binding to custom prompt', () => {
+    const entityManager = new EntityManager();
+    const componentRegistry = new ComponentRegistry(entityManager);
+    setActionBindings('interact', ['KeyY']);
+
+    const entityId = createEvidenceEntity(entityManager, componentRegistry, {
+      id: 'ev_prompt_existing_dynamic',
+      x: 0,
+      y: 0,
+      title: 'Encrypted Vial',
+      prompt: 'Press F to analyze evidence',
+    });
+
+    const interactionZone = componentRegistry.getComponent(entityId, 'InteractionZone');
+    expect(interactionZone.prompt).toBe('Press Y to analyze evidence');
+
+    resetBindings();
   });
 
   it('injects interact keybinding into custom prompt when missing', () => {

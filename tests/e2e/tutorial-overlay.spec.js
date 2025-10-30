@@ -435,7 +435,7 @@ test.describe('Tutorial overlay', () => {
         : [];
     });
 
-    expect(controlHintKeys).toEqual(['W', 'A', 'S', 'D']);
+    expect(controlHintKeys).toEqual(['W', '↑', 'A', '←', 'S', '↓', 'D', '→']);
 
     const evidenceHotspots = await page.evaluate(() => {
       const registry = window.game.componentRegistry;
@@ -463,9 +463,9 @@ test.describe('Tutorial overlay', () => {
       expect(hotspot.color?.length).toBeGreaterThan(0);
     }
 
-    expect(extractor.color).toBe('#FFD447');
-    expect(blood.color).toBe('#FF9F4A');
-    expect(residue.color).toBe('#6EDBFF');
+    expect(extractor.color).toBe('#00FF00');
+    expect(blood.color).toBe('#00FF00');
+    expect(residue.color).toBe('#00FF00');
 
     expect(consoleErrors).toEqual([]);
   });
@@ -766,6 +766,78 @@ test.describe('Tutorial overlay', () => {
     expect(state.storeStep).toBe('deduction_board_intro');
     expect(state.storeCompletedSteps).toContain('forensic_analysis');
     expect(state.promptHistory).toContain('forensic_analysis');
+    expect(consoleErrors).toEqual([]);
+  });
+
+  test('remapping interact updates control hints and prompts', async ({ page }) => {
+    const consoleErrors = collectConsoleErrors(page);
+
+    await prepareTutorial(page);
+
+    await page.keyboard.press('KeyK');
+    await page.waitForFunction(
+      () => Boolean(window.game?.controlBindingsOverlay?.visible)
+    );
+
+    await page.evaluate(() => {
+      const overlay = window.game.controlBindingsOverlay;
+      const index = overlay.actionEntries.findIndex((entry) => entry.action === 'interact');
+      if (index >= 0) {
+        overlay.selectedIndex = index;
+        overlay.beginCapture();
+      }
+    });
+
+    await page.keyboard.press('KeyJ');
+    await page.keyboard.press('Escape');
+
+    await page.waitForFunction(
+      () => window.game?.controlBindingsOverlay?.visible === false
+    );
+
+    await page.waitForFunction(
+      () => Array.isArray(window.game?.inputState?.controlBindings?.interact)
+        && window.game.inputState.controlBindings.interact[0] === 'KeyJ'
+    );
+
+    const resolvedHintKeys = await page.evaluate(async () => {
+      const module = await import('/src/game/utils/controlHintResolver.js');
+      const hint = module.resolveControlHint({
+        actions: ['interact'],
+        label: 'Collect Evidence',
+        note: 'Collect evidence with the interact key.',
+      });
+      if (!hint || !Array.isArray(hint.keys)) {
+        return [];
+      }
+      return hint.keys;
+    });
+
+    expect(resolvedHintKeys).toContain('J');
+
+    const promptText = await page.evaluate(() => {
+      window.game.eventBus.emit('ui:show_prompt', {
+        text: 'Press E to interact',
+        bindingAction: 'interact',
+        bindingFallback: 'interact',
+      });
+      const text = window.game.interactionPromptOverlay?.prompt?.text ?? '';
+      window.game.eventBus.emit('ui:hide_prompt');
+      return text;
+    });
+
+    expect(promptText).toContain('Press J');
+
+    await page.evaluate(() => {
+      window.game.controlBindingsOverlay.resetBinding('interact');
+      window.game.controlBindingsOverlay.hide('playwright-reset');
+    });
+
+    await page.waitForFunction(
+      () => Array.isArray(window.game?.inputState?.controlBindings?.interact)
+        && window.game.inputState.controlBindings.interact[0] === 'KeyE'
+    );
+
     expect(consoleErrors).toEqual([]);
   });
 

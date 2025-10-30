@@ -11,6 +11,7 @@
 import { System } from '../../engine/ecs/System.js';
 import { GameConfig } from '../config/GameConfig.js';
 import { evidenceToInventoryItem } from '../state/inventory/inventoryEvents.js';
+import { hydratePromptWithBinding, formatActionPrompt } from '../utils/controlBindingPrompts.js';
 
 export class InvestigationSystem extends System {
   constructor(componentRegistry, eventBus) {
@@ -188,9 +189,15 @@ export class InvestigationSystem extends System {
           this.collectEvidence(entityId, zone.data.evidenceId);
         } else {
           if (!promptShown) {
+            const promptText = this._resolveZonePrompt(zone, zone.data?.evidenceId
+              ? `collect ${zone.data.evidenceId}`
+              : 'collect evidence');
             this.eventBus.emit('ui:show_prompt', {
-              text: zone.prompt,
-              position: { x: transform.x, y: transform.y }
+              text: promptText,
+              position: { x: transform.x, y: transform.y },
+              bindingAction: zone.promptAction ?? 'interact',
+              bindingFallback: zone.data?.evidenceId ? `collect ${zone.data.evidenceId}` : 'collect evidence',
+              source: 'investigation:evidence',
             });
             promptShown = true;
             this.promptVisible = true;
@@ -224,9 +231,14 @@ export class InvestigationSystem extends System {
           this.hideActivePrompt();
         } else {
           if (!promptShown) {
+            const npcName = zone.data?.npcId ?? zone.id ?? 'NPC';
+            const promptText = this._resolveZonePrompt(zone, `talk to ${npcName}`);
             this.eventBus.emit('ui:show_prompt', {
-              text: zone.prompt || 'Press E to talk',
-              position: { x: transform.x, y: transform.y }
+              text: promptText,
+              position: { x: transform.x, y: transform.y },
+              bindingAction: zone.promptAction ?? 'interact',
+              bindingFallback: `talk to ${npcName}`,
+              source: 'investigation:npc',
             });
             promptShown = true;
             this.promptVisible = true;
@@ -238,6 +250,20 @@ export class InvestigationSystem extends System {
     if (!promptShown && this.promptVisible) {
       this.hideActivePrompt();
     }
+  }
+
+  _resolveZonePrompt(zone, fallbackActionText = 'interact') {
+    const promptText = typeof zone?.prompt === 'string' ? zone.prompt : '';
+    const action = zone?.promptAction ?? (zone?.requiresInput ? 'interact' : null);
+    if (action) {
+      return hydratePromptWithBinding(promptText, action, {
+        fallbackActionText,
+      });
+    }
+    if (promptText.length > 0) {
+      return promptText;
+    }
+    return formatActionPrompt('interact', fallbackActionText);
   }
 
   /**

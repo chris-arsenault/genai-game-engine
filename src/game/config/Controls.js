@@ -30,6 +30,9 @@ export const Controls = {
   quest: ['KeyQ'], // Open quest log
   saveInspector: ['KeyO'], // Toggle SaveManager inspector overlay
 
+  // Control bindings
+  controlsMenu: ['KeyK'], // Open control remap UI
+
   // Detective abilities
   detectiveVision: ['KeyV'], // Activate detective vision
   forensicAnalysis: ['KeyF'], // Analyze evidence

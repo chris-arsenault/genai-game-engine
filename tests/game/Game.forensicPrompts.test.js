@@ -69,7 +69,7 @@ describe('Game forensic prompt formatting', () => {
       })),
     };
 
-    const text = game._buildForensicPromptText({
+    const prompt = game._buildForensicPromptText({
       evidenceId: 'evidence_encoded_ledgers',
       forensicType: 'document',
       requirements: {
@@ -79,7 +79,8 @@ describe('Game forensic prompt formatting', () => {
       },
     });
 
-    expect(text).toContain('Press F to run forensic analysis (Document Analysis): Encoded Ledgers');
-    expect(text).toContain('Requires Tool: Document Scanner · Skill: Forensic Skill I · Difficulty: Routine (I)');
+    expect(prompt.fallbackActionText).toBe('run forensic analysis (Document Analysis): Encoded Ledgers');
+    expect(prompt.text).toContain('Press F to run forensic analysis (Document Analysis): Encoded Ledgers');
+    expect(prompt.text).toContain('Requires Tool: Document Scanner · Skill: Forensic Skill I · Difficulty: Routine (I)');
   });
 });

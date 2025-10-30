@@ -48,6 +48,7 @@ import { CaseFileUI } from './ui/CaseFileUI.js';
 import { DeductionBoard } from './ui/DeductionBoard.js';
 import { CrossroadsBranchLandingOverlay } from './ui/CrossroadsBranchLandingOverlay.js';
 import { InventoryOverlay } from './ui/InventoryOverlay.js';
+import { ControlBindingsOverlay } from './ui/ControlBindingsOverlay.js';
 import { AudioFeedbackController } from './audio/AudioFeedbackController.js';
 import { SFXCatalogLoader } from './audio/SFXCatalogLoader.js';
 import { AdaptiveMoodEmitter } from './audio/AdaptiveMoodEmitter.js';
@@ -94,6 +95,8 @@ import { loadAct2PersonalInvestigationScene } from './scenes/Act2PersonalInvesti
 // Configuration
 import { GameConfig } from './config/GameConfig.js';
 import { InputState } from './config/Controls.js';
+import { subscribe as subscribeControlBindings } from './state/controlBindingsStore.js';
+import { formatActionPrompt } from './utils/controlBindingPrompts.js';
 
 // Components
 import { Transform } from './components/Transform.js';
@@ -215,6 +218,7 @@ export class Game {
     this.questNotification = null;
     this.crossroadsBranchOverlay = null;
     this.inventoryOverlay = null;
+    this.controlBindingsOverlay = null;
     this.interactionPromptOverlay = null;
     this.movementIndicatorOverlay = null;
     this.caseFileUI = null;
@@ -240,6 +244,7 @@ export class Game {
 
     // Event unsubscriber storage
     this._offGameEventHandlers = [];
+    this._unsubscribeControlBindings = null;
 
     // Engine frame hook cleanup
     this._detachFrameHooks = null;
@@ -293,6 +298,14 @@ export class Game {
 
     // Load initial scene (Act 1: The Hollow Case)
     await this.loadAct1Scene();
+
+    if (!this._unsubscribeControlBindings) {
+      this._unsubscribeControlBindings = subscribeControlBindings(() => {
+        if (this._activeForensicPrompt) {
+          this._renderActiveForensicPrompt();
+        }
+      });
+    }
 
     this.loaded = true;
 
@@ -875,6 +888,14 @@ export class Game {
       }
     );
     this.inventoryOverlay.init();
+
+    // Create control bindings overlay
+    this.controlBindingsOverlay = new ControlBindingsOverlay(
+      this.engine.canvas,
+      this.eventBus,
+      {}
+    );
+    this.controlBindingsOverlay.init();
 
     // Create interaction prompt overlay (HUD)
     this.interactionPromptOverlay = new InteractionPromptOverlay(
@@ -1595,6 +1616,7 @@ export class Game {
       reputation: 'Reputation UI',
       tutorial: 'Tutorial Overlay',
       saveInspector: 'Save Inspector',
+      controlBindings: 'Control Bindings Overlay',
     };
 
     this._offGameEventHandlers.push(this.eventBus.on('ui:overlay_visibility_changed', (data) => {
@@ -1627,6 +1649,12 @@ export class Game {
       }
       this._loadActiveCaseIntoUI();
       this.caseFileUI.toggle('input:caseFile');
+    }));
+
+    this._offGameEventHandlers.push(this.eventBus.on('input:controlsMenu:pressed', () => {
+      if (this.controlBindingsOverlay) {
+        this.controlBindingsOverlay.toggle('input:controlsMenu');
+      }
     }));
 
     // Evidence events
@@ -1992,10 +2020,12 @@ export class Game {
       return;
     }
 
-    const text = this._buildForensicPromptText(this._activeForensicPrompt);
+    const promptInfo = this._buildForensicPromptText(this._activeForensicPrompt);
     const promptPayload = {
-      text,
-      source: 'forensic_prompt'
+      text: promptInfo.text,
+      source: 'forensic_prompt',
+      bindingAction: 'forensicAnalysis',
+      bindingFallback: promptInfo.fallbackActionText,
     };
 
     const worldPosition = this._getEvidenceWorldPosition(this._activeForensicPrompt.evidenceId);
@@ -2022,8 +2052,9 @@ export class Game {
       }
     }
 
+    const fallbackActionText = `run forensic analysis${forensicLabel}: ${evidenceTitle}`;
     const lines = [
-      `Press F to run forensic analysis${forensicLabel}: ${evidenceTitle}`
+      formatActionPrompt('forensicAnalysis', fallbackActionText)
     ];
 
     if (requirementText) {
@@ -2037,7 +2068,10 @@ export class Game {
       }
     }
 
-    return lines.join('\n');
+    return {
+      text: lines.join('\n'),
+      fallbackActionText,
+    };
   }
 
   _formatForensicRequirements(requirements) {
@@ -2358,6 +2392,9 @@ export class Game {
     if (this.inventoryOverlay) {
       this.inventoryOverlay.update(deltaTime);
     }
+    if (this.controlBindingsOverlay) {
+      this.controlBindingsOverlay.update(deltaTime);
+    }
     if (this.dialogueBox) {
       this.dialogueBox.update(deltaTime * 1000);
     }
@@ -2636,6 +2673,23 @@ export class Game {
         visible: Boolean(indicator),
         summary: indicator ? `ttl=${indicator.ttl?.toFixed?.(2) ?? indicator.ttl}` : 'inactive',
         metadata: {},
+      });
+    }
+
+    if (this.controlBindingsOverlay) {
+      const visible = typeof this.controlBindingsOverlay.isVisible === 'function'
+        ? this.controlBindingsOverlay.isVisible()
+        : Boolean(this.controlBindingsOverlay.visible);
+      overlays.push({
+        id: 'controlBindings',
+        label: 'Control Bindings',
+        visible,
+        summary: visible
+          ? (this.controlBindingsOverlay.captureAction ? 'remapping input' : 'open')
+          : 'closed',
+        metadata: {
+          capturing: Boolean(this.controlBindingsOverlay.capturing),
+        },
       });
     }
 
@@ -3014,9 +3068,14 @@ export class Game {
       this.saveInspectorOverlay.render();
     }
 
-    // Render tutorial overlay (kept highest priority)
+    // Render tutorial overlay (kept highest priority for in-world guidance)
     if (this.tutorialOverlay) {
       this.tutorialOverlay.render(ctx);
+    }
+
+    // Modal control bindings overlay renders last to sit above other HUD layers
+    if (this.controlBindingsOverlay) {
+      this.controlBindingsOverlay.render(ctx);
     }
   }
 
@@ -3044,6 +3103,11 @@ export class Game {
     if (typeof this._detachFrameHooks === 'function') {
       this._detachFrameHooks();
       this._detachFrameHooks = null;
+    }
+
+    if (typeof this._unsubscribeControlBindings === 'function') {
+      this._unsubscribeControlBindings();
+      this._unsubscribeControlBindings = null;
     }
 
     this._clearForensicPromptState({ hidePrompt: true });
@@ -3075,6 +3139,9 @@ export class Game {
     }
     if (this.inventoryOverlay && this.inventoryOverlay.cleanup) {
       this.inventoryOverlay.cleanup();
+    }
+    if (this.controlBindingsOverlay && this.controlBindingsOverlay.cleanup) {
+      this.controlBindingsOverlay.cleanup();
     }
     if (this.interactionPromptOverlay && this.interactionPromptOverlay.cleanup) {
       this.interactionPromptOverlay.cleanup();

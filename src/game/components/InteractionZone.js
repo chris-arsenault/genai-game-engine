@@ -14,6 +14,27 @@
  * @property {boolean} used - Whether one-shot interaction has been used
  * @property {boolean} triggered - Whether the zone has emitted its trigger event
  * @property {Object} data - Type-specific interaction data
+ * @property {string|null} promptAction - Control binding action id associated with the prompt
+
+import { formatActionPrompt } from '../utils/controlBindingPrompts.js';
+
+/**
+ * InteractionZone Component
+ *
+ * Interactable area that triggers when player enters/presses interact key.
+ * Used for evidence collection, NPC dialogue, area transitions.
+ *
+ * @property {string} id - Interaction identifier
+ * @property {string} type - Interaction type ('evidence', 'dialogue', 'transition', 'trigger')
+ * @property {number} radius - Interaction radius in pixels
+ * @property {boolean} requiresInput - Whether interaction needs E key press or is automatic
+ * @property {string} prompt - Prompt text shown to player (e.g., "Press E to examine")
+ * @property {boolean} active - Whether zone is currently active
+ * @property {boolean} oneShot - If true, can only interact once
+ * @property {boolean} used - Whether one-shot interaction has been used
+ * @property {boolean} triggered - Whether the zone has emitted its trigger event
+ * @property {Object} data - Type-specific interaction data
+ * @property {string|null} promptAction - Control binding action id associated with the prompt
  */
 export class InteractionZone {
   constructor({
@@ -21,7 +42,8 @@ export class InteractionZone {
     type = 'trigger',
     radius = 64,
     requiresInput = true,
-    prompt = 'Press E to interact',
+    prompt = null,
+    promptAction = null,
     active = true,
     oneShot = false,
     used = false,
@@ -32,7 +54,10 @@ export class InteractionZone {
     this.type = type;
     this.radius = radius;
     this.requiresInput = requiresInput;
-    this.prompt = prompt;
+    this.prompt = typeof prompt === 'string' && prompt.length
+      ? prompt
+      : formatActionPrompt('interact', 'interact');
+    this.promptAction = promptAction ?? (requiresInput ? 'interact' : null);
     this.active = active;
     this.oneShot = oneShot;
     this.used = used;

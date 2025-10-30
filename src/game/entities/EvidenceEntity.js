@@ -11,9 +11,7 @@ import { Evidence } from '../components/Evidence.js';
 import { InteractionZone } from '../components/InteractionZone.js';
 import { Collider } from '../components/Collider.js';
 import { ForensicEvidence } from '../components/ForensicEvidence.js';
-import { Controls } from '../config/Controls.js';
-import { formatKeyLabels } from '../utils/controlLabels.js';
-import { getActionBindings } from '../state/controlBindingsStore.js';
+import { formatActionPrompt, hydratePromptWithBinding } from '../utils/controlBindingPrompts.js';
 
 function shouldLog() {
   if (typeof __DEV__ !== 'undefined') {
@@ -114,6 +112,7 @@ export function createEvidenceEntity(entityManager, componentRegistry, evidenceD
     radius: 48,
     requiresInput: true,
     prompt: interactionPrompt,
+    promptAction: 'interact',
     active: true,
     oneShot: true,
     data: {
@@ -157,40 +156,28 @@ function getEvidenceColor(type) {
 
 function buildInteractionPrompt(customPrompt, title) {
   const basePrompt = typeof customPrompt === 'string' ? customPrompt.trim() : '';
-  if (basePrompt.length > 0 && /press\s+[^\s]+\s+to/i.test(basePrompt)) {
-    return basePrompt;
-  }
-
-  const controlLabels = getInteractControlLabels();
   const actionText = normalizeActionText(basePrompt, title);
-  return `Press ${controlLabels} to ${actionText}`;
-}
 
-function getInteractControlLabels() {
-  const dynamicBindings = getActionBindings('interact');
-  const fallbackBindings = Array.isArray(Controls?.interact) ? Controls.interact : ['KeyE'];
-  const bindingCodes =
-    Array.isArray(dynamicBindings) && dynamicBindings.length > 0 ? dynamicBindings : fallbackBindings;
-  const labels = formatKeyLabels(bindingCodes.length > 0 ? bindingCodes : fallbackBindings);
-
-  if (labels.length === 0) {
-    return 'E';
+  if (basePrompt.length > 0 && /press\s+[^\s]+\s+to/i.test(basePrompt)) {
+    return hydratePromptWithBinding(basePrompt, 'interact', {
+      fallbackActionText: actionText,
+    });
   }
 
-  if (labels.length === 1) {
-    return labels[0];
+  if (basePrompt.length > 0) {
+    return formatActionPrompt('interact', actionText);
   }
 
-  return labels.join(' / ');
+  return formatActionPrompt('interact', actionText);
 }
 
 function normalizeActionText(customPrompt, title) {
   const fallback = title ? `collect ${title}` : 'interact';
   const source = customPrompt.length > 0 ? customPrompt : fallback;
   const trimmed = source.replace(/[.?!]+$/, '');
-  const withoutLeadingTo = trimmed.replace(/^to\s+/i, '');
+  const withoutLeadingTo = trimmed.replace(/^press\s+[^\s]+\s+to\s+/i, '').replace(/^to\s+/i, '');
   if (withoutLeadingTo.length === 0) {
-    return 'interact';
+    return fallback;
   }
   return withoutLeadingTo.charAt(0).toLowerCase() + withoutLeadingTo.slice(1);
 }

@@ -39,6 +39,23 @@
 - Expanded Jest coverage across the new store, state slices, view model, and tutorial/evidence modules, plus added Playwright assertions verifying keycap rendering and hotspot brightness.
 - Next steps: surface a player-facing keybinding remap UI and broadcast binding updates to other overlays (interaction prompts, detective vision HUD, etc.).
 
+### Session #131 Backlog Updates
+
+#### QA-330: Stabilize Tutorial Overlay Playwright Bootstrap
+- Added a dedicated `tms:bootstrap-ready` event and data attributes in `src/main.js`, letting Playwright wait on a deterministic signal instead of timing out on `window.game`.
+- Hardened `waitForGameLoad` to check the new readiness markers, eliminating flaky tutorial overlay runs.
+- Verification: `npm test`, `npx playwright test tests/e2e/tutorial-overlay.spec.js`.
+
+#### INPUT-311: In-Game Keybinding Remap UI
+- Implemented `ControlBindingsOverlay`, a canvas modal that lists actions, handles remap/reset flows, and surfaces conflicts via the control binding store.
+- Wired the overlay into `Game` with a new `controlsMenu` action (`KeyK`), plus Jest coverage under `tests/game/ui/ControlBindingsOverlay.test.js` and extended E2E to exercise the remap flow.
+- Verification: `npm test`, `npx playwright test tests/e2e/tutorial-overlay.spec.js`.
+
+#### INPUT-312: Overlay Binding Sync Propagation
+- Refactored interaction prompt plumbing to hydrate key labels from the store; prompts now include `bindingAction` metadata and refresh when bindings change.
+- Subscribed forensic prompts and the InteractionPromptOverlay to binding updates so active HUD text and tutorial hints always reflect remapped keys.
+- Verification: `npm test`, `npx playwright test tests/e2e/tutorial-overlay.spec.js`.
+
 ### Session #124 Backlog Updates
 
 #### M1-002 / M1-012: ECS/Narrative Integrations

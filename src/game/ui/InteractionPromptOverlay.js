@@ -6,6 +6,8 @@
  */
 import { emitOverlayVisibility } from './helpers/overlayEvents.js';
 import { overlayTheme, withOverlayTheme } from './theme/overlayTheme.js';
+import { hydratePromptWithBinding } from '../utils/controlBindingPrompts.js';
+import { subscribe as subscribeControlBindings } from '../state/controlBindingsStore.js';
 export class InteractionPromptOverlay {
   constructor(canvas, eventBus, camera, options = {}) {
     this.canvas = canvas;
@@ -37,6 +39,10 @@ export class InteractionPromptOverlay {
 
     this._unbindShow = null;
     this._unbindHide = null;
+    this._unsubscribeBindings = null;
+    this.bindingAction = null;
+    this.bindingFallback = 'interact';
+    this.basePrompt = '';
   }
 
   init() {
@@ -45,6 +51,11 @@ export class InteractionPromptOverlay {
     });
     this._unbindHide = this.eventBus.on('ui:hide_prompt', () => {
       this.hidePrompt();
+    });
+    this._unsubscribeBindings = subscribeControlBindings(() => {
+      if (this.visible && this.bindingAction) {
+        this._refreshPromptBinding();
+      }
     });
   }
 
@@ -55,8 +66,16 @@ export class InteractionPromptOverlay {
 
     const wasVisible = this.visible;
 
+    this.basePrompt = typeof data.text === 'string' ? data.text : '';
+    this.bindingAction = typeof data.bindingAction === 'string' && data.bindingAction.length
+      ? data.bindingAction
+      : null;
+    this.bindingFallback = typeof data.bindingFallback === 'string' && data.bindingFallback.length
+      ? data.bindingFallback
+      : 'interact';
+
     this.prompt = {
-      text: data.text,
+      text: this._resolvePromptText(),
       worldPosition: data.position ? { ...data.position } : null
     };
 
@@ -66,7 +85,7 @@ export class InteractionPromptOverlay {
     if (!wasVisible) {
       emitOverlayVisibility(this.eventBus, 'interactionPrompt', true, {
         source: data?.source ?? 'showPrompt',
-        text: data.text,
+        text: this.prompt.text,
       });
     }
   }
@@ -79,6 +98,9 @@ export class InteractionPromptOverlay {
     const wasVisible = this.visible;
     this.visible = false;
     this.targetAlpha = 0;
+    this.bindingAction = null;
+    this.bindingFallback = 'interact';
+    this.basePrompt = '';
 
     if (wasVisible) {
       emitOverlayVisibility(this.eventBus, 'interactionPrompt', false, {
@@ -198,6 +220,26 @@ export class InteractionPromptOverlay {
       this._unbindHide();
       this._unbindHide = null;
     }
+    if (typeof this._unsubscribeBindings === 'function') {
+      this._unsubscribeBindings();
+      this._unsubscribeBindings = null;
+    }
+  }
+
+  _resolvePromptText() {
+    if (!this.bindingAction) {
+      return this.basePrompt;
+    }
+    return hydratePromptWithBinding(this.basePrompt, this.bindingAction, {
+      fallbackActionText: this.bindingFallback,
+    });
+  }
+
+  _refreshPromptBinding() {
+    if (!this.prompt) {
+      return;
+    }
+    this.prompt.text = this._resolvePromptText();
   }
 
   _wrapText(ctx, text, maxWidth) {

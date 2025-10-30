@@ -332,7 +332,9 @@ describe('InvestigationSystem', () => {
       expect(mockEventBus.emit).toHaveBeenCalledWith(
         'ui:show_prompt',
         expect.objectContaining({
-          text: 'Press E to talk'
+          text: 'Press E to talk',
+          bindingAction: 'interact',
+          bindingFallback: 'talk to dialogue_vendor',
         })
       );
     });

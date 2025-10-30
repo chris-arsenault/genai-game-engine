@@ -44,6 +44,29 @@ window.addEventListener('DOMContentLoaded', async () => {
     window.engine = engine;
     window.game = game;
     window.worldStateStore = game.worldStateStore;
+
+    // Mark bootstrap readiness for automation harnesses
+    const bootstrapDetail = {
+      ready: true,
+      timestamp: Date.now(),
+      version:
+        (typeof import.meta !== 'undefined' && import.meta?.env?.VITE_APP_VERSION) ||
+        (typeof process !== 'undefined' && process.env?.npm_package_version) ||
+        'dev',
+    };
+    window.__tmsBootstrap = bootstrapDetail;
+    try {
+      window.dispatchEvent(new CustomEvent('tms:bootstrap-ready', { detail: bootstrapDetail }));
+    } catch (error) {
+      console.warn('[Main] Unable to dispatch bootstrap-ready event', error);
+    }
+  }
+
+  if (canvas) {
+    canvas.dataset.ready = 'true';
+  }
+  if (document && document.body) {
+    document.body.setAttribute('data-game-ready', 'true');
   }
 
   // Hide loading screen
