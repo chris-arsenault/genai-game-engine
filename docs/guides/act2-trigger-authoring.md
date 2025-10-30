@@ -33,3 +33,13 @@ zones.
 Refer to `docs/plans/quest-trigger-migration-plan.md` for the broader migration
 strategy and acceptance criteria.
 
+## Current Implementation Status
+
+- `src/game/scenes/Act2CrossroadsScene.js` scaffolds the hub space and attaches all
+  three registry definitions via `TriggerMigrationToolkit`. The scene emits a
+  `scene:loaded` event with the created trigger entities for downstream systems.
+- Regression coverage lives in `tests/game/scenes/Act2CrossroadsScene.triggers.test.js`,
+  asserting quest metadata (`branchingChoice`, `telemetryTag`, `worldFlag`) and ensuring
+  the registry records the triggers as migrated.
+- Designer prompts now flow from the registry definitions, so UI tooling can bind to
+  the same IDs that analytics expects (`ACT2_CROSSROADS_TRIGGER_DEFINITIONS`).

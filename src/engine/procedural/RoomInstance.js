@@ -31,6 +31,10 @@ export class RoomInstance {
     this.rotation = config.rotation || 0;
     this.width = typeof config.width === 'number' ? config.width : null;
     this.height = typeof config.height === 'number' ? config.height : null;
+    this.templateWidth = typeof config.templateWidth === 'number' ? config.templateWidth : null;
+    this.templateHeight = typeof config.templateHeight === 'number' ? config.templateHeight : null;
+    this.layoutWidth = typeof config.layoutWidth === 'number' ? config.layoutWidth : null;
+    this.layoutHeight = typeof config.layoutHeight === 'number' ? config.layoutHeight : null;
 
     /** @type {Map<string, string>} Door ID -> connected room ID */
     this.doors = new Map();

@@ -301,10 +301,12 @@ export class EntityPopulator {
   /**
    * Gets position near room center with some variation
    * @private
-   */
+  */
   _getRoomCenterPosition(room, rng) {
-    const centerX = room.x + (room.width || 10) / 2;
-    const centerY = room.y + (room.height || 10) / 2;
+    const width = room.layoutWidth ?? room.width ?? 10;
+    const height = room.layoutHeight ?? room.height ?? 10;
+    const centerX = room.x + width / 2;
+    const centerY = room.y + height / 2;
 
     // Add random offset within room bounds
     const offsetX = rng.nextInt(-2, 3);
@@ -322,6 +324,8 @@ export class EntityPopulator {
    */
   _getRoomCornerPosition(room, rng) {
     const margin = 2;
+    const width = room.layoutWidth ?? room.width ?? 10;
+    const height = room.layoutHeight ?? room.height ?? 10;
     const corner = rng.choice(['top-left', 'top-right', 'bottom-left', 'bottom-right']);
 
     let x, y;
@@ -331,16 +335,16 @@ export class EntityPopulator {
         y = room.y + margin;
         break;
       case 'top-right':
-        x = room.x + (room.width || 10) - margin;
+        x = room.x + width - margin;
         y = room.y + margin;
         break;
       case 'bottom-left':
         x = room.x + margin;
-        y = room.y + (room.height || 10) - margin;
+        y = room.y + height - margin;
         break;
       case 'bottom-right':
-        x = room.x + (room.width || 10) - margin;
-        y = room.y + (room.height || 10) - margin;
+        x = room.x + width - margin;
+        y = room.y + height - margin;
         break;
     }
 

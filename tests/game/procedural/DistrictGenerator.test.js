@@ -46,7 +46,7 @@ describe('DistrictGenerator', () => {
       room.height = 2;
       room.tilemap = tilemap;
 
-      const finalTilemap = generator._buildFinalTilemap([room], roomData, []);
+      const { tilemap: finalTilemap } = generator._buildFinalTilemap([room], roomData, []);
 
       expect(finalTilemap.getTile(0, 0)).toBe(TileType.DOOR);
       expect(finalTilemap.getTile(1, 0)).toBe(TileType.FLOOR);
@@ -259,10 +259,13 @@ describe('DistrictGenerator', () => {
       const result = generator.generate(12345, 'mixed');
 
       for (const room of result.rooms) {
+        const layoutWidth = room.layoutWidth ?? room.width;
+        const layoutHeight = room.layoutHeight ?? room.height;
+
         expect(room.x).toBeGreaterThanOrEqual(0);
         expect(room.y).toBeGreaterThanOrEqual(0);
-        expect(room.x + room.width).toBeLessThanOrEqual(generator.config.districtSize.width);
-        expect(room.y + room.height).toBeLessThanOrEqual(generator.config.districtSize.height);
+        expect(room.x + layoutWidth).toBeLessThanOrEqual(generator.config.districtSize.width);
+        expect(room.y + layoutHeight).toBeLessThanOrEqual(generator.config.districtSize.height);
       }
     });
 

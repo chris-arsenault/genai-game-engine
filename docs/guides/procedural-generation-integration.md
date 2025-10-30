@@ -1037,6 +1037,8 @@ function visualizeDistrict(district) {
 Procedurally generated rooms now rotate cleanly across the pipeline.
 
 - `DistrictGenerator` selects from `config.rotationAngles` (default `[0, 90, 180, 270]`). Template dimensions stay intact while `layoutWidth` / `layoutHeight` track the rotated bounding box used for force-directed placement and spacing.
+- `RoomInstance` now stores these layout dimensions directly (`room.layoutWidth`, `room.layoutHeight`), and downstream systems fall back to them before the template width/height when calculating spawn positions.
+- A light-weight overlap resolver runs after the force-directed pass, nudging intersecting rooms apart and clamping them back inside the district bounds. `tests/game/procedural/DistrictGenerator.test.js` guards the “major overlap” rate (<5% of pairs) so regressions surface quickly.
 - `RoomInstance` keeps both template dimensions and the assigned `rotation`. Use `room.getBounds(room.width, room.height)` to obtain rotation-aware world bounds—corridor generation, containment checks, and placement heuristics now rely on these helpers.
 - Corridor endpoints are derived from the rotated bounds so hallway tiles always begin and end inside the source/target room. See `tests/game/procedural/DistrictGenerator.test.js` for regression coverage.
 - Disable rotation by configuring `rotationAngles: [0]`, or limit to `[0, 180]` for templates that only support horizontal flips.

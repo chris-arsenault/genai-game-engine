@@ -189,6 +189,9 @@ export class DistrictGenerator {
     // Create room instances with positions
     const rooms = this._createRoomInstances(graph, roomData, positions);
 
+    // Resolve any remaining overlaps introduced by rounding or force settling
+    this._resolveRoomOverlaps(rooms, roomData);
+
     // Create connecting corridors/streets
     const corridors = this._createConnections(graph, rooms, this.rng);
 
@@ -639,6 +642,8 @@ export class DistrictGenerator {
       // Store room data for later use
       instance.width = data.width;
       instance.height = data.height;
+      instance.layoutWidth = data.layoutWidth ?? data.width;
+      instance.layoutHeight = data.layoutHeight ?? data.height;
       instance.tilemap = data.tilemap;
       instance.roomType = node.data.roomType || node.type;
       instance.type = instance.roomType;
@@ -647,6 +652,91 @@ export class DistrictGenerator {
     }
 
     return rooms;
+  }
+
+  _resolveRoomOverlaps(rooms, roomData) {
+    if (!Array.isArray(rooms) || rooms.length <= 1) {
+      return;
+    }
+
+    const maxIterations = 16;
+    const spacing = Math.max(0, this.config.minRoomSpacing || 0);
+    const maxWidth = this.config.districtSize.width;
+    const maxHeight = this.config.districtSize.height;
+
+    const clampRoom = (room, data) => {
+      const layoutWidth = data.layoutWidth ?? data.width ?? 0;
+      const layoutHeight = data.layoutHeight ?? data.height ?? 0;
+      room.x = Math.max(0, Math.min(room.x, maxWidth - layoutWidth));
+      room.y = Math.max(0, Math.min(room.y, maxHeight - layoutHeight));
+    };
+
+    for (let iteration = 0; iteration < maxIterations; iteration++) {
+      let overlapsResolved = false;
+
+      for (let i = 0; i < rooms.length; i++) {
+        const roomA = rooms[i];
+        const dataA = roomData.get(roomA.id);
+        if (!dataA) {
+          continue;
+        }
+        const boundsA = roomA.getBounds(dataA.width, dataA.height);
+        const centerAx = boundsA.x + boundsA.width / 2;
+        const centerAy = boundsA.y + boundsA.height / 2;
+
+        for (let j = i + 1; j < rooms.length; j++) {
+          const roomB = rooms[j];
+          const dataB = roomData.get(roomB.id);
+          if (!dataB) {
+            continue;
+          }
+          const boundsB = roomB.getBounds(dataB.width, dataB.height);
+          const centerBx = boundsB.x + boundsB.width / 2;
+          const centerBy = boundsB.y + boundsB.height / 2;
+
+          const overlapX =
+            boundsA.width / 2 +
+            boundsB.width / 2 +
+            spacing -
+            Math.abs(centerAx - centerBx);
+          const overlapY =
+            boundsA.height / 2 +
+            boundsB.height / 2 +
+            spacing -
+            Math.abs(centerAy - centerBy);
+
+          if (overlapX > 0 && overlapY > 0) {
+            overlapsResolved = true;
+            if (overlapX < overlapY) {
+              const shift = Math.max(1, Math.ceil(overlapX / 2));
+              if (centerAx <= centerBx) {
+                roomA.x -= shift;
+                roomB.x += shift;
+              } else {
+                roomA.x += shift;
+                roomB.x -= shift;
+              }
+            } else {
+              const shift = Math.max(1, Math.ceil(overlapY / 2));
+              if (centerAy <= centerBy) {
+                roomA.y -= shift;
+                roomB.y += shift;
+              } else {
+                roomA.y += shift;
+                roomB.y -= shift;
+              }
+            }
+
+            clampRoom(roomA, dataA);
+            clampRoom(roomB, dataB);
+          }
+        }
+      }
+
+      if (!overlapsResolved) {
+        break;
+      }
+    }
   }
 
   /**

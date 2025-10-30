@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Act 2 Crossroads hub scaffolding with registry-backed triggers, scene loader, and Jest coverage for branching metadata (`src/game/scenes/Act2CrossroadsScene.js`, `tests/game/scenes/Act2CrossroadsScene.triggers.test.js`, `docs/guides/act2-trigger-authoring.md`).
+- Telemetry summary post-step that appends markdown + GitHub warnings during CI runs (`scripts/telemetry/postPerformanceSummary.js`, `.github/workflows/ci.yml`, `docs/performance/performance-baseline-guardrails.md`).
 - Game coordinator now instantiates the shared `AdaptiveMusic` orchestrator, exposes mood helpers on the EventBus, and drives scheduled reverts via the main update loop ( `src/game/Game.js`, `tests/game/audio/GameAudioTelemetry.test.js`).
 - Trigger authoring schema layers `Trigger` components over `InteractionZone` authoring, wiring Memory Parlor restricted areas and quest triggers to `area:entered` / `area:exited` payloads with new QuestSystem coverage (`src/game/scenes/MemoryParlorScene.js`, `src/game/systems/QuestSystem.js`, `tests/game/systems/QuestSystem.trigger.test.js`, `docs/tech/trigger-authoring.md`).
 - DistrictGenerator now selects rotation angles, stores rotated layout bounds, and validates corridor endpoints against rotated rooms, ensuring RoomInstance containment helpers stay accurate (`src/game/procedural/DistrictGenerator.js`, `tests/game/procedural/DistrictGenerator.test.js`).
@@ -72,6 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Expanded inventory coverage to include quantity delta reducers, SaveManager inventory autosave throttling, and end-to-end inventory persistence (`tests/game/state/inventorySlice.test.js`, `tests/game/managers/SaveManager.test.js`, `tests/game/Game.uiOverlays.test.js`).
 
 ### Changed
+- `scripts/telemetry/performanceSnapshot.js` now runs a BSP warm-up iteration outside recorded metrics, eliminating first-sample spikes and keeping baseline peaks under the 10 ms cap (`scripts/telemetry/performanceSnapshot.js`, `docs/performance/performance-baseline-latest.md`).
 - CI Playwright job now emits HTML reports and compressed trace artifacts for flake triage (`.github/workflows/ci.yml`).
 - Game reuses the active player entity when Memory Parlor escape completes, automatically returning to Act 1 on `obj_escape_parlor` while maintaining camera alignment (`src/game/Game.js`, `src/game/scenes/Act1Scene.js`).
 - InvestigationSystem now records externally emitted knowledge events so scene scripts that emit `knowledge:learned` stay in sync with the player's knowledge ledger (`src/game/systems/InvestigationSystem.js`).
