@@ -33,6 +33,8 @@
 - Mirror changes from the MCP backlog back to `docs/plans/backlog.md` only after the MCP items are updated so the markdown file remains a read-friendly reflection of the canonical MCP records.
 - Ignore artifacts stored under `archive/` unless explicitly asked to reference historical materials; do not modify archived files during active tasks.
 
+**Non-negotiable:** - Focus on implementing new content, new features, unit tests, and e2e tests. Do not work on unnecessary telemetry or CI processes.  Focus on closing existing workstreams instead of extending with new acceptance criteria.
+
 ### Command & Editing Practices
 - Keep edits ASCII unless the target file already uses other encodings.
 - Avoid destructive git commands (`git reset --hard`, `git checkout --`) unless the user explicitly directs otherwise.

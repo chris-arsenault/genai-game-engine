@@ -384,6 +384,7 @@ export class Game {
       tutorialSystem: null, // Will be set after tutorial system is created
       worldStateStore: this.worldStateStore,
       tutorialTranscriptRecorder: this.tutorialTranscriptRecorder,
+      controlBindingsObservationProvider: () => this.getControlBindingsObservationSummary(),
     });
     this.saveManager.init();
     console.log('[Game] SaveManager initialized');

@@ -75,6 +75,11 @@ describe('ControlBindingsObservationLog', () => {
     expect(summary.actionsRemapped).toContain('interact');
     expect(summary.listModesVisited).toContain('alphabetical');
     expect(summary.totalEvents).toBe(6);
+    expect(summary.dwell.count).toBe(0);
+    expect(summary.ratios.selectionBlocked.numerator).toBe(1);
+    expect(summary.ratios.selectionBlocked.denominator).toBe(2);
+    expect(summary.ratios.pageNavigationBlocked.numerator).toBe(1);
+    expect(summary.ratios.pageNavigationBlocked.denominator).toBe(1);
   });
 
   it('resets collected events and metrics', () => {
@@ -87,5 +92,67 @@ describe('ControlBindingsObservationLog', () => {
     expect(summary.totalEvents).toBe(0);
     expect(summary.metrics.selectionMoves).toBe(0);
     expect(summary.actionsVisited.length).toBe(0);
+  });
+
+  it('computes dwell metrics and navigation ratios', () => {
+    const log = new ControlBindingsObservationLog();
+    const start = Date.now();
+
+    log.record(baseEvent({
+      event: 'selection_move',
+      changed: true,
+      timestamp: start,
+      previousAction: null,
+      nextAction: 'moveDown',
+    }));
+
+    log.record(baseEvent({
+      event: 'selection_move',
+      changed: true,
+      timestamp: start + 1200,
+      previousAction: 'moveDown',
+      nextAction: 'interact',
+    }));
+
+    log.record(baseEvent({
+      event: 'selection_move',
+      changed: true,
+      timestamp: start + 3200,
+      previousAction: 'interact',
+      nextAction: 'inventory',
+    }));
+
+    log.record(baseEvent({
+      event: 'selection_move',
+      changed: false,
+      timestamp: start + 3300,
+    }));
+
+    log.record(baseEvent({
+      event: 'page_navigate',
+      changed: true,
+      timestamp: start + 3400,
+    }));
+
+    log.record(baseEvent({
+      event: 'page_navigate',
+      changed: false,
+      timestamp: start + 3500,
+    }));
+
+    const summary = log.getSummary();
+    expect(summary.dwell.count).toBe(2);
+    expect(summary.dwell.averageMs).toBe(1600);
+    expect(summary.dwell.averageLabel).toBe('1s 600ms');
+    expect(summary.dwell.maxMs).toBe(2000);
+    expect(summary.dwell.lastMs).toBe(2000);
+    expect(summary.dwell.lastAction).toBe('interact');
+    expect(summary.dwell.longestAction).toBe('interact');
+    expect(summary.ratios.selectionBlocked.numerator).toBe(1);
+    expect(summary.ratios.selectionBlocked.denominator).toBe(4);
+    expect(summary.ratios.selectionBlocked.percentage).toBe('25%');
+    expect(summary.ratios.pageNavigationBlocked.numerator).toBe(1);
+    expect(summary.ratios.pageNavigationBlocked.denominator).toBe(2);
+    expect(summary.ratios.pageNavigationBlocked.percentage).toBe('50%');
   });
 });

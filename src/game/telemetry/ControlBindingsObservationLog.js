@@ -83,6 +83,17 @@ export class ControlBindingsObservationLog {
     this._captureCancelReasons = new Map();
     this._pageMin = null;
     this._pageMax = null;
+    this._lastSelectionTimestamp = null;
+    this._lastSelectionAction = null;
+    this._selectionDwell = {
+      count: 0,
+      totalMs: 0,
+      maxMs: 0,
+      minMs: null,
+      lastDurationMs: null,
+      lastAction: null,
+      longestAction: null,
+    };
   }
 
   /**
@@ -132,6 +143,13 @@ export class ControlBindingsObservationLog {
     const durationMs = this.firstEventTimestamp != null && this.lastEventTimestamp != null
       ? Math.max(0, this.lastEventTimestamp - this.firstEventTimestamp)
       : 0;
+    const dwellSummary = this._buildSelectionDwellSummary();
+    const selectionAttempts = this.metrics.selectionMoves + this.metrics.selectionBlocked;
+    const pageNavigationAttempts = this.metrics.pageNavigations + this.metrics.pageNavigationBlocked;
+    const ratios = {
+      selectionBlocked: this._buildRatio(this.metrics.selectionBlocked, selectionAttempts),
+      pageNavigationBlocked: this._buildRatio(this.metrics.pageNavigationBlocked, pageNavigationAttempts),
+    };
 
     return {
       totalEvents,
@@ -155,6 +173,8 @@ export class ControlBindingsObservationLog {
       lastSelectedAction: totalEvents
         ? this.events[this.events.length - 1].selectedAction ?? null
         : null,
+      dwell: dwellSummary,
+      ratios,
     };
   }
 
@@ -185,6 +205,17 @@ export class ControlBindingsObservationLog {
     this._captureCancelReasons.clear();
     this._pageMin = null;
     this._pageMax = null;
+    this._lastSelectionTimestamp = null;
+    this._lastSelectionAction = null;
+    this._selectionDwell = {
+      count: 0,
+      totalMs: 0,
+      maxMs: 0,
+      minMs: null,
+      lastDurationMs: null,
+      lastAction: null,
+      longestAction: null,
+    };
   }
 
   _sanitizeEvent(data) {
@@ -284,6 +315,7 @@ export class ControlBindingsObservationLog {
       case 'selection_move':
         if (event.changed) {
           this.metrics.selectionMoves += 1;
+          this._updateSelectionDwell(event);
         } else {
           this.metrics.selectionBlocked += 1;
         }
@@ -330,6 +362,40 @@ export class ControlBindingsObservationLog {
     }
   }
 
+  _updateSelectionDwell(event) {
+    if (!event || event.event !== 'selection_move' || !event.changed) {
+      return;
+    }
+    if (!isFiniteNumber(event.timestamp)) {
+      return;
+    }
+
+    if (this._lastSelectionTimestamp != null) {
+      const dwellMs = Math.max(0, event.timestamp - this._lastSelectionTimestamp);
+      this._selectionDwell.count += 1;
+      this._selectionDwell.totalMs += dwellMs;
+      this._selectionDwell.lastDurationMs = dwellMs;
+      const departingAction = typeof event.previousAction === 'string' && event.previousAction.length
+        ? event.previousAction
+        : this._lastSelectionAction;
+      this._selectionDwell.lastAction = departingAction ?? null;
+
+      if (this._selectionDwell.minMs == null || dwellMs < this._selectionDwell.minMs) {
+        this._selectionDwell.minMs = dwellMs;
+      }
+      if (dwellMs > this._selectionDwell.maxMs) {
+        this._selectionDwell.maxMs = dwellMs;
+        this._selectionDwell.longestAction = departingAction ?? null;
+      }
+    }
+
+    this._lastSelectionTimestamp = event.timestamp;
+    this._lastSelectionAction =
+      typeof event.nextAction === 'string' && event.nextAction.length
+        ? event.nextAction
+        : event.selectedAction ?? this._lastSelectionAction;
+  }
+
   _trackQualitativeSignals(event) {
     if (typeof event.selectedAction === 'string' && event.selectedAction.length) {
       this._actionsVisited.add(event.selectedAction);
@@ -356,6 +422,38 @@ export class ControlBindingsObservationLog {
       const reason = typeof event.source === 'string' && event.source.length ? event.source : 'unknown';
       this._captureCancelReasons.set(reason, (this._captureCancelReasons.get(reason) || 0) + 1);
     }
+  }
+
+  _buildSelectionDwellSummary() {
+    const { count, totalMs, maxMs, minMs, lastDurationMs, lastAction, longestAction } = this._selectionDwell;
+    const averageMs = count > 0 ? Math.round(totalMs / count) : 0;
+    return {
+      count,
+      totalMs,
+      averageMs,
+      averageLabel: this._formatDuration(averageMs),
+      maxMs: maxMs ?? 0,
+      maxLabel: this._formatDuration(maxMs ?? 0),
+      minMs: minMs ?? 0,
+      minLabel: this._formatDuration(minMs ?? 0),
+      lastMs: lastDurationMs ?? 0,
+      lastLabel: this._formatDuration(lastDurationMs ?? 0),
+      lastAction: lastAction ?? null,
+      longestAction: longestAction ?? null,
+    };
+  }
+
+  _buildRatio(numerator, denominator) {
+    const safeNumerator = isFiniteNumber(numerator) ? Math.max(0, Math.floor(numerator)) : 0;
+    const safeDenominator = isFiniteNumber(denominator) ? Math.max(0, Math.floor(denominator)) : 0;
+    const ratioValue = safeDenominator > 0 ? Math.max(0, Math.min(1, safeNumerator / safeDenominator)) : 0;
+    const rounded = Math.round(ratioValue * 1000) / 1000;
+    return {
+      numerator: safeNumerator,
+      denominator: safeDenominator,
+      value: rounded,
+      percentage: `${Math.round(ratioValue * 100)}%`,
+    };
   }
 
   _formatDuration(ms) {

@@ -20,6 +20,48 @@ function slugify(value) {
     .replace(/^-+|-+$/g, '');
 }
 
+function formatActionId(actionId) {
+  if (typeof actionId !== 'string' || !actionId.length) {
+    return 'Unknown action';
+  }
+  const spaced = actionId
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[_\-]+/g, ' ')
+    .trim();
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+function formatRatio(ratio = {}) {
+  const numerator = Number.isFinite(ratio.numerator) ? Math.max(0, ratio.numerator) : 0;
+  const denominator = Number.isFinite(ratio.denominator) ? Math.max(0, ratio.denominator) : 0;
+  const percentage = typeof ratio.percentage === 'string' && ratio.percentage.length
+    ? ratio.percentage
+    : denominator > 0
+      ? `${Math.round((numerator / denominator) * 100)}%`
+      : '0%';
+  return `${percentage} (${numerator}/${denominator})`;
+}
+
+function formatMs(ms) {
+  const value = Number.isFinite(ms) ? ms : 0;
+  if (value <= 0) {
+    return '0s';
+  }
+  if (value < 1000) {
+    return `${Math.round(value)}ms`;
+  }
+  if (value < 60000) {
+    const seconds = value / 1000;
+    return seconds >= 10 ? `${Math.round(seconds)}s` : `${seconds.toFixed(1)}s`;
+  }
+  const minutes = Math.floor(value / 60000);
+  const seconds = Math.round((value % 60000) / 1000);
+  if (seconds === 0) {
+    return `${minutes}m`;
+  }
+  return `${minutes}m ${seconds}s`;
+}
+
 function parseArgs(argv) {
   const options = {
     inputPath: null,
@@ -109,6 +151,14 @@ function generateRecommendations(summary) {
   }
 
   const metrics = summary.metrics || {};
+  const dwell = summary.dwell || {};
+  const ratios = summary.ratios || {};
+  const selectionRatio = Number.isFinite(ratios.selectionBlocked?.value)
+    ? ratios.selectionBlocked.value
+    : 0;
+  const pageRatio = Number.isFinite(ratios.pageNavigationBlocked?.value)
+    ? ratios.pageNavigationBlocked.value
+    : 0;
 
   if ((metrics.pageNavigationBlocked || 0) > (metrics.pageNavigations || 0)) {
     recs.push('Testers attempted to page beyond available content frequently; consider clearer paging affordances or wrap-around navigation.');
@@ -128,6 +178,23 @@ function generateRecommendations(summary) {
 
   if ((metrics.manualOverrideEvents || 0) > 0 && (summary.listModesVisited || []).length <= 1) {
     recs.push('Manual page overrides were used without switching list modes—consider surfacing total page count earlier.');
+  }
+
+  if ((dwell.averageMs || 0) >= 2500) {
+    recs.push(`Average dwell between selection changes exceeded ${formatMs(2500)}; consider reinforcing focused row styling or contextual hints to reduce hesitation.`);
+  }
+
+  if ((dwell.maxMs || 0) >= 5000) {
+    const actionLabel = formatActionId(dwell.longestAction);
+    recs.push(`One selection lingered for ${formatMs(dwell.maxMs)} on ${actionLabel}. Review the detail panel or default highlight to ensure players understand the next action.`);
+  }
+
+  if (selectionRatio >= 0.35) {
+    recs.push(`Roughly ${formatRatio(ratios.selectionBlocked)} of selection attempts were blocked; audit default focus position and highlight transitions when opening the overlay.`);
+  }
+
+  if (pageRatio >= 0.4) {
+    recs.push(`Paging attempts were blocked ${formatRatio(ratios.pageNavigationBlocked)} of the time—consider clearer boundaries or wrap-around paging to prevent dead ends.`);
   }
 
   return recs;
@@ -164,6 +231,21 @@ function renderMarkdownSummary(summary, recommendations, recentEvents) {
   for (const [label, value] of metricRows) {
     lines.push(`| ${label} | ${value ?? 0} |`);
   }
+  lines.push('');
+
+  const dwell = summary.dwell || {};
+  const ratios = summary.ratios || {};
+  lines.push('## Navigation Heuristics');
+  lines.push('');
+  lines.push('| Heuristic | Value |');
+  lines.push('| --- | --- |');
+  const longestActionLabel = dwell.longestAction ? ` (on ${formatActionId(dwell.longestAction)})` : '';
+  const lastActionLabel = dwell.lastAction ? ` on ${formatActionId(dwell.lastAction)}` : '';
+  lines.push(`| Average dwell between selection changes | ${dwell.averageLabel || formatMs(dwell.averageMs)} |`);
+  lines.push(`| Longest dwell | ${dwell.maxLabel || formatMs(dwell.maxMs)}${longestActionLabel} |`);
+  lines.push(`| Last recorded dwell | ${dwell.lastLabel || formatMs(dwell.lastMs)}${lastActionLabel} |`);
+  lines.push(`| Selection blocked ratio | ${formatRatio(ratios.selectionBlocked)} |`);
+  lines.push(`| Paging blocked ratio | ${formatRatio(ratios.pageNavigationBlocked)} |`);
   lines.push('');
 
   if (summary.actionsVisited && summary.actionsVisited.length) {

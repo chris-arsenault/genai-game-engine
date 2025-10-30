@@ -86,6 +86,13 @@
 - Authored `scripts/ux/exportControlBindingsObservations.js` plus Jest coverage to transform recorded logs into JSON/Markdown reports with heuristic recommendations for upcoming micro-playtests.
 - Next steps: run at least three targeted sessions using the new logger/exporter pipeline and document the qualitative findings for HUD follow-up.
 
+### Session #135 Backlog Updates
+
+#### UX-411 / UX-412 / UX-413: Control Bindings Observation Heuristics
+- SaveInspector overlay now renders control bindings session summaries (dwell stats, blocked ratios, last selection context) sourced from `ControlBindingsObservationLog` and Inspector summaries.
+- ControlBindings observation log records dwell durations and blocked navigation ratios; SaveManager/exporter payloads expose the new fields so tooling can analyse hesitation hotspots.
+- `scripts/ux/exportControlBindingsObservations.js` outputs navigation heuristics tables and enhanced recommendations, and Jest coverage spans the log, SaveManager, overlay, exporter, and CLI to guard the workflow.
+
 ### Session #124 Backlog Updates
 
 #### M1-002 / M1-012: ECS/Narrative Integrations

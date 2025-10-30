@@ -66,6 +66,9 @@ export class SaveManager {
     if (typeof managers.spatialMetricsProvider === 'function') {
       this.registerSpatialMetricsProvider(managers.spatialMetricsProvider);
     }
+    const controlBindingsProvider = managers.controlBindingsObservationProvider;
+    this._controlBindingsObservationProvider =
+      typeof controlBindingsProvider === 'function' ? controlBindingsProvider : null;
 
     // Event unsubscriber references
     this._offQuestCompleted = null;
@@ -396,6 +399,279 @@ export class SaveManager {
     }
   }
 
+  _coerceNonNegativeInteger(value) {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return Math.max(0, Math.floor(value));
+    }
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return Math.max(0, Math.floor(parsed));
+    }
+    return 0;
+  }
+
+  _truncateStringArray(values, limit = 6) {
+    if (!Array.isArray(values) || values.length === 0) {
+      return [];
+    }
+    const result = [];
+    for (const entry of values) {
+      if (typeof entry === 'string' && entry.length) {
+        result.push(entry);
+        if (result.length >= limit) {
+          break;
+        }
+      }
+    }
+    return result;
+  }
+
+  _formatDurationLabel(ms) {
+    const value = this._coerceNonNegativeInteger(ms);
+    if (value <= 0) {
+      return '0s';
+    }
+    if (value < 1000) {
+      return `${value}ms`;
+    }
+    if (value < 60000) {
+      const seconds = value / 1000;
+      return seconds >= 10 ? `${Math.round(seconds)}s` : `${seconds.toFixed(1)}s`;
+    }
+    const minutes = Math.floor(value / 60000);
+    const seconds = Math.round((value % 60000) / 1000);
+    if (seconds === 0) {
+      return `${minutes}m`;
+    }
+    return `${minutes}m ${seconds}s`;
+  }
+
+  _buildEmptyControlBindingsSummary(source = 'unavailable') {
+    return {
+      source,
+      totalEvents: 0,
+      durationMs: 0,
+      durationLabel: '0s',
+      firstEventAt: null,
+      lastEventAt: null,
+      actionsVisited: [],
+      actionsVisitedCount: 0,
+      actionsRemapped: [],
+      actionsRemappedCount: 0,
+      listModesVisited: [],
+      pageRange: null,
+      lastSelectedAction: null,
+      metrics: {
+        selectionMoves: 0,
+        selectionBlocked: 0,
+        listModeChanges: 0,
+        listModeUnchanged: 0,
+        pageNavigations: 0,
+        pageNavigationBlocked: 0,
+        pageSetChanges: 0,
+        pageSetBlocked: 0,
+        captureStarted: 0,
+        captureCancelled: 0,
+        bindingsApplied: 0,
+        bindingsReset: 0,
+        manualOverrideEvents: 0,
+      },
+      captureCancelReasons: {},
+      dwell: {
+        count: 0,
+        totalMs: 0,
+        averageMs: 0,
+        averageLabel: '0s',
+        maxMs: 0,
+        maxLabel: '0s',
+        minMs: 0,
+        minLabel: '0s',
+        lastMs: 0,
+        lastLabel: '0s',
+        lastAction: null,
+        longestAction: null,
+      },
+      ratios: {
+        selectionBlocked: {
+          numerator: 0,
+          denominator: 0,
+          value: 0,
+          percentage: '0%',
+        },
+        pageNavigationBlocked: {
+          numerator: 0,
+          denominator: 0,
+          value: 0,
+          percentage: '0%',
+        },
+      },
+    };
+  }
+
+  _normalizeControlBindingsSummary(rawSummary) {
+    if (!rawSummary || typeof rawSummary !== 'object') {
+      return this._buildEmptyControlBindingsSummary('empty');
+    }
+
+    const metrics = rawSummary.metrics ?? {};
+    const captureCancelReasonsRaw = metrics.captureCancelReasons ?? rawSummary.captureCancelReasons ?? {};
+    const captureCancelReasons = {};
+    if (captureCancelReasonsRaw && typeof captureCancelReasonsRaw === 'object') {
+      for (const [reason, count] of Object.entries(captureCancelReasonsRaw)) {
+        if (typeof reason !== 'string' || !reason.length) {
+          continue;
+        }
+        captureCancelReasons[reason] = this._coerceNonNegativeInteger(count);
+      }
+    }
+
+    const pageRange = rawSummary.pageRange;
+    let normalizedPageRange = null;
+    if (pageRange && typeof pageRange === 'object') {
+      const min = this._coerceNonNegativeInteger(pageRange.min);
+      const max = this._coerceNonNegativeInteger(pageRange.max);
+      if (min || max) {
+        normalizedPageRange = { min, max: Math.max(min, max) };
+      }
+    }
+
+    const dwellRaw = rawSummary.dwell ?? {};
+    const dwellCount = this._coerceNonNegativeInteger(dwellRaw.count);
+    const dwellTotalMs = this._coerceNonNegativeInteger(dwellRaw.totalMs);
+    const dwellAverageMs = this._coerceNonNegativeInteger(
+      dwellRaw.averageMs != null
+        ? dwellRaw.averageMs
+        : dwellCount > 0
+          ? Math.round(dwellTotalMs / dwellCount)
+          : 0
+    );
+    const dwellMaxMs = this._coerceNonNegativeInteger(dwellRaw.maxMs);
+    const dwellMinMs = this._coerceNonNegativeInteger(dwellRaw.minMs);
+    const dwellLastMs = this._coerceNonNegativeInteger(dwellRaw.lastMs ?? dwellRaw.lastDurationMs);
+
+    const dwellSummary = {
+      count: dwellCount,
+      totalMs: dwellTotalMs,
+      averageMs: dwellAverageMs,
+      averageLabel:
+        typeof dwellRaw.averageLabel === 'string' && dwellRaw.averageLabel.length
+          ? dwellRaw.averageLabel
+          : this._formatDurationLabel(dwellAverageMs),
+      maxMs: dwellMaxMs,
+      maxLabel:
+        typeof dwellRaw.maxLabel === 'string' && dwellRaw.maxLabel.length
+          ? dwellRaw.maxLabel
+          : this._formatDurationLabel(dwellMaxMs),
+      minMs: dwellMinMs,
+      minLabel:
+        typeof dwellRaw.minLabel === 'string' && dwellRaw.minLabel.length
+          ? dwellRaw.minLabel
+          : this._formatDurationLabel(dwellMinMs),
+      lastMs: dwellLastMs,
+      lastLabel:
+        typeof dwellRaw.lastLabel === 'string' && dwellRaw.lastLabel.length
+          ? dwellRaw.lastLabel
+          : this._formatDurationLabel(dwellLastMs),
+      lastAction:
+        typeof dwellRaw.lastAction === 'string' && dwellRaw.lastAction.length
+          ? dwellRaw.lastAction
+          : null,
+      longestAction:
+        typeof dwellRaw.longestAction === 'string' && dwellRaw.longestAction.length
+          ? dwellRaw.longestAction
+          : null,
+    };
+
+    const ratiosRaw = rawSummary.ratios ?? {};
+    const sanitizeRatio = (entry) => {
+      const numerator = this._coerceNonNegativeInteger(entry?.numerator);
+      const denominator = this._coerceNonNegativeInteger(entry?.denominator);
+      let value = typeof entry?.value === 'number' && Number.isFinite(entry.value)
+        ? entry.value
+        : denominator > 0
+          ? numerator / denominator
+          : 0;
+      value = Math.max(0, Math.min(1, value));
+      const rounded = Math.round(value * 1000) / 1000;
+      const percentage =
+        typeof entry?.percentage === 'string' && entry.percentage.length
+          ? entry.percentage
+          : `${Math.round(value * 100)}%`;
+      return {
+        numerator,
+        denominator,
+        value: rounded,
+        percentage,
+      };
+    };
+
+    return {
+      source: 'observation-log',
+      totalEvents: this._coerceNonNegativeInteger(rawSummary.totalEvents),
+      durationMs: this._coerceNonNegativeInteger(rawSummary.durationMs),
+      durationLabel:
+        typeof rawSummary.durationLabel === 'string' && rawSummary.durationLabel.length
+          ? rawSummary.durationLabel
+          : `${this._coerceNonNegativeInteger(rawSummary.durationMs)}ms`,
+      firstEventAt:
+        typeof rawSummary.firstEventAt === 'number' && Number.isFinite(rawSummary.firstEventAt)
+          ? rawSummary.firstEventAt
+          : null,
+      lastEventAt:
+        typeof rawSummary.lastEventAt === 'number' && Number.isFinite(rawSummary.lastEventAt)
+          ? rawSummary.lastEventAt
+          : null,
+      lastSelectedAction:
+        typeof rawSummary.lastSelectedAction === 'string' && rawSummary.lastSelectedAction.length
+          ? rawSummary.lastSelectedAction
+          : null,
+      actionsVisited: this._truncateStringArray(rawSummary.actionsVisited, 6),
+      actionsVisitedCount: Array.isArray(rawSummary.actionsVisited) ? rawSummary.actionsVisited.length : 0,
+      actionsRemapped: this._truncateStringArray(rawSummary.actionsRemapped, 6),
+      actionsRemappedCount: Array.isArray(rawSummary.actionsRemapped) ? rawSummary.actionsRemapped.length : 0,
+      listModesVisited: this._truncateStringArray(rawSummary.listModesVisited ?? rawSummary.listModesSeen, 6),
+      pageRange: normalizedPageRange,
+      metrics: {
+        selectionMoves: this._coerceNonNegativeInteger(metrics.selectionMoves),
+        selectionBlocked: this._coerceNonNegativeInteger(metrics.selectionBlocked),
+        listModeChanges: this._coerceNonNegativeInteger(metrics.listModeChanges),
+        listModeUnchanged: this._coerceNonNegativeInteger(metrics.listModeUnchanged),
+        pageNavigations: this._coerceNonNegativeInteger(metrics.pageNavigations),
+        pageNavigationBlocked: this._coerceNonNegativeInteger(metrics.pageNavigationBlocked),
+        pageSetChanges: this._coerceNonNegativeInteger(metrics.pageSetChanges),
+        pageSetBlocked: this._coerceNonNegativeInteger(metrics.pageSetBlocked),
+        captureStarted: this._coerceNonNegativeInteger(metrics.captureStarted),
+        captureCancelled: this._coerceNonNegativeInteger(metrics.captureCancelled),
+        bindingsApplied: this._coerceNonNegativeInteger(metrics.bindingsApplied),
+        bindingsReset: this._coerceNonNegativeInteger(metrics.bindingsReset),
+        manualOverrideEvents: this._coerceNonNegativeInteger(metrics.manualOverrideEvents),
+      },
+      captureCancelReasons,
+      dwell: dwellSummary,
+      ratios: {
+        selectionBlocked: sanitizeRatio(ratiosRaw.selectionBlocked ?? {}),
+        pageNavigationBlocked: sanitizeRatio(ratiosRaw.pageNavigationBlocked ?? {}),
+      },
+    };
+  }
+
+  _collectControlBindingsSummary() {
+    if (!this._controlBindingsObservationProvider) {
+      return this._buildEmptyControlBindingsSummary();
+    }
+
+    try {
+      const summary = this._controlBindingsObservationProvider();
+      if (!summary) {
+        return this._buildEmptyControlBindingsSummary('empty');
+      }
+      return this._normalizeControlBindingsSummary(summary);
+    } catch (error) {
+      console.warn('[SaveManager] Failed to gather control bindings summary for inspector', error);
+      return this._buildEmptyControlBindingsSummary('error');
+    }
+  }
+
   /**
    * Provide aggregated telemetry for SaveManager inspector tooling.
    * @returns {Object}
@@ -419,6 +695,7 @@ export class SaveManager {
         engine: {
           spatialHash: null,
         },
+        controlBindings: this._collectControlBindingsSummary(),
       };
     }
 
@@ -470,6 +747,7 @@ export class SaveManager {
         : [],
     };
     const spatialMetrics = this.getSpatialMetricsTelemetry();
+    const controlBindings = this._collectControlBindingsSummary();
 
     return {
       generatedAt,
@@ -483,6 +761,7 @@ export class SaveManager {
       engine: {
         spatialHash: spatialMetrics,
       },
+      controlBindings,
     };
   }
 

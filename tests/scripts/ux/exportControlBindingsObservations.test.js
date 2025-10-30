@@ -98,9 +98,13 @@ describe('exportControlBindingsObservations CLI', () => {
     expect(summary.summary.metrics.selectionMoves).toBe(1);
     expect(summary.summary.listModesVisited).toContain('alphabetical');
     expect(summary.recommendations.length).toBeGreaterThanOrEqual(0);
+    expect(summary.summary).toHaveProperty('dwell');
+    expect(summary.summary).toHaveProperty('ratios');
 
     const markdown = fs.readFileSync(mdPath, 'utf8');
     expect(markdown).toContain('# Control Bindings Overlay Observation Summary');
     expect(markdown).toContain('List Modes Visited');
+    expect(markdown).toContain('Navigation Heuristics');
+    expect(markdown).toContain('Average dwell between selection changes');
   });
 });

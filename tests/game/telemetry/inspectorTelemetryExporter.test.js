@@ -121,6 +121,54 @@ describe('inspectorTelemetryExporter', () => {
           payloadBytes: null,
         },
       },
+      controlBindings: {
+        source: 'observation-log',
+        totalEvents: 6,
+        durationMs: 5400,
+        durationLabel: '5.4s',
+        firstEventAt: Date.UTC(2025, 9, 30, 17, 0, 30),
+        lastEventAt: Date.UTC(2025, 9, 30, 17, 5, 0),
+        actionsVisitedCount: 4,
+        actionsVisited: ['interact', 'quest', 'inventory', 'pause'],
+        actionsRemappedCount: 2,
+        actionsRemapped: ['inventory', 'quest'],
+        listModesVisited: ['sections', 'conflicts', 'alphabetical'],
+        pageRange: { min: 0, max: 3 },
+        lastSelectedAction: 'inventory',
+        metrics: {
+          selectionMoves: 5,
+          selectionBlocked: 1,
+          listModeChanges: 2,
+          listModeUnchanged: 1,
+          pageNavigations: 2,
+          pageNavigationBlocked: 1,
+          pageSetChanges: 0,
+          pageSetBlocked: 0,
+          captureStarted: 1,
+          captureCancelled: 1,
+          bindingsApplied: 2,
+          bindingsReset: 0,
+          manualOverrideEvents: 0,
+          captureCancelReasons: {
+            cancelled_with_escape: 2,
+            changed_mind: 1,
+          },
+        },
+        dwell: {
+          count: 2,
+          totalMs: 3000,
+          averageMs: 1500,
+          maxMs: 2000,
+          minMs: 1000,
+          lastMs: 1000,
+          lastAction: 'interact',
+          longestAction: 'inventory',
+        },
+        ratios: {
+          selectionBlocked: { numerator: 1, denominator: 6 },
+          pageNavigationBlocked: { numerator: 1, denominator: 2 },
+        },
+      },
     };
 
     const { artifacts, summary: sanitized } = createInspectorExportArtifacts(summary, {
@@ -157,6 +205,27 @@ describe('inspectorTelemetryExporter', () => {
         payloadBudgetExceededBy: 0,
       })
     );
+    expect(sanitized.controlBindings.totalEvents).toBe(6);
+    expect(sanitized.controlBindings.metrics.selectionMoves).toBe(5);
+    expect(sanitized.controlBindings.metrics.selectionBlocked).toBe(1);
+    expect(sanitized.controlBindings.captureCancelReasons.cancelled_with_escape).toBe(2);
+    expect(sanitized.controlBindings.dwell).toEqual(
+      expect.objectContaining({
+        count: 2,
+        averageMs: 1500,
+        averageLabel: '1.5s',
+        maxMs: 2000,
+        maxLabel: '2.0s',
+        lastMs: 1000,
+        lastLabel: '1.0s',
+        lastAction: 'interact',
+        longestAction: 'inventory',
+      })
+    );
+    expect(sanitized.controlBindings.ratios.selectionBlocked.numerator).toBe(1);
+    expect(sanitized.controlBindings.ratios.selectionBlocked.denominator).toBe(6);
+    expect(sanitized.controlBindings.ratios.selectionBlocked.value).toBeCloseTo(0.167, 3);
+    expect(sanitized.controlBindings.ratios.pageNavigationBlocked.value).toBe(0.5);
 
     expect(artifacts).toHaveLength(5);
 
@@ -172,6 +241,10 @@ describe('inspectorTelemetryExporter', () => {
       expect.objectContaining({ cellCount: 58, trackedEntities: 47 })
     );
     expect(parsed.engine.spatialHash.payloadBudgetStatus).toBe('within_budget');
+    expect(parsed.controlBindings.totalEvents).toBe(6);
+    expect(parsed.controlBindings.metrics.selectionMoves).toBe(5);
+    expect(parsed.controlBindings.dwell.averageMs).toBe(1500);
+    expect(parsed.controlBindings.ratios.selectionBlocked.percentage).toBe('17%');
 
     const cascadeCsv = artifacts.find(
       (artifact) => artifact.type === 'csv' && artifact.section === 'cascade'
@@ -215,6 +288,7 @@ describe('inspectorTelemetryExporter', () => {
     expect(summary.tutorial.snapshots).toEqual([]);
     expect(summary.tutorial.transcript).toEqual([]);
     expect(summary.engine.spatialHash).toBeNull();
+    expect(summary.controlBindings.totalEvents).toBe(0);
     expect(artifacts.length).toBe(3);
 
     const jsonArtifact = artifacts.find((artifact) => artifact.type === 'json');

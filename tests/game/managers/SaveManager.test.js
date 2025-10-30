@@ -1229,6 +1229,55 @@ describe('SaveManager', () => {
       expect(summary.engine).toEqual({
         spatialHash: null,
       });
+      expect(summary.controlBindings).toEqual({
+        source: 'unavailable',
+        totalEvents: 0,
+        durationMs: 0,
+        durationLabel: '0s',
+        firstEventAt: null,
+        lastEventAt: null,
+        actionsVisited: [],
+        actionsVisitedCount: 0,
+        actionsRemapped: [],
+        actionsRemappedCount: 0,
+        listModesVisited: [],
+        pageRange: null,
+        lastSelectedAction: null,
+        metrics: {
+          selectionMoves: 0,
+          selectionBlocked: 0,
+          listModeChanges: 0,
+          listModeUnchanged: 0,
+          pageNavigations: 0,
+          pageNavigationBlocked: 0,
+          pageSetChanges: 0,
+          pageSetBlocked: 0,
+          captureStarted: 0,
+          captureCancelled: 0,
+          bindingsApplied: 0,
+          bindingsReset: 0,
+          manualOverrideEvents: 0,
+        },
+        captureCancelReasons: {},
+        dwell: {
+          count: 0,
+          totalMs: 0,
+          averageMs: 0,
+          averageLabel: '0s',
+          maxMs: 0,
+          maxLabel: '0s',
+          minMs: 0,
+          minLabel: '0s',
+          lastMs: 0,
+          lastLabel: '0s',
+          lastAction: null,
+          longestAction: null,
+        },
+        ratios: {
+          selectionBlocked: { numerator: 0, denominator: 0, value: 0, percentage: '0%' },
+          pageNavigationBlocked: { numerator: 0, denominator: 0, value: 0, percentage: '0%' },
+        },
+      });
       expect(summary.generatedAt).toEqual(expect.any(Number));
     });
 
@@ -1309,6 +1358,51 @@ describe('SaveManager', () => {
         ],
         payloadBytes: 1024,
       };
+      const controlBindingsSummary = {
+        source: 'observation-log',
+        totalEvents: 6,
+        durationMs: 4200,
+        durationLabel: '4.2s',
+        firstEventAt: 1010,
+        lastEventAt: 5210,
+        actionsVisited: ['interact', 'quest', 'inventory'],
+        actionsRemapped: ['inventory', 'quest'],
+        listModesVisited: ['sections', 'conflicts'],
+        pageRange: { min: 0, max: 3 },
+        lastSelectedAction: 'inventory',
+        metrics: {
+          selectionMoves: 5,
+          selectionBlocked: 1,
+          listModeChanges: 2,
+          listModeUnchanged: 0,
+          pageNavigations: 2,
+          pageNavigationBlocked: 1,
+          pageSetChanges: 0,
+          pageSetBlocked: 0,
+          captureStarted: 1,
+          captureCancelled: 1,
+          bindingsApplied: 2,
+          bindingsReset: 0,
+          manualOverrideEvents: 0,
+          captureCancelReasons: {
+            cancelled_with_escape: 1,
+            changed_mind: 1,
+          },
+        },
+        dwell: {
+          count: 2,
+          totalMs: 2500,
+          maxMs: 1800,
+          minMs: 1200,
+          lastMs: 1800,
+          lastAction: 'inventory',
+          longestAction: 'inventory',
+        },
+        ratios: {
+          selectionBlocked: { numerator: 1, denominator: 6 },
+          pageNavigationBlocked: { numerator: 1, denominator: 2 },
+        },
+      };
 
       const store = {
         select: jest.fn((selector) => {
@@ -1330,6 +1424,7 @@ describe('SaveManager', () => {
 
       mockManagers.worldStateStore = store;
       mockManagers.spatialMetricsProvider = jest.fn(() => spatialSnapshot);
+      mockManagers.controlBindingsObservationProvider = jest.fn(() => controlBindingsSummary);
       saveManager = new SaveManager(eventBus, mockManagers);
 
       const summary = saveManager.getInspectorSummary();
@@ -1343,8 +1438,63 @@ describe('SaveManager', () => {
       expect(summary.tutorial.latestSnapshot).toEqual(latestSnapshot);
       expect(summary.tutorial.transcript).toEqual([]);
       expect(summary.engine.spatialHash).toBe(spatialSnapshot);
+      expect(summary.controlBindings).toEqual({
+        source: 'observation-log',
+        totalEvents: 6,
+        durationMs: 4200,
+        durationLabel: '4.2s',
+        firstEventAt: 1010,
+        lastEventAt: 5210,
+        lastSelectedAction: 'inventory',
+        actionsVisited: ['interact', 'quest', 'inventory'],
+        actionsVisitedCount: 3,
+        actionsRemapped: ['inventory', 'quest'],
+        actionsRemappedCount: 2,
+        listModesVisited: ['sections', 'conflicts'],
+        pageRange: { min: 0, max: 3 },
+        metrics: {
+          selectionMoves: 5,
+          selectionBlocked: 1,
+          listModeChanges: 2,
+          listModeUnchanged: 0,
+          pageNavigations: 2,
+          pageNavigationBlocked: 1,
+          pageSetChanges: 0,
+          pageSetBlocked: 0,
+          captureStarted: 1,
+          captureCancelled: 1,
+          bindingsApplied: 2,
+          bindingsReset: 0,
+          manualOverrideEvents: 0,
+        },
+        captureCancelReasons: {
+          cancelled_with_escape: 1,
+          changed_mind: 1,
+        },
+        dwell: {
+          count: 2,
+          totalMs: 2500,
+          averageMs: 1250,
+          averageLabel: '1.3s',
+          maxMs: 1800,
+          maxLabel: '1.8s',
+          minMs: 1200,
+          minLabel: '1.2s',
+          lastMs: 1800,
+          lastLabel: '1.8s',
+          lastAction: 'inventory',
+          longestAction: 'inventory',
+        },
+        ratios: {
+          selectionBlocked: { numerator: 1, denominator: 6, value: 0.167, percentage: '17%' },
+          pageNavigationBlocked: { numerator: 1, denominator: 2, value: 0.5, percentage: '50%' },
+        },
+      });
       expect(store.select).toHaveBeenCalledTimes(4);
       expect(mockManagers.spatialMetricsProvider).toHaveBeenCalledTimes(1);
+      expect(mockManagers.controlBindingsObservationProvider).toHaveBeenCalledTimes(1);
+
+      mockManagers.controlBindingsObservationProvider = null;
     });
 
     test('should include tutorial transcript when recorder provided', () => {

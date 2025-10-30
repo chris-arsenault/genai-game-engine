@@ -104,6 +104,52 @@ describe('SaveInspectorOverlay', () => {
             },
           ],
         },
+        controlBindings: {
+          source: 'observation-log',
+          totalEvents: 4,
+          durationMs: 3200,
+          durationLabel: '3.2s',
+          firstEventAt: now - 3200,
+          lastEventAt: now - 600,
+          actionsVisited: ['interact', 'quest'],
+          actionsVisitedCount: 2,
+          actionsRemapped: ['inventory'],
+          actionsRemappedCount: 1,
+          listModesVisited: ['sections', 'conflicts'],
+          pageRange: { min: 0, max: 2 },
+          lastSelectedAction: 'quest',
+          metrics: {
+            selectionMoves: 3,
+            selectionBlocked: 1,
+            listModeChanges: 1,
+            listModeUnchanged: 0,
+            pageNavigations: 1,
+            pageNavigationBlocked: 0,
+            pageSetChanges: 0,
+            pageSetBlocked: 0,
+            captureStarted: 1,
+            captureCancelled: 0,
+            bindingsApplied: 1,
+            bindingsReset: 0,
+            manualOverrideEvents: 0,
+          },
+          captureCancelReasons: { cancelled_with_escape: 1 },
+          dwell: {
+            count: 2,
+            totalMs: 2400,
+            maxMs: 1400,
+            lastMs: 1400,
+            lastAction: 'quest',
+            longestAction: 'quest',
+            averageLabel: '1.3s',
+            maxLabel: '1.4s',
+            lastLabel: '1.4s',
+          },
+          ratios: {
+            selectionBlocked: { numerator: 1, denominator: 4, value: 0.25, percentage: '25%' },
+            pageNavigationBlocked: { numerator: 1, denominator: 2, value: 0.5, percentage: '50%' },
+          },
+        },
       })),
     };
 
@@ -119,6 +165,12 @@ describe('SaveInspectorOverlay', () => {
     expect(overlay.summary.metrics.cascadeEvents).toBe(3);
     expect(overlay.summary.metrics.cascadeTargets).toBe(1);
     expect(overlay.summary.metrics.tutorialSnapshots).toBe(2);
+    expect(overlay.summary.metrics.controlBindingEvents).toBe(4);
+    expect(overlay.summary.controlBindings.totalEvents).toBe(4);
+    expect(overlay.summary.controlBindings.actionsVisitedCount).toBe(2);
+    expect(overlay.summary.controlBindings.listModesVisited).toEqual(['sections', 'conflicts']);
+    expect(overlay.summary.controlBindings.dwell.averageLabel).toBe('1.3s');
+    expect(overlay.summary.controlBindings.ratios.selectionBlocked.percentage).toBe('25%');
   });
 
   it('renders control binding hints for QA toggles', () => {
@@ -136,6 +188,12 @@ describe('SaveInspectorOverlay', () => {
     expect(hintCall[0]).toContain('Close: O');
     expect(hintCall[0]).toContain('Bindings: K');
     expect(hintCall[0]).toContain('Quest Log: Q');
+
+    const headingCall = canvas._ctx.fillText.mock.calls.find(
+      (call) => typeof call[0] === 'string' && call[0] === 'Control Bindings'
+    );
+    expect(headingCall).toBeDefined();
+
   });
 
   it('falls back to world state store selectors when SaveManager summary unavailable', () => {
@@ -210,6 +268,10 @@ describe('SaveInspectorOverlay', () => {
     expect(overlay.summary.metrics.cascadeEvents).toBe(4);
     expect(overlay.summary.metrics.tutorialSnapshots).toBe(2);
     expect(overlay.summary.tutorial.latest.relative).toMatch(/ago|just now/);
+    expect(overlay.summary.controlBindings.totalEvents).toBe(0);
+    expect(overlay.summary.metrics.controlBindingEvents).toBe(0);
+    expect(overlay.summary.controlBindings.dwell.count).toBe(0);
+    expect(overlay.summary.controlBindings.ratios.selectionBlocked.numerator).toBe(0);
   });
 
   it('emits overlay visibility events when toggled', () => {
