@@ -322,45 +322,45 @@
     "id": "image-ar-050-crossroads-column-safehouse-left",
     "arId": "AR-050",
     "title": "Act 2 Crossroads Safehouse Column (Left)",
-    "creator": "",
-    "source": "",
-    "license": "",
-    "status": "pending-sourcing",
+    "creator": "David Paul Ohmer",
+    "source": "https://www.flickr.com/photos/50965924@N00/634955994",
+    "license": "CC BY 2.0",
+    "status": "reference-selected",
     "usage": "Column light beam for safehouse entry.",
-    "notes": "AssetId act2_crossroads_column_safehouse_left_v1; maintain soft beam profile for stealth staging."
+    "notes": "AssetId act2_crossroads_column_safehouse_left_v1; Openverse ID 7fa5629a-8c5f-4bd2-a247-fe6517d17409 (\"Rome - Vatican City/Saint Peter's Basilica 'Shower of Light on Woman'\") delivers a diffused vertical beam against darkened stone, matching the stealth staging falloff once recolored toward cyan."
   },
   {
     "id": "image-ar-050-crossroads-column-safehouse-right",
     "arId": "AR-050",
     "title": "Act 2 Crossroads Safehouse Column (Right)",
-    "creator": "",
-    "source": "",
-    "license": "",
-    "status": "pending-sourcing",
+    "creator": "Fan.D & Dav.C Photgraphy",
+    "source": "https://www.flickr.com/photos/98815931@N07/39790468613",
+    "license": "CC BY 2.0",
+    "status": "reference-selected",
     "usage": "Column light beam for safehouse entry.",
-    "notes": "AssetId act2_crossroads_column_safehouse_right_v1; maintain soft beam profile for stealth staging."
+    "notes": "AssetId act2_crossroads_column_safehouse_right_v1; Openverse ID 2c443bc9-e3ab-4fff-ba46-a52ef76b7457 (\"Infinity\") provides twin spot beams with crisp edges we can taper into the mirrored safehouse pillar once we de-saturate the magenta stage palette."
   },
   {
     "id": "image-ar-050-crossroads-column-checkpoint-north",
     "arId": "AR-050",
     "title": "Act 2 Crossroads Checkpoint Column (North)",
-    "creator": "",
-    "source": "",
-    "license": "",
-    "status": "pending-sourcing",
+    "creator": "Joyce Andes",
+    "source": "https://www.flickr.com/photos/47977776@N03/6135445492",
+    "license": "CC BY 2.0",
+    "status": "reference-selected",
     "usage": "Checkpoint column light beam, north placement.",
-    "notes": "AssetId act2_crossroads_column_checkpoint_north_v1; tighten beam profile for guard intensity."
+    "notes": "AssetId act2_crossroads_column_checkpoint_north_v1; Openverse ID d373ad62-282c-455f-b85a-2e58b2f0fa9f (\"Proudly Beaming and Standing Tall\") captures parallel tribute beams with high-intensity cores suited for militarised checkpoint silhouettes."
   },
   {
     "id": "image-ar-050-crossroads-column-checkpoint-south",
     "arId": "AR-050",
     "title": "Act 2 Crossroads Checkpoint Column (South)",
-    "creator": "",
-    "source": "",
-    "license": "",
-    "status": "pending-sourcing",
+    "creator": "www.GlynLowe.com from Hamburg, Germany",
+    "source": "https://commons.wikimedia.org/w/index.php?curid=39758852",
+    "license": "CC BY 2.0",
+    "status": "reference-selected",
     "usage": "Checkpoint column light beam, south placement.",
-    "notes": "AssetId act2_crossroads_column_checkpoint_south_v1; tighten beam profile for guard intensity."
+    "notes": "AssetId act2_crossroads_column_checkpoint_south_v1; Openverse ID 7baeb847-c6de-4d96-983a-75a130697e06 (\"NYC World Trade Center Tribute in Light 2012\") supplies a distant twin beam plate we can compress for the southern choke point glow."
   },
   {
     "id": "image-ar-050-crossroads-boundary-west",

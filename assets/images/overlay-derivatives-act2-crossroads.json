@@ -1,0 +1,108 @@
+{
+  "outputDir": "assets/overlays/act2-crossroads",
+  "defaults": {
+    "operations": {
+      "resize": {
+        "height": 1280
+      },
+      "centerCropWidth": 420,
+      "desaturate": 80,
+      "normalize": true,
+      "brightness": 0.12,
+      "contrast": 0.25,
+      "gaussian": 1,
+      "alphaFromLuma": {
+        "threshold": 105,
+        "softness": 90,
+        "floor": 0,
+        "ceiling": 255
+      },
+      "opacity": 0.92
+    }
+  },
+  "entries": [
+    {
+      "id": "image-ar-050-crossroads-column-safehouse-left",
+      "openverseId": "7fa5629a-8c5f-4bd2-a247-fe6517d17409",
+      "sourceUrl": "https://live.staticflickr.com/1372/634955994_00178bb35d_b.jpg",
+      "output": "act2_crossroads_column_safehouse_left.png",
+      "operations": {
+        "trimTop": 120,
+        "trimBottom": 100,
+        "tint": {
+          "color": "#4be7ff",
+          "amount": 55
+        },
+        "gaussian": 2,
+        "alphaFromLuma": {
+          "threshold": 100,
+          "softness": 80
+        },
+        "postBlur": 1
+      }
+    },
+    {
+      "id": "image-ar-050-crossroads-column-safehouse-right",
+      "openverseId": "2c443bc9-e3ab-4fff-ba46-a52ef76b7457",
+      "sourceUrl": "https://live.staticflickr.com/4804/39790468613_c3c5326f7b_b.jpg",
+      "output": "act2_crossroads_column_safehouse_right.png",
+      "operations": {
+        "centerCropWidth": 380,
+        "trimTop": 40,
+        "trimBottom": 60,
+        "brightness": 0.18,
+        "tint": {
+          "color": "#56f2ff",
+          "amount": 48
+        },
+        "alphaFromLuma": {
+          "threshold": 110,
+          "softness": 85
+        }
+      }
+    },
+    {
+      "id": "image-ar-050-crossroads-column-checkpoint-north",
+      "openverseId": "d373ad62-282c-455f-b85a-2e58b2f0fa9f",
+      "sourceUrl": "https://live.staticflickr.com/6080/6135445492_364217264d_b.jpg",
+      "output": "act2_crossroads_column_checkpoint_north.png",
+      "operations": {
+        "centerCropWidth": 360,
+        "trimTop": 0,
+        "trimBottom": 0,
+        "tint": {
+          "color": "#ffe68d",
+          "amount": 42
+        },
+        "contrast": 0.32,
+        "alphaFromLuma": {
+          "threshold": 115,
+          "softness": 70,
+          "floor": 16
+        }
+      }
+    },
+    {
+      "id": "image-ar-050-crossroads-column-checkpoint-south",
+      "openverseId": "7baeb847-c6de-4d96-983a-75a130697e06",
+      "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/6/62/NYC_World_Trade_Center_Tribute_in_Light_2012.jpg",
+      "output": "act2_crossroads_column_checkpoint_south.png",
+      "operations": {
+        "centerCropWidth": 360,
+        "trimTop": 20,
+        "trimBottom": 40,
+        "tint": {
+          "color": "#fff0b3",
+          "amount": 38
+        },
+        "contrast": 0.28,
+        "alphaFromLuma": {
+          "threshold": 118,
+          "softness": 75,
+          "floor": 10
+        },
+        "postBlur": 1
+      }
+    }
+  ]
+}

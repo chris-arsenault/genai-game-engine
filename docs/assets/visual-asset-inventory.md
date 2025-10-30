@@ -37,7 +37,17 @@
 - `image-ar-050-crossroads-boundary-north` selects *rboed*’s **Windows** lattice (CC BY 2.0, Flickr) to frame the walkway ingress structure.
 - `image-ar-050-crossroads-boundary-south` incorporates Mr Thinktank’s **perforated steel panel in stairway** (CC BY 2.0, Flickr) for armored venting silhouettes along the southern barricade.
 
+## Session 109 Updates
+- `image-ar-050-crossroads-column-safehouse-left` now references David Paul Ohmer’s **Rome - Vatican City/Saint Peter's Basilica "Shower of Light on Woman"** (CC BY 2.0, Flickr via Openverse 7fa5629a-8c5f-4bd2-a247-fe6517d17409) for a diffused cyan-ready beam plate hugging classical stone.
+- `image-ar-050-crossroads-column-safehouse-right` leverages Fan.D & Dav.C Photography’s **Infinity** stage capture (CC BY 2.0, Flickr via Openverse 2c443bc9-e3ab-4fff-ba46-a52ef76b7457) to mirror tight dual spotlights for the safehouse ingress pillars.
+- `image-ar-050-crossroads-column-checkpoint-north` uses Joyce Andes’ **Proudly Beaming and Standing Tall** (CC BY 2.0, Flickr via Openverse d373ad62-282c-455f-b85a-2e58b2f0fa9f) as the high-intensity checkpoint reference plate.
+- `image-ar-050-crossroads-column-checkpoint-south` adopts **NYC World Trade Center Tribute in Light 2012** by www.GlynLowe.com (CC BY 2.0, Wikimedia via Openverse 7baeb847-c6de-4d96-983a-75a130697e06) to keep the southern choke-point glow consistent with the north beam profile.
+
+### Overlay Processing Pipeline
+- Added `scripts/art/generateOverlayDerivatives.js` to convert CC0/CC-BY references into transparent overlays using configurable operations (crop, tint, alpha-from-luma).
+- Column overlays are defined in `assets/images/overlay-derivatives-act2-crossroads.json`; the script downloads the Openverse source plates and renders processed PNGs to `assets/overlays/act2-crossroads/`.
+- Run `npm run art:generate-crossroads-overlays` (add `--dry-run` to inspect dimensions only). Configuration defaults cover cyan safehouse beams and amber checkpoint beams; tweak per-entry overrides when art direction shifts.
+
 ## Next Actions
-1. Source column beam overlays (`image-ar-050-crossroads-column-*`) with emphasis on soft volumetric falloff for stealth staging.
-2. Prepare generation brief templates covering art style, palette, and lighting for AR-001 through AR-005 requests that remain `pending-sourcing`.
-3. Convert newly sourced references into transparent overlays and update manifests with processing notes once derivatives are produced.
+1. Prepare generation brief templates covering art style, palette, and lighting for AR-001 through AR-005 requests that remain `pending-sourcing`.
+2. Convert newly sourced references into transparent overlays and update manifests with processing notes once derivatives are produced.
