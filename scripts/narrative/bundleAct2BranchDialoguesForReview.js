@@ -3,9 +3,21 @@ import { access, copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 
+const ALLOWED_APPROVAL_STATUSES = new Set(['pending', 'approved', 'changes_requested', 'rejected']);
+
 async function main() {
   const args = process.argv.slice(2);
   const options = parseArgs(args);
+
+  if (options.manifestOnly) {
+    const manifestPath = resolveCwd(options.manifestOnly);
+    await assertFileExists(manifestPath, '--manifest-only');
+    await updateManifestApprovals(manifestPath, options);
+    console.log(
+      `[bundleAct2BranchDialoguesForReview] Updated approvals for ${manifestPath}`
+    );
+    return;
+  }
 
   const summaryPath = resolveCwd(options.summary);
   await assertFileExists(summaryPath, '--summary');
@@ -62,8 +74,9 @@ async function main() {
     });
   }
 
+  const packageCreatedAt = new Date().toISOString();
   const manifest = {
-    packageCreatedAt: new Date().toISOString(),
+    packageCreatedAt,
     label: timestamp,
     reviewerInstructions:
       'Review Markdown + change report, confirm no late edits, log approvals in reviewManifest.notes.',
@@ -76,6 +89,12 @@ async function main() {
     approvals: [],
     notes: [],
   };
+
+  manifest.approvals = seedApprovals({
+    manifest,
+    options,
+    referenceTimestamp: packageCreatedAt,
+  });
 
   const manifestPath = path.join(outputDir, 'review-manifest.json');
   await writeFile(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
@@ -96,6 +115,9 @@ function parseArgs(args) {
     changes: null,
     outDir: null,
     label: null,
+    approverTokens: [],
+    approvalTokens: [],
+    manifestOnly: null,
   };
 
   for (const arg of args) {
@@ -109,6 +131,18 @@ function parseArgs(args) {
       options.outDir = arg.slice('--out-dir='.length).trim();
     } else if (arg.startsWith('--label=')) {
       options.label = sanitizeLabel(arg.slice('--label='.length).trim());
+    } else if (arg.startsWith('--approver=')) {
+      const token = arg.slice('--approver='.length).trim();
+      if (token.length > 0) {
+        options.approverTokens.push(token);
+      }
+    } else if (arg.startsWith('--mark-approval=')) {
+      const token = arg.slice('--mark-approval='.length).trim();
+      if (token.length > 0) {
+        options.approvalTokens.push(token);
+      }
+    } else if (arg.startsWith('--manifest-only=')) {
+      options.manifestOnly = arg.slice('--manifest-only='.length).trim();
     }
   }
 
@@ -169,3 +203,137 @@ main().catch((error) => {
   );
   process.exitCode = 1;
 });
+
+async function updateManifestApprovals(manifestPath, options) {
+  const raw = await readFile(manifestPath, 'utf8');
+  const manifest = JSON.parse(raw);
+  const referenceTimestamp =
+    typeof manifest?.packageCreatedAt === 'string' ? manifest.packageCreatedAt : new Date().toISOString();
+  manifest.approvals = seedApprovals({
+    manifest,
+    options,
+    referenceTimestamp,
+    existingApprovals: manifest.approvals,
+    now: new Date().toISOString(),
+  });
+  await writeFile(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
+}
+
+function seedApprovals({ manifest, options, referenceTimestamp, existingApprovals = [], now = referenceTimestamp }) {
+  const approvals = Array.isArray(existingApprovals)
+    ? existingApprovals.map((entry) => ({ ...entry }))
+    : [];
+
+  for (const token of options.approverTokens ?? []) {
+    const entry = parseApprovalToken(token, { defaultStatus: 'pending' });
+    if (!entry) {
+      continue;
+    }
+    upsertApproval(approvals, {
+      ...entry,
+      requestedAt: referenceTimestamp,
+      updatedAt: entry.status !== 'pending' ? referenceTimestamp : null,
+    });
+  }
+
+  for (const token of options.approvalTokens ?? []) {
+    const entry = parseApprovalToken(token, { defaultStatus: 'approved' });
+    if (!entry) {
+      continue;
+    }
+    upsertApproval(approvals, {
+      ...entry,
+      requestedAt: referenceTimestamp,
+      updatedAt: now,
+    });
+  }
+
+  approvals.sort((a, b) => {
+    const nameA = (a.reviewer ?? '').toLowerCase();
+    const nameB = (b.reviewer ?? '').toLowerCase();
+    return nameA.localeCompare(nameB);
+  });
+
+  return approvals;
+}
+
+function parseApprovalToken(raw, { defaultStatus }) {
+  if (!raw || typeof raw !== 'string') {
+    return null;
+  }
+  const parts = raw.split(':').map((part) => part.trim());
+  if (parts.length === 0 || parts[0].length === 0) {
+    return null;
+  }
+  const [reviewer, role, statusOrNote, maybeNote] = parts;
+  let status = defaultStatus ?? 'pending';
+  let notes = null;
+
+  if (parts.length === 2) {
+    status = defaultStatus ?? 'pending';
+  } else if (parts.length === 3) {
+    if (ALLOWED_APPROVAL_STATUSES.has(statusOrNote.toLowerCase())) {
+      status = statusOrNote.toLowerCase();
+    } else {
+      status = defaultStatus ?? 'pending';
+      notes = statusOrNote.length > 0 ? statusOrNote : null;
+    }
+  } else if (parts.length >= 4) {
+    status = ALLOWED_APPROVAL_STATUSES.has(statusOrNote.toLowerCase())
+      ? statusOrNote.toLowerCase()
+      : defaultStatus ?? 'pending';
+    notes = maybeNote && maybeNote.length > 0 ? maybeNote : null;
+  }
+
+  if (!ALLOWED_APPROVAL_STATUSES.has(status)) {
+    status = defaultStatus ?? 'pending';
+  }
+
+  return {
+    reviewer,
+    role: role && role.length > 0 ? role : null,
+    status,
+    notes,
+  };
+}
+
+function upsertApproval(approvals, entry) {
+  if (!entry?.reviewer) {
+    return;
+  }
+
+  const index = approvals.findIndex(
+    (existing) =>
+      existing?.reviewer === entry.reviewer &&
+      (!entry.role || !existing.role || existing.role === entry.role)
+  );
+
+  if (index === -1) {
+    approvals.push({
+      reviewer: entry.reviewer,
+      role: entry.role ?? null,
+      status: entry.status ?? 'pending',
+      requestedAt: entry.requestedAt ?? entry.updatedAt ?? new Date().toISOString(),
+      updatedAt:
+        entry.status && entry.status !== 'pending'
+          ? entry.updatedAt ?? new Date().toISOString()
+          : null,
+      notes: entry.notes ?? null,
+    });
+    return;
+  }
+
+  const existing = approvals[index] ?? {};
+  const status = entry.status ?? existing.status ?? 'pending';
+  approvals[index] = {
+    reviewer: entry.reviewer,
+    role: entry.role ?? existing.role ?? null,
+    status,
+    requestedAt: existing.requestedAt ?? entry.requestedAt ?? entry.updatedAt ?? new Date().toISOString(),
+    updatedAt:
+      status !== 'pending'
+        ? entry.updatedAt ?? new Date().toISOString()
+        : null,
+    notes: entry.notes ?? existing.notes ?? null,
+  };
+}

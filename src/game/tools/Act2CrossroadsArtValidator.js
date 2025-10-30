@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { Act2CrossroadsArtConfig } from '../data/sceneArt/Act2CrossroadsArtConfig.js';
+import { getLightingPreset } from '../data/sceneArt/LightingPresetCatalog.js';
 
 const REQUIRED_SEGMENT_IDS = Object.freeze({
   floors: Object.freeze([
@@ -31,6 +32,7 @@ const REQUIRED_SEGMENT_IDS = Object.freeze({
 
 const LIGHTING_CATEGORIES = Object.freeze(new Set(['floors', 'accents', 'lightColumns']));
 const COLLISION_CATEGORIES = Object.freeze(new Set(['boundaries']));
+const HEX_COLOR_REGEX = /^#[0-9a-fA-F]{6}$/;
 
 /**
  * Load a Crossroads art manifest from disk.
@@ -77,6 +79,7 @@ export function validateAct2CrossroadsArtBundle(options = {}) {
       missing: [],
     },
   };
+  const lightingAnalysis = [];
 
   for (const [category, requiredIds] of Object.entries(REQUIRED_SEGMENT_IDS)) {
     const categoryCoverage = {
@@ -112,6 +115,7 @@ export function validateAct2CrossroadsArtBundle(options = {}) {
       validateAssetId(mergedSegment, category, issues);
       validateMetadata(mergedSegment, category, issues);
       evaluateReadiness(mergedSegment, category, readiness, issues);
+      evaluateLightingPresetProfile(mergedSegment, category, lightingAnalysis, issues);
     }
 
     coverage[category] = categoryCoverage;
@@ -125,6 +129,7 @@ export function validateAct2CrossroadsArtBundle(options = {}) {
     coverage,
     stats,
     readiness,
+    lightingAnalysis,
   };
 }
 
@@ -143,6 +148,11 @@ export function summarizeAct2CrossroadsArtValidation(result) {
         lighting: { total: 0, ready: 0, missing: [] },
         collision: { total: 0, ready: 0, missing: [] },
       },
+      lighting: {
+        analysis: [],
+        hotspots: [],
+        deviations: [],
+      },
     };
   }
 
@@ -154,12 +164,20 @@ export function summarizeAct2CrossroadsArtValidation(result) {
   }
 
   const warnings = (result.issues ?? []).filter((issue) => issue.severity === 'warning');
+  const lightingAnalysis = Array.isArray(result.lightingAnalysis) ? result.lightingAnalysis : [];
+  const hotspots = lightingAnalysis.filter((entry) => entry?.status === 'hotspot');
+  const deviations = lightingAnalysis.filter((entry) => entry?.status === 'deviation');
 
   return {
     status: result.ok ? 'pass' : 'fail',
     missing,
     warnings,
     readiness: summarizeReadiness(result.readiness),
+    lighting: {
+      analysis: lightingAnalysis,
+      hotspots,
+      deviations,
+    },
   };
 }
 
@@ -223,7 +241,7 @@ function validateColour(segment, category, issues) {
     return;
   }
   const { color } = segment;
-  if (typeof color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(color)) {
+  if (!isValidHexColour(color)) {
     issues.push({
       severity: 'error',
       category,
@@ -362,4 +380,117 @@ function normalizeReadinessBucket(bucket) {
     ready,
     missing,
   };
+}
+
+function evaluateLightingPresetProfile(segment, category, lightingAnalysis, issues) {
+  if (!segment || !category) {
+    return;
+  }
+  const presetId =
+    typeof segment?.metadata?.lightingPreset === 'string' && segment.metadata.lightingPreset.length > 0
+      ? segment.metadata.lightingPreset
+      : null;
+  if (!presetId) {
+    return;
+  }
+
+  const analysisEntry = {
+    segmentId: segment.id,
+    category,
+    presetId,
+    alpha: typeof segment.alpha === 'number' ? segment.alpha : null,
+  };
+
+  const preset = getLightingPreset(presetId);
+  if (!preset) {
+    issues.push({
+      severity: 'error',
+      category,
+      segmentId: segment.id,
+      message: `Segment "${segment.id}" references unknown lightingPreset "${presetId}"`,
+    });
+    analysisEntry.status = 'unknown';
+    lightingAnalysis.push(analysisEntry);
+    return;
+  }
+
+  const colour = normalizeHexColour(segment.color);
+  if (!colour) {
+    analysisEntry.status = 'unavailable';
+    analysisEntry.preset = summarizePreset(preset);
+    lightingAnalysis.push(analysisEntry);
+    return;
+  }
+
+  const luminance = computeRelativeLuminance(colour);
+  const deviation = Math.abs(luminance - preset.targetLuminance);
+  const deviationThreshold = typeof preset.maxDeviation === 'number' ? preset.maxDeviation : null;
+  const maxLuminance = typeof preset.maxLuminance === 'number' ? preset.maxLuminance : null;
+  const exceedsHotspot = maxLuminance !== null && luminance > maxLuminance;
+  const exceedsDeviation =
+    deviationThreshold !== null && deviation > deviationThreshold && !exceedsHotspot;
+
+  analysisEntry.status = exceedsHotspot ? 'hotspot' : exceedsDeviation ? 'deviation' : 'ok';
+  analysisEntry.colour = colour;
+  analysisEntry.luminance = luminance;
+  analysisEntry.deviation = deviation;
+  analysisEntry.preset = summarizePreset(preset);
+
+  if (exceedsHotspot) {
+    issues.push({
+      severity: 'warning',
+      category,
+      segmentId: segment.id,
+      message: `Segment "${segment.id}" luminance ${formatDecimal(luminance)} exceeds hotspot threshold ${formatDecimal(
+        maxLuminance
+      )} for preset "${preset.id}"`,
+    });
+  } else if (exceedsDeviation) {
+    issues.push({
+      severity: 'warning',
+      category,
+      segmentId: segment.id,
+      message: `Segment "${segment.id}" deviates from preset "${preset.id}" target by ${formatDecimal(
+        deviation
+      )} (allowed ${formatDecimal(deviationThreshold)})`,
+    });
+  }
+
+  lightingAnalysis.push(analysisEntry);
+}
+
+function normalizeHexColour(colour) {
+  if (!isValidHexColour(colour)) {
+    return null;
+  }
+  return colour.toLowerCase();
+}
+
+function isValidHexColour(colour) {
+  return typeof colour === 'string' && HEX_COLOR_REGEX.test(colour);
+}
+
+function computeRelativeLuminance(hexColour) {
+  const r = parseInt(hexColour.slice(1, 3), 16) / 255;
+  const g = parseInt(hexColour.slice(3, 5), 16) / 255;
+  const b = parseInt(hexColour.slice(5, 7), 16) / 255;
+  const linear = (channel) =>
+    channel <= 0.04045 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4);
+  const lr = linear(r);
+  const lg = linear(g);
+  const lb = linear(b);
+  return 0.2126 * lr + 0.7152 * lg + 0.0722 * lb;
+}
+
+function summarizePreset(preset) {
+  return {
+    id: preset.id,
+    targetLuminance: preset.targetLuminance,
+    maxDeviation: preset.maxDeviation,
+    maxLuminance: preset.maxLuminance,
+  };
+}
+
+function formatDecimal(value) {
+  return Number.isFinite(value) ? value.toFixed(3) : 'n/a';
 }

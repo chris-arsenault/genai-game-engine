@@ -31,6 +31,8 @@ describe('Act2CrossroadsArtValidator', () => {
     expect(summary.readiness.lighting.missing).toEqual([]);
     expect(summary.readiness.lighting.ready).toBe(summary.readiness.lighting.total);
     expect(summary.readiness.collision.ready).toBe(summary.readiness.collision.total);
+    expect(summary.lighting.hotspots).toEqual([]);
+    expect(summary.lighting.deviations).toEqual([]);
   });
 
   it('flags missing required segments as errors', () => {
@@ -145,6 +147,96 @@ describe('Act2CrossroadsArtValidator', () => {
         expect.objectContaining({
           segmentId: 'crossroads_boundary_west',
           message: expect.stringContaining('lacks collision metadata'),
+        }),
+      ])
+    );
+  });
+
+  it('raises an error when a lighting preset cannot be resolved', () => {
+    const config = {
+      floors: [
+        {
+          id: 'crossroads_floor_safehouse',
+          color: '#123456',
+          alpha: 0.9,
+          metadata: {
+            lightingPreset: 'unknown_preset',
+          },
+        },
+      ],
+      accents: [],
+      lightColumns: [],
+      boundaries: [],
+    };
+
+    const result = validateAct2CrossroadsArtBundle({
+      config,
+      manifest: {},
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          severity: 'error',
+          message: expect.stringContaining('unknown lightingPreset'),
+        }),
+      ])
+    );
+  });
+
+  it('warns when luminance exceeds the preset hotspot threshold', async () => {
+    const manifest = await loadAct2CrossroadsArtManifest(manifestPath);
+    const manifestClone = JSON.parse(JSON.stringify(manifest));
+    manifestClone.accents = manifestClone.accents.map((accent) =>
+      accent?.id === 'crossroads_selection_conduit'
+        ? {
+            ...accent,
+            color: '#ffffff',
+            metadata: {
+              ...(accent.metadata ?? {}),
+              lightingPreset: 'briefing_focus',
+            },
+          }
+        : { ...accent }
+    );
+
+    const configClone = JSON.parse(JSON.stringify(Act2CrossroadsArtConfig));
+    configClone.accents = configClone.accents.map((accent) =>
+      accent?.id === 'crossroads_selection_conduit'
+        ? {
+            ...accent,
+            color: '#ffffff',
+            metadata: {
+              ...(accent.metadata ?? {}),
+              lightingPreset: 'briefing_focus',
+            },
+          }
+        : { ...accent }
+    );
+
+    const result = validateAct2CrossroadsArtBundle({
+      config: configClone,
+      manifest: manifestClone,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          severity: 'warning',
+          segmentId: 'crossroads_selection_conduit',
+          message: expect.stringContaining('exceeds hotspot threshold'),
+        }),
+      ])
+    );
+
+    const summary = summarizeAct2CrossroadsArtValidation(result);
+    expect(summary.lighting.hotspots).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          segmentId: 'crossroads_selection_conduit',
+          status: 'hotspot',
         }),
       ])
     );

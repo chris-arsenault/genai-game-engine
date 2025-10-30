@@ -69,7 +69,7 @@ Medium-complexity 2D action-adventure built with vanilla JavaScript and Canvas. 
 src/
 ├── engine/          # Core engine systems (ECS, renderer, physics, audio)
 ├── game/            # Game-specific entities, components, systems, levels
-├── assets/          # Placeholder assets + sourcing notes (music/images/models)
+├── assets/          # Generated/Sourced assets + sourcing notes (music/images/models)
 └── utils/           # Shared utilities
 ````
 
@@ -466,6 +466,7 @@ and delivers rich world building—your documentation must reflect that depth.
 4. Ensure diagrams and tables illustrate cross-genre mechanics
 5. Validate that documentation explains player intent, narrative stakes, and progression
 6. Record any new media sourcing needs, including useful `web_search` results or generation attempts, with links to the chosen assets.
+7. Attempt to source all assets (image, music, sfx, etc) by finding copyright free examples to use. Request generation of images to match intended use case.
 
 ## Documentation Types
 - **Technical Specs**: Located under `docs/tech/`. Detail APIs, data schemas, and system diagrams

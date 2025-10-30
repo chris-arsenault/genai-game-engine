@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Lighting preset catalog + hotspot analysis to surface RenderOps risks during Crossroads validation (`src/game/data/sceneArt/LightingPresetCatalog.js`, `src/game/tools/Act2CrossroadsArtValidator.js`, `tests/game/tools/Act2CrossroadsArtValidator.test.js`).
+- Reviewer approval automation for the Act 2 dialogue bundle CLI, including manifest-only approval logging (`scripts/narrative/bundleAct2BranchDialoguesForReview.js`, `tests/scripts/bundleAct2BranchDialoguesForReview.test.js`, `docs/guides/act2-dialogue-review-workflow.md`).
+- Telemetry parity dispatch CLI with analytics outbox workflow (`scripts/telemetry/dispatchQuestTelemetrySummary.js`, `tests/scripts/dispatchQuestTelemetrySummary.test.js`, `docs/guides/telemetry-parity-dispatch.md`).
 - Lighting presets for the Crossroads briefing pad and column segments with refreshed validator coverage (`assets/manifests/act2-crossroads-art.json`, `src/game/data/sceneArt/Act2CrossroadsArtConfig.js`, `tests/game/tools/Act2CrossroadsArtValidator.test.js`).
 - Act 2 dialogue review bundler CLI (`npm run narrative:bundle-act2-review`) and workflow guide for reviewer sign-off (`scripts/narrative/bundleAct2BranchDialoguesForReview.js`, `docs/guides/act2-dialogue-review-workflow.md`).
 - Telemetry parity CLI support for `--summary-out`, generating analytics handoff reports for sample batches (`scripts/telemetry/checkQuestTelemetryParity.js`).
