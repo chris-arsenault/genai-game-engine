@@ -87,6 +87,8 @@ const LIST_MODES = [
   },
 ];
 
+export const CONTROL_BINDINGS_NAV_EVENT = 'ux:control_bindings:navigation';
+
 function defaultLabelFromAction(action) {
   if (typeof action !== 'string' || action.length === 0) {
     return 'Action';
@@ -222,6 +224,32 @@ export class ControlBindingsOverlay {
     this._handleGlobalKeyDown = (event) => this.handleGlobalKeyDown(event);
 
     this.rebuildSections();
+  }
+
+  emitNavigationTelemetry(event, detail = {}) {
+    if (!this.eventBus || typeof this.eventBus.emit !== 'function') {
+      return;
+    }
+
+    const mode = this.getListMode();
+    const selected = this.actionEntries[this.selectedIndex] ?? null;
+
+    this.eventBus.emit(CONTROL_BINDINGS_NAV_EVENT, {
+      overlayId: 'controlBindings',
+      event,
+      timestamp: Date.now(),
+      visible: Boolean(this.visible),
+      capturing: Boolean(this.capturing),
+      manualOverride: Boolean(this.manualPageOverride),
+      listMode: mode?.id ?? null,
+      listModeLabel: mode?.label ?? null,
+      pageIndex: this.pageIndex,
+      pageCount: this.pageCount,
+      selectedIndex: this.selectedIndex,
+      selectedAction: selected?.action ?? null,
+      selectedActionLabel: selected?.label ?? null,
+      ...detail,
+    });
   }
 
   init() {
@@ -372,14 +400,31 @@ export class ControlBindingsOverlay {
 
   setListModeByIndex(index) {
     const clamped = ((index % LIST_MODES.length) + LIST_MODES.length) % LIST_MODES.length;
+    const previousMode = this.getListMode();
     if (clamped === this.listModeIndex) {
+      this.emitNavigationTelemetry('list_mode_change', {
+        requestedIndex: index,
+        changed: false,
+        previousModeId: previousMode?.id ?? null,
+        previousModeLabel: previousMode?.label ?? null,
+      });
       return;
     }
+
     this.listModeIndex = clamped;
     this.manualPageOverride = false;
     this.captureStatus = null;
-    this.captureMessage = `${this.getListMode().label} view enabled.`;
+    const nextMode = this.getListMode();
+    this.captureMessage = `${nextMode?.label ?? 'List'} view enabled.`;
     this.invalidateListLayout();
+    this.emitNavigationTelemetry('list_mode_change', {
+      requestedIndex: index,
+      changed: true,
+      previousModeId: previousMode?.id ?? null,
+      previousModeLabel: previousMode?.label ?? null,
+      modeId: nextMode?.id ?? null,
+      modeLabel: nextMode?.label ?? null,
+    });
   }
 
   cycleListMode(direction = 1) {
@@ -387,34 +432,73 @@ export class ControlBindingsOverlay {
   }
 
   changePage(delta = 1) {
+    const previousIndex = this.pageIndex;
     if (this.pageCount <= 1) {
+      this.emitNavigationTelemetry('page_navigate', {
+        direction: delta,
+        previousIndex,
+        nextIndex: previousIndex,
+        pageLimit: this.pageCount,
+        changed: false,
+        reason: 'single_page',
+      });
       return;
     }
+
     this.manualPageOverride = true;
     this._pendingEnsureSelectionVisible = false;
     const next = this.pageIndex + delta;
     if (next < 0) {
       this.pageIndex = 0;
-      return;
-    }
-    if (next >= this.pageCount) {
+    } else if (next >= this.pageCount) {
       this.pageIndex = this.pageCount - 1;
-      return;
+    } else {
+      this.pageIndex = next;
     }
-    this.pageIndex = next;
+
+    this.emitNavigationTelemetry('page_navigate', {
+      direction: delta,
+      previousIndex,
+      nextIndex: this.pageIndex,
+      pageLimit: this.pageCount,
+      changed: this.pageIndex !== previousIndex,
+    });
   }
 
   setPage(index) {
+    const previousIndex = this.pageIndex;
     if (this.pageCount <= 1) {
       this.pageIndex = 0;
+      this.emitNavigationTelemetry('page_set', {
+        requestedIndex: index,
+        previousIndex,
+        nextIndex: this.pageIndex,
+        pageLimit: this.pageCount,
+        changed: this.pageIndex !== previousIndex,
+        reason: 'single_page',
+      });
       return;
     }
     const clamped = Math.max(0, Math.min(this.pageCount - 1, index));
     if (clamped === this.pageIndex) {
+      this.emitNavigationTelemetry('page_set', {
+        requestedIndex: index,
+        previousIndex,
+        nextIndex: this.pageIndex,
+        pageLimit: this.pageCount,
+        changed: false,
+      });
       return;
     }
     this.pageIndex = clamped;
     this._pendingEnsureSelectionVisible = false;
+    this.emitNavigationTelemetry('page_set', {
+      requestedIndex: index,
+      previousIndex,
+      nextIndex: this.pageIndex,
+      pageLimit: this.pageCount,
+      changed: true,
+    });
   }
 
   getListModeLabel() {
@@ -901,15 +985,37 @@ export class ControlBindingsOverlay {
     if (!count) {
       return;
     }
-    const nextIndex = (this.selectedIndex + direction + count) % count;
-    if (nextIndex === this.selectedIndex) {
+    const currentIndex = this.selectedIndex;
+    const nextIndex = (currentIndex + direction + count) % count;
+    const changed = nextIndex !== currentIndex;
+    if (!changed) {
+      this.emitNavigationTelemetry('selection_move', {
+        direction,
+        previousIndex: currentIndex,
+        nextIndex,
+        changed: false,
+        previousAction: this.actionEntries[currentIndex]?.action ?? null,
+        nextAction: this.actionEntries[nextIndex]?.action ?? null,
+      });
       return;
     }
+    const previousEntry = this.actionEntries[currentIndex] ?? null;
     this.selectedIndex = nextIndex;
     this.captureMessage = null;
     this.captureStatus = null;
     this.manualPageOverride = false;
     this._pendingEnsureSelectionVisible = true;
+    const nextEntry = this.actionEntries[nextIndex] ?? null;
+    this.emitNavigationTelemetry('selection_move', {
+      direction,
+      previousIndex: currentIndex,
+      nextIndex,
+      changed: true,
+      previousAction: previousEntry?.action ?? null,
+      previousActionLabel: previousEntry?.label ?? null,
+      nextAction: nextEntry?.action ?? null,
+      nextActionLabel: nextEntry?.label ?? null,
+    });
   }
 
   beginCapture() {
@@ -921,12 +1027,17 @@ export class ControlBindingsOverlay {
     this.captureAction = entry.action;
     this.captureMessage = `Press a new key for ${entry.label}. Backspace resets defaults.`;
     this.captureStatus = null;
+    this.emitNavigationTelemetry('capture_started', {
+      action: entry.action,
+      actionLabel: entry.label,
+    });
   }
 
   cancelCapture(source = 'cancel') {
     if (!this.capturing) {
       return;
     }
+    const action = this.captureAction;
     this.capturing = false;
     this.captureAction = null;
     if (source === 'input:cancel' || source === 'escape') {
@@ -936,18 +1047,31 @@ export class ControlBindingsOverlay {
       this.captureMessage = null;
       this.captureStatus = null;
     }
+    this.emitNavigationTelemetry('capture_cancelled', {
+      action,
+      source,
+    });
   }
 
   applyBinding(action, codes, metadata = {}) {
     const normalizedCodes = Array.isArray(codes) ? codes : [];
-    setActionBindings(action, normalizedCodes, {
+    const nextCodes = setActionBindings(action, normalizedCodes, {
       metadata: { ...metadata, source: 'control-bindings-overlay' },
+    });
+    this.emitNavigationTelemetry('binding_applied', {
+      action,
+      codes: Array.isArray(nextCodes) ? [...nextCodes] : [],
+      metadata: metadata ?? null,
     });
   }
 
   resetBinding(action) {
-    setActionBindings(action, [], {
+    const nextCodes = setActionBindings(action, [], {
       metadata: { source: 'control-bindings-overlay', command: 'reset-action' },
+    });
+    this.emitNavigationTelemetry('binding_reset', {
+      action,
+      codes: Array.isArray(nextCodes) ? [...nextCodes] : [],
     });
   }
 

@@ -48,7 +48,7 @@ import { CaseFileUI } from './ui/CaseFileUI.js';
 import { DeductionBoard } from './ui/DeductionBoard.js';
 import { CrossroadsBranchLandingOverlay } from './ui/CrossroadsBranchLandingOverlay.js';
 import { InventoryOverlay } from './ui/InventoryOverlay.js';
-import { ControlBindingsOverlay } from './ui/ControlBindingsOverlay.js';
+import { ControlBindingsOverlay, CONTROL_BINDINGS_NAV_EVENT } from './ui/ControlBindingsOverlay.js';
 import { AudioFeedbackController } from './audio/AudioFeedbackController.js';
 import { SFXCatalogLoader } from './audio/SFXCatalogLoader.js';
 import { AdaptiveMoodEmitter } from './audio/AdaptiveMoodEmitter.js';
@@ -66,6 +66,7 @@ import { StoryFlagManager } from './managers/StoryFlagManager.js';
 import { CaseManager } from './managers/CaseManager.js';
 import { SaveManager } from './managers/SaveManager.js';
 import { QuestTriggerTelemetryBridge } from './telemetry/QuestTriggerTelemetryBridge.js';
+import { ControlBindingsObservationLog } from './telemetry/ControlBindingsObservationLog.js';
 
 // Quest data
 import { registerAct1Quests } from './data/quests/act1Quests.js';
@@ -171,6 +172,7 @@ export class Game {
     this.adaptiveMoodEmitter = null;
     this.gameplayAdaptiveAudioBridge = null;
     this.questTriggerTelemetryBridge = null;
+    this.controlBindingsObservationLog = new ControlBindingsObservationLog();
 
     // Game state
     this.inputState = new InputState(engine.eventBus);
@@ -1606,6 +1608,12 @@ export class Game {
       this._offGameEventHandlers.length = 0;
     }
 
+    if (this.controlBindingsObservationLog) {
+      this.controlBindingsObservationLog.reset();
+    } else {
+      this.controlBindingsObservationLog = new ControlBindingsObservationLog();
+    }
+
     const overlayLabels = {
       dialogue: 'Dialogue Box',
       disguise: 'Disguise UI',
@@ -1641,6 +1649,12 @@ export class Game {
 
       const suffix = detailParts.length ? ` (${detailParts.join(', ')})` : '';
       console.log(`[UI] Overlay ${stateLabel}: ${label}${suffix}`);
+    }));
+
+    this._offGameEventHandlers.push(this.eventBus.on(CONTROL_BINDINGS_NAV_EVENT, (payload) => {
+      if (this.controlBindingsObservationLog) {
+        this.controlBindingsObservationLog.record(payload);
+      }
     }));
 
     this._offGameEventHandlers.push(this.eventBus.on('input:caseFile:pressed', () => {
@@ -2694,6 +2708,50 @@ export class Game {
     }
 
     return overlays;
+  }
+
+  /**
+   * Retrieve a summary of recorded control bindings overlay observations.
+   * @returns {Object|null}
+   */
+  getControlBindingsObservationSummary() {
+    return this.controlBindingsObservationLog
+      ? this.controlBindingsObservationLog.getSummary()
+      : null;
+  }
+
+  /**
+   * Retrieve recorded control bindings overlay events.
+   * @returns {Array<Object>}
+   */
+  getControlBindingsObservationEvents() {
+    return this.controlBindingsObservationLog
+      ? this.controlBindingsObservationLog.getEvents()
+      : [];
+  }
+
+  /**
+   * Export control bindings overlay observation log for external tooling.
+   * @returns {Object}
+   */
+  exportControlBindingsObservationLog() {
+    return this.controlBindingsObservationLog
+      ? this.controlBindingsObservationLog.toSerializable()
+      : {
+          version: 1,
+          generatedAt: new Date().toISOString(),
+          summary: null,
+          events: [],
+        };
+  }
+
+  /**
+   * Reset recorded control bindings overlay observations.
+   */
+  resetControlBindingsObservationLog() {
+    if (this.controlBindingsObservationLog) {
+      this.controlBindingsObservationLog.reset();
+    }
   }
 
   _updateAdaptiveMusic(deltaTime = 0) {

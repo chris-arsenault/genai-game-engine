@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Control bindings overlay navigation telemetry logging plus exporter CLI to generate UX observation summaries (`src/game/ui/ControlBindingsOverlay.js`, `src/game/telemetry/ControlBindingsObservationLog.js`, `scripts/ux/exportControlBindingsObservations.js`, `tests/game/ui/ControlBindingsOverlay.test.js`, `tests/game/telemetry/ControlBindingsObservationLog.test.js`, `tests/scripts/ux/exportControlBindingsObservations.test.js`).
 - Entity destruction lifecycle now feeds QuestManager and FactionManager, blocking objectives for missing NPCs and logging faction member removals (`src/engine/ecs/EntityManager.js`, `src/game/managers/QuestManager.js`, `src/game/managers/FactionManager.js`, `tests/game/managers/QuestManager.test.js`, `tests/game/managers/FactionManager.test.js`).
 - Spatial hash metrics surfaced in the debug overlay with collision system registration for live bucket monitoring (`src/game/Game.js`, `src/main.js`, `index.html`).
 - AR-001 – AR-005 prompt packaging CLI and JSON payload output for OpenAI sourcing (`scripts/art/exportGenerationPrompts.js`, `scripts/art/lib/generationPromptPackager.js`, `assets/images/generation-payloads/ar-001-005.json`, `tests/scripts/art/generationPromptPackager.test.js`).

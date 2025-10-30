@@ -79,6 +79,13 @@
 - Logged follow-up backlog item to run micro-playtests on the new ControlBindings overlay navigation patterns and capture qualitative feedback before extending further HUD polish.
 - Next steps: schedule focused sessions, prepare observation checklist, and roll findings into UI refinements.
 
+### Session #134 Backlog Updates
+
+#### UX-410: Overlay navigation shortcut feedback
+- ControlBindings overlay now emits navigation telemetry (`CONTROL_BINDINGS_NAV_EVENT`), with `ControlBindingsObservationLog` capturing qualitative signals and exposing summaries through `Game.exportControlBindingsObservationLog()`.
+- Authored `scripts/ux/exportControlBindingsObservations.js` plus Jest coverage to transform recorded logs into JSON/Markdown reports with heuristic recommendations for upcoming micro-playtests.
+- Next steps: run at least three targeted sessions using the new logger/exporter pipeline and document the qualitative findings for HUD follow-up.
+
 ### Session #124 Backlog Updates
 
 #### M1-002 / M1-012: ECS/Narrative Integrations

@@ -1,4 +1,4 @@
-import { ControlBindingsOverlay } from '../../../src/game/ui/ControlBindingsOverlay.js';
+import { ControlBindingsOverlay, CONTROL_BINDINGS_NAV_EVENT } from '../../../src/game/ui/ControlBindingsOverlay.js';
 import { EventBus } from '../../../src/engine/events/EventBus.js';
 import {
   getBindingsSnapshot,
@@ -6,6 +6,7 @@ import {
   setActionBindings,
   subscribe as subscribeControlBindings,
 } from '../../../src/game/state/controlBindingsStore.js';
+import { ControlBindingsObservationLog } from '../../../src/game/telemetry/ControlBindingsObservationLog.js';
 
 jest.mock('../../../src/game/state/controlBindingsStore.js', () => ({
   getBindingsSnapshot: jest.fn(),
@@ -226,6 +227,67 @@ describe('ControlBindingsOverlay', () => {
     overlay.handleGlobalKeyDown(cycleEvent);
     expect(cycleEvent.preventDefault).toHaveBeenCalled();
     expect(overlay.getListMode().id).not.toEqual(initialMode);
+
+    overlay.cleanup();
+  });
+
+  it('emits navigation telemetry events and records observation summary', () => {
+    const canvas = createMockCanvas();
+    const eventBus = new EventBus();
+
+    const richBindings = {
+      moveUp: ['KeyW'],
+      moveDown: ['KeyS'],
+      moveLeft: ['KeyA'],
+      moveRight: ['KeyD'],
+      interact: ['KeyE'],
+      inventory: ['KeyI'],
+      quest: ['KeyQ'],
+      faction: ['KeyR'],
+      controlsMenu: ['KeyK'],
+      pause: ['Escape'],
+      confirm: ['Enter'],
+    };
+
+    const keyMap = new Map();
+    for (const [action, codes] of Object.entries(richBindings)) {
+      for (const code of codes) {
+        keyMap.set(code, new Set([action]));
+      }
+    }
+
+    getBindingsSnapshot.mockReturnValue(richBindings);
+    getKeyToActionsSnapshot.mockReturnValue(keyMap);
+
+    const overlay = new ControlBindingsOverlay(canvas, eventBus);
+    overlay.init();
+    overlay.show('test');
+
+    const log = new ControlBindingsObservationLog();
+    const telemetryEvents = [];
+
+    eventBus.on(CONTROL_BINDINGS_NAV_EVENT, (payload) => {
+      telemetryEvents.push(payload);
+      log.record(payload);
+    });
+
+    eventBus.emit('input:moveDown:pressed');
+    const cycleEvent = { code: 'BracketRight', preventDefault: jest.fn() };
+    overlay.handleGlobalKeyDown(cycleEvent);
+    const pageDownEvent = { code: 'PageDown', preventDefault: jest.fn() };
+    overlay.handleGlobalKeyDown(pageDownEvent);
+
+    expect(telemetryEvents.length).toBeGreaterThanOrEqual(2);
+    const moveEvent = telemetryEvents.find((evt) => evt.event === 'selection_move');
+    expect(moveEvent).toBeDefined();
+    expect(moveEvent.changed).toBe(true);
+    expect(moveEvent.nextAction).toBeDefined();
+
+    const summary = log.getSummary();
+    expect(summary.metrics.selectionMoves).toBeGreaterThanOrEqual(1);
+    expect(summary.listModesVisited.length).toBeGreaterThanOrEqual(1);
+    expect(summary.totalEvents).toBe(telemetryEvents.length);
+    expect(summary.actionsVisited.length).toBeGreaterThan(0);
 
     overlay.cleanup();
   });
