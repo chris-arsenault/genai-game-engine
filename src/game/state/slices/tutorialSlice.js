@@ -248,11 +248,43 @@ export const tutorialSlice = {
           position: payload.position ? { ...payload.position } : null,
           canSkip: Boolean(payload.canSkip),
           startedAt: timestamp,
-           controlHint,
+          controlHint,
         };
         next.currentPrompt = prompt;
         recordPromptHistory(next, prompt);
         hasChange = true;
+        break;
+      }
+
+      case 'TUTORIAL_CONTROL_HINT_UPDATED': {
+        const stepId = payload.stepId ?? next.currentStep ?? null;
+        const hint = cloneControlHint(payload.controlHint);
+        if (stepId && hint) {
+          let updated = false;
+          if (next.currentPrompt && next.currentPrompt.stepId === stepId) {
+            next.currentPrompt.controlHint = hint;
+            updated = true;
+          }
+          if (Array.isArray(next.promptHistory) && next.promptHistory.length > 0) {
+            for (let i = next.promptHistory.length - 1; i >= 0; i--) {
+              const entry = next.promptHistory[i];
+              if (entry?.stepId === stepId) {
+                next.promptHistory[i] = {
+                  ...entry,
+                  controlHint: hint,
+                };
+                updated = true;
+                break;
+              }
+            }
+          }
+          if (updated) {
+            recordPromptSnapshot(next, 'control_hint_updated', timestamp, {
+              stepId,
+            });
+            hasChange = true;
+          }
+        }
         break;
       }
 

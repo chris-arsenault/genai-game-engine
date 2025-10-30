@@ -2,6 +2,7 @@ import { EntityManager } from '../../../src/engine/ecs/EntityManager.js';
 import { ComponentRegistry } from '../../../src/engine/ecs/ComponentRegistry.js';
 import { ForensicEvidence } from '../../../src/game/components/ForensicEvidence.js';
 import { createEvidenceEntity } from '../../../src/game/entities/EvidenceEntity.js';
+import { setActionBindings, resetBindings } from '../../../src/game/state/controlBindingsStore.js';
 
 describe('EvidenceEntity', () => {
   it('formats default interaction prompt with interact key when no custom prompt supplied', () => {
@@ -19,6 +20,23 @@ describe('EvidenceEntity', () => {
     expect(interactionZone.prompt).toBe('Press E to collect Encrypted Vial');
   });
 
+  it('uses dynamic interact binding when control bindings are remapped', () => {
+    const entityManager = new EntityManager();
+    const componentRegistry = new ComponentRegistry(entityManager);
+    setActionBindings('interact', ['KeyQ']);
+
+    const entityId = createEvidenceEntity(entityManager, componentRegistry, {
+      id: 'ev_prompt_dynamic',
+      x: 0,
+      y: 0,
+      title: 'Encrypted Vial',
+    });
+
+    const interactionZone = componentRegistry.getComponent(entityId, 'InteractionZone');
+    expect(interactionZone.prompt).toBe('Press Q to collect Encrypted Vial');
+
+    resetBindings();
+  });
   it('preserves custom prompt that already includes a keybinding', () => {
     const entityManager = new EntityManager();
     const componentRegistry = new ComponentRegistry(entityManager);

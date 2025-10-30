@@ -13,6 +13,7 @@ import { Collider } from '../components/Collider.js';
 import { ForensicEvidence } from '../components/ForensicEvidence.js';
 import { Controls } from '../config/Controls.js';
 import { formatKeyLabels } from '../utils/controlLabels.js';
+import { getActionBindings } from '../state/controlBindingsStore.js';
 
 function shouldLog() {
   if (typeof __DEV__ !== 'undefined') {
@@ -166,8 +167,11 @@ function buildInteractionPrompt(customPrompt, title) {
 }
 
 function getInteractControlLabels() {
-  const interactBindings = Array.isArray(Controls?.interact) ? Controls.interact : ['KeyE'];
-  const labels = formatKeyLabels(interactBindings);
+  const dynamicBindings = getActionBindings('interact');
+  const fallbackBindings = Array.isArray(Controls?.interact) ? Controls.interact : ['KeyE'];
+  const bindingCodes =
+    Array.isArray(dynamicBindings) && dynamicBindings.length > 0 ? dynamicBindings : fallbackBindings;
+  const labels = formatKeyLabels(bindingCodes.length > 0 ? bindingCodes : fallbackBindings);
 
   if (labels.length === 0) {
     return 'E';

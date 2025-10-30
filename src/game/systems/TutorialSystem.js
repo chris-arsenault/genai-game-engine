@@ -9,6 +9,8 @@
 
 import { System } from '../../engine/ecs/System.js';
 import { tutorialSteps, getTutorialStep, getNextTutorialStep } from '../data/tutorialSteps.js';
+import { resolveControlHint } from '../utils/controlHintResolver.js';
+import { subscribe as subscribeControlBindings } from '../state/controlBindingsStore.js';
 
 const isTestEnvironment = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
 let injectedLocalStorage = null;
@@ -88,6 +90,10 @@ export class TutorialSystem extends System {
 
     // Event unsubscriber references
     this._offEventHandlers = [];
+    this._unsubscribeControlBindings = subscribeControlBindings(() => {
+      this.handleControlBindingsChanged();
+    });
+    this.activeControlHint = null;
   }
 
   /**
@@ -150,6 +156,9 @@ export class TutorialSystem extends System {
     this.stepDuration = step.duration || 0;
     const startedAt = this.stepStartTime;
 
+    const resolvedControlHint = resolveControlHint(step.controlHint);
+    this.activeControlHint = resolvedControlHint;
+
     this.eventBus.emit('tutorial:step_started', {
       stepId: step.id,
       stepIndex: this.currentStepIndex,
@@ -159,11 +168,58 @@ export class TutorialSystem extends System {
       highlight: step.highlight,
       position: step.position,
       canSkip: step.canSkip,
-      controlHint: step.controlHint ?? null,
+      controlHint: resolvedControlHint ?? null,
       startedAt,
     });
 
     console.log(`[TutorialSystem] Started step: ${step.id} (${this.currentStepIndex + 1}/${tutorialSteps.length})`);
+  }
+
+  controlHintsEqual(a, b) {
+    if (a === b) {
+      return true;
+    }
+    if (!a || !b) {
+      return false;
+    }
+    if ((a.label ?? null) !== (b.label ?? null)) {
+      return false;
+    }
+    if ((a.note ?? null) !== (b.note ?? null)) {
+      return false;
+    }
+    const aKeys = Array.isArray(a.keys) ? a.keys : [];
+    const bKeys = Array.isArray(b.keys) ? b.keys : [];
+    if (aKeys.length !== bKeys.length) {
+      return false;
+    }
+    for (let i = 0; i < aKeys.length; i++) {
+      if (aKeys[i] !== bKeys[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  handleControlBindingsChanged() {
+    if (!this.enabled || !this.currentStep || !this.currentStep.controlHint) {
+      return;
+    }
+    const resolvedControlHint = resolveControlHint(this.currentStep.controlHint);
+    if (this.controlHintsEqual(this.activeControlHint, resolvedControlHint)) {
+      return;
+    }
+    this.activeControlHint = resolvedControlHint ?? null;
+    if (!resolvedControlHint) {
+      return;
+    }
+    this.eventBus.emit('tutorial:control_hint_updated', {
+      stepId: this.currentStep.id,
+      stepIndex: this.currentStepIndex,
+      totalSteps: tutorialSteps.length,
+      controlHint: resolvedControlHint,
+      updatedAt: Date.now(),
+    });
   }
 
   /**
@@ -193,6 +249,7 @@ export class TutorialSystem extends System {
     }
 
     // Advance to next step
+    this.activeControlHint = null;
     this.currentStepIndex++;
     this.currentStep = tutorialSteps[this.currentStepIndex];
     this.startStep(this.currentStep);
@@ -206,6 +263,7 @@ export class TutorialSystem extends System {
 
     this.skipped = true;
     this.enabled = false;
+    this.activeControlHint = null;
 
     // Save skip preference
     const storages = this._getStorageCandidates();
@@ -248,6 +306,7 @@ export class TutorialSystem extends System {
     }
 
     this.enabled = false;
+    this.activeControlHint = null;
 
     // Save completion
     const storages = this._getStorageCandidates();
@@ -436,6 +495,7 @@ export class TutorialSystem extends System {
     this.currentStepIndex = -1;
     this.completedSteps.clear();
     this.skipped = false;
+    this.activeControlHint = null;
 
     // Reset context
     this.context = {
@@ -467,6 +527,10 @@ export class TutorialSystem extends System {
         }
       });
       this._offEventHandlers.length = 0;
+    }
+    if (typeof this._unsubscribeControlBindings === 'function') {
+      this._unsubscribeControlBindings();
+      this._unsubscribeControlBindings = null;
     }
   }
 

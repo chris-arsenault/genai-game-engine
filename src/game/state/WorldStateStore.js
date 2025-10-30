@@ -392,6 +392,18 @@ export class WorldStateStore {
         });
       }),
 
+      this.eventBus.on('tutorial:control_hint_updated', (payload = {}) => {
+        this.dispatch({
+          type: 'TUTORIAL_CONTROL_HINT_UPDATED',
+          domain: 'tutorial',
+          payload: {
+            stepId: payload.stepId ?? null,
+            controlHint: payload.controlHint ?? null,
+          },
+          timestamp: payload.updatedAt ?? Date.now(),
+        });
+      }),
+
       this.eventBus.on('tutorial:step_completed', (payload) => {
         this.dispatch({
           type: 'TUTORIAL_STEP_COMPLETED',

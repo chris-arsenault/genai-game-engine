@@ -31,6 +31,14 @@
 - Evidence prompts now auto-inject the interact keybinding and tutorial hotspots use brighter sprites, giving players visual confirmation of where the inputs apply.
 - World state telemetry and Jest coverage were refreshed to persist the new guidance metadata while keeping Store/overlay integrations aligned.
 
+### Session #130 Backlog Updates
+
+#### INPUT-310: Control Binding Store and Tutorial Sync
+- Introduced a centralized control binding store with subscribe/update/reset APIs so gameplay systems resolve input prompts from the active bindings instead of static constants.
+- Updated `InputState`, `TutorialSystem`, `tutorialSlice`, and evidence prompts to react to binding changes, emitting `tutorial:control_hint_updated` events for telemetry and UI refreshes.
+- Expanded Jest coverage across the new store, state slices, view model, and tutorial/evidence modules, plus added Playwright assertions verifying keycap rendering and hotspot brightness.
+- Next steps: surface a player-facing keybinding remap UI and broadcast binding updates to other overlays (interaction prompts, detective vision HUD, etc.).
+
 ### Session #124 Backlog Updates
 
 #### M1-002 / M1-012: ECS/Narrative Integrations

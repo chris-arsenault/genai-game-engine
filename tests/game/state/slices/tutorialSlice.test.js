@@ -175,4 +175,45 @@ describe('tutorialSlice', () => {
     expect(snapshots[0].event).toBe('step_completed');
     expect(snapshots[1].event).toBe('tutorial_completed');
   });
+
+  test('updates control hint data when bindings change', () => {
+    let state = tutorialSlice.getInitialState();
+
+    state = reduce(state, {
+      type: 'TUTORIAL_STEP_STARTED',
+      domain: 'tutorial',
+      payload: {
+        stepId: 'movement',
+        stepIndex: 0,
+        totalSteps: 2,
+        title: 'Move',
+        description: 'Use WASD',
+        controlHint: {
+          label: 'Movement',
+          keys: ['W', 'A', 'S', 'D'],
+          note: 'Reach the highlighted area.',
+        },
+      },
+      timestamp: 100,
+    });
+
+    state = reduce(state, {
+      type: 'TUTORIAL_CONTROL_HINT_UPDATED',
+      domain: 'tutorial',
+      payload: {
+        stepId: 'movement',
+        controlHint: {
+          label: 'Movement',
+          keys: ['I', 'J', 'K', 'L'],
+          note: 'Alternative layout.',
+        },
+      },
+      timestamp: 120,
+    });
+
+    expect(state.currentPrompt.controlHint.keys).toEqual(['I', 'J', 'K', 'L']);
+    expect(state.promptHistory[state.promptHistory.length - 1].controlHint.keys).toEqual(['I', 'J', 'K', 'L']);
+    const snapshots = tutorialSlice.selectors.selectPromptHistorySnapshots({ tutorial: state });
+    expect(snapshots[snapshots.length - 1].event).toBe('control_hint_updated');
+  });
 });

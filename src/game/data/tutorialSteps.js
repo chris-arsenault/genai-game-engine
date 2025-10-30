@@ -1,6 +1,23 @@
 import { Controls } from '../config/Controls.js';
 import { formatKeyLabels } from '../utils/controlLabels.js';
 
+function dedupeStrings(values) {
+  const result = [];
+  const seen = new Set();
+  for (const value of values) {
+    if (typeof value !== 'string') {
+      continue;
+    }
+    const trimmed = value.trim();
+    if (!trimmed || seen.has(trimmed)) {
+      continue;
+    }
+    seen.add(trimmed);
+    result.push(trimmed);
+  }
+  return result;
+}
+
 /**
  * Tutorial Steps for The Memory Syndicate
  *
@@ -9,32 +26,52 @@ import { formatKeyLabels } from '../utils/controlLabels.js';
  */
 
 function buildControlHint({ actions = [], keyCodes = [], label = null, note = null, labels = [] }) {
-  const resolvedCodes = [];
+  const normalizedActions = [];
+  const actionSet = new Set();
+  for (const action of Array.isArray(actions) ? actions : []) {
+    if (typeof action !== 'string' || action.length === 0 || actionSet.has(action)) {
+      continue;
+    }
+    actionSet.add(action);
+    normalizedActions.push(action);
+  }
 
-  for (const action of actions) {
-    const bindings = Array.isArray(Controls?.[action]) ? Controls[action] : null;
-    if (bindings && bindings.length > 0) {
-      resolvedCodes.push(bindings[0]);
+  const normalizedKeyCodes = [];
+  for (const code of Array.isArray(keyCodes) ? keyCodes : []) {
+    if (typeof code === 'string' && code.length > 0) {
+      normalizedKeyCodes.push(code);
     }
   }
 
-  if (Array.isArray(keyCodes)) {
-    resolvedCodes.push(...keyCodes);
+  const fallbackCodes = [];
+  for (const action of normalizedActions) {
+    const bindings = Array.isArray(Controls?.[action]) ? Controls[action] : null;
+    if (bindings && bindings.length > 0) {
+      for (const binding of bindings) {
+        if (typeof binding === 'string' && binding.length > 0) {
+          fallbackCodes.push(binding);
+        }
+      }
+    }
   }
 
-  const resolvedLabels = [
-    ...formatKeyLabels(resolvedCodes),
-    ...labels.filter((entry) => typeof entry === 'string' && entry.trim().length > 0),
-  ];
+  const manualLabels = dedupeStrings(labels);
+  const resolvedCodes = [...normalizedKeyCodes, ...fallbackCodes];
+  const formattedLabels = formatKeyLabels(resolvedCodes);
+  const combinedLabels = dedupeStrings([...formattedLabels, ...manualLabels]);
 
-  if (resolvedLabels.length === 0 && !label && !note) {
+  if (combinedLabels.length === 0 && !label && !note) {
     return null;
   }
 
   return {
     label: label ?? null,
-    keys: resolvedLabels,
+    keys: combinedLabels,
     note: note ?? null,
+    actions: normalizedActions,
+    keyCodes: normalizedKeyCodes,
+    manualLabels,
+    fallbackCodes,
   };
 }
 

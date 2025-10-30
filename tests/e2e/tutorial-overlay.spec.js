@@ -422,6 +422,54 @@ test.describe('Tutorial overlay', () => {
     expect(consoleErrors).toEqual([]);
   });
 
+  test('shows control hint keycaps and bright tutorial evidence hotspots', async ({ page }) => {
+    const consoleErrors = collectConsoleErrors(page);
+
+    await prepareTutorial(page);
+    await fastForwardTutorial(page, 'movement');
+
+    const controlHintKeys = await page.evaluate(() => {
+      const tutorialState = window.game.worldStateStore.getState().tutorial;
+      return Array.isArray(tutorialState.currentPrompt?.controlHint?.keys)
+        ? [...tutorialState.currentPrompt.controlHint.keys]
+        : [];
+    });
+
+    expect(controlHintKeys).toEqual(['W', 'A', 'S', 'D']);
+
+    const evidenceHotspots = await page.evaluate(() => {
+      const registry = window.game.componentRegistry;
+      const evidenceEntities = registry.queryEntities('Evidence');
+      return evidenceEntities.map((entityId) => {
+        const evidence = registry.getComponent(entityId, 'Evidence');
+        const sprite = registry.getComponent(entityId, 'Sprite');
+        return {
+          id: evidence?.id ?? null,
+          alpha: sprite?.alpha ?? null,
+          color: sprite?.color ?? null,
+        };
+      });
+    });
+
+    const extractor = evidenceHotspots.find((entry) => entry.id === 'ev_001_extractor');
+    const blood = evidenceHotspots.find((entry) => entry.id === 'ev_002_blood');
+    const residue = evidenceHotspots.find((entry) => entry.id === 'ev_003_residue');
+
+    for (const hotspot of [extractor, blood, residue]) {
+      expect(hotspot).toBeDefined();
+      expect(typeof hotspot.alpha).toBe('number');
+      expect(hotspot.alpha).toBeGreaterThanOrEqual(0.9);
+      expect(typeof hotspot.color).toBe('string');
+      expect(hotspot.color?.length).toBeGreaterThan(0);
+    }
+
+    expect(extractor.color).toBe('#FFD447');
+    expect(blood.color).toBe('#FF9F4A');
+    expect(residue.color).toBe('#6EDBFF');
+
+    expect(consoleErrors).toEqual([]);
+  });
+
   test('advances evidence detection step via proximity', async ({ page }) => {
     const consoleErrors = collectConsoleErrors(page);
 

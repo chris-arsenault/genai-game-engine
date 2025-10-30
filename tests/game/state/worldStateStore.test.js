@@ -82,6 +82,13 @@ describe('WorldStateStore', () => {
         keys: ['W', 'A', 'S', 'D'],
       },
     });
+    eventBus.emit('tutorial:control_hint_updated', {
+      stepId: 'movement',
+      controlHint: {
+        label: 'Movement',
+        keys: ['I', 'J', 'K', 'L'],
+      },
+    });
     eventBus.emit('tutorial:step_completed', { stepId: 'movement', stepIndex: 0 });
 
     eventBus.emit('dialogue:started', {
@@ -117,10 +124,11 @@ describe('WorldStateStore', () => {
     expect(tutorial.enabled).toBe(true);
     expect(tutorial.completedSteps).toContain('movement');
     const tutorialPrompt = store.select(tutorialSlice.selectors.selectCurrentPrompt);
-    expect(tutorialPrompt.controlHint.keys).toEqual(['W', 'A', 'S', 'D']);
+    expect(tutorialPrompt.controlHint.keys).toEqual(['I', 'J', 'K', 'L']);
     const tutorialSnapshots = store.select(tutorialSlice.selectors.selectPromptHistorySnapshots);
-    expect(tutorialSnapshots).toHaveLength(1);
-    expect(tutorialSnapshots[0].event).toBe('step_completed');
+    expect(tutorialSnapshots).toHaveLength(2);
+    expect(tutorialSnapshots[0].event).toBe('control_hint_updated');
+    expect(tutorialSnapshots[1].event).toBe('step_completed');
 
     const dialogue = store.select(dialogueSlice.selectors.selectDialogueTranscript, 'npc_alpha');
     expect(dialogue).toHaveLength(2);
