@@ -140,8 +140,20 @@ export async function applyOperations(image, operations = {}) {
 
   if (operations.resize) {
     const { width, height, mode = Jimp.RESIZE_BICUBIC } = operations.resize;
-    if (width || height) {
-      image.resize(width ?? Jimp.AUTO, height ?? Jimp.AUTO, mode);
+    const resizeOptions = {};
+
+    if (typeof width === "number" && Number.isFinite(width) && width > 0) {
+      resizeOptions.w = width;
+    }
+    if (typeof height === "number" && Number.isFinite(height) && height > 0) {
+      resizeOptions.h = height;
+    }
+
+    if (Object.keys(resizeOptions).length > 0) {
+      if (mode) {
+        resizeOptions.mode = mode;
+      }
+      image.resize(resizeOptions);
     }
   }
 
@@ -250,7 +262,7 @@ export async function processEntry(entry, options = {}) {
   }
 
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
-  await image.writeAsync(outputPath);
+  await image.write(outputPath);
 
   return { outputPath, width: image.bitmap.width, height: image.bitmap.height };
 }

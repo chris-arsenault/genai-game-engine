@@ -43,6 +43,12 @@
 - `image-ar-050-crossroads-column-checkpoint-north` uses Joyce Andes’ **Proudly Beaming and Standing Tall** (CC BY 2.0, Flickr via Openverse d373ad62-282c-455f-b85a-2e58b2f0fa9f) as the high-intensity checkpoint reference plate.
 - `image-ar-050-crossroads-column-checkpoint-south` adopts **NYC World Trade Center Tribute in Light 2012** by www.GlynLowe.com (CC BY 2.0, Wikimedia via Openverse 7baeb847-c6de-4d96-983a-75a130697e06) to keep the southern choke-point glow consistent with the north beam profile.
 
+## Session 110 Updates
+- Authored generation briefs for AR-001 through AR-005 in `docs/assets/generation-prompts-ar-001-005.md`; linked each manifest entry to the prompts to unblock OpenAI request drafting.
+- Prompt drafting keeps statuses at `pending-sourcing` until final assets are generated, but adds traceability for design intent and negative prompt guidance.
+- Patched `overlayPipeline` Jimp integration to support height-only resizing and asynchronous writes, enabling `npm run art:generate-crossroads-overlays` to emit derivatives directly to `assets/overlays/act2-crossroads/`.
+- Generated safehouse and checkpoint column overlays (420x1060, 380x1180, 360x1280, 360x1220) and marked the corresponding manifest entries as `derivative-generated`.
+
 ### Overlay Processing Pipeline
 - Added `scripts/art/generateOverlayDerivatives.js` to convert CC0/CC-BY references into transparent overlays using configurable operations (crop, tint, alpha-from-luma).
 - Column overlays are defined in `assets/images/overlay-derivatives-act2-crossroads.json`; the script downloads the Openverse source plates and renders processed PNGs to `assets/overlays/act2-crossroads/`.

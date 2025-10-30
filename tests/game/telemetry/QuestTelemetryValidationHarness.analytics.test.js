@@ -47,20 +47,26 @@ describe('QuestTelemetryValidationHarness analytics dataset', () => {
 
     const [enterEvent, exitEvent] = dataset.events;
     expect(enterEvent).toMatchObject({
-      eventType: 'telemetry:trigger_entered',
-      telemetryTag: 'act2_branch_objective_entry',
-      questId: 'quest-test',
-      objectiveId: 'objective-test',
-      triggerId: 'trigger-test',
-      sceneId: 'act2_test_scene',
+      type: 'telemetry:trigger_entered',
       timestamp,
-      timestampIso: new Date(timestamp).toISOString(),
+      payload: {
+        telemetryTag: 'act2_branch_objective_entry',
+        questId: 'quest-test',
+        objectiveId: 'objective-test',
+        triggerId: 'trigger-test',
+        sceneId: 'act2_test_scene',
+        source: 'act2_branch_objective',
+      },
     });
 
     expect(exitEvent).toMatchObject({
-      eventType: 'telemetry:trigger_exited',
-      telemetryTag: 'act2_branch_objective_exit',
-      triggerId: 'trigger-test',
+      type: 'telemetry:trigger_exited',
+      payload: {
+        telemetryTag: 'act2_branch_objective_exit',
+        questId: 'quest-test',
+        objectiveId: 'objective-test',
+        areaId: 'trigger-test',
+      },
     });
 
     expect(dataset.report.totalEvents).toBe(2);

@@ -71,4 +71,19 @@ describe("overlayPipeline utilities", () => {
     expect(Math.max(...alphaValues)).toBe(255);
     expect(Math.min(...alphaValues)).toBeGreaterThanOrEqual(0);
   });
+
+  test("applyOperations resizes images when only height is provided", async () => {
+    const image = new Jimp({
+      width: 800,
+      height: 600,
+      color: 0xffffffff,
+    });
+
+    await applyOperations(image, {
+      resize: { height: 200 },
+    });
+
+    expect(image.bitmap.height).toBe(200);
+    expect(image.bitmap.width).toBeGreaterThan(0);
+  });
 });

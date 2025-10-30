@@ -443,33 +443,41 @@ function normaliseTimestamp(value) {
 function normaliseAnalyticsEvent(entry = {}) {
   const payload = entry.payload && typeof entry.payload === 'object' ? entry.payload : {};
   const timestamp = normaliseTimestamp(entry.timestamp ?? null);
+  const type =
+    typeof entry.type === 'string' && entry.type.length > 0 ? entry.type : 'unknown';
 
-  return {
-    eventType: entry.type ?? null,
+  const normalisedPayload = {
     telemetryTag:
       typeof payload.telemetryTag === 'string' && payload.telemetryTag.length > 0
         ? payload.telemetryTag
-        : null,
+        : 'unknown',
     questId:
       typeof payload.questId === 'string' && payload.questId.length > 0
         ? payload.questId
-        : null,
+        : 'unknown',
     objectiveId:
       typeof payload.objectiveId === 'string' && payload.objectiveId.length > 0
         ? payload.objectiveId
-        : null,
-    triggerId:
-      typeof payload.triggerId === 'string' && payload.triggerId.length > 0
-        ? payload.triggerId
-        : typeof payload.areaId === 'string' && payload.areaId.length > 0
-        ? payload.areaId
-        : null,
-    sceneId:
-      typeof payload.sceneId === 'string' && payload.sceneId.length > 0 ? payload.sceneId : null,
-    source: typeof payload.source === 'string' && payload.source.length > 0 ? payload.source : null,
-    actorId: typeof payload.actorId === 'string' && payload.actorId.length > 0 ? payload.actorId : null,
+        : 'unknown',
+  };
+
+  if (typeof payload.triggerId === 'string' && payload.triggerId.length > 0) {
+    normalisedPayload.triggerId = payload.triggerId;
+  } else if (typeof payload.areaId === 'string' && payload.areaId.length > 0) {
+    normalisedPayload.areaId = payload.areaId;
+  }
+
+  if (typeof payload.sceneId === 'string' && payload.sceneId.length > 0) {
+    normalisedPayload.sceneId = payload.sceneId;
+  }
+
+  if (typeof payload.source === 'string' && payload.source.length > 0) {
+    normalisedPayload.source = payload.source;
+  }
+
+  return {
+    type,
     timestamp,
-    timestampIso: new Date(timestamp).toISOString(),
-    payload: { ...payload },
+    payload: normalisedPayload,
   };
 }

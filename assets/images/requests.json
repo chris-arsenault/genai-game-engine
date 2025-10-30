@@ -19,7 +19,7 @@
     "license": "",
     "status": "pending-sourcing",
     "usage": "1024x768 deduction board backdrop for investigative UI overlay.",
-    "notes": "Needs layered neon corkboard vibe with space for clue nodes and narrative callouts."
+    "notes": "Needs layered neon corkboard vibe with space for clue nodes and narrative callouts. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
   },
   {
     "id": "image-ar-001-clue-node-pack",
@@ -30,7 +30,7 @@
     "license": "",
     "status": "pending-sourcing",
     "usage": "64x64 node sprites representing active, solved, and locked clues on deduction board.",
-    "notes": "Requires at least three variations with animated pulse option for narrative emphasis."
+    "notes": "Requires at least three variations with animated pulse option for narrative emphasis. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
   },
   {
     "id": "image-ar-001-evidence-icon-set",
@@ -41,7 +41,7 @@
     "license": "",
     "status": "pending-sourcing",
     "usage": "32x32 icon suite for physical, digital, testimonial, and forensic evidence categories.",
-    "notes": "Icons must read at small sizes; include monochrome and color treatments."
+    "notes": "Icons must read at small sizes; include monochrome and color treatments. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
   },
   {
     "id": "image-ar-001-ui-button-pack",
@@ -52,7 +52,7 @@
     "license": "",
     "status": "pending-sourcing",
     "usage": "Interactive buttons (play, pause, settings, confirm, cancel) for menu overlays.",
-    "notes": "Target 64x32 sprites with hover/pressed states; neon noir styling."
+    "notes": "Target 64x32 sprites with hover/pressed states; neon noir styling. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
   },
   {
     "id": "image-ar-002-generic-marker",
@@ -63,7 +63,7 @@
     "license": "",
     "status": "pending-sourcing",
     "usage": "32x32 placeholder sprite for generic evidence pickups.",
-    "notes": "Needs blank label area for procedural numbering."
+    "notes": "Needs blank label area for procedural numbering. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
   },
   {
     "id": "image-ar-002-fingerprint",
@@ -74,7 +74,7 @@
     "license": "",
     "status": "pending-sourcing",
     "usage": "32x32 sprite for latent fingerprint items.",
-    "notes": "Supports neon-guided cyan lighting to align with Memory Parlor palette."
+    "notes": "Supports neon-guided cyan lighting to align with Memory Parlor palette. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
   },
   {
     "id": "image-ar-002-document",
@@ -85,7 +85,7 @@
     "license": "",
     "status": "pending-sourcing",
     "usage": "32x32 sprite for dossier and report collectibles.",
-    "notes": "Add subtle fold and holographic seal for narrative flair."
+    "notes": "Add subtle fold and holographic seal for narrative flair. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
   },
   {
     "id": "image-ar-002-neural-extractor",
@@ -96,7 +96,7 @@
     "license": "",
     "status": "pending-sourcing",
     "usage": "32x32 device sprite used in mind-hack missions.",
-    "notes": "Depict compact tech device with blue accent lights and removable prongs."
+    "notes": "Depict compact tech device with blue accent lights and removable prongs. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
   },
   {
     "id": "image-ar-002-blood-spatter",
@@ -107,7 +107,7 @@
     "license": "",
     "status": "pending-sourcing",
     "usage": "32x32 sprite for forensic blood sample pickups.",
-    "notes": "Stylise to remain readable while respecting M2 rating guidelines."
+    "notes": "Stylise to remain readable while respecting M2 rating guidelines. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
   },
   {
     "id": "image-ar-003-player-kira-sprite",
@@ -118,7 +118,7 @@
     "license": "",
     "status": "pending-sourcing",
     "usage": "32x32 sprite sheet with idle, walk, and run animations across 4 directions.",
-    "notes": "Detective coat silhouette with readable silhouette; 6 frames per animation recommended."
+    "notes": "Detective coat silhouette with readable silhouette; 6 frames per animation recommended. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
   },
   {
     "id": "image-ar-004-npc-civilian-pack",
@@ -129,7 +129,7 @@
     "license": "",
     "status": "pending-sourcing",
     "usage": "Five 32x32 civilian NPC variants for social hubs and investigation scenes.",
-    "notes": "Represent faction-aligned outfits; include gender-diverse silhouettes."
+    "notes": "Represent faction-aligned outfits; include gender-diverse silhouettes. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
   },
   {
     "id": "image-ar-004-npc-guard-pack",
@@ -140,7 +140,7 @@
     "license": "",
     "status": "pending-sourcing",
     "usage": "Three 32x32 guard NPC variants for stealth patrols.",
-    "notes": "Include visor glow for detection cues; integrate faction insignia."
+    "notes": "Include visor glow for detection cues; integrate faction insignia. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
   },
   {
     "id": "image-ar-005-tileset-neon-district",
@@ -151,7 +151,7 @@
     "license": "",
     "status": "pending-sourcing",
     "usage": "16x16 tile atlas for rain-soaked neon city blocks.",
-    "notes": "Needs wet reflections, signage layers, and animated neon strips."
+    "notes": "Needs wet reflections, signage layers, and animated neon strips. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
   },
   {
     "id": "image-ar-005-tileset-corporate-spires",
@@ -162,7 +162,7 @@
     "license": "",
     "status": "pending-sourcing",
     "usage": "16x16 tile atlas for sterile high-tech interiors.",
-    "notes": "Feature frosted glass, chrome flooring, and light columns."
+    "notes": "Feature frosted glass, chrome flooring, and light columns. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
   },
   {
     "id": "image-ar-005-tileset-archive-undercity",
@@ -173,7 +173,7 @@
     "license": "",
     "status": "pending-sourcing",
     "usage": "16x16 tile atlas for ancient underground data vaults.",
-    "notes": "Blend corroded metal with glowing conduits and dust particles."
+    "notes": "Blend corroded metal with glowing conduits and dust particles. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
   },
   {
     "id": "image-ar-005-tileset-zenith-sector",
@@ -184,7 +184,7 @@
     "license": "",
     "status": "pending-sourcing",
     "usage": "16x16 tile atlas for imposing futurist plazas.",
-    "notes": "Incorporate holographic banners and elevated rail tracks."
+    "notes": "Incorporate holographic banners and elevated rail tracks. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
   },
   {
     "id": "image-ar-007-particles-rain",
@@ -325,9 +325,9 @@
     "creator": "David Paul Ohmer",
     "source": "https://www.flickr.com/photos/50965924@N00/634955994",
     "license": "CC BY 2.0",
-    "status": "reference-selected",
+    "status": "derivative-generated",
     "usage": "Column light beam for safehouse entry.",
-    "notes": "AssetId act2_crossroads_column_safehouse_left_v1; Openverse ID 7fa5629a-8c5f-4bd2-a247-fe6517d17409 (\"Rome - Vatican City/Saint Peter's Basilica 'Shower of Light on Woman'\") delivers a diffused vertical beam against darkened stone, matching the stealth staging falloff once recolored toward cyan."
+    "notes": "AssetId act2_crossroads_column_safehouse_left_v1; Openverse ID 7fa5629a-8c5f-4bd2-a247-fe6517d17409 (\"Rome - Vatican City/Saint Peter's Basilica 'Shower of Light on Woman'\") delivers a diffused vertical beam against darkened stone, matching the stealth staging falloff once recolored toward cyan. | Overlay derivative generated in Session 110 via npm run art:generate-crossroads-overlays -> assets/overlays/act2-crossroads/act2_crossroads_column_safehouse_left.png"
   },
   {
     "id": "image-ar-050-crossroads-column-safehouse-right",
@@ -336,9 +336,9 @@
     "creator": "Fan.D & Dav.C Photgraphy",
     "source": "https://www.flickr.com/photos/98815931@N07/39790468613",
     "license": "CC BY 2.0",
-    "status": "reference-selected",
+    "status": "derivative-generated",
     "usage": "Column light beam for safehouse entry.",
-    "notes": "AssetId act2_crossroads_column_safehouse_right_v1; Openverse ID 2c443bc9-e3ab-4fff-ba46-a52ef76b7457 (\"Infinity\") provides twin spot beams with crisp edges we can taper into the mirrored safehouse pillar once we de-saturate the magenta stage palette."
+    "notes": "AssetId act2_crossroads_column_safehouse_right_v1; Openverse ID 2c443bc9-e3ab-4fff-ba46-a52ef76b7457 (\"Infinity\") provides twin spot beams with crisp edges we can taper into the mirrored safehouse pillar once we de-saturate the magenta stage palette. | Overlay derivative generated in Session 110 via npm run art:generate-crossroads-overlays -> assets/overlays/act2-crossroads/act2_crossroads_column_safehouse_right.png"
   },
   {
     "id": "image-ar-050-crossroads-column-checkpoint-north",
@@ -347,9 +347,9 @@
     "creator": "Joyce Andes",
     "source": "https://www.flickr.com/photos/47977776@N03/6135445492",
     "license": "CC BY 2.0",
-    "status": "reference-selected",
+    "status": "derivative-generated",
     "usage": "Checkpoint column light beam, north placement.",
-    "notes": "AssetId act2_crossroads_column_checkpoint_north_v1; Openverse ID d373ad62-282c-455f-b85a-2e58b2f0fa9f (\"Proudly Beaming and Standing Tall\") captures parallel tribute beams with high-intensity cores suited for militarised checkpoint silhouettes."
+    "notes": "AssetId act2_crossroads_column_checkpoint_north_v1; Openverse ID d373ad62-282c-455f-b85a-2e58b2f0fa9f (\"Proudly Beaming and Standing Tall\") captures parallel tribute beams with high-intensity cores suited for militarised checkpoint silhouettes. | Overlay derivative generated in Session 110 via npm run art:generate-crossroads-overlays -> assets/overlays/act2-crossroads/act2_crossroads_column_checkpoint_north.png"
   },
   {
     "id": "image-ar-050-crossroads-column-checkpoint-south",
@@ -358,9 +358,9 @@
     "creator": "www.GlynLowe.com from Hamburg, Germany",
     "source": "https://commons.wikimedia.org/w/index.php?curid=39758852",
     "license": "CC BY 2.0",
-    "status": "reference-selected",
+    "status": "derivative-generated",
     "usage": "Checkpoint column light beam, south placement.",
-    "notes": "AssetId act2_crossroads_column_checkpoint_south_v1; Openverse ID 7baeb847-c6de-4d96-983a-75a130697e06 (\"NYC World Trade Center Tribute in Light 2012\") supplies a distant twin beam plate we can compress for the southern choke point glow."
+    "notes": "AssetId act2_crossroads_column_checkpoint_south_v1; Openverse ID 7baeb847-c6de-4d96-983a-75a130697e06 (\"NYC World Trade Center Tribute in Light 2012\") supplies a distant twin beam plate we can compress for the southern choke point glow. | Overlay derivative generated in Session 110 via npm run art:generate-crossroads-overlays -> assets/overlays/act2-crossroads/act2_crossroads_column_checkpoint_south.png"
   },
   {
     "id": "image-ar-050-crossroads-boundary-west",
