@@ -30,17 +30,18 @@
         "trimTop": 120,
         "trimBottom": 100,
         "tint": {
-          "color": "#4be7ff",
-          "amount": 48
+          "color": "#7ad6ff",
+          "amount": 52
         },
         "gaussian": 2,
         "alphaFromLuma": {
-          "threshold": 96,
-          "softness": 78,
-          "floor": 42,
-          "ceiling": 210
+          "threshold": 74,
+          "softness": 92,
+          "floor": 150,
+          "ceiling": 238
         },
-        "postBlur": 1
+        "postBlur": 1,
+        "opacity": 0.9
       }
     },
     {
@@ -53,17 +54,18 @@
         "trimTop": 40,
         "trimBottom": 60,
         "tint": {
-          "color": "#56f2ff",
-          "amount": 44
+          "color": "#82dbff",
+          "amount": 50
         },
         "gaussian": 1,
         "alphaFromLuma": {
-          "threshold": 100,
-          "softness": 78,
-          "floor": 38,
-          "ceiling": 210
+          "threshold": 76,
+          "softness": 90,
+          "floor": 146,
+          "ceiling": 236
         },
-        "postBlur": 1
+        "postBlur": 1,
+        "opacity": 0.9
       }
     },
     {
@@ -76,16 +78,17 @@
         "trimTop": 0,
         "trimBottom": 0,
         "tint": {
-          "color": "#ffe68d",
-          "amount": 38
+          "color": "#fff4c1",
+          "amount": 44
         },
         "contrast": 0.32,
         "alphaFromLuma": {
-          "threshold": 108,
-          "softness": 72,
-          "floor": 32,
-          "ceiling": 205
-        }
+          "threshold": 82,
+          "softness": 95,
+          "floor": 175,
+          "ceiling": 250
+        },
+        "opacity": 1
       }
     },
     {
@@ -98,17 +101,18 @@
         "trimTop": 20,
         "trimBottom": 40,
         "tint": {
-          "color": "#fff0b3",
-          "amount": 34
+          "color": "#fff6c9",
+          "amount": 42
         },
         "contrast": 0.28,
         "alphaFromLuma": {
-          "threshold": 110,
-          "softness": 75,
-          "floor": 30,
-          "ceiling": 205
+          "threshold": 84,
+          "softness": 94,
+          "floor": 172,
+          "ceiling": 248
         },
-        "postBlur": 1
+        "postBlur": 1,
+        "opacity": 1
       }
     },
     {
@@ -204,16 +208,16 @@
         "trimBottom": 120,
         "gaussian": 1,
         "tint": {
-          "color": "#ff9a3c",
-          "amount": 60
+          "color": "#ffd27a",
+          "amount": 56
         },
         "alphaFromLuma": {
-          "threshold": 102,
-          "softness": 68,
-          "floor": 32,
-          "ceiling": 210
+          "threshold": 76,
+          "softness": 90,
+          "floor": 160,
+          "ceiling": 245
         },
-        "opacity": 0.9
+        "opacity": 1
       }
     },
     {
@@ -229,17 +233,17 @@
         "trimTop": 150,
         "trimBottom": 150,
         "tint": {
-          "color": "#ffe8a3",
-          "amount": 32
+          "color": "#fff2c2",
+          "amount": 38
         },
         "alphaFromLuma": {
-          "threshold": 112,
-          "softness": 64,
-          "floor": 32,
-          "ceiling": 230
+          "threshold": 82,
+          "softness": 92,
+          "floor": 170,
+          "ceiling": 250
         },
         "gaussian": 1,
-        "opacity": 0.9
+        "opacity": 1
       }
     },
     {

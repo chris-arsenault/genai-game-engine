@@ -72,6 +72,11 @@
 - Executed the AR-001–AR-005 prompt queue via `scripts/art/queueGenerationRequests.js`, emitting `assets/images/generation-queue/2025-10-30T10-28-46-627Z-ar-001-ar-002-ar-003-ar-004-ar-005.jsonl` so art leads can trigger OpenAI batches in a single hand-off.
 - Advanced all AR-001–AR-005 manifest entries in `assets/images/requests.json` to `generation-queued`, stamping the queue file path, timestamp, and provisional `AI-generated (review pending)` licensing notes pending final approvals.
 
+## Session 114 Updates
+- Recalibrated the Act 2 Crossroads lighting overlays: raised alpha floors for the selection conduit, checkpoint glow, and all column beams, then regenerated the derivatives so average normalized alpha now lands between 0.67–0.78 for the affected assets.
+- Updated `Act2CrossroadsArtConfig` colours and alpha weights to match the brighter overlays (conduit now uses warm amber `#ffd27a`, checkpoint columns adopt gold-tinted washes, safehouse columns shift to luminous cyan) and recorded the new `overlayAverageAlpha` metadata for the preview tooling.
+- Reran `scripts/art/previewCrossroadsLighting.js`, producing an updated report where all evaluable segments pass the preset thresholds (9 “ok”, 2 “skipped”), clearing the previous under-luminance warnings prior to RenderOps sign-off.
+
 ## Next Actions
-1. Partner with RenderOps to review the luminance deltas surfaced in `reports/art/act2-crossroads-lighting-preview.json`, then iterate on overlay derivatives or config tinting as required.
+1. Circulate the refreshed lighting preview report to RenderOps for approval and capture any follow-up tweaks once the in-engine review is complete.
 2. Run the queued AR-001–AR-005 generation batch, evaluate outputs against gameplay/narrative briefs, and replace provisional licensing metadata with final selections in `assets/images/requests.json`.
