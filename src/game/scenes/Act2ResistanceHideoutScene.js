@@ -21,6 +21,8 @@ export const ACT2_RESISTANCE_TRIGGER_IDS = Object.freeze({
   ENTRY: 'act2_resistance_contact_entry',
   STRATEGY_TABLE: 'act2_resistance_strategy_table',
   ESCAPE_TUNNEL: 'act2_resistance_escape_tunnel',
+  COORDINATION_CHAMBER: 'act2_resistance_coordination_chamber',
+  SIGNAL_ARRAY: 'act2_resistance_signal_array',
 });
 
 const TRIGGER_DEFINITIONS = Object.freeze([
@@ -69,6 +71,36 @@ const TRIGGER_DEFINITIONS = Object.freeze([
       telemetryTag: 'act2_resistance_escape_tunnel',
     },
   }),
+  Object.freeze({
+    id: ACT2_RESISTANCE_TRIGGER_IDS.COORDINATION_CHAMBER,
+    questId: DEFAULT_QUEST_ID,
+    objectiveId: 'obj_coordinate_joint_ops',
+    areaId: 'resistance_coordination_chamber',
+    radius: 108,
+    once: true,
+    prompt: 'Coordinate joint strikes with Archivist leadership.',
+    triggerType: 'quest_area',
+    metadata: {
+      narrativeBeat: 'act2_resistance_coordination_council',
+      unlocksMechanic: 'faction_alignment',
+      telemetryTag: 'act2_resistance_coordination_chamber',
+    },
+  }),
+  Object.freeze({
+    id: ACT2_RESISTANCE_TRIGGER_IDS.SIGNAL_ARRAY,
+    questId: DEFAULT_QUEST_ID,
+    objectiveId: 'obj_prime_signal_array',
+    areaId: 'resistance_signal_array',
+    radius: 112,
+    once: true,
+    prompt: 'Prime the encrypted signal array to protect operations.',
+    triggerType: 'quest_area',
+    metadata: {
+      narrativeBeat: 'act2_resistance_signal_array_primed',
+      unlocksMechanic: 'network_signal',
+      telemetryTag: 'act2_resistance_signal_array',
+    },
+  }),
 ]);
 
 const FLOOR_SEGMENTS = Object.freeze([
@@ -101,6 +133,28 @@ const FLOOR_SEGMENTS = Object.freeze([
     width: 220,
     height: 200,
     color: '#243744',
+    alpha: 0.9,
+    layer: 'ground_fx',
+    zIndex: 1,
+  }),
+  Object.freeze({
+    id: 'resistance_coordination_platform',
+    x: 360,
+    y: 200,
+    width: 220,
+    height: 160,
+    color: '#2a3d4f',
+    alpha: 0.9,
+    layer: 'ground_fx',
+    zIndex: 1,
+  }),
+  Object.freeze({
+    id: 'resistance_signal_platform',
+    x: 620,
+    y: 150,
+    width: 220,
+    height: 160,
+    color: '#314c5f',
     alpha: 0.9,
     layer: 'ground_fx',
     zIndex: 1,
@@ -185,10 +239,25 @@ const NAVIGATION_TEMPLATE = Object.freeze({
       radius: 56,
       tags: Object.freeze(['objective', 'escape_route']),
     }),
+    Object.freeze({
+      id: 'coordination_chamber',
+      position: Object.freeze({ x: 440, y: 240 }),
+      radius: 50,
+      tags: Object.freeze(['strategy', 'faction']),
+    }),
+    Object.freeze({
+      id: 'signal_array',
+      position: Object.freeze({ x: 720, y: 190 }),
+      radius: 50,
+      tags: Object.freeze(['network_signal', 'defense']),
+    }),
   ]),
   edges: Object.freeze([
     Object.freeze({ from: 'hideout_entry', to: 'strategy_table', cost: 1 }),
     Object.freeze({ from: 'strategy_table', to: 'escape_tunnel', cost: 1 }),
+    Object.freeze({ from: 'strategy_table', to: 'coordination_chamber', cost: 1 }),
+    Object.freeze({ from: 'coordination_chamber', to: 'signal_array', cost: 1 }),
+    Object.freeze({ from: 'signal_array', to: 'escape_tunnel', cost: 1 }),
   ]),
   walkableSurfaces: Object.freeze([
     Object.freeze({
@@ -220,6 +289,26 @@ const NAVIGATION_TEMPLATE = Object.freeze({
         Object.freeze({ x: 620, y: 340 }),
       ]),
       tags: Object.freeze(['objective', 'escape']),
+    }),
+    Object.freeze({
+      id: 'coordination_platform',
+      polygon: Object.freeze([
+        Object.freeze({ x: 360, y: 200 }),
+        Object.freeze({ x: 580, y: 200 }),
+        Object.freeze({ x: 580, y: 360 }),
+        Object.freeze({ x: 360, y: 360 }),
+      ]),
+      tags: Object.freeze(['strategy', 'faction']),
+    }),
+    Object.freeze({
+      id: 'signal_platform',
+      polygon: Object.freeze([
+        Object.freeze({ x: 620, y: 150 }),
+        Object.freeze({ x: 840, y: 150 }),
+        Object.freeze({ x: 840, y: 310 }),
+        Object.freeze({ x: 620, y: 310 }),
+      ]),
+      tags: Object.freeze(['network_signal', 'defense']),
     }),
   ]),
 });
@@ -382,6 +471,26 @@ export async function loadAct2ResistanceHideoutScene(
       layer: 'ground_fx',
       zIndex: 2,
     },
+    {
+      id: ACT2_RESISTANCE_TRIGGER_IDS.COORDINATION_CHAMBER,
+      x: 440,
+      y: 240,
+      radius: 108,
+      color: '#6db4ff',
+      alpha: 0.22,
+      layer: 'ground_fx',
+      zIndex: 2,
+    },
+    {
+      id: ACT2_RESISTANCE_TRIGGER_IDS.SIGNAL_ARRAY,
+      x: 740,
+      y: 190,
+      radius: 112,
+      color: '#f09cff',
+      alpha: 0.24,
+      layer: 'ground_fx',
+      zIndex: 2,
+    },
   ];
 
   for (const layout of triggerLayouts) {
@@ -442,6 +551,8 @@ export async function loadAct2ResistanceHideoutScene(
         entry: 'act2_resistance_hideout_entry',
         progression: 'act2_resistance_strategy_session',
         objective: 'act2_resistance_escape_network',
+        coordination: 'act2_resistance_coordination_council',
+        signal: 'act2_resistance_signal_array_primed',
       },
     },
   };

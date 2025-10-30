@@ -45,10 +45,32 @@ export const QUEST_ACT2_PERSONAL = {
       },
       optional: false,
     },
+    {
+      id: 'obj_decode_projection_logs',
+      description: 'Decode the memory vault projections to stitch together the suppressed timeline.',
+      trigger: {
+        event: 'area:entered',
+        areaId: 'personal_projection_lab',
+      },
+      optional: false,
+    },
+    {
+      id: 'obj_schedule_public_exposure',
+      description: 'Schedule the shadow broadcast that will expose the conspiracy network.',
+      trigger: {
+        event: 'area:entered',
+        areaId: 'personal_broadcast_terminal',
+      },
+      optional: false,
+    },
   ],
   rewards: {
-    storyFlags: ['act2_personal_archive_uncovered'],
-    knowledgeIds: ['personal_memory_threads'],
+    storyFlags: [
+      'act2_personal_archive_uncovered',
+      'act2_personal_projection_decoded',
+      'act2_personal_broadcast_committed',
+    ],
+    knowledgeIds: ['personal_memory_threads', 'personal_projection_map'],
     factionReputation: {
       independents: 5,
     },

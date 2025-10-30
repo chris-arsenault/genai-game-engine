@@ -638,6 +638,12 @@ export class Act2CrossroadsScene {
           objectiveId: definition.objectiveId,
           telemetryTag: definition.metadata.telemetryTag,
         });
+        if (payload && typeof payload === 'object') {
+          payload.telemetryDispatched = true;
+          if (payload.data && typeof payload.data === 'object') {
+            payload.data.telemetryDispatched = true;
+          }
+        }
       }
     };
 

@@ -44,10 +44,32 @@ export const QUEST_ACT2_RESISTANCE = {
       },
       optional: false,
     },
+    {
+      id: 'obj_coordinate_joint_ops',
+      description: 'Coordinate joint operations with the Archivist strike teams.',
+      trigger: {
+        event: 'area:entered',
+        areaId: 'resistance_coordination_chamber',
+      },
+      optional: false,
+    },
+    {
+      id: 'obj_prime_signal_array',
+      description: 'Prime the encrypted signal array to keep the alliance hidden.',
+      trigger: {
+        event: 'area:entered',
+        areaId: 'resistance_signal_array',
+      },
+      optional: false,
+    },
   ],
   rewards: {
-    storyFlags: ['act2_resistance_alliance_secured'],
-    knowledgeIds: ['resistance_tunnel_network'],
+    storyFlags: [
+      'act2_resistance_alliance_secured',
+      'act2_resistance_joint_ops_prepared',
+      'act2_resistance_signal_ready',
+    ],
+    knowledgeIds: ['resistance_tunnel_network', 'resistance_signal_routes'],
     factionReputation: {
       archivists: 10,
     },
@@ -66,4 +88,3 @@ export function registerAct2ResistanceQuest(questManager) {
   questManager.registerQuest(QUEST_ACT2_RESISTANCE);
   return QUEST_ACT2_RESISTANCE;
 }
-

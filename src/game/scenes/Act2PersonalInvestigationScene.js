@@ -21,6 +21,8 @@ export const ACT2_PERSONAL_TRIGGER_IDS = Object.freeze({
   ENTRY: 'act2_personal_archive_entry',
   CASEFILES: 'act2_personal_casefile_review',
   MEMORY_VAULT: 'act2_personal_memory_vault',
+  PROJECTION_LAB: 'act2_personal_projection_lab',
+  BROADCAST_TERMINAL: 'act2_personal_broadcast_terminal',
 });
 
 const TRIGGER_DEFINITIONS = Object.freeze([
@@ -69,6 +71,36 @@ const TRIGGER_DEFINITIONS = Object.freeze([
       telemetryTag: 'act2_personal_memory_vault',
     },
   }),
+  Object.freeze({
+    id: ACT2_PERSONAL_TRIGGER_IDS.PROJECTION_LAB,
+    questId: DEFAULT_QUEST_ID,
+    objectiveId: 'obj_decode_projection_logs',
+    areaId: 'personal_projection_lab',
+    radius: 114,
+    once: true,
+    prompt: 'Decode the vault projections to expose the conspiracy timeline.',
+    triggerType: 'quest_area',
+    metadata: {
+      narrativeBeat: 'act2_personal_projection_analysis',
+      unlocksMechanic: 'knowledge_ledger',
+      telemetryTag: 'act2_personal_projection_lab',
+    },
+  }),
+  Object.freeze({
+    id: ACT2_PERSONAL_TRIGGER_IDS.BROADCAST_TERMINAL,
+    questId: DEFAULT_QUEST_ID,
+    objectiveId: 'obj_schedule_public_exposure',
+    areaId: 'personal_broadcast_terminal',
+    radius: 110,
+    once: true,
+    prompt: 'Schedule the shadow broadcast to leak testimony.',
+    triggerType: 'quest_area',
+    metadata: {
+      narrativeBeat: 'act2_personal_broadcast_commitment',
+      unlocksMechanic: 'network_signal',
+      telemetryTag: 'act2_personal_broadcast_terminal',
+    },
+  }),
 ]);
 
 const FLOOR_SEGMENTS = Object.freeze([
@@ -102,6 +134,28 @@ const FLOOR_SEGMENTS = Object.freeze([
     height: 200,
     color: '#2b3f52',
     alpha: 0.88,
+    layer: 'ground_fx',
+    zIndex: 1,
+  }),
+  Object.freeze({
+    id: 'personal_projection_lab_platform',
+    x: 560,
+    y: 200,
+    width: 260,
+    height: 150,
+    color: '#314a63',
+    alpha: 0.88,
+    layer: 'ground_fx',
+    zIndex: 1,
+  }),
+  Object.freeze({
+    id: 'personal_broadcast_platform',
+    x: 320,
+    y: 200,
+    width: 200,
+    height: 140,
+    color: '#354860',
+    alpha: 0.9,
     layer: 'ground_fx',
     zIndex: 1,
   }),
@@ -185,10 +239,25 @@ const NAVIGATION_TEMPLATE = Object.freeze({
       radius: 54,
       tags: Object.freeze(['objective', 'memory_projection']),
     }),
+    Object.freeze({
+      id: 'projection_lab',
+      position: Object.freeze({ x: 690, y: 250 }),
+      radius: 48,
+      tags: Object.freeze(['analysis', 'knowledge_ledger']),
+    }),
+    Object.freeze({
+      id: 'broadcast_terminal',
+      position: Object.freeze({ x: 420, y: 240 }),
+      radius: 46,
+      tags: Object.freeze(['broadcast', 'network_signal']),
+    }),
   ]),
   edges: Object.freeze([
     Object.freeze({ from: 'archive_entry', to: 'casefile_desk', cost: 1 }),
     Object.freeze({ from: 'casefile_desk', to: 'memory_vault', cost: 1 }),
+    Object.freeze({ from: 'casefile_desk', to: 'projection_lab', cost: 1 }),
+    Object.freeze({ from: 'projection_lab', to: 'broadcast_terminal', cost: 1 }),
+    Object.freeze({ from: 'broadcast_terminal', to: 'memory_vault', cost: 1 }),
   ]),
   walkableSurfaces: Object.freeze([
     Object.freeze({
@@ -220,6 +289,26 @@ const NAVIGATION_TEMPLATE = Object.freeze({
         Object.freeze({ x: 640, y: 340 }),
       ]),
       tags: Object.freeze(['objective', 'memory_projection']),
+    }),
+    Object.freeze({
+      id: 'projection_lab_platform',
+      polygon: Object.freeze([
+        Object.freeze({ x: 560, y: 200 }),
+        Object.freeze({ x: 820, y: 200 }),
+        Object.freeze({ x: 820, y: 350 }),
+        Object.freeze({ x: 560, y: 350 }),
+      ]),
+      tags: Object.freeze(['analysis', 'knowledge_ledger']),
+    }),
+    Object.freeze({
+      id: 'broadcast_platform',
+      polygon: Object.freeze([
+        Object.freeze({ x: 320, y: 200 }),
+        Object.freeze({ x: 520, y: 200 }),
+        Object.freeze({ x: 520, y: 340 }),
+        Object.freeze({ x: 320, y: 340 }),
+      ]),
+      tags: Object.freeze(['broadcast', 'network_signal']),
     }),
   ]),
 });
@@ -382,6 +471,26 @@ export async function loadAct2PersonalInvestigationScene(
       layer: 'ground_fx',
       zIndex: 2,
     },
+    {
+      id: ACT2_PERSONAL_TRIGGER_IDS.PROJECTION_LAB,
+      x: 700,
+      y: 250,
+      radius: 114,
+      color: '#8bc7ff',
+      alpha: 0.22,
+      layer: 'ground_fx',
+      zIndex: 2,
+    },
+    {
+      id: ACT2_PERSONAL_TRIGGER_IDS.BROADCAST_TERMINAL,
+      x: 420,
+      y: 240,
+      radius: 110,
+      color: '#f0b4ff',
+      alpha: 0.24,
+      layer: 'ground_fx',
+      zIndex: 2,
+    },
   ];
 
   for (const layout of triggerLayouts) {
@@ -441,6 +550,8 @@ export async function loadAct2PersonalInvestigationScene(
       narrativeBeats: {
         entry: 'act2_personal_archive_entry',
         progression: 'act2_personal_casefile_reckoning',
+        projection: 'act2_personal_projection_analysis',
+        broadcast: 'act2_personal_broadcast_commitment',
         objective: 'act2_personal_memory_vault_unlocked',
       },
     },

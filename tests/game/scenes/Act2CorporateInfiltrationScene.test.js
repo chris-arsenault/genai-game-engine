@@ -59,10 +59,14 @@ describe('Act2CorporateInfiltrationScene', () => {
     expect(triggerLookup.has('corporate_lobby')).toBe(true);
     expect(triggerLookup.has('corporate_security_floor')).toBe(true);
     expect(triggerLookup.has('corporate_server_access')).toBe(true);
+    expect(triggerLookup.has('corporate_encryption_lab')).toBe(true);
+    expect(triggerLookup.has('corporate_exfiltration_route')).toBe(true);
 
     const lobby = triggerLookup.get('corporate_lobby');
     const security = triggerLookup.get('corporate_security_floor');
     const serverAccess = triggerLookup.get('corporate_server_access');
+    const encryptionLab = triggerLookup.get('corporate_encryption_lab');
+    const exfilRoute = triggerLookup.get('corporate_exfiltration_route');
 
     expect(lobby.quest).toEqual(
       expect.objectContaining({
@@ -106,6 +110,36 @@ describe('Act2CorporateInfiltrationScene', () => {
       })
     );
 
+    expect(encryptionLab.quest).toEqual(
+      expect.objectContaining({
+        questId: QUEST_ACT2_NEUROSYNC.id,
+        objectiveId: 'obj_clone_encryption_core',
+        areaId: 'corporate_encryption_lab',
+      })
+    );
+    expect(encryptionLab.trigger.once).toBe(true);
+    expect(encryptionLab.trigger.data.metadata).toEqual(
+      expect.objectContaining({
+        telemetryTag: 'act2_corporate_encryption_lab',
+        unlocksMechanic: 'data_extraction',
+      })
+    );
+
+    expect(exfilRoute.quest).toEqual(
+      expect.objectContaining({
+        questId: QUEST_ACT2_NEUROSYNC.id,
+        objectiveId: 'obj_exfiltrate_with_data',
+        areaId: 'corporate_exfiltration_route',
+      })
+    );
+    expect(exfilRoute.trigger.once).toBe(true);
+    expect(exfilRoute.trigger.data.metadata).toEqual(
+      expect.objectContaining({
+        telemetryTag: 'act2_corporate_exfiltration_route',
+        unlocksMechanic: 'escape_route',
+      })
+    );
+
     expect(
       QuestTriggerRegistry.getTriggerDefinition(ACT2_CORPORATE_TRIGGER_IDS.LOBBY_ENTRY)?.migrated
     ).toBe(true);
@@ -114,6 +148,12 @@ describe('Act2CorporateInfiltrationScene', () => {
     ).toBe(true);
     expect(
       QuestTriggerRegistry.getTriggerDefinition(ACT2_CORPORATE_TRIGGER_IDS.SERVER_ACCESS)?.migrated
+    ).toBe(true);
+    expect(
+      QuestTriggerRegistry.getTriggerDefinition(ACT2_CORPORATE_TRIGGER_IDS.ENCRYPTION_LAB)?.migrated
+    ).toBe(true);
+    expect(
+      QuestTriggerRegistry.getTriggerDefinition(ACT2_CORPORATE_TRIGGER_IDS.EXFIL_ROUTE)?.migrated
     ).toBe(true);
 
     expect(sceneData.sceneName).toBe('act2_corporate_interior');
@@ -124,11 +164,15 @@ describe('Act2CorporateInfiltrationScene', () => {
           expect.objectContaining({ id: 'lobby_spawn' }),
           expect.objectContaining({ id: 'security_checkpoint' }),
           expect.objectContaining({ id: 'server_hall_entry' }),
+          expect.objectContaining({ id: 'encryption_lab' }),
+          expect.objectContaining({ id: 'exfil_route' }),
         ]),
         walkableSurfaces: expect.arrayContaining([
           expect.objectContaining({ id: 'lobby_floor' }),
           expect.objectContaining({ id: 'security_walkway' }),
           expect.objectContaining({ id: 'server_access' }),
+          expect.objectContaining({ id: 'encryption_lab_floor' }),
+          expect.objectContaining({ id: 'exfil_route_floor' }),
         ]),
       })
     );
@@ -138,7 +182,18 @@ describe('Act2CorporateInfiltrationScene', () => {
         expect.objectContaining({ triggerId: ACT2_CORPORATE_TRIGGER_IDS.LOBBY_ENTRY }),
         expect.objectContaining({ triggerId: ACT2_CORPORATE_TRIGGER_IDS.SECURITY_FLOOR }),
         expect.objectContaining({ triggerId: ACT2_CORPORATE_TRIGGER_IDS.SERVER_ACCESS }),
+        expect.objectContaining({ triggerId: ACT2_CORPORATE_TRIGGER_IDS.ENCRYPTION_LAB }),
+        expect.objectContaining({ triggerId: ACT2_CORPORATE_TRIGGER_IDS.EXFIL_ROUTE }),
       ])
+    );
+    expect(sceneData.metadata.narrativeBeats).toEqual(
+      expect.objectContaining({
+        entry: 'act2_corporate_lobby_entry',
+        progression: 'act2_corporate_security',
+        objective: 'act2_corporate_server_access',
+        encryption: 'act2_corporate_encryption_clone',
+        exfiltration: 'act2_corporate_exfiltration',
+      })
     );
   });
 });

@@ -59,10 +59,14 @@ describe('Act2ResistanceHideoutScene', () => {
     expect(triggerLookup.has('resistance_contact_entry')).toBe(true);
     expect(triggerLookup.has('resistance_strategy_table')).toBe(true);
     expect(triggerLookup.has('resistance_escape_tunnel')).toBe(true);
+    expect(triggerLookup.has('resistance_coordination_chamber')).toBe(true);
+    expect(triggerLookup.has('resistance_signal_array')).toBe(true);
 
     const entry = triggerLookup.get('resistance_contact_entry');
     const strategy = triggerLookup.get('resistance_strategy_table');
     const escape = triggerLookup.get('resistance_escape_tunnel');
+    const coordination = triggerLookup.get('resistance_coordination_chamber');
+    const signalArray = triggerLookup.get('resistance_signal_array');
 
     expect(entry.quest).toEqual(
       expect.objectContaining({
@@ -106,6 +110,36 @@ describe('Act2ResistanceHideoutScene', () => {
       })
     );
 
+    expect(coordination.quest).toEqual(
+      expect.objectContaining({
+        questId: QUEST_ACT2_RESISTANCE.id,
+        objectiveId: 'obj_coordinate_joint_ops',
+        areaId: 'resistance_coordination_chamber',
+      })
+    );
+    expect(coordination.trigger.once).toBe(true);
+    expect(coordination.trigger.data.metadata).toEqual(
+      expect.objectContaining({
+        telemetryTag: 'act2_resistance_coordination_chamber',
+        unlocksMechanic: 'faction_alignment',
+      })
+    );
+
+    expect(signalArray.quest).toEqual(
+      expect.objectContaining({
+        questId: QUEST_ACT2_RESISTANCE.id,
+        objectiveId: 'obj_prime_signal_array',
+        areaId: 'resistance_signal_array',
+      })
+    );
+    expect(signalArray.trigger.once).toBe(true);
+    expect(signalArray.trigger.data.metadata).toEqual(
+      expect.objectContaining({
+        telemetryTag: 'act2_resistance_signal_array',
+        unlocksMechanic: 'network_signal',
+      })
+    );
+
     expect(
       QuestTriggerRegistry.getTriggerDefinition(ACT2_RESISTANCE_TRIGGER_IDS.ENTRY)?.migrated
     ).toBe(true);
@@ -114,6 +148,14 @@ describe('Act2ResistanceHideoutScene', () => {
     ).toBe(true);
     expect(
       QuestTriggerRegistry.getTriggerDefinition(ACT2_RESISTANCE_TRIGGER_IDS.ESCAPE_TUNNEL)?.migrated
+    ).toBe(true);
+    expect(
+      QuestTriggerRegistry.getTriggerDefinition(
+        ACT2_RESISTANCE_TRIGGER_IDS.COORDINATION_CHAMBER
+      )?.migrated
+    ).toBe(true);
+    expect(
+      QuestTriggerRegistry.getTriggerDefinition(ACT2_RESISTANCE_TRIGGER_IDS.SIGNAL_ARRAY)?.migrated
     ).toBe(true);
 
     expect(sceneData.sceneName).toBe('act2_resistance_hideout');
@@ -124,11 +166,15 @@ describe('Act2ResistanceHideoutScene', () => {
           expect.objectContaining({ id: 'hideout_entry' }),
           expect.objectContaining({ id: 'strategy_table' }),
           expect.objectContaining({ id: 'escape_tunnel' }),
+          expect.objectContaining({ id: 'coordination_chamber' }),
+          expect.objectContaining({ id: 'signal_array' }),
         ]),
         walkableSurfaces: expect.arrayContaining([
           expect.objectContaining({ id: 'lower_platform' }),
           expect.objectContaining({ id: 'strategy_platform' }),
           expect.objectContaining({ id: 'tunnel_platform' }),
+          expect.objectContaining({ id: 'coordination_platform' }),
+          expect.objectContaining({ id: 'signal_platform' }),
         ]),
       })
     );
@@ -138,8 +184,18 @@ describe('Act2ResistanceHideoutScene', () => {
         expect.objectContaining({ triggerId: ACT2_RESISTANCE_TRIGGER_IDS.ENTRY }),
         expect.objectContaining({ triggerId: ACT2_RESISTANCE_TRIGGER_IDS.STRATEGY_TABLE }),
         expect.objectContaining({ triggerId: ACT2_RESISTANCE_TRIGGER_IDS.ESCAPE_TUNNEL }),
+        expect.objectContaining({ triggerId: ACT2_RESISTANCE_TRIGGER_IDS.COORDINATION_CHAMBER }),
+        expect.objectContaining({ triggerId: ACT2_RESISTANCE_TRIGGER_IDS.SIGNAL_ARRAY }),
       ])
+    );
+    expect(sceneData.metadata.narrativeBeats).toEqual(
+      expect.objectContaining({
+        entry: 'act2_resistance_hideout_entry',
+        progression: 'act2_resistance_strategy_session',
+        objective: 'act2_resistance_escape_network',
+        coordination: 'act2_resistance_coordination_council',
+        signal: 'act2_resistance_signal_array_primed',
+      })
     );
   });
 });
-

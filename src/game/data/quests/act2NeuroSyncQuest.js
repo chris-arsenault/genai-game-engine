@@ -44,10 +44,32 @@ export const QUEST_ACT2_NEUROSYNC = {
       },
       optional: false,
     },
+    {
+      id: 'obj_clone_encryption_core',
+      description: 'Clone the NeuroSync encryption core without tripping forensic sensors.',
+      trigger: {
+        event: 'area:entered',
+        areaId: 'corporate_encryption_lab',
+      },
+      optional: false,
+    },
+    {
+      id: 'obj_exfiltrate_with_data',
+      description: 'Exfiltrate with the stolen data packages before countermeasures deploy.',
+      trigger: {
+        event: 'area:entered',
+        areaId: 'corporate_exfiltration_route',
+      },
+      optional: false,
+    },
   ],
   rewards: {
-    storyFlags: ['act2_neurosync_interior_explored'],
-    knowledgeIds: ['neurosync_security_layout'],
+    storyFlags: [
+      'act2_neurosync_interior_explored',
+      'act2_neurosync_encryption_cloned',
+      'act2_neurosync_data_exfiltrated',
+    ],
+    knowledgeIds: ['neurosync_security_layout', 'neurosync_encryption_blueprints'],
   },
   branches: [
     {

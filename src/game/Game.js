@@ -64,6 +64,7 @@ import { QuestManager } from './managers/QuestManager.js';
 import { StoryFlagManager } from './managers/StoryFlagManager.js';
 import { CaseManager } from './managers/CaseManager.js';
 import { SaveManager } from './managers/SaveManager.js';
+import { QuestTriggerTelemetryBridge } from './telemetry/QuestTriggerTelemetryBridge.js';
 
 // Quest data
 import { registerAct1Quests } from './data/quests/act1Quests.js';
@@ -164,6 +165,7 @@ export class Game {
     this.suspicionMoodMapper = null;
     this.adaptiveMoodEmitter = null;
     this.gameplayAdaptiveAudioBridge = null;
+    this.questTriggerTelemetryBridge = null;
 
     // Game state
     this.inputState = new InputState(engine.eventBus);
@@ -742,6 +744,24 @@ export class Game {
       typeof this.crossroadsBranchTransitionController.init === 'function'
     ) {
       this.crossroadsBranchTransitionController.init();
+    }
+
+    this._ensureQuestTriggerTelemetryBridge();
+  }
+
+  _ensureQuestTriggerTelemetryBridge() {
+    if (!this.eventBus) {
+      return;
+    }
+    if (!this.questTriggerTelemetryBridge) {
+      this.questTriggerTelemetryBridge = new QuestTriggerTelemetryBridge(this.eventBus, {
+        priority: 18,
+        source: 'quest_trigger',
+        getActiveScene: () => this.activeScene || null,
+      });
+    }
+    if (this.questTriggerTelemetryBridge && typeof this.questTriggerTelemetryBridge.attach === 'function') {
+      this.questTriggerTelemetryBridge.attach();
     }
   }
 
@@ -2914,6 +2934,10 @@ export class Game {
       }
       this._audioTelemetryUnbind = null;
     }
+    if (this.questTriggerTelemetryBridge && typeof this.questTriggerTelemetryBridge.dispose === 'function') {
+      this.questTriggerTelemetryBridge.dispose();
+    }
+    this.questTriggerTelemetryBridge = null;
     this.audioTelemetry = { currentState: null, history: [] };
     this._cleanupAdaptiveMoodHandlers();
     this._registerAdaptiveMusic(null, { reason: 'cleanup' });

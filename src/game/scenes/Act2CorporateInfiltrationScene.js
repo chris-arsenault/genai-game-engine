@@ -21,6 +21,8 @@ export const ACT2_CORPORATE_TRIGGER_IDS = Object.freeze({
   LOBBY_ENTRY: 'act2_corporate_lobby_entry',
   SECURITY_FLOOR: 'act2_corporate_security_floor',
   SERVER_ACCESS: 'act2_corporate_server_access',
+  ENCRYPTION_LAB: 'act2_corporate_encryption_lab',
+  EXFIL_ROUTE: 'act2_corporate_exfiltration_route',
 });
 
 const TRIGGER_DEFINITIONS = Object.freeze([
@@ -69,6 +71,36 @@ const TRIGGER_DEFINITIONS = Object.freeze([
       telemetryTag: 'act2_corporate_server_access',
     },
   }),
+  Object.freeze({
+    id: ACT2_CORPORATE_TRIGGER_IDS.ENCRYPTION_LAB,
+    questId: DEFAULT_QUEST_ID,
+    objectiveId: 'obj_clone_encryption_core',
+    areaId: 'corporate_encryption_lab',
+    radius: 112,
+    once: true,
+    prompt: 'Clone the encryption core without tripping sensors.',
+    triggerType: 'quest_area',
+    metadata: {
+      narrativeBeat: 'act2_corporate_encryption_clone',
+      unlocksMechanic: 'data_extraction',
+      telemetryTag: 'act2_corporate_encryption_lab',
+    },
+  }),
+  Object.freeze({
+    id: ACT2_CORPORATE_TRIGGER_IDS.EXFIL_ROUTE,
+    questId: DEFAULT_QUEST_ID,
+    objectiveId: 'obj_exfiltrate_with_data',
+    areaId: 'corporate_exfiltration_route',
+    radius: 118,
+    once: true,
+    prompt: 'Exfiltrate with stolen data before countermeasures deploy.',
+    triggerType: 'quest_area',
+    metadata: {
+      narrativeBeat: 'act2_corporate_exfiltration',
+      unlocksMechanic: 'escape_route',
+      telemetryTag: 'act2_corporate_exfiltration_route',
+    },
+  }),
 ]);
 
 const FLOOR_SEGMENTS = Object.freeze([
@@ -102,6 +134,28 @@ const FLOOR_SEGMENTS = Object.freeze([
     height: 180,
     color: '#233a4d',
     alpha: 0.9,
+    layer: 'ground_fx',
+    zIndex: 1,
+  }),
+  Object.freeze({
+    id: 'corporate_encryption_lab_platform',
+    x: 580,
+    y: 140,
+    width: 240,
+    height: 160,
+    color: '#284a62',
+    alpha: 0.9,
+    layer: 'ground_fx',
+    zIndex: 1,
+  }),
+  Object.freeze({
+    id: 'corporate_exfil_route_platform',
+    x: 360,
+    y: 170,
+    width: 220,
+    height: 160,
+    color: '#2d4f66',
+    alpha: 0.88,
     layer: 'ground_fx',
     zIndex: 1,
   }),
@@ -185,10 +239,25 @@ const NAVIGATION_TEMPLATE = Object.freeze({
       radius: 56,
       tags: Object.freeze(['server_access']),
     }),
+    Object.freeze({
+      id: 'encryption_lab',
+      position: Object.freeze({ x: 700, y: 200 }),
+      radius: 50,
+      tags: Object.freeze(['data_extraction', 'restricted']),
+    }),
+    Object.freeze({
+      id: 'exfil_route',
+      position: Object.freeze({ x: 420, y: 220 }),
+      radius: 52,
+      tags: Object.freeze(['escape_route', 'stealth']),
+    }),
   ]),
   edges: Object.freeze([
     Object.freeze({ from: 'lobby_spawn', to: 'security_checkpoint', cost: 1 }),
     Object.freeze({ from: 'security_checkpoint', to: 'server_hall_entry', cost: 1 }),
+    Object.freeze({ from: 'server_hall_entry', to: 'encryption_lab', cost: 1 }),
+    Object.freeze({ from: 'encryption_lab', to: 'exfil_route', cost: 1 }),
+    Object.freeze({ from: 'exfil_route', to: 'security_checkpoint', cost: 1 }),
   ]),
   walkableSurfaces: Object.freeze([
     Object.freeze({
@@ -220,6 +289,26 @@ const NAVIGATION_TEMPLATE = Object.freeze({
         Object.freeze({ x: 600, y: 360 }),
       ]),
       tags: Object.freeze(['objective', 'data']),
+    }),
+    Object.freeze({
+      id: 'encryption_lab_floor',
+      polygon: Object.freeze([
+        Object.freeze({ x: 580, y: 140 }),
+        Object.freeze({ x: 820, y: 140 }),
+        Object.freeze({ x: 820, y: 300 }),
+        Object.freeze({ x: 580, y: 300 }),
+      ]),
+      tags: Object.freeze(['data_extraction', 'restricted']),
+    }),
+    Object.freeze({
+      id: 'exfil_route_floor',
+      polygon: Object.freeze([
+        Object.freeze({ x: 360, y: 170 }),
+        Object.freeze({ x: 580, y: 170 }),
+        Object.freeze({ x: 580, y: 330 }),
+        Object.freeze({ x: 360, y: 330 }),
+      ]),
+      tags: Object.freeze(['escape_route', 'stealth']),
     }),
   ]),
 });
@@ -382,6 +471,26 @@ export async function loadAct2CorporateInfiltrationScene(
       layer: 'ground_fx',
       zIndex: 2,
     },
+    {
+      id: ACT2_CORPORATE_TRIGGER_IDS.ENCRYPTION_LAB,
+      x: 700,
+      y: 200,
+      radius: 112,
+      color: '#7cd2f0',
+      alpha: 0.22,
+      layer: 'ground_fx',
+      zIndex: 2,
+    },
+    {
+      id: ACT2_CORPORATE_TRIGGER_IDS.EXFIL_ROUTE,
+      x: 440,
+      y: 220,
+      radius: 118,
+      color: '#f4b460',
+      alpha: 0.22,
+      layer: 'ground_fx',
+      zIndex: 2,
+    },
   ];
 
   for (const layout of triggerLayouts) {
@@ -442,6 +551,8 @@ export async function loadAct2CorporateInfiltrationScene(
         entry: 'act2_corporate_lobby_entry',
         progression: 'act2_corporate_security',
         objective: 'act2_corporate_server_access',
+        encryption: 'act2_corporate_encryption_clone',
+        exfiltration: 'act2_corporate_exfiltration',
       },
     },
   };
