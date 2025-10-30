@@ -274,6 +274,7 @@ export const GameConfig = {
             questId: 'main-act2-neurosync-infiltration',
             telemetryTag: 'act2_thread_selection_corporate',
             worldFlags: ['act2_branch_corporate_selected'],
+            sceneId: 'act2_corporate_interior',
             defaultUnlocked: true,
           },
           {
@@ -283,6 +284,7 @@ export const GameConfig = {
             questId: 'main-act2-archivist-alliance',
             telemetryTag: 'act2_thread_selection_resistance',
             worldFlags: ['act2_branch_resistance_selected'],
+            sceneId: 'act2_resistance_hideout_stub',
             defaultUnlocked: true,
           },
           {
@@ -292,6 +294,7 @@ export const GameConfig = {
             questId: 'main-act2-personal-investigation',
             telemetryTag: 'act2_thread_selection_personal',
             worldFlags: ['act2_branch_personal_selected'],
+            sceneId: 'act2_personal_archive_stub',
             defaultUnlocked: true,
           },
         ],

@@ -62,3 +62,36 @@ strategy and acceptance criteria.
 - Designer prompts now flow from the registry definitions through `ui:show_prompt`, and
   narrative/analytics listeners can subscribe to `narrative:crossroads_prompt` and
   `telemetry:trigger_entered` for branch selection deltas.
+- Session 92 unlocked the first branch interior: `loadAct2CorporateInfiltrationScene`
+  builds the NeuroSync lobby → security → server access approach, registers the
+  NeuroSync quest (`main-act2-neurosync-infiltration`), and exposes navigation metadata.
+  `Game.loadAct2ThreadScene` now routes `scene:load:act2_thread` requests through a loader
+  table so the corporate thread transitions into the new scene with branch metadata and spawn
+  coordinates. Regression coverage lives in
+`tests/game/scenes/Act2CorporateInfiltrationScene.test.js` and
+`tests/game/Game.act2ThreadScene.test.js`.
+
+## Thread Authoring Tips
+
+- Keep `QuestTriggerRegistry.reset()` mirrored with `seedAct2CrossroadsTriggers()` (and
+  other thread-specific seeders) in tests so definitions stay available after registry resets.
+- Use `trigger.metadata.narrativeBeat` values as the single source for overlay copy and
+  analytics hooks; keep the beat identifiers aligned with dialogue nodes so telemetry
+  reflects narrative intent.
+- When adding new branch interiors, update `Game.loadAct2ThreadScene`'s loader table with
+  the new scene id + loader and mirror the string ids in `GameConfig.narrative.act2.crossroads.threads`.
+
+## Thread A: NeuroSync Infiltration Trigger Map
+
+| Trigger ID                                 | Area ID                    | Quest ID                         | Objective ID                | Narrative Beat                       |
+| ------------------------------------------ | -------------------------- | -------------------------------- | --------------------------- | ------------------------------------ |
+| `act2_corporate_lobby_entry`               | `corporate_lobby`          | `main-act2-neurosync-infiltration` | `obj_infiltrate_lobby`      | `act2_corporate_lobby_entry`         |
+| `act2_corporate_security_floor`            | `corporate_security_floor` | `main-act2-neurosync-infiltration` | `obj_bypass_security_floor` | `act2_corporate_security`            |
+| `act2_corporate_server_access`             | `corporate_server_access`  | `main-act2-neurosync-infiltration` | `obj_locate_server_room`    | `act2_corporate_server_access`       |
+
+- `loadAct2CorporateInfiltrationScene` seeds these definitions via `TriggerMigrationToolkit`
+  so quest progress, telemetry, and designer overlays inherit shared metadata.
+- Layout metadata (`geometry`, `navigationMesh`, and `triggerLayout`) is exposed in the scene
+  return value and forwarded through `scene:loaded` for UI, navigation, and analytics systems.
+- Keep registry ids stable when extending the scene (patrols, evidence, scripted beats) so
+  analytics stays aligned with the branching choice and quest objectives.

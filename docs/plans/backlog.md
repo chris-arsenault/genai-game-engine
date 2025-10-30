@@ -444,7 +444,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Priority**: P1
 - **Tags**: `quest`, `narrative`, `trigger`
 - **Effort**: 3 hours
-- **Status**: In progress — Navigation constraints now enforce the authored mesh and branch transitions dispatch scene load requests; art integration and branch interiors remain.
+- **Status**: In progress — Crossroads transitions now load the corporate infiltration interior; resistance/personal interiors and final art/nav integration remain.
 - **Summary**: Attach Act 2 Crossroads hub volumes (checkpoint, Zara briefing table, thread selection console) to TriggerMigrationToolkit so branching choices feed QuestSystem, telemetry, and designer tooling consistently with Act 1.
 - **Progress (Session #86)**: Seeded Act 2 Crossroads trigger definitions in `QuestTriggerRegistry`, added regression coverage (`tests/game/quests/Act2TriggerDefinitions.test.js`), generated authoring notes (`docs/guides/act2-trigger-authoring.md`), and ensured outstanding migration reports surface the Act 2 work.
 - **Progress (Session #87)**: Authored `src/game/scenes/Act2CrossroadsScene.js` to attach registry-backed triggers, added Jest coverage (`tests/game/scenes/Act2CrossroadsScene.triggers.test.js`) verifying branching metadata, and refreshed designer notes with migration status.
@@ -452,6 +452,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Progress (Session #89)**: Introduced `CrossroadsPromptController` + Act 2 quest scaffolding to drive Zara's briefing/branch selection UI, seeded `NavigationMeshService` + `PlayerMovementSystem` consumer to expose hub nav metadata, and added targeted Jest coverage for narrative/navigational plumbing.
 - **Progress (Session #90)**: Enforced navigation mesh consumption across PlayerMovement + NPC agents via `NavigationConstraintSystem`, unlocked branch landing overlays with checkpoint instructions, and expanded Jest coverage for navigation guardrails and prompt flows.
 - **Progress (Session #91)**: Delivered `CrossroadsBranchTransitionController` to pair landing events with checkpoint entry, emitted `scene:load:act2_thread` requests through `Game.loadAct2ThreadScene`, and added Jest coverage (`tests/game/narrative/CrossroadsBranchTransitionController.test.js`) to lock the branch transition handshake.
+- **Progress (Session #92)**: Implemented `loadAct2CorporateInfiltrationScene` with registry-backed triggers, navigation mesh, and geometry metadata; updated `Game.loadAct2ThreadScene` to resolve loader mappings with spawn handling + fallback coverage; registered the NeuroSync quest (`main-act2-neurosync-infiltration`) and added targeted Jest coverage (`tests/game/scenes/Act2CorporateInfiltrationScene.test.js`, `tests/game/Game.act2ThreadScene.test.js`).
 - **Acceptance Criteria**:
   - Crossroads triggers attach registry-backed Quest + Trigger components via the toolkit and mark definitions migrated.
   - Scene-level Jest coverage verifies branching metadata (`branchingChoice`, `telemetryTag`) and objective progression without legacy listeners.

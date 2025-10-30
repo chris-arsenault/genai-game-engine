@@ -68,6 +68,7 @@ import { SaveManager } from './managers/SaveManager.js';
 // Quest data
 import { registerAct1Quests } from './data/quests/act1Quests.js';
 import { registerAct2CrossroadsQuest } from './data/quests/act2CrossroadsQuest.js';
+import { registerAct2NeuroSyncQuest } from './data/quests/act2NeuroSyncQuest.js';
 import { tutorialCase } from './data/cases/tutorialCase.js';
 
 // Dialogue data
@@ -82,6 +83,7 @@ import { createNPCEntity } from './entities/NPCEntity.js';
 // Scenes
 import { loadAct1Scene } from './scenes/Act1Scene.js';
 import { loadMemoryParlorScene } from './scenes/MemoryParlorScene.js';
+import { loadAct2CorporateInfiltrationScene } from './scenes/Act2CorporateInfiltrationScene.js';
 
 // Configuration
 import { GameConfig } from './config/GameConfig.js';
@@ -114,6 +116,13 @@ const FORENSIC_DIFFICULTY_DESCRIPTORS = Object.freeze({
   1: 'Routine',
   2: 'Challenging',
   3: 'Expert',
+});
+
+const ACT2_THREAD_SCENE_LOADERS = Object.freeze({
+  act2_thread_corporate_infiltration: Object.freeze({
+    sceneId: 'act2_corporate_interior',
+    loader: loadAct2CorporateInfiltrationScene,
+  }),
 });
 
 /**
@@ -320,6 +329,10 @@ export class Game {
     // Register Act 2 crossroads quest scaffolding
     registerAct2CrossroadsQuest(this.questManager);
     console.log('[Game] Act 2 Crossroads quest registered');
+
+    // Register Act 2 thread quests
+    registerAct2NeuroSyncQuest(this.questManager);
+    console.log('[Game] Act 2 NeuroSync quest registered');
 
     // Initialize TutorialTranscriptRecorder prior to SaveManager wiring
     this.tutorialTranscriptRecorder = new TutorialTranscriptRecorder(this.eventBus);
@@ -1071,56 +1084,199 @@ export class Game {
       return null;
     }
 
+    if (this.playerEntityId == null) {
+      console.warn('[Game] Cannot load Act 2 thread scene before player is initialized');
+      return null;
+    }
+
     const branchId =
       options.branchId ||
       options.threadConfig?.id ||
       null;
+    const threadConfig =
+      options.threadConfig ||
+      this._resolveAct2ThreadConfig(branchId) ||
+      null;
+
+    const loaderEntry = branchId ? ACT2_THREAD_SCENE_LOADERS[branchId] : null;
+    const loader = loaderEntry?.loader || null;
+    const questId =
+      options.questId ||
+      threadConfig?.questId ||
+      null;
+    const originQuestId = options.originQuestId || null;
     const sceneId =
-      options.threadConfig?.sceneId ||
+      options.sceneId ||
+      threadConfig?.sceneId ||
+      loaderEntry?.sceneId ||
       (branchId ? `${branchId}_scene_stub` : 'act2_thread_stub');
 
     this._sceneTransitionInFlight = true;
 
+    const transitionContext = {
+      branchId,
+      sceneId,
+      questId,
+      originQuestId,
+      threadConfig: threadConfig ? { ...threadConfig } : null,
+    };
+
     try {
-      this._pendingAct2ThreadTransition = {
-        branchId,
-        questId: options.questId || null,
-        originQuestId: options.originQuestId || null,
-        sceneId,
-        threadConfig: options.threadConfig || null,
+      this._pendingAct2ThreadTransition = { ...transitionContext };
+      this.eventBus.emit('scene:transition:act2_thread:start', { ...transitionContext });
+
+      if (!loader) {
+        this._applyAct2ThreadFallbackScene(transitionContext);
+        this.eventBus.emit('scene:transition:act2_thread:ready', { ...transitionContext });
+        return transitionContext.sceneId;
+      }
+
+      this._destroySceneEntities();
+
+      const sceneData = await loader(
+        this.entityManager,
+        this.componentRegistry,
+        this.eventBus,
+        {
+          ...options,
+          branchId,
+          questId,
+          originQuestId,
+          threadConfig,
+          playerEntityId: this.playerEntityId,
+          audioManager: this.audioManager,
+        }
+      );
+
+      const resolvedSceneId = sceneData?.sceneName || transitionContext.sceneId;
+      const spawnPoint = sceneData?.spawnPoint || { x: 240, y: 520 };
+
+      this.activeScene = {
+        id: resolvedSceneId,
+        entities: Array.isArray(sceneData?.sceneEntities)
+          ? [...sceneData.sceneEntities]
+          : [],
+        cleanup: typeof sceneData?.cleanup === 'function' ? sceneData.cleanup : null,
+        metadata: {
+          ...(sceneData?.metadata || {}),
+          branchId,
+          questId,
+          originQuestId,
+          threadConfig: threadConfig ? { ...threadConfig } : null,
+          transitionSource: 'act2_thread',
+        },
       };
 
-      this.eventBus.emit('scene:transition:act2_thread:start', {
-        branchId,
-        sceneId,
-        questId: options.questId || null,
-        originQuestId: options.originQuestId || null,
-        threadConfig: options.threadConfig || null,
-      });
+      this._activeAmbientController = this.activeScene.metadata?.ambientAudioController || null;
+      if (this._activeAmbientController &&
+        typeof this._activeAmbientController.getAdaptiveMusic === 'function') {
+        this._registerAdaptiveMusic(
+          this._activeAmbientController.getAdaptiveMusic(),
+          { source: resolvedSceneId }
+        );
+      } else {
+        this._registerAdaptiveMusic(null, { reason: 'act2_thread_scene_no_ambient' });
+      }
 
-      // Placeholder: actual scene loading will be implemented when branch interiors are ready.
-      this.activeScene.id = sceneId;
-      this.activeScene.metadata = {
-        ...(this.activeScene.metadata || {}),
-        branchId,
-        questId: options.questId || null,
-        originQuestId: options.originQuestId || null,
-        threadConfig: options.threadConfig || null,
-        transitionSource: 'act2_thread',
+      const playerTransform = this.componentRegistry.getComponent(this.playerEntityId, 'Transform');
+      if (playerTransform) {
+        playerTransform.x = spawnPoint.x;
+        playerTransform.y = spawnPoint.y;
+      }
+
+      const playerController = this.componentRegistry.getComponent(this.playerEntityId, 'PlayerController');
+      if (playerController) {
+        playerController.velocityX = 0;
+        playerController.velocityY = 0;
+      }
+
+      this.gameSystems.cameraFollow.snapTo(spawnPoint.x, spawnPoint.y);
+
+      this._pendingAct2ThreadTransition = null;
+      this._memoryParlorSceneLoaded = false;
+
+      const readyPayload = {
+        ...transitionContext,
+        sceneId: resolvedSceneId,
+        spawnPoint,
       };
 
-      this.eventBus.emit('scene:transition:act2_thread:ready', {
+      this.eventBus.emit('scene:transition:act2_thread:ready', readyPayload);
+      this.eventBus.emit('scene:loaded', {
+        sceneId: resolvedSceneId,
+        spawnPoint,
+        reason: 'act2_thread_transition',
+        navigationMesh: this.activeScene.metadata?.navigationMesh || null,
         branchId,
-        sceneId,
-        questId: options.questId || null,
-        originQuestId: options.originQuestId || null,
-        threadConfig: options.threadConfig || null,
+        questId,
+        originQuestId,
       });
 
-      return sceneId;
+      return resolvedSceneId;
+    } catch (error) {
+      console.error('[Game] Failed to load Act 2 thread scene', error);
+      this.eventBus.emit('scene:transition:act2_thread:error', {
+        ...transitionContext,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      this._applyAct2ThreadFallbackScene(transitionContext);
+      return transitionContext.sceneId;
     } finally {
       this._sceneTransitionInFlight = false;
     }
+  }
+
+  _resolveAct2ThreadConfig(branchId) {
+    if (!branchId) {
+      return null;
+    }
+    const threads = GameConfig?.narrative?.act2?.crossroads?.threads;
+    if (!Array.isArray(threads)) {
+      return null;
+    }
+    return threads.find((thread) => thread.id === branchId) || null;
+  }
+
+  _applyAct2ThreadFallbackScene(context = {}) {
+    const {
+      sceneId = 'act2_thread_stub',
+      branchId = null,
+      questId = null,
+      originQuestId = null,
+      threadConfig = null,
+    } = context;
+
+    if (!this.activeScene) {
+      this.activeScene = {
+        id: null,
+        entities: [],
+        cleanup: null,
+        metadata: {},
+      };
+    }
+
+    this.activeScene.id = sceneId;
+    this.activeScene.entities = Array.isArray(this.activeScene.entities)
+      ? this.activeScene.entities
+      : [];
+    this.activeScene.cleanup = typeof this.activeScene.cleanup === 'function'
+      ? this.activeScene.cleanup
+      : null;
+    this.activeScene.metadata = {
+      ...(this.activeScene.metadata || {}),
+      branchId,
+      questId,
+      originQuestId,
+      threadConfig: threadConfig ? { ...threadConfig } : null,
+      transitionSource: 'act2_thread',
+      placeholder: true,
+    };
+
+    this._pendingAct2ThreadTransition = null;
+    this._activeAmbientController = null;
+    this._registerAdaptiveMusic(null, { reason: 'act2_thread_placeholder' });
+
+    return this.activeScene.id;
   }
 
   /**
