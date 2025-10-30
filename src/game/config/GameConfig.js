@@ -294,7 +294,7 @@ export const GameConfig = {
             questId: 'main-act2-personal-investigation',
             telemetryTag: 'act2_thread_selection_personal',
             worldFlags: ['act2_branch_personal_selected'],
-            sceneId: 'act2_personal_archive_stub',
+            sceneId: 'act2_personal_archive',
             defaultUnlocked: true,
           },
         ],

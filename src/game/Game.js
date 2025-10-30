@@ -70,6 +70,7 @@ import { registerAct1Quests } from './data/quests/act1Quests.js';
 import { registerAct2CrossroadsQuest } from './data/quests/act2CrossroadsQuest.js';
 import { registerAct2NeuroSyncQuest } from './data/quests/act2NeuroSyncQuest.js';
 import { registerAct2ResistanceQuest } from './data/quests/act2ResistanceQuest.js';
+import { registerAct2PersonalInvestigationQuest } from './data/quests/act2PersonalInvestigationQuest.js';
 import { tutorialCase } from './data/cases/tutorialCase.js';
 
 // Dialogue data
@@ -86,6 +87,7 @@ import { loadAct1Scene } from './scenes/Act1Scene.js';
 import { loadMemoryParlorScene } from './scenes/MemoryParlorScene.js';
 import { loadAct2CorporateInfiltrationScene } from './scenes/Act2CorporateInfiltrationScene.js';
 import { loadAct2ResistanceHideoutScene } from './scenes/Act2ResistanceHideoutScene.js';
+import { loadAct2PersonalInvestigationScene } from './scenes/Act2PersonalInvestigationScene.js';
 
 // Configuration
 import { GameConfig } from './config/GameConfig.js';
@@ -128,6 +130,10 @@ const ACT2_THREAD_SCENE_LOADERS = Object.freeze({
   act2_thread_resistance_contact: Object.freeze({
     sceneId: 'act2_resistance_hideout',
     loader: loadAct2ResistanceHideoutScene,
+  }),
+  act2_thread_personal_investigation: Object.freeze({
+    sceneId: 'act2_personal_archive',
+    loader: loadAct2PersonalInvestigationScene,
   }),
 });
 
@@ -337,6 +343,8 @@ export class Game {
     console.log('[Game] Act 2 NeuroSync quest registered');
     registerAct2ResistanceQuest(this.questManager);
     console.log('[Game] Act 2 Resistance quest registered');
+    registerAct2PersonalInvestigationQuest(this.questManager);
+    console.log('[Game] Act 2 Personal quest registered');
 
     // Register Act 2 crossroads quest scaffolding after thread quests so branch metadata resolves
     registerAct2CrossroadsQuest(this.questManager);

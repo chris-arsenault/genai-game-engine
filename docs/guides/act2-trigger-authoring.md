@@ -117,3 +117,19 @@ strategy and acceptance criteria.
   into knowledge/faction overlays so the Archivist alliance unlock is visible to systemic listeners.
 - Keep telemetry tags (`act2_resistance_*`) stable to retain branch analytics continuity as the
   hideout evolves (NPC schedules, evidence beats, optional stealth entries).
+
+## Thread C: Personal Investigation Trigger Map
+
+| Trigger ID                                 | Area ID                      | Quest ID                            | Objective ID                      | Narrative Beat                                 |
+| ------------------------------------------ | ---------------------------- | ----------------------------------- | --------------------------------- | ---------------------------------------------- |
+| `act2_personal_archive_entry`              | `personal_archive_entry`     | `main-act2-personal-investigation` | `obj_access_personal_archive`     | `act2_personal_archive_entry`                  |
+| `act2_personal_casefile_review`            | `personal_casefile_review`   | `main-act2-personal-investigation` | `obj_reconstruct_cold_cases`      | `act2_personal_casefile_reckoning`             |
+| `act2_personal_memory_vault`               | `personal_memory_vault`      | `main-act2-personal-investigation` | `obj_unlock_memory_vault`         | `act2_personal_memory_vault_unlocked`          |
+
+- `loadAct2PersonalInvestigationScene` mirrors the other branch interiors by seeding trigger
+  definitions, attaching quest metadata through `TriggerMigrationToolkit`, and exposing geometry,
+  navigation mesh, and trigger layout for analytics/NPC navigation consumers.
+- Use the `memory_threads` and `testimony_projection` metadata hooks to drive systemic responses
+  (knowledge ledger, dialogue overlays) as the personal thread digs into suppressed evidence.
+- Telemetry tags (`act2_personal_*`) and area ids (`personal_*`) should remain stable so narrative
+  analytics can correlate player behaviour across multiple investigative passes.
