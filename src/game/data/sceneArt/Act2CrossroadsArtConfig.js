@@ -93,6 +93,7 @@ export const Act2CrossroadsArtConfig = Object.freeze({
       assetId: 'act2_crossroads_column_checkpoint_north_v1',
       metadata: Object.freeze({
         beamProfile: 'tight',
+        lightingPreset: 'checkpoint_column_guard',
       }),
       tags: Object.freeze(['checkpoint', 'column']),
     }),
@@ -103,6 +104,7 @@ export const Act2CrossroadsArtConfig = Object.freeze({
       assetId: 'act2_crossroads_column_checkpoint_south_v1',
       metadata: Object.freeze({
         beamProfile: 'tight',
+        lightingPreset: 'checkpoint_column_guard',
       }),
       tags: Object.freeze(['checkpoint', 'column']),
     }),
@@ -113,6 +115,7 @@ export const Act2CrossroadsArtConfig = Object.freeze({
       assetId: 'act2_crossroads_column_safehouse_left_v1',
       metadata: Object.freeze({
         beamProfile: 'soft',
+        lightingPreset: 'safehouse_column_soft',
       }),
       tags: Object.freeze(['safehouse', 'column']),
     }),
@@ -123,6 +126,7 @@ export const Act2CrossroadsArtConfig = Object.freeze({
       assetId: 'act2_crossroads_column_safehouse_right_v1',
       metadata: Object.freeze({
         beamProfile: 'soft',
+        lightingPreset: 'safehouse_column_soft',
       }),
       tags: Object.freeze(['safehouse', 'column']),
     }),

@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Lighting presets for the Crossroads briefing pad and column segments with refreshed validator coverage (`assets/manifests/act2-crossroads-art.json`, `src/game/data/sceneArt/Act2CrossroadsArtConfig.js`, `tests/game/tools/Act2CrossroadsArtValidator.test.js`).
+- Act 2 dialogue review bundler CLI (`npm run narrative:bundle-act2-review`) and workflow guide for reviewer sign-off (`scripts/narrative/bundleAct2BranchDialoguesForReview.js`, `docs/guides/act2-dialogue-review-workflow.md`).
+- Telemetry parity CLI support for `--summary-out`, generating analytics handoff reports for sample batches (`scripts/telemetry/checkQuestTelemetryParity.js`).
 - Finalised Act 2 Crossroads art bundle with asset IDs, narrative lighting metadata, and refreshed overrides/tests (`assets/manifests/act2-crossroads-art.json`, `src/game/data/sceneArt/Act2CrossroadsArtConfig.js`, `src/game/config/GameConfig.js`, `tests/game/scenes/Act2CrossroadsScene.artOverrides.test.js`).
 - Act 2 dialogue exporter now renders Markdown review packets and exposes reusable writer utilities, with CLI flags for Markdown/JSON bundles (`src/game/tools/Act2BranchDialogueExporter.js`, `scripts/narrative/exportAct2BranchDialogues.js`, `tests/game/tools/Act2BranchDialogueExporter.test.js`, `docs/narrative/dialogue/act2-branch-dialogue-review.md`).
 - Telemetry dashboard exporter refactored for programmatic use and schema validation coverage to guard analytics integrations (`scripts/telemetry/exportQuestTelemetryDashboard.js`, `tests/scripts/exportQuestTelemetryDashboard.test.js`, `tests/game/telemetry/QuestTelemetryValidationHarness.analytics.test.js`).

@@ -26,7 +26,8 @@
       "assetId": "act2_crossroads_briefing_pad_v1",
       "metadata": {
         "material": "glass_inlay",
-        "narrativeCue": "zara_briefing_focus"
+        "narrativeCue": "zara_briefing_focus",
+        "lightingPreset": "briefing_focus"
       },
       "tags": ["briefing", "spotlight"]
     },
@@ -104,7 +105,8 @@
       "alpha": 0.52,
       "assetId": "act2_crossroads_column_safehouse_left_v1",
       "metadata": {
-        "beamProfile": "soft"
+        "beamProfile": "soft",
+        "lightingPreset": "safehouse_column_soft"
       },
       "tags": ["safehouse", "column"]
     },
@@ -114,7 +116,8 @@
       "alpha": 0.52,
       "assetId": "act2_crossroads_column_safehouse_right_v1",
       "metadata": {
-        "beamProfile": "soft"
+        "beamProfile": "soft",
+        "lightingPreset": "safehouse_column_soft"
       },
       "tags": ["safehouse", "column"]
     },
@@ -124,7 +127,8 @@
       "alpha": 0.5,
       "assetId": "act2_crossroads_column_checkpoint_north_v1",
       "metadata": {
-        "beamProfile": "tight"
+        "beamProfile": "tight",
+        "lightingPreset": "checkpoint_column_guard"
       },
       "tags": ["checkpoint", "column"]
     },
@@ -134,7 +138,8 @@
       "alpha": 0.5,
       "assetId": "act2_crossroads_column_checkpoint_south_v1",
       "metadata": {
-        "beamProfile": "tight"
+        "beamProfile": "tight",
+        "lightingPreset": "checkpoint_column_guard"
       },
       "tags": ["checkpoint", "column"]
     }

@@ -21,22 +21,15 @@ describe('Act2CrossroadsArtValidator', () => {
     });
 
     expect(result.ok).toBe(true);
-    expect(result.issues).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          severity: 'warning',
-        }),
-      ])
-    );
+    expect(result.issues).toEqual([]);
     expect(result.coverage.floors.missing).toEqual([]);
     expect(result.coverage.boundaries.present).toBeGreaterThanOrEqual(4);
 
     const summary = summarizeAct2CrossroadsArtValidation(result);
     expect(summary.status).toBe('pass');
     expect(summary.readiness.lighting.total).toBeGreaterThan(0);
-    expect(summary.readiness.lighting.missing).toEqual(
-      expect.arrayContaining(['crossroads_column_safehouse_left'])
-    );
+    expect(summary.readiness.lighting.missing).toEqual([]);
+    expect(summary.readiness.lighting.ready).toBe(summary.readiness.lighting.total);
     expect(summary.readiness.collision.ready).toBe(summary.readiness.collision.total);
   });
 

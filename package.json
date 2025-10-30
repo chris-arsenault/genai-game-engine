@@ -14,6 +14,7 @@
     "telemetry:performance:baseline": "node scripts/telemetry/performanceBaseline.js",
     "telemetry:performance:summary": "node scripts/telemetry/summarizePerformanceBaseline.js",
     "narrative:export-act2-dialogues": "node scripts/narrative/exportAct2BranchDialogues.js",
+    "narrative:bundle-act2-review": "node scripts/narrative/bundleAct2BranchDialoguesForReview.js",
     "telemetry:dashboard": "node scripts/telemetry/exportQuestTelemetryDashboard.js",
     "art:validate-crossroads": "node scripts/art/validateAct2CrossroadsArt.js",
     "telemetry:check-parity": "node scripts/telemetry/checkQuestTelemetryParity.js",

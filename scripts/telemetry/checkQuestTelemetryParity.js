@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import {
@@ -13,6 +13,7 @@ async function main() {
   let datasetPath = 'telemetry-artifacts/quest-telemetry-dashboard.json';
   const samplePaths = [];
   let schemaVersionOverride = null;
+  let summaryOutputPath = null;
 
   for (const arg of args) {
     if (arg.startsWith('--dataset=')) {
@@ -24,6 +25,8 @@ async function main() {
       }
     } else if (arg.startsWith('--schema-version=')) {
       schemaVersionOverride = arg.slice('--schema-version='.length).trim();
+    } else if (arg.startsWith('--summary-out=')) {
+      summaryOutputPath = arg.slice('--summary-out='.length).trim();
     }
   }
 
@@ -93,6 +96,15 @@ async function main() {
   }
 
   reportParity(summary.parity);
+
+  if (summaryOutputPath && summaryOutputPath.length > 0) {
+    await writeSummaryReport(summaryOutputPath, {
+      summary,
+      stats: result.stats,
+      datasetPath,
+      samplePaths,
+    });
+  }
 }
 
 if (process.argv[1] && process.argv[1].includes('checkQuestTelemetryParity.js')) {
@@ -156,4 +168,44 @@ function reportParity(parity) {
       `[checkQuestTelemetryParity] Unexpected fields detected: ${parity.unexpected.join(', ')}`
     );
   }
+}
+
+async function writeSummaryReport(targetPath, context) {
+  const resolved = path.resolve(process.cwd(), targetPath);
+  const datasetBucket = context.summary?.parity?.dataset ?? {};
+  const eventBucket = context.summary?.parity?.event ?? {};
+  const payloadBucket = context.summary?.parity?.payload ?? {};
+  const sampleSources = Array.isArray(context.samplePaths) ? context.samplePaths : [];
+
+  const report = {
+    generatedAt: new Date().toISOString(),
+    ok: context.summary?.ok ?? false,
+    totals: {
+      events: context.stats?.totalEvents ?? 0,
+      datasetFieldsRequired: Array.isArray(datasetBucket.requiredFields)
+        ? datasetBucket.requiredFields.length
+        : 0,
+      eventFieldsRequired: Array.isArray(eventBucket.requiredFields) ? eventBucket.requiredFields.length : 0,
+      payloadFieldsRequired: Array.isArray(payloadBucket.requiredFields)
+        ? payloadBucket.requiredFields.length
+        : 0,
+    },
+    coverage: {
+      dataset: datasetBucket,
+      event: eventBucket,
+      payload: payloadBucket,
+    },
+    unexpectedFields: context.summary?.parity?.unexpected ?? [],
+    issues: context.summary?.issues ?? [],
+    sources: {
+      dataset: sampleSources.length > 0 ? 'aggregated-samples' : path.resolve(process.cwd(), context.datasetPath),
+      samples: sampleSources.map((sample) => path.resolve(process.cwd(), sample)),
+    },
+    nextSteps: context.summary?.ok
+      ? ['Share summary with analytics for ingestion confirmation.', 'Schedule next parity run when new telemetry batches arrive.']
+      : ['Resolve schema mismatches before handing off to analytics.'],
+  };
+
+  await writeFile(resolved, JSON.stringify(report, null, 2), 'utf8');
+  console.log(`[checkQuestTelemetryParity] Summary written to ${resolved}`);
 }
