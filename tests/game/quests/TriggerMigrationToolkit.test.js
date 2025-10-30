@@ -35,6 +35,9 @@ describe('TriggerMigrationToolkit', () => {
         objectiveId: 'obj_arrive_scene',
         areaId: 'crime_scene_entry_area',
         oneTime: true,
+        metadata: expect.objectContaining({
+          sceneId: 'act1_hollow_case',
+        }),
       })
     );
     expect(componentRegistry.addComponent).toHaveBeenCalledWith(
@@ -83,6 +86,9 @@ describe('TriggerMigrationToolkit', () => {
         objectiveId: 'obj_interview_vendor',
         areaId: 'vendor_trigger',
         oneTime: false,
+        metadata: expect.objectContaining({
+          moodHint: 'market_intrigue',
+        }),
       })
     );
     expect(componentRegistry.addComponent).toHaveBeenCalledWith(

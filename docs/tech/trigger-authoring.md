@@ -51,6 +51,7 @@ Restricted areas, quest gates, and scene transitions now rely on the engine-leve
 
 ### Quest Trigger Registry & Migration Toolkit
 - Register quest trigger metadata centrally via `QuestTriggerRegistry` so definitions stay in sync with quest data (`questId`, `objectiveId`, prompts, optional metadata such as `moodHint` for adaptive audio).
+- Act 2 hub seeds live in `ACT2_CROSSROADS_TRIGGER_DEFINITIONS` (see `docs/guides/act2-trigger-authoring.md`) and remain flagged as outstanding migrations until the Crossroads scene attaches them.
 - Use `TriggerMigrationToolkit` (see `src/game/quests/TriggerMigrationToolkit.js`) to attach standardized `Trigger` components to scene entities; the toolkit records migration status and ensures payload shape consistency.
 - Definitions can include `metadata.moodHint` to influence adaptive audio bridges; hints expire automatically after a configurable duration.
 - QuestSystem only reacts to `area:entered`/`area:exited` payloads coming from `Trigger` components. Legacy `InteractionZone` polling has been removed, so always attach a trigger before expecting quest progression.

@@ -316,6 +316,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Failing runs emit actionable messaging for engineers.
 - **Progress (Session #84)**: Authored `scripts/telemetry/performanceSnapshot.js`, exposed `npm run telemetry:performance`, and captured a seed run producing `telemetry-artifacts/performance/performance-metrics.json`; pending work: wiring into CI for ongoing guardrails.
 - **Progress (Session #85)**: Introduced `scripts/telemetry/performanceBaseline.js` with npm alias `telemetry:performance:baseline`, added a GitHub Actions stage to capture five-run baselines per CI execution, and verified aggregated artifacts (`telemetry-artifacts/performance/ci-baseline.json`) via local smoke runs.
+- **Progress (Session #86)**: Executed the first five-run CI-aligned baseline, added `telemetry:performance:summary` to generate markdown guardrail reports, and documented retention/alert policies in `docs/performance/performance-baseline-guardrails.md` (warning raised for BSP peak spikes to monitor in follow-up runs).
 
 #### CI-014: Playwright Smoke Integration
 - **Priority**: P3
@@ -433,6 +434,19 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - QuestSystem progression and resets validated via updated regression tests.
   - Designer-facing docs updated with Act 1 trigger examples.
 - **References**: `docs/plans/quest-trigger-migration-plan.md`, `src/game/quests/TriggerMigrationToolkit.js`, `src/game/quests/QuestTriggerRegistry.js`, MCP backlog item `QUEST-442`.
+
+#### QUEST-610: Act 2 Crossroads Trigger Migration
+- **Priority**: P1
+- **Tags**: `quest`, `narrative`, `trigger`
+- **Effort**: 3 hours
+- **Status**: Pending — Definitions seeded; awaiting Act 2 Crossroads scene implementation.
+- **Summary**: Attach Act 2 Crossroads hub volumes (checkpoint, Zara briefing table, thread selection console) to TriggerMigrationToolkit so branching choices feed QuestSystem, telemetry, and designer tooling consistently with Act 1.
+- **Progress (Session #86)**: Seeded Act 2 Crossroads trigger definitions in `QuestTriggerRegistry`, added regression coverage (`tests/game/quests/Act2TriggerDefinitions.test.js`), generated authoring notes (`docs/guides/act2-trigger-authoring.md`), and ensured outstanding migration reports surface the Act 2 work.
+- **Acceptance Criteria**:
+  - Crossroads triggers attach registry-backed Quest + Trigger components via the toolkit and mark definitions migrated.
+  - Scene-level Jest coverage verifies branching metadata (`branchingChoice`, `telemetryTag`) and objective progression without legacy listeners.
+  - Designer documentation references Act 2 trigger IDs/prompts and maps telemetry tags to narrative analytics dashboards.
+- **References**: `docs/plans/quest-trigger-migration-plan.md`, `docs/guides/act2-trigger-authoring.md`, MCP backlog item `QUEST-610`.
 
 #### PROC-221: Tilemap Rotation Fidelity
 - **Priority**: P1

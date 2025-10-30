@@ -12,6 +12,7 @@
     "telemetry:fallback-report": "node scripts/telemetry/analyzeFallbackUsage.js",
     "telemetry:performance": "node scripts/telemetry/performanceSnapshot.js",
     "telemetry:performance:baseline": "node scripts/telemetry/performanceBaseline.js",
+    "telemetry:performance:summary": "node scripts/telemetry/summarizePerformanceBaseline.js",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:e2e": "./run_playwright.sh test",

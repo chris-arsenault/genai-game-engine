@@ -71,6 +71,9 @@ export class TriggerMigrationToolkit {
       oneTime: once,
       triggered: false,
       prompt: definition.prompt ?? null,
+      metadata: {
+        ...(definition.metadata || {}),
+      },
     };
 
     const triggerComponent = new Trigger({
