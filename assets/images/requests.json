@@ -267,23 +267,23 @@
     "id": "image-ar-050-crossroads-selection-pad",
     "arId": "AR-050",
     "title": "Act 2 Crossroads Selection Pad",
-    "creator": "",
-    "source": "",
-    "license": "",
-    "status": "pending-sourcing",
+    "creator": "The Fun Chronicles",
+    "source": "https://www.flickr.com/photos/196406308@N04/52845556684",
+    "license": "CC0 1.0",
+    "status": "reference-selected",
     "usage": "Interactive pad for thread selection console.",
-    "notes": "Matches assetId act2_crossroads_selection_pad_v1; needs reactive glass and telemetry glyphs."
+    "notes": "Matches assetId act2_crossroads_selection_pad_v1; CC0 helipad top-down plate gives concentric guidance rings for reactive glass and telemetry glyphs. Openverse ID 67a16c30-eb3c-4b8e-88f5-f1e31bfddb5a (\"30 A Helipad Near The Top (4) - East View\")."
   },
   {
     "id": "image-ar-050-crossroads-checkpoint-plaza",
     "arId": "AR-050",
     "title": "Act 2 Crossroads Checkpoint Plaza",
-    "creator": "",
-    "source": "",
-    "license": "",
-    "status": "pending-sourcing",
+    "creator": "Nestor's Blurrylife",
+    "source": "https://www.flickr.com/photos/7711906@N07/13462190584",
+    "license": "CC BY 2.0",
+    "status": "reference-selected",
     "usage": "Checkpoint staging floor for guard interactions.",
-    "notes": "Matches assetId act2_crossroads_checkpoint_plaza_v1; incorporate steel inlays for militarised tone."
+    "notes": "Matches assetId act2_crossroads_checkpoint_plaza_v1; Dongdaemun Design Plaza night plaza reference delivers illuminated ribbing and steel inlays for militarised tone. Openverse ID 1d101862-fda2-4591-8160-d799b6e2b39c (\"Dongdaemun Design Plaza & Park\")."
   },
   {
     "id": "image-ar-050-crossroads-safehouse-arc",
@@ -366,44 +366,44 @@
     "id": "image-ar-050-crossroads-boundary-west",
     "arId": "AR-050",
     "title": "Act 2 Crossroads Boundary Wall (West)",
-    "creator": "",
-    "source": "",
-    "license": "",
-    "status": "pending-sourcing",
+    "creator": "Jeremy Levine Design",
+    "source": "https://www.flickr.com/photos/25186605@N04/2814805163",
+    "license": "CC BY 2.0",
+    "status": "reference-selected",
     "usage": "Boundary wall texture for west perimeter.",
-    "notes": "AssetId act2_crossroads_boundary_west_v1; requires solid wall texture with subtle parallax."
+    "notes": "AssetId act2_crossroads_boundary_west_v1; Solar Energy System grid supplies modular energy panel pattern with subtle parallax seams. Openverse ID cffc95f8-a10c-4ea1-9403-75989f5c510c (\"Solar Energy System\")."
   },
   {
     "id": "image-ar-050-crossroads-boundary-east",
     "arId": "AR-050",
     "title": "Act 2 Crossroads Boundary Wall (East)",
-    "creator": "",
-    "source": "",
-    "license": "",
-    "status": "pending-sourcing",
+    "creator": "spinster cardigan",
+    "source": "https://www.flickr.com/photos/84906483@N08/8567491153",
+    "license": "CC BY 2.0",
+    "status": "reference-selected",
     "usage": "Boundary wall texture for east perimeter.",
-    "notes": "AssetId act2_crossroads_boundary_east_v1; match west wall with signage placeholders."
+    "notes": "AssetId act2_crossroads_boundary_east_v1; glass brick wall photo supports translucent signage inserts with damage detail. Openverse ID 9d2a5d45-5ba9-47ac-a910-e8ec191e2ed2 (\"glass brick wall\")."
   },
   {
     "id": "image-ar-050-crossroads-boundary-north",
     "arId": "AR-050",
     "title": "Act 2 Crossroads Boundary Wall (North)",
-    "creator": "",
-    "source": "",
-    "license": "",
-    "status": "pending-sourcing",
+    "creator": "*rboed*",
+    "source": "https://www.flickr.com/photos/92082510@N04/14373826104",
+    "license": "CC BY 2.0",
+    "status": "reference-selected",
     "usage": "Boundary wall texture for north perimeter.",
-    "notes": "AssetId act2_crossroads_boundary_north_v1; include structural supports for walkway entrance."
+    "notes": "AssetId act2_crossroads_boundary_north_v1; high-density window grid offers structural support motif for walkway entrance signage. Openverse ID 8cac3eaf-712d-4ab1-9fa9-cc6a0860d66b (\"Windows\")."
   },
   {
     "id": "image-ar-050-crossroads-boundary-south",
     "arId": "AR-050",
     "title": "Act 2 Crossroads Boundary Wall (South)",
-    "creator": "",
-    "source": "",
-    "license": "",
-    "status": "pending-sourcing",
+    "creator": "Mr Thinktank",
+    "source": "https://www.flickr.com/photos/34621580@N00/4048656050",
+    "license": "CC BY 2.0",
+    "status": "reference-selected",
     "usage": "Boundary wall texture for south perimeter.",
-    "notes": "AssetId act2_crossroads_boundary_south_v1; ensure collision silhouette matches nav blockers."
+    "notes": "AssetId act2_crossroads_boundary_south_v1; perforated steel panel adds armored venting cues while keeping collision silhouette readable. Openverse ID 7b9870f8-1647-4fa6-a29b-62361aa1f4f7 (\"perforated steel panel in stairway\")."
   }
 ]

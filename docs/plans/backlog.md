@@ -6,7 +6,7 @@
 ## Document Overview
 
 **Version**: 1.1
-**Last Updated**: 2025-10-30
+**Last Updated**: 2025-10-31
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
@@ -15,13 +15,13 @@
 
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
-| AR-050 | P0 | In Progress | Visual asset sourcing pipeline with Act 2 Crossroads selection conduit, checkpoint glow, and safehouse arc references logged. | Locate CC0/CC-BY options for remaining Crossroads overlays, prep generation prompts for AR-001–AR-005 items, update manifests with licensing notes. |
+| AR-050 | P0 | In Progress | Visual asset sourcing pipeline now covers Act 2 Crossroads selection conduit/pad, checkpoint glow/plaza, safehouse arc, and boundary walls with CC0/CC-BY references recorded. | Source CC0/CC-BY candidates for Crossroads column light beams, prep generation prompts for AR-001–AR-005 items, and convert sourced references into transparent overlays with processing notes. |
 | TUT-201 | P0 | Completed | Tutorial case blocked at step 3 (`evidence_detection`) because legacy scene entities bypassed ECS detection events. | ECS-aligned tutorial scene entities shipped Session #51; re-run tutorial smoke tests after combat audio validation. |
 | AUDIO-351 | P0 | Completed | Validate live combat/disguise trigger routing through `AmbientSceneAudioController` using real combat loop events. | Adaptive audio routing now responds to gameplay emits; telemetry verified by Jest/Playwright suites and new infiltration benchmark. |
 | PERF-214 | P1 | Pending | Browser-level performance profiling for adaptive audio + overlay interactions to confirm <16 ms frame time budget. | Run Chromium/Firefox performance audits with combat/stealth transitions, log hotspots, and file perf follow-ups as needed. |
 | UX-173 | P1 | Pending | Improve debug audio overlay ergonomics (keyboard shortcuts, focus management). | Prototype keyboard navigation + focus traps, add Jest/Playwright coverage for accessibility interactions. |
 
-**Next Session Focus**: Review RenderOps hardware feedback for any validator hotspot warnings, log self-review notes in the narrative bundle manifest as needed, and confirm analytics ingestion of `telemetry-artifacts/analytics/outbox/act2-crossroads-20251112` before scheduling the next telemetry sample run.
+**Next Session Focus**: Follow up with analytics on `telemetry-artifacts/analytics/outbox/act2-crossroads-20251112`, continue sourcing Crossroads column light beam overlays, and prep overlay conversions plus RenderOps lighting validation scheduling.
 
 _Historical session handoffs (Sessions 2–44) now live under `archive/docs/reports/` for reference._
 
@@ -646,6 +646,19 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Overlay highlights systems exceeding configurable frame budget thresholds.
   - SystemManager metrics refresh each frame without regressing overlay performance.
   - Jest coverage validates metrics formatting utilities or overlay rendering logic.
+
+#### DEBUG-332: Debug overlay budget control UI
+- **Priority**: P1
+- **Tags**: `debug`, `ux`, `engine`
+- **Effort**: 1 hour
+- **Dependencies**: DEBUG-318
+- **Status**: ✅ Completed — Session #108 surfaced an in-overlay budget input + reset control backed by sanitisation helpers and Jest coverage.
+- **Description**: Replace the `window.debugSystemBudgetMs` console hook with first-class debug HUD controls so QA can adjust profiler thresholds during play without touching devtools.
+- **Acceptance Criteria**:
+  - Debug overlay renders a numeric budget input alongside a reset action.
+  - Input updates immediately adjust SystemManager budget highlighting and remain clamped to safe bounds.
+  - Reset restores the 4 ms default and synchronises the global override used by scripted tooling.
+  - Jest coverage validates sanitisation helpers for invalid/edge-case inputs.
 
 ---
 

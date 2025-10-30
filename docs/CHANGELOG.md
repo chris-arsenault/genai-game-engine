@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Debug overlay exposes inline SystemManager budget controls with sanitised input helpers and Jest coverage (`index.html`, `src/main.js`, `src/game/ui/helpers/systemBudget.js`, `tests/game/ui/helpers/systemBudget.test.js`).
+- AR-050 asset manifest now includes selection pad, checkpoint plaza, and boundary wall references with licensing notes mirrored in the visual asset inventory (`assets/images/requests.json`, `docs/assets/visual-asset-inventory.md`).
 - Debug overlay surfaces per-system profiling metrics from `SystemManager`, including budget highlighting and unit coverage (`index.html`, `src/main.js`, `src/game/ui/helpers/systemMetricsDebugView.js`, `tests/game/ui/helpers/systemMetricsDebugView.test.js`).
 - Lighting preset catalog + hotspot analysis to surface RenderOps risks during Crossroads validation (`src/game/data/sceneArt/LightingPresetCatalog.js`, `src/game/tools/Act2CrossroadsArtValidator.js`, `tests/game/tools/Act2CrossroadsArtValidator.test.js`).
 - Solo review automation for the Act 2 dialogue bundle CLI, including manifest-only note logging (`scripts/narrative/bundleAct2BranchDialoguesForReview.js`, `tests/scripts/bundleAct2BranchDialoguesForReview.test.js`, `docs/guides/act2-dialogue-review-workflow.md`).

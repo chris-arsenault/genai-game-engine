@@ -29,7 +29,15 @@
 - `image-ar-050-crossroads-checkpoint-glow` references MTAPhotos’ **Reopening of 167 St on the B, D lines** (CC BY 2.0, Flickr), giving us layered strip-light geometry to adapt into the guarded rail shimmer.
 - `image-ar-050-crossroads-safehouse-arc` leverages NASA Goddard’s **Alien aurorae spotted on Uranus by Hubble** (CC BY 2.0, Flickr) for translucent aurora strands that map onto the safehouse shielding arc.
 
+## Session 108 Updates
+- `image-ar-050-crossroads-selection-pad` now uses The Fun Chronicles’ **30 A Helipad Near The Top (4) - East View** (CC0 1.0, Flickr) to capture concentric landing guidance as an interactive glass pad motif.
+- `image-ar-050-crossroads-checkpoint-plaza` references Nestor’s Blurrylife **Dongdaemun Design Plaza & Park** (CC BY 2.0, Flickr) for illuminated plaza ribbing that matches the militarised guard staging brief.
+- `image-ar-050-crossroads-boundary-west` adopts Jeremy Levine Design’s **Solar Energy System** panel grid (CC BY 2.0, Flickr) to ground the energy barrier modules.
+- `image-ar-050-crossroads-boundary-east` taps spinster cardigan’s **glass brick wall** (CC BY 2.0, Flickr) for fractured translucent signage inserts.
+- `image-ar-050-crossroads-boundary-north` selects *rboed*’s **Windows** lattice (CC BY 2.0, Flickr) to frame the walkway ingress structure.
+- `image-ar-050-crossroads-boundary-south` incorporates Mr Thinktank’s **perforated steel panel in stairway** (CC BY 2.0, Flickr) for armored venting silhouettes along the southern barricade.
+
 ## Next Actions
-1. Gather candidate imagery for `image-ar-050-crossroads-selection-pad` and `image-ar-050-crossroads-checkpoint-plaza` (highest narrative visibility).
-2. Prepare generation brief templates covering art style, palette, and lighting for new assets that still show `pending-sourcing`.
-3. Once assets selected, update corresponding `source`, `creator`, `license`, and `status` fields, then document sourcing rationale in session handoff.
+1. Source column beam overlays (`image-ar-050-crossroads-column-*`) with emphasis on soft volumetric falloff for stealth staging.
+2. Prepare generation brief templates covering art style, palette, and lighting for AR-001 through AR-005 requests that remain `pending-sourcing`.
+3. Convert newly sourced references into transparent overlays and update manifests with processing notes once derivatives are produced.

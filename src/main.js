@@ -9,6 +9,11 @@ import {
   buildStoryDebugSummary,
 } from './game/ui/helpers/worldStateDebugView.js';
 import { buildSystemMetricsDebugView } from './game/ui/helpers/systemMetricsDebugView.js';
+import {
+  DEFAULT_SYSTEM_BUDGET_MS,
+  formatDebugSystemBudget,
+  resolveDebugSystemBudget,
+} from './game/ui/helpers/systemBudget.js';
 import { factionSlice } from './game/state/slices/factionSlice.js';
 import { tutorialSlice } from './game/state/slices/tutorialSlice.js';
 
@@ -74,6 +79,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   const debugSfxTagFilters = document.getElementById('debug-sfx-tag-filters');
   const debugSystemsMeta = document.getElementById('debug-systems-meta');
   const debugSystemsList = document.getElementById('debug-systems-list');
+  const debugSystemsBudgetInput = document.getElementById('debug-systems-budget');
+  const debugSystemsBudgetReset = document.getElementById('debug-systems-budget-reset');
 
   const formatClock = (timestamp) => {
     if (!timestamp || Number.isNaN(timestamp)) {
@@ -190,6 +197,52 @@ window.addEventListener('DOMContentLoaded', async () => {
   let audioBridgeErrorLogged = false;
   let lastSystemMetricsSignature = null;
   let systemMetricsErrorLogged = false;
+  let debugSystemBudgetOverride = DEFAULT_SYSTEM_BUDGET_MS;
+
+  const applyDebugSystemBudget = (rawValue, { syncInput = true, syncGlobal = true } = {}) => {
+    const resolved = resolveDebugSystemBudget(rawValue, DEFAULT_SYSTEM_BUDGET_MS);
+    debugSystemBudgetOverride = resolved;
+
+    if (syncGlobal && typeof window !== 'undefined') {
+      window.debugSystemBudgetMs = resolved;
+    }
+
+    if (syncInput && debugSystemsBudgetInput) {
+      debugSystemsBudgetInput.value = formatDebugSystemBudget(resolved);
+    }
+
+    return resolved;
+  };
+
+  const initialBudgetCandidate =
+    typeof window !== 'undefined' && Number.isFinite(window.debugSystemBudgetMs)
+      ? window.debugSystemBudgetMs
+      : DEFAULT_SYSTEM_BUDGET_MS;
+  applyDebugSystemBudget(initialBudgetCandidate);
+
+  if (debugSystemsBudgetInput) {
+    debugSystemsBudgetInput.value = formatDebugSystemBudget(debugSystemBudgetOverride);
+
+    const commitBudgetFromInput = () => {
+      applyDebugSystemBudget(debugSystemsBudgetInput.value);
+    };
+
+    debugSystemsBudgetInput.addEventListener('change', commitBudgetFromInput);
+    debugSystemsBudgetInput.addEventListener('blur', commitBudgetFromInput);
+
+    debugSystemsBudgetInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        commitBudgetFromInput();
+        debugSystemsBudgetInput.blur();
+      }
+    });
+  }
+
+  if (debugSystemsBudgetReset) {
+    debugSystemsBudgetReset.addEventListener('click', () => {
+      applyDebugSystemBudget(DEFAULT_SYSTEM_BUDGET_MS);
+    });
+  }
 
   if (debugDialogueControls) {
     debugDialogueControls.textContent = 'Controls: F3 toggle overlay · F4 pause/resume transcript';
@@ -356,6 +409,19 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
 
     if ((debugSystemsList || debugSystemsMeta) && typeof engine.getSystemManager === 'function') {
+      if (typeof window !== 'undefined' && Number.isFinite(window.debugSystemBudgetMs)) {
+        const globalBudget = resolveDebugSystemBudget(
+          window.debugSystemBudgetMs,
+          DEFAULT_SYSTEM_BUDGET_MS
+        );
+        if (Math.abs(globalBudget - debugSystemBudgetOverride) > 0.0001) {
+          debugSystemBudgetOverride = globalBudget;
+          if (debugSystemsBudgetInput) {
+            debugSystemsBudgetInput.value = formatDebugSystemBudget(globalBudget);
+          }
+        }
+      }
+
       let metricsView = null;
       try {
         const systemManager = engine.getSystemManager();
@@ -368,14 +434,10 @@ window.addEventListener('DOMContentLoaded', async () => {
             typeof systemManager.getAverageFrameTime === 'function'
               ? systemManager.getAverageFrameTime()
               : null;
-          const budgetOverride =
-            typeof window !== 'undefined' && Number.isFinite(window.debugSystemBudgetMs)
-              ? window.debugSystemBudgetMs
-              : null;
           metricsView = buildSystemMetricsDebugView({
             lastFrame: lastFrameMetrics,
             averageFrameTime,
-            budgetMs: budgetOverride ?? 4,
+            budgetMs: debugSystemBudgetOverride,
           });
         }
       } catch (error) {
