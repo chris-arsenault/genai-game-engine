@@ -6,7 +6,7 @@
 ## Document Overview
 
 **Version**: 1.2
-**Last Updated**: 2025-10-31
+**Last Updated**: 2025-11-09
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
@@ -23,6 +23,18 @@
 | UX-173 | P1 | Pending | Improve debug audio overlay ergonomics (keyboard shortcuts, focus management). | Prototype keyboard navigation + focus traps, add Jest/Playwright coverage for accessibility interactions. |
 
 **Next Session Focus**: Share the neon glow approval summary with Narrative/RenderOps to capture sign-off on the neon district tileset, fold SaveManager telemetry budget events into CI/QA monitoring, and stage the next RenderOps lighting feedback pass.
+
+### Session #140 Backlog Updates
+
+#### FX-201: Detective Vision Overlay FX Integration
+- Introduced `FxOverlay`, a canvas layer that listens for `fx:overlay_cue` events and renders teal activation pulses plus crimson edge fades when detective vision toggles.
+- Wired the overlay into `Game` initialization/update/render/cleanup so FX cues now play alongside HUD updates without impacting frame pacing.
+- Authored Jest coverage (`tests/game/ui/FxOverlay.test.js`) to confirm cue handling, render invocation, and listener cleanup.
+
+#### AUDIO-422: Detective Vision Mix Calibration
+- Added `audio.detectiveVision` defaults to `GameConfig`, setting calibrated activation, loop, and shutdown volumes for detective vision cues.
+- Refactored `AudioFeedbackController` to consume the config-driven mix, expose an `applyDetectiveVisionMix` hook, and retune active loops via `setVolume`/gain fallbacks when calibration shifts.
+- Extended Jest coverage to exercise the new calibration API and ensure live detective vision loops adopt updated volumes.
 
 ### Session #129 Backlog Updates
 

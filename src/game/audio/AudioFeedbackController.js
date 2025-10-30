@@ -28,6 +28,24 @@ export class AudioFeedbackController {
     this.audioManager = audioManager;
 
     const baseVolume = GameConfig?.audio?.sfxVolume ?? 0.9;
+    const detectiveVisionConfig = GameConfig?.audio?.detectiveVision ?? {};
+    const activationVolume = this._clampVolume(
+      options.detectiveVisionActivateVolume ?? detectiveVisionConfig.activationVolume,
+      Math.min(1, baseVolume * 0.82)
+    );
+    const loopVolume = this._clampVolume(
+      options.detectiveVisionLoopVolume ?? detectiveVisionConfig.loopVolume,
+      Math.min(1, baseVolume * 0.42)
+    );
+    const deactivateVolume = this._clampVolume(
+      options.detectiveVisionDeactivateVolume ?? detectiveVisionConfig.deactivateVolume,
+      Math.min(1, baseVolume * 0.68)
+    );
+    const insufficientVolume = this._clampVolume(
+      options.detectiveVisionInsufficientVolume ?? detectiveVisionConfig.insufficientVolume,
+      deactivateVolume
+    );
+
     this.options = {
       movementCooldown: options.movementCooldown ?? 0.25,
       promptCooldown: options.promptCooldown ?? 0.4,
@@ -35,19 +53,21 @@ export class AudioFeedbackController {
       promptVolume: options.promptVolume ?? Math.min(1, baseVolume * 0.75),
       evidenceVolume: options.evidenceVolume ?? baseVolume,
       detectiveVisionActivateId: options.detectiveVisionActivateId ?? 'investigation_clue_ping',
-      detectiveVisionActivateVolume:
-        options.detectiveVisionActivateVolume ?? Math.min(1, baseVolume * 0.9),
+      detectiveVisionActivateVolume: activationVolume,
       detectiveVisionLoopId: options.detectiveVisionLoopId ?? 'investigation_trace_loop',
-      detectiveVisionLoopVolume:
-        options.detectiveVisionLoopVolume ?? Math.min(1, baseVolume * 0.45),
+      detectiveVisionLoopVolume: loopVolume,
       detectiveVisionDeactivateId:
         options.detectiveVisionDeactivateId ?? 'investigation_negative_hit',
-      detectiveVisionDeactivateVolume:
-        options.detectiveVisionDeactivateVolume ?? Math.min(1, baseVolume * 0.8),
+      detectiveVisionDeactivateVolume: deactivateVolume,
       detectiveVisionInsufficientId:
         options.detectiveVisionInsufficientId ?? 'investigation_negative_hit',
-      detectiveVisionInsufficientVolume:
-        options.detectiveVisionInsufficientVolume ?? Math.min(1, baseVolume * 0.8),
+      detectiveVisionInsufficientVolume: insufficientVolume,
+    };
+    this.detectiveVisionMix = {
+      activationVolume,
+      loopVolume,
+      deactivateVolume,
+      insufficientVolume,
     };
 
     this._now =
@@ -108,6 +128,61 @@ export class AudioFeedbackController {
     this._unbinders = [];
     this._stopDetectiveVisionLoop();
     this._initialized = false;
+  }
+
+  /**
+   * Apply runtime detective vision mix calibration (volumes in range 0-1).
+   * @param {object} mix
+   */
+  applyDetectiveVisionMix(mix = {}) {
+    if (!mix || typeof mix !== 'object') {
+      return;
+    }
+
+    const updates = {};
+    if (typeof mix.activationVolume === 'number') {
+      updates.detectiveVisionActivateVolume = this._clampVolume(
+        mix.activationVolume,
+        this.options.detectiveVisionActivateVolume
+      );
+    }
+    if (typeof mix.loopVolume === 'number') {
+      updates.detectiveVisionLoopVolume = this._clampVolume(
+        mix.loopVolume,
+        this.options.detectiveVisionLoopVolume
+      );
+    }
+    if (typeof mix.deactivateVolume === 'number') {
+      updates.detectiveVisionDeactivateVolume = this._clampVolume(
+        mix.deactivateVolume,
+        this.options.detectiveVisionDeactivateVolume
+      );
+    }
+    if (typeof mix.insufficientVolume === 'number') {
+      const fallback =
+        updates.detectiveVisionDeactivateVolume ??
+        this.options.detectiveVisionDeactivateVolume;
+      updates.detectiveVisionInsufficientVolume = this._clampVolume(
+        mix.insufficientVolume,
+        fallback
+      );
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return;
+    }
+
+    Object.assign(this.options, updates);
+    this.detectiveVisionMix = {
+      activationVolume: this.options.detectiveVisionActivateVolume,
+      loopVolume: this.options.detectiveVisionLoopVolume,
+      deactivateVolume: this.options.detectiveVisionDeactivateVolume,
+      insufficientVolume: this.options.detectiveVisionInsufficientVolume,
+    };
+
+    if (Object.prototype.hasOwnProperty.call(updates, 'detectiveVisionLoopVolume')) {
+      this._applyLoopVolumeUpdate(this.options.detectiveVisionLoopVolume);
+    }
   }
 
   /**
@@ -215,6 +290,49 @@ export class AudioFeedbackController {
     }
   }
 
+  _applyLoopVolumeUpdate(volume) {
+    if (!this._detectiveVisionLoopInstance) {
+      return;
+    }
+    const handle = this._detectiveVisionLoopInstance;
+    if (typeof handle.setVolume === 'function') {
+      try {
+        handle.setVolume(volume);
+        return;
+      } catch (error) {
+        console.warn('[AudioFeedbackController] Failed to adjust loop volume via setVolume', error);
+      }
+    } else if (
+      handle.gainNode &&
+      handle.gainNode.gain &&
+      typeof handle.gainNode.gain.setValueAtTime === 'function'
+    ) {
+      try {
+        const audioCtx = handle.gainNode.context;
+        const now = audioCtx?.currentTime ?? 0;
+        handle.gainNode.gain.setValueAtTime(volume, now);
+        return;
+      } catch (error) {
+        console.warn('[AudioFeedbackController] Failed to adjust loop volume via gain node', error);
+      }
+    }
+
+    if (typeof handle.stop === 'function') {
+      try {
+        handle.stop();
+      } catch (_) {
+        // noop
+      }
+    }
+    const newHandle = this._playSFX(this.options.detectiveVisionLoopId, {
+      volume,
+      loop: true,
+    });
+    this._detectiveVisionLoopInstance = newHandle && typeof newHandle.stop === 'function'
+      ? newHandle
+      : null;
+  }
+
   _startDetectiveVisionLoop() {
     const loopId = this.options.detectiveVisionLoopId;
     if (!loopId) {
@@ -244,6 +362,21 @@ export class AudioFeedbackController {
       }
     }
     this._detectiveVisionLoopInstance = null;
+  }
+
+  _clampVolume(value, fallback = 0) {
+    const candidate =
+      typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+    if (!Number.isFinite(candidate)) {
+      return 0;
+    }
+    if (candidate <= 0) {
+      return 0;
+    }
+    if (candidate >= 1) {
+      return 1;
+    }
+    return candidate;
   }
 
   /**

@@ -50,6 +50,7 @@ import { CrossroadsBranchLandingOverlay } from './ui/CrossroadsBranchLandingOver
 import { InventoryOverlay } from './ui/InventoryOverlay.js';
 import { DetectiveVisionOverlay } from './ui/DetectiveVisionOverlay.js';
 import { ControlBindingsOverlay, CONTROL_BINDINGS_NAV_EVENT } from './ui/ControlBindingsOverlay.js';
+import { FxOverlay } from './ui/FxOverlay.js';
 import { AudioFeedbackController } from './audio/AudioFeedbackController.js';
 import { SFXCatalogLoader } from './audio/SFXCatalogLoader.js';
 import { AdaptiveMoodEmitter } from './audio/AdaptiveMoodEmitter.js';
@@ -224,6 +225,7 @@ export class Game {
     this.detectiveVisionOverlay = null;
     this.controlBindingsOverlay = null;
     this.interactionPromptOverlay = null;
+    this.fxOverlay = null;
     this.movementIndicatorOverlay = null;
     this.caseFileUI = null;
     this.deductionBoard = null;
@@ -929,6 +931,13 @@ export class Game {
       }
     );
     this.detectiveVisionOverlay.init();
+
+    this.fxOverlay = new FxOverlay(
+      this.engine.canvas,
+      this.eventBus,
+      {}
+    );
+    this.fxOverlay.init();
 
     // Create SaveManager inspector overlay (bottom-right)
     this.saveInspectorOverlay = new SaveInspectorOverlay(
@@ -2438,6 +2447,9 @@ export class Game {
     if (this.detectiveVisionOverlay) {
       this.detectiveVisionOverlay.update(deltaTime);
     }
+    if (this.fxOverlay) {
+      this.fxOverlay.update(deltaTime);
+    }
     if (this.interactionPromptOverlay) {
       this.interactionPromptOverlay.update(deltaTime);
     }
@@ -3119,6 +3131,9 @@ export class Game {
     if (this.detectiveVisionOverlay) {
       this.detectiveVisionOverlay.render(ctx);
     }
+    if (this.fxOverlay) {
+      this.fxOverlay.render(ctx);
+    }
 
     // Render reputation UI
     if (this.reputationUI) {
@@ -3260,6 +3275,9 @@ export class Game {
     }
     if (this.detectiveVisionOverlay && this.detectiveVisionOverlay.cleanup) {
       this.detectiveVisionOverlay.cleanup();
+    }
+    if (this.fxOverlay && this.fxOverlay.cleanup) {
+      this.fxOverlay.cleanup();
     }
     if (this.questNotification && this.questNotification.cleanup) {
       this.questNotification.cleanup();

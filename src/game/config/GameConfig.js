@@ -157,6 +157,12 @@ export const GameConfig = {
     sfxVolume: 0.9,
     ambienceVolume: 0.5,
     enableGameplayEmitters: true,
+    detectiveVision: {
+      activationVolume: 0.78,
+      loopVolume: 0.38,
+      deactivateVolume: 0.6,
+      insufficientVolume: 0.64,
+    },
     gameplayMoodBridge: {
       updateIntervalMs: 250,
       moodHintDurationMs: 6000,

@@ -127,4 +127,38 @@ describe('AudioFeedbackController', () => {
     controller.cleanup();
     expect(loopStop).toHaveBeenCalledTimes(1);
   });
+
+  it('allows runtime detective vision mix calibration', () => {
+    controller.applyDetectiveVisionMix({
+      activationVolume: 0.5,
+      loopVolume: 0.18,
+      deactivateVolume: 0.33,
+      insufficientVolume: 0.42,
+    });
+
+    expect(controller.options.detectiveVisionActivateVolume).toBeCloseTo(0.5);
+    expect(controller.options.detectiveVisionLoopVolume).toBeCloseTo(0.18);
+    expect(controller.options.detectiveVisionDeactivateVolume).toBeCloseTo(0.33);
+    expect(controller.options.detectiveVisionInsufficientVolume).toBeCloseTo(0.42);
+    expect(controller.detectiveVisionMix).toMatchObject({
+      activationVolume: 0.5,
+      loopVolume: 0.18,
+      deactivateVolume: 0.33,
+      insufficientVolume: 0.42,
+    });
+  });
+
+  it('retunes active detective vision loop volume when calibration changes', () => {
+    const setVolume = jest.fn();
+    audioManager.playSFX.mockImplementation((id, payload) => {
+      if (payload && typeof payload === 'object' && payload.loop) {
+        return { stop: jest.fn(), setVolume };
+      }
+      return null;
+    });
+
+    eventBus.emit('detective_vision:activated', {});
+    controller.applyDetectiveVisionMix({ loopVolume: 0.26 });
+    expect(setVolume).toHaveBeenCalledWith(0.26);
+  });
 });
