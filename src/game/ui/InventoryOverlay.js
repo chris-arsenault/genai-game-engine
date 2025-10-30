@@ -1,5 +1,6 @@
 import { emitOverlayVisibility } from './helpers/overlayEvents.js';
 import { overlayTheme, withOverlayTheme } from './theme/overlayTheme.js';
+import { getBindingLabels } from '../utils/controlBindingPrompts.js';
 
 const DEFAULT_LAYOUT = {
   width: 480,
@@ -97,6 +98,71 @@ export class InventoryOverlay {
     this._unsubscribeStore = null;
     this._offMoveUp = null;
     this._offMoveDown = null;
+  }
+
+  _getBindingLabel(action, fallback) {
+    const labels = getBindingLabels(action, { fallbackLabel: fallback });
+    if (Array.isArray(labels) && labels.length > 0) {
+      return labels.join(' / ');
+    }
+    if (typeof fallback === 'string' && fallback.length) {
+      return fallback;
+    }
+    return '—';
+  }
+
+  _getPrimaryBindingLabel(action, fallback) {
+    const labels = getBindingLabels(action, { fallbackLabel: fallback });
+    if (Array.isArray(labels) && labels.length > 0) {
+      return labels[0];
+    }
+    if (typeof fallback === 'string' && fallback.length) {
+      return fallback;
+    }
+    return '—';
+  }
+
+  _renderBindingHints(ctx, panelX, panelY, panelWidth) {
+    const padding = 24;
+    const maxWidth = panelWidth - padding * 2;
+    const baselineY = panelY + 68;
+
+    const hints = [
+      `Close: ${this._getBindingLabel('inventory', 'I')}`,
+      this._buildScrollHint(),
+      `Quest Log: ${this._getBindingLabel('quest', 'Q')}`,
+    ].filter(Boolean);
+
+    if (!hints.length) {
+      return;
+    }
+
+    let text = hints.join('  ·  ');
+    const working = [...hints];
+
+    ctx.save();
+    ctx.font = this.style.header.subtitleFont;
+    ctx.fillStyle = this.style.header.subtitleColor;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+
+    while (working.length > 1 && ctx.measureText(text).width > maxWidth) {
+      working.pop();
+      text = working.join('  ·  ');
+    }
+
+    ctx.fillText(text, panelX + panelWidth - padding, baselineY);
+    ctx.restore();
+  }
+
+  _buildScrollHint() {
+    const up = this._getPrimaryBindingLabel('moveUp', 'W');
+    const down = this._getPrimaryBindingLabel('moveDown', 'S');
+    if (!up && !down) {
+      return null;
+    }
+    const formatted = [up, down].filter(Boolean).join('/');
+    return formatted.length ? `Scroll: ${formatted}` : null;
   }
 
   init() {
@@ -300,6 +366,8 @@ export class InventoryOverlay {
     ctx.font = this.style.header.subtitleFont;
     ctx.fillStyle = this.style.header.subtitleColor;
     ctx.fillText(this.getSummary(), panelX + 24, panelY + 56);
+
+    this._renderBindingHints(ctx, panelX, panelY, width);
 
     const listWidth = Math.floor(width * 0.45);
     const listX = panelX + 24;

@@ -68,6 +68,17 @@
 - Extended Jest coverage (`tests/game/ui/CaseFileUI.test.js`, `tests/game/ui/QuestLogUI.test.js`) to guard the binding lookups and ensure HUD copy updates alongside the store.
 - Verification: `npm test`.
 
+### Session #133 Backlog Updates
+
+#### UI-610: HUD binding hint parity pass
+- Inventory, reputation, and Save Inspector overlays now hydrate their header hints from `controlBindingPrompts`, preventing stale labels when players remap controls and trimming output to fit existing layouts.
+- Added focused Jest coverage (`tests/game/ui/InventoryOverlay.bindingHints.test.js`, `tests/game/ui/ReputationUI.test.js`, `tests/game/ui/SaveInspectorOverlay.test.js`) so parity guardrails stay in place.
+- Verification: `npm test` (full suite completed before harness timeout) and `npm test -- InventoryOverlay.bindingHints.test.js ReputationUI.test.js SaveInspectorOverlay.test.js`.
+
+#### UX-410: Overlay navigation shortcut feedback
+- Logged follow-up backlog item to run micro-playtests on the new ControlBindings overlay navigation patterns and capture qualitative feedback before extending further HUD polish.
+- Next steps: schedule focused sessions, prepare observation checklist, and roll findings into UI refinements.
+
 ### Session #124 Backlog Updates
 
 #### M1-002 / M1-012: ECS/Narrative Integrations

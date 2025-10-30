@@ -3,6 +3,7 @@ import { overlayTheme, withOverlayTheme } from './theme/overlayTheme.js';
 import { factionSlice } from '../state/slices/factionSlice.js';
 import { tutorialSlice } from '../state/slices/tutorialSlice.js';
 import { getFaction } from '../data/factions/index.js';
+import { getBindingLabels } from '../utils/controlBindingPrompts.js';
 
 /**
  * SaveInspectorOverlay
@@ -57,6 +58,43 @@ export class SaveInspectorOverlay {
 
   init() {
     this.refreshSummary(true);
+  }
+
+  _getBindingLabel(action, fallback) {
+    const labels = getBindingLabels(action, { fallbackLabel: fallback });
+    if (Array.isArray(labels) && labels.length > 0) {
+      return labels.join(' / ');
+    }
+    if (typeof fallback === 'string' && fallback.length) {
+      return fallback;
+    }
+    return '—';
+  }
+
+  _renderBindingHints(ctx, panelX, panelY, panelWidth, padding) {
+    const hints = [
+      `Close: ${this._getBindingLabel('saveInspector', 'O')}`,
+      `Bindings: ${this._getBindingLabel('controlsMenu', 'K')}`,
+      `Quest Log: ${this._getBindingLabel('quest', 'Q')}`,
+    ];
+
+    const maxWidth = panelWidth - padding * 2;
+    const working = [...hints];
+    let text = working.join('  ·  ');
+
+    ctx.save();
+    ctx.font = this.style.text.font;
+    ctx.fillStyle = this.style.text.colorSecondary;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+
+    while (working.length > 1 && ctx.measureText(text).width > maxWidth) {
+      working.pop();
+      text = working.join('  ·  ');
+    }
+
+    ctx.fillText(text, panelX + panelWidth - padding, panelY);
+    ctx.restore();
   }
 
   /**
@@ -391,6 +429,8 @@ export class SaveInspectorOverlay {
     ctx.font = this.style.sectionTitle.font;
     ctx.fillStyle = this.style.sectionTitle.color;
     ctx.fillText('Save Inspector', textX, cursorY);
+
+    this._renderBindingHints(ctx, x, y + padding, width, padding);
     cursorY += lineHeight;
 
     // Updated timestamp

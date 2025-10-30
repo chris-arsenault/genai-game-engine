@@ -3,6 +3,24 @@ import { EventBus } from '../../../src/engine/events/EventBus.js';
 import { factionSlice } from '../../../src/game/state/slices/factionSlice.js';
 import { tutorialSlice } from '../../../src/game/state/slices/tutorialSlice.js';
 
+jest.mock('../../../src/game/utils/controlBindingPrompts.js', () => ({
+  getBindingLabels: jest.fn((action, options = {}) => {
+    switch (action) {
+      case 'saveInspector':
+        return ['O'];
+      case 'controlsMenu':
+        return ['K'];
+      case 'quest':
+        return ['Q'];
+      default:
+        if (options.fallbackLabel) {
+          return [options.fallbackLabel];
+        }
+        return [];
+    }
+  }),
+}));
+
 describe('SaveInspectorOverlay', () => {
   function createMockCanvas() {
     const context = {
@@ -22,6 +40,7 @@ describe('SaveInspectorOverlay', () => {
       fill: jest.fn(),
       stroke: jest.fn(),
       fillText: jest.fn(),
+      measureText: jest.fn(() => ({ width: 140 })),
     };
 
     return {
@@ -100,6 +119,23 @@ describe('SaveInspectorOverlay', () => {
     expect(overlay.summary.metrics.cascadeEvents).toBe(3);
     expect(overlay.summary.metrics.cascadeTargets).toBe(1);
     expect(overlay.summary.metrics.tutorialSnapshots).toBe(2);
+  });
+
+  it('renders control binding hints for QA toggles', () => {
+    const canvas = createMockCanvas();
+    const eventBus = new EventBus();
+    const overlay = new SaveInspectorOverlay(canvas, eventBus, {});
+    overlay.visible = true;
+    overlay.render();
+
+    const hintCall = canvas._ctx.fillText.mock.calls.find(
+      (call) => typeof call[0] === 'string' && call[0].includes('Close:')
+    );
+
+    expect(hintCall).toBeDefined();
+    expect(hintCall[0]).toContain('Close: O');
+    expect(hintCall[0]).toContain('Bindings: K');
+    expect(hintCall[0]).toContain('Quest Log: Q');
   });
 
   it('falls back to world state store selectors when SaveManager summary unavailable', () => {
