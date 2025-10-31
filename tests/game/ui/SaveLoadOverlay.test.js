@@ -267,4 +267,75 @@ describe('SaveLoadOverlay', () => {
 
     overlay.cleanup();
   });
+
+  test('stays focused on manual slot during sustained autosave churn', () => {
+    const autosaveState = {
+      timestamp: 10,
+      playtime: 8_000,
+      snapshotSource: 'stress-harness',
+    };
+    const manualSlots = [
+      {
+        slot: 'slot1',
+        label: 'slot1',
+        timestamp: 5,
+        playtime: 6_000,
+        snapshotSource: 'worldStateStore',
+      },
+    ];
+
+    const saveManager = {
+      config: { maxSaveSlots: 4 },
+      getSaveSlots: jest.fn(() => {
+        const autosaveEntry = {
+          slot: 'autosave',
+          slotType: 'auto',
+          timestamp: autosaveState.timestamp,
+          playtime: autosaveState.playtime,
+          snapshotSource: autosaveState.snapshotSource,
+        };
+        const manualEntries = manualSlots.map((entry) => ({ ...entry, slotType: 'manual' }));
+        return [autosaveEntry, ...manualEntries];
+      }),
+      getSaveSlotMetadata: jest.fn((slot) => {
+        if (slot === 'autosave') {
+          return {
+            slot: 'autosave',
+            timestamp: autosaveState.timestamp,
+            playtime: autosaveState.playtime,
+            snapshotSource: autosaveState.snapshotSource,
+          };
+        }
+        const match = manualSlots.find((entry) => entry.slot === slot);
+        return match ? { ...match } : null;
+      }),
+      saveGame: jest.fn(() => true),
+      loadGame: jest.fn(() => true),
+    };
+
+    const fxEvents = [];
+    eventBus.on('fx:overlay_cue', (payload) => fxEvents.push(payload));
+
+    const overlay = new SaveLoadOverlay(canvas, eventBus, { saveManager });
+    overlay.init();
+    overlay.show('autosave-stress');
+    overlay.changeSelection(1); // focus the manual slot
+
+    const focusEventsBefore = fxEvents.filter((e) => e.effectId === 'saveLoadOverlayFocus').length;
+
+    for (let i = 0; i < 40; i += 1) {
+      autosaveState.timestamp += 5;
+      autosaveState.playtime += 500;
+      eventBus.emit('game:saved', { slot: 'autosave', iteration: i });
+    }
+
+    expect(overlay.selectedIndex).toBe(1);
+    expect(overlay.slots[overlay.selectedIndex].slot).toBe('slot1');
+    expect(overlay.slots[0].timestamp).toBe(autosaveState.timestamp);
+
+    const focusEventsAfter = fxEvents.filter((e) => e.effectId === 'saveLoadOverlayFocus').length;
+    expect(focusEventsAfter).toBe(focusEventsBefore);
+
+    overlay.cleanup();
+  });
 });

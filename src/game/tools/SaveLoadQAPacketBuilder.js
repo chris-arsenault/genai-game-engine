@@ -45,6 +45,8 @@ export async function buildSaveLoadQAPacket(options) {
   const payloadFileName = 'save-payload-summary.json';
   const metadataFileName = 'metadata.json';
   const readmeFileName = 'README.md';
+  const shareSummaryFileName = 'share-summary.md';
+  const archiveFileName = createArchive ? `${dirName}.zip` : null;
 
   const profileData = includeSamples
     ? profile
@@ -75,6 +77,8 @@ export async function buildSaveLoadQAPacket(options) {
       payloadSummary: payloadFileName,
       metadata: metadataFileName,
       readme: readmeFileName,
+      shareSummary: shareSummaryFileName,
+      archive: archiveFileName,
     },
   });
 
@@ -89,9 +93,20 @@ export async function buildSaveLoadQAPacket(options) {
 
   let archiveInfo = null;
   if (createArchive) {
-    const archivePath = path.join(resolvedOutputRoot, `${dirName}.zip`);
+    const archivePath = path.join(resolvedOutputRoot, archiveFileName);
     archiveInfo = await createPacketArchive({ packetDir, archivePath });
   }
+
+  const shareSummaryContents = buildShareSummary({
+    metadata,
+    archiveInfo,
+    relativeArchivePath: archiveFileName,
+  });
+  await fs.writeFile(
+    path.join(packetDir, shareSummaryFileName),
+    `${shareSummaryContents}\n`,
+    'utf8'
+  );
 
   return {
     packetDir,
@@ -182,8 +197,80 @@ function buildReadme({ label, timestampIso, metadata }) {
   if (metadata.files.readme) {
     lines.push(`- ${metadata.files.readme}`);
   }
+  if (metadata.files.shareSummary) {
+    lines.push(`- ${metadata.files.shareSummary}`);
+  }
+  if (metadata.files.archive) {
+    lines.push(`- ${metadata.files.archive}`);
+  }
 
   lines.push('', '## Next Steps', ...metadata.instructions.map((instruction) => `- ${instruction}`));
+
+  return lines.join('\n');
+}
+
+function buildShareSummary({ metadata, archiveInfo, relativeArchivePath }) {
+  const lines = [
+    '# Save/Load QA Packet Share Summary',
+    '',
+    `**Packet ID**: ${metadata.packetId}`,
+    `**Label**: ${metadata.label}`,
+    `**Generated**: ${metadata.createdAt}`,
+    '',
+    '## Distribution Artifacts',
+    `- README: ${metadata.files.readme}`,
+    `- Latency Report: ${metadata.files.latencyReport}`,
+    `- Payload Summary: ${metadata.files.payloadSummary}`,
+    `- Metadata: ${metadata.files.metadata}`,
+  ];
+
+  if (metadata.files.shareSummary) {
+    lines.push(`- Share Summary: ${metadata.files.shareSummary}`);
+  }
+  if (relativeArchivePath) {
+    lines.push(`- Archive: ${relativeArchivePath}`);
+  }
+
+  if (archiveInfo) {
+    lines.push(
+      '',
+      '### Archive Details',
+      `- File Name: ${archiveInfo.fileName}`,
+      `- Size: ${formatKb(archiveInfo.sizeBytes)} KB`,
+      `- SHA256: ${archiveInfo.checksumSha256}`
+    );
+  }
+
+  lines.push(
+    '',
+    '## Key Metrics',
+    `- Average Save: ${formatMs(metadata.profile.averages.saveMs)}`,
+    `- Average Load: ${formatMs(metadata.profile.averages.loadMs)}`,
+    `- Max Save: ${formatMs(metadata.profile.maxima.saveMs)}`,
+    `- Max Load: ${formatMs(metadata.profile.maxima.loadMs)}`,
+    `- Iterations: ${metadata.profile.iterations}`,
+    `- Under Threshold: ${metadata.profile.underThreshold ? 'Yes' : 'No'}`,
+    '',
+    '## Snapshot Summary',
+    `- Slot: ${metadata.payload.slot ?? 'n/a'}`,
+    `- Version: ${metadata.payload.version ?? 'n/a'}`,
+    `- Story Flags: ${metadata.payload.sectionCounts.storyFlags}`,
+    `- Active Quests: ${metadata.payload.sectionCounts.questsActive}`,
+    `- Completed Quests: ${metadata.payload.sectionCounts.questsCompleted}`,
+    `- Factions: ${metadata.payload.sectionCounts.factions}`,
+    `- Inventory Items: ${metadata.payload.sectionCounts.inventoryItems}`,
+    `- District Records: ${metadata.payload.sectionCounts.districtRecords}`,
+    `- NPC Records: ${metadata.payload.sectionCounts.npcRecords}`,
+    '',
+    '## Suggested Message',
+    'Hi QA Team,',
+    '',
+    `The latest save/load QA packet (${metadata.packetId}) is attached. Key metrics: average save ${formatMs(metadata.profile.averages.saveMs)}, average load ${formatMs(metadata.profile.averages.loadMs)}, under threshold ${metadata.profile.underThreshold ? 'Yes' : 'No'}. The payload snapshot includes ${metadata.payload.sectionCounts.storyFlags} story flags and ${metadata.payload.sectionCounts.inventoryItems} inventory items.`,
+    '',
+    'Please review the latency report and payload summary to confirm the schema looks correct. Let us know if any adjustments are required.',
+    '',
+    'Thanks!',
+  );
 
   return lines.join('\n');
 }
@@ -201,6 +288,13 @@ function slugify(value) {
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
+}
+
+function formatKb(bytes) {
+  if (!Number.isFinite(bytes)) {
+    return 'n/a';
+  }
+  return (bytes / 1024).toFixed(1);
 }
 
 async function createPacketArchive({ packetDir, archivePath }) {

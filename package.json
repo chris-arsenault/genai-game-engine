@@ -139,6 +139,7 @@
   },
   "dependencies": {
     "@actions/artifact": "^2.2.1",
+    "imagegen-mcp": "^1.0.4",
     "jszip": "^3.10.1",
     "playwright": "^1.56.1"
   }

@@ -56,8 +56,16 @@ describe('SaveLoadQAPacketBuilder', () => {
 
     expect(metadata.profile.iterations).toBe(2);
     expect(metadata.payload.sectionCounts.storyFlags).toBe(3);
+    expect(metadata.files.shareSummary).toBe('share-summary.md');
 
     const readme = await fs.readFile(path.join(result.packetDir, 'README.md'), 'utf8');
     expect(readme).toContain('Save/Load QA Packet');
+
+    const shareSummary = await fs.readFile(
+      path.join(result.packetDir, 'share-summary.md'),
+      'utf8'
+    );
+    expect(shareSummary).toContain('QA Packet Share Summary');
+    expect(shareSummary).toContain('Suggested Message');
   });
 });

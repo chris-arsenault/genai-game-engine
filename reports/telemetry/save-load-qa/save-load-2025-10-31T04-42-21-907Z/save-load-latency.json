@@ -1,0 +1,33 @@
+{
+  "summary": {
+    "slot": "profiling-latency",
+    "iterations": 2,
+    "thresholdMs": 2000,
+    "load": {
+      "averageMs": 0,
+      "maxMs": 1,
+      "underThreshold": true,
+      "averageLabel": "0ms",
+      "maxLabel": "1ms"
+    },
+    "save": {
+      "averageMs": 1,
+      "maxMs": 1,
+      "averageLabel": "1ms",
+      "maxLabel": "1ms"
+    },
+    "totalDurationLabel": "2ms"
+  },
+  "samples": [
+    {
+      "iteration": 0,
+      "saveMs": 1.1786979999999971,
+      "loadMs": 0.6494599999999977
+    },
+    {
+      "iteration": 1,
+      "saveMs": 0.32004600000000494,
+      "loadMs": 0.19766899999999765
+    }
+  ]
+}
