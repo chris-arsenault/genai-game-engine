@@ -160,6 +160,10 @@
 - Authored `scripts/art/capturePlayerLocomotionFrames.js` plus npm hook `npm run art:capture-locomotion` to export Kira's idle/walk/run facings into `reports/art/player-locomotion-reference/`, producing both per-animation crops and facing contact sheets with a JSON manifest for documentation crosslinking.
 - Captured the latest placeholder-driven reference set (`reports/art/player-locomotion-reference/manifest.json`) so autosave overlay authors and bespoke swap reviews can reference exact frames until the final `image-ar-003-player-kira-sprite` sheet lands.
 
+## Session 181 Updates
+- Generated bespoke idle/walk/run sprite sheet for Kira (`assets/generated/images/ar-003/image-ar-003-kira-core-pack-bespoke.png`) via OpenAI gpt-image-1, upgrading `image-ar-003-player-kira-sprite` to `ai-generated` in `assets/images/requests.json`.
+- Normalization pipeline still pending—rerun `python scripts/art/normalize_kira_evasion_pack.py` and `node scripts/art/updateKiraAnimationConfig.js` before swapping the sprite sheet into runtime configs.
+
 ## Next Actions
 1. Distribute the latest RenderOps packet (`npm run art:package-renderops` then `npm run art:stage-renderops`) and attach the staged ZIP (`deliveries/renderops/.../*.zip`) plus `*-delivery.json` manifest when sharing with RenderOps; log feedback on actionable segments and regenerate after art tweaks.
 2. Follow `reports/art/placeholder-replacement-schedule.md` to drive weekly bespoke assignments and annotate `assets/images/requests.json` with source/licensing updates upon completion.

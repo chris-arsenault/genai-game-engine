@@ -227,13 +227,27 @@
     "id": "image-ar-003-player-kira-sprite",
     "arId": "AR-003",
     "title": "Kira Player Sprite Sheet",
-    "creator": "Codex Placeholder Generator",
-    "source": "assets/generated/images/ar-003/image-ar-003-kira-core-pack-normalized.png",
-    "license": "Internal placeholder (automated directional sheet)",
-    "status": "placeholder-generated",
+    "creator": "Codex Autonomous Agent (GPT-Image-1)",
+    "source": "assets/generated/images/ar-003/image-ar-003-kira-core-pack-bespoke.png",
+    "license": "Internal generation (OpenAI gpt-image-1)",
+    "status": "ai-generated",
     "usage": "32x32 sprite sheet with idle, walk, run, dash, and slide animations across four directions.",
-    "notes": "Detective coat silhouette with readable silhouette; 6 frames per locomotion loop. Rev B introduces directional placeholders generated via scripted tooling (Session 168) with dash/slide rows for runtime integration. Session 169 captured idle/walk/run reference crops via scripts/art/capturePlayerLocomotionFrames.js (see reports/art/player-locomotion-reference/manifest.json) for autosave overlay alignment ahead of bespoke swap. Session 179 normalized dash/slide rows into assets/generated/images/ar-003/image-ar-003-kira-core-pack-normalized.png (manifest: assets/generated/images/ar-003/image-ar-003-kira-evasion-pack-normalized.json) and refreshed locomotion captures. Original gpt-image concept preserved at assets/generated/images/ar-003/image-ar-003-kira-core-pack-source.png for art reference. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md.",
-    "placeholderGeneratedAt": "2025-10-31T13:35:32.444Z"
+    "notes": "Detective coat silhouette with readable silhouette; 6 frames per locomotion loop. Rev B introduces directional placeholders generated via scripted tooling (Session 168) with dash/slide rows for runtime integration. Session 169 captured idle/walk/run reference crops via scripts/art/capturePlayerLocomotionFrames.js (see reports/art/player-locomotion-reference/manifest.json) for autosave overlay alignment ahead of bespoke swap. Session 179 normalized dash/slide rows into assets/generated/images/ar-003/image-ar-003-kira-core-pack-normalized.png (manifest: assets/generated/images/ar-003/image-ar-003-kira-evasion-pack-normalized.json) and refreshed locomotion captures. Session 181 generated bespoke ai-sourced idle/walk/run sheet (assets/generated/images/ar-003/image-ar-003-kira-core-pack-bespoke.png); rerun normalization/config scripts before swapping into runtime. Original gpt-image concept preserved at assets/generated/images/ar-003/image-ar-003-kira-core-pack-source.png for art reference. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md.",
+    "placeholderGeneratedAt": "2025-10-31T13:35:32.444Z",
+    "generatedAt": "2025-10-31T11:53:00Z",
+    "route": "ai",
+    "statusHistory": [
+      {
+        "status": "placeholder-generated",
+        "recordedAt": "2025-10-31T13:35:32.444Z",
+        "context": "Directional placeholder sheet generated via automation for interim runtime coverage."
+      },
+      {
+        "status": "ai-generated",
+        "recordedAt": "2025-10-31T11:53:00Z",
+        "context": "Session 181 sourced bespoke idle/walk/run sprite sheet via OpenAI gpt-image-1; pending normalization + runtime swap."
+      }
+    ]
   },
   {
     "id": "image-ar-003-kira-evasion-pack",

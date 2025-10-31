@@ -382,6 +382,12 @@
 - Distributed the telemetry reminder bundle and confirmed `.ics` import with analytics; staging manifest updated to reflect the share.
 - Lowered the warning threshold from 3 to 2 days to allow earlier alerting before the 2025-11-13 checkpoint.
 
+### Session #182 Backlog Updates
+
+#### AR-003: Player Character Sprite (M2)
+- **Asset**: Generated bespoke idle/walk/run sprite sheet (`assets/generated/images/ar-003/image-ar-003-kira-core-pack-bespoke.png`) via OpenAI gpt-image-1 and updated manifests/documentation accordingly.
+- **Follow-up**: Rerun the normalization (`python scripts/art/normalize_kira_evasion_pack.py`) and config update (`node scripts/art/updateKiraAnimationConfig.js`) before swapping the sprite sheet into runtime and triggering traversal QA.
+
 ### Session #168 Backlog Updates
 
 #### AR-003: Player Character Sprite (M2)
