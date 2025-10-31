@@ -103,6 +103,7 @@
 - Recalibrated the Act 2 Crossroads lighting overlays: raised alpha floors for the selection conduit, checkpoint glow, and all column beams, then regenerated the derivatives so average normalized alpha now lands between 0.67–0.78 for the affected assets.
 - Updated `Act2CrossroadsArtConfig` colours and alpha weights to match the brighter overlays (conduit now uses warm amber `#ffd27a`, checkpoint columns adopt gold-tinted washes, safehouse columns shift to luminous cyan) and recorded the new `overlayAverageAlpha` metadata for the preview tooling.
 - Reran `scripts/art/previewCrossroadsLighting.js`, producing an updated report where all evaluable segments pass the preset thresholds (9 “ok”, 2 “skipped”), clearing the previous under-luminance warnings prior to RenderOps sign-off.
+- Session 176 generated a narrative-facing luminance snapshot via `npm run art:export-crossroads-luminance`, publishing Markdown + JSON outputs to `reports/art/luminance-snapshots/act2-crossroads/` so the narrative team can spot drift before approving the refreshed briefing-pad luminance.
 
 ## Session 115 Updates
 - Generated neon-noir placeholder atlas set for AR-001 through AR-005 via `python scripts/art/generate_ar_placeholders.py`; outputs reside in `assets/generated/ar-placeholders/` and cover deduction board UI, evidence icons, player/NPC sprites, and the four district tilesets.
