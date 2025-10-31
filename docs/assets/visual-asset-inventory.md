@@ -4,6 +4,7 @@
 - Derived from `docs/plans/backlog.md` asset tracker and `assets/manifests/act2-crossroads-art.json`.
 - Synced with `assets/images/requests.json` on 2025-11-12 during AR-050 inventory pass; refreshed 2025-11-12 Session 111 after packaging prompts and generating new overlays.
 - Status values:
+  - `ai-generated` – internally generated via GPT-Image tooling; stored under `assets/generated/` with project-only licensing.
   - `pending-sourcing` – requires locating or generating an asset.
   - `reference-selected` – candidate reference gathered, needs conversion or bespoke art.
   - `prompt-packaged` – OpenAI-ready brief packaged into JSON payloads and staged for generation.
@@ -23,13 +24,18 @@
 | AR-003 | Player sprite | `image-ar-003-player-kira-sprite`, `image-ar-003-kira-evasion-pack` | Requires 4-direction animations; ensure trench-coat silhouette distinct during stealth/combat transitions; new dash/slide pack complements autosave stress validation. |
 | AR-004 | NPC sprites | `image-ar-004-npc-civilian-pack`, `image-ar-004-npc-guard-pack` | Civilian palette must hint at faction allegiance; guards need visor glow to visualize detection state. |
 | AR-005 | District tilesets | `image-ar-005-tileset-neon-district`, `image-ar-005-tileset-corporate-spires`, `image-ar-005-tileset-archive-undercity`, `image-ar-005-tileset-zenith-sector` | Tilesets must ship with collision metadata once sourced/generated. |
-| AR-007 | Particle/overlay FX | `image-ar-007-particles-rain`, `image-ar-007-particles-neon-glow`, `image-ar-007-particles-memory-fragment`, `image-ar-007-screen-effects-pack` | Optimise alpha usage for Canvas blending; test against 60 FPS threshold. |
+| AR-007 | Particle/overlay FX | `image-ar-007-particles-rain` (ai-generated), `image-ar-007-particles-neon-glow` (ai-generated), `image-ar-007-particles-memory-fragment` (ai-generated), `image-ar-007-screen-effects-pack` (pending-sourcing) | Optimise alpha usage for Canvas blending; test against 60 FPS threshold. Screen overlay pack still outstanding; other particle sheets staged under `assets/generated/ar-007/`. |
 | AR-050 | Act 2 Crossroads art bundle | All `image-ar-050-*` entries | Map one-to-one with `act2_crossroads_*` assetIds for the bespoke scene lighting revamp. |
 
 ## Sourcing Plan
 - Phase 1 (today): Complete inventory (done) and shortlist CC0/CC-BY references via `web_search` starting with AR-050 lighting overlays.
 - Phase 2: For requests without suitable references, schedule OpenAI image generation prompts with exact framing notes from `notes` fields.
 - Phase 3: Update `assets/manifests/` entries with final asset metadata, citing source links and licenses in `usage`.
+
+## Session 162 Updates
+- Generated new AR-007 particle sprite sheets (rain, neon glow, memory fragment) via GPT-Image-1 and staged them under `assets/generated/ar-007/` with transparent backgrounds for additive blending.
+- Updated `assets/images/requests.json` statuses for the new sheets to `ai-generated`, capturing generation metadata and licensing notes.
+- Flagged `image-ar-007-screen-effects-pack` as the remaining pending-sourcing deliverable for the AR-007 bundle; future work should focus on that overlay set and runtime validation of the new particles.
 
 ## Session 107 Updates
 - `image-ar-050-crossroads-selection-conduit` now points to Tanozzo’s **High Energy** plasma arc photography (CC BY 2.0, Flickr). The radial beams provide a strong base for recoloring into the Crossroads conduit glow.

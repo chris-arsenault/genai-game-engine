@@ -16,7 +16,7 @@ while true; do
   if (( sessionNum % 10 == 5 )); then
     COMMAND="review AGENTS.md, fetch handoff from game-mcp-server, and complete an autonomous development cycle. For this cycle do not complete TODOS or development work. focus only on clean up and backlog management. review existing state of stories and the project and close stories if possible. clean up unnecessary artifacts. for this cycle do not create any new content"
   fi
-  if (( sessionNum % 10 == 11 )); then
+  if (( sessionNum % 10 == 2 )); then
       COMMAND="review AGENTS.md, fetch handoff from game-mcp-server, and complete an autonomous development cycle. For this cycle do not complete TODOs or feature development work. For this session only focus on asset sourcing / creation or narrative/dialog generation if there are no outstanding asset requests."
   fi
   codex --yolo --search exec "$COMMAND"

@@ -377,34 +377,37 @@
     "id": "image-ar-007-particles-rain",
     "arId": "AR-007",
     "title": "Rain Particle Sprite",
-    "creator": "",
-    "source": "",
-    "license": "",
-    "status": "pending-sourcing",
+    "creator": "Codex Autonomous Agent (GPT-Image-1)",
+    "source": "assets/generated/ar-007/image-ar-007-particles-rain.png",
+    "license": "Internal generation (OpenAI gpt-image-1)",
+    "status": "ai-generated",
     "usage": "2x2 sprite for rain particle effects.",
-    "notes": "Provide two-frame animation for streak variability."
+    "notes": "Provide two-frame animation for streak variability. | Generated during Session 162 to supply interim rain particle frames with additive-friendly streaks.",
+    "generatedAt": "2025-10-31T08:07:42Z"
   },
   {
     "id": "image-ar-007-particles-neon-glow",
     "arId": "AR-007",
     "title": "Neon Glow Particle Sprite",
-    "creator": "",
-    "source": "",
-    "license": "",
-    "status": "pending-sourcing",
+    "creator": "Codex Autonomous Agent (GPT-Image-1)",
+    "source": "assets/generated/ar-007/image-ar-007-particles-neon-glow.png",
+    "license": "Internal generation (OpenAI gpt-image-1)",
+    "status": "ai-generated",
     "usage": "4x4 sprite for neon shimmer effects.",
-    "notes": "Include additive-friendly alpha handling and color variants."
+    "notes": "Include additive-friendly alpha handling and color variants. | Generated during Session 162 to deliver looping neon glow pulses for additive blend passes.",
+    "generatedAt": "2025-10-31T08:07:42Z"
   },
   {
     "id": "image-ar-007-particles-memory-fragment",
     "arId": "AR-007",
     "title": "Memory Fragment Particle Sprite",
-    "creator": "",
-    "source": "",
-    "license": "",
-    "status": "pending-sourcing",
+    "creator": "Codex Autonomous Agent (GPT-Image-1)",
+    "source": "assets/generated/ar-007/image-ar-007-particles-memory-fragment.png",
+    "license": "Internal generation (OpenAI gpt-image-1)",
+    "status": "ai-generated",
     "usage": "8x8 ethereal particle for memory reconstruction sequences.",
-    "notes": "Design layered transparent wisps with subtle motion cues."
+    "notes": "Design layered transparent wisps with subtle motion cues. | Generated during Session 162 to provide layered memory fragment wisps with looping motion cues.",
+    "generatedAt": "2025-10-31T08:07:42Z"
   },
   {
     "id": "image-ar-007-screen-effects-pack",

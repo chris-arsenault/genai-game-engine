@@ -32,6 +32,7 @@
 - Use the MCP backlog as the operational source of truth: create new tasks with `mcp__game-mcp-server__create_backlog_item`, keep status/notes current via `mcp__game-mcp-server__update_backlog_item`, and retrieve work queues with `mcp__game-mcp-server__search_backlog_semantic`, `mcp__game-mcp-server__search_backlog_by_tag`, or `mcp__game-mcp-server__get_top_backlog_items` before sprint planning or daily execution.
 - Mirror changes from the MCP backlog back to `docs/plans/backlog.md` only after the MCP items are updated so the markdown file remains a read-friendly reflection of the canonical MCP records.
 - Ignore artifacts stored under `archive/` unless explicitly asked to reference historical materials; do not modify archived files during active tasks.
+- Do not support manual QA processes of any kind.
 
 **Non-negotiable:** - Focus on implementing new content, new features, unit tests, and e2e tests. Do not work on unnecessary telemetry or CI processes.  Focus on closing existing workstreams instead of extending with new acceptance criteria.
 
@@ -41,7 +42,7 @@
 - Use the repository’s tooling conventions (npm scripts, Jest, Playwright) when validating work.
 
 ### Asset Sourcing Policy
-- When new art/audio/3D media is needed, call `mcp__game-mcp-server__generate_image` to create required 2D art assets before considering external sources or licensing; omit the deprecated `style` parameter and always set the `background` parameter (use `transparent` when alpha is required).
+- When new art/audio/3D media is needed, call `mcp__generate-image__generate_image` to create required 2D art assets before considering external sources or licensing; omit the deprecated `style` parameter and always set the `background` parameter (use `transparent` when alpha is required) and the `file_location` parameter to the absolute path where the image should be saved.
 - Document the selected asset source, usage context, background choice, and any licensing considerations in session notes or relevant docs.
 
 ### Verification & Reporting
@@ -152,7 +153,7 @@ This project relies on **game-mcp-server** for persistent knowledge and **mcp__p
 - `mcp__game-mcp-server__find_similar_patterns`
 - `mcp__game-mcp-server__validate_against_patterns`
 - `mcp__game-mcp-server__get_pattern_by_name`
-- `mcp__game-mcp-server__generate_image` (set the `background` parameter explicitly; no `style` support)
+- `mcp__generate-image__generate_image` (set the `background` and `file_location` parameters explicitly; `file_location` must be an absolute save path; no `style` support)
 
 **Narrative Team** (`narrative-writer`, `narrative-world-building`, `narrative-dialog`):
 - `mcp__game-mcp-server__store_narrative_element`

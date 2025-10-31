@@ -2756,6 +2756,7 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Memory fragment particles (8x8, ethereal)
   - Screen effects (flash, scanlines)
 - **File**: `assets/images/requests.json`
+- **Status**: Rain, neon glow, and memory fragment particle sprite sheets generated via GPT-Image-1 in Session 162 (`assets/generated/ar-007/`); screen effects pack still pending-sourcing and needs follow-up.
 
 #### AR-008: Adaptive Music Tracks (M7)
 - **Type**: Audio
