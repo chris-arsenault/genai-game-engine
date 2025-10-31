@@ -96,9 +96,37 @@ describe('PlayerAnimationSystem', () => {
           loop: true,
         },
         runRight: {
-          frames: Array.from({ length: 6 }, (_, index) => ({ col: index, row: 5 })),
-          loop: true,
-        },
+        frames: Array.from({ length: 6 }, (_, index) => ({ col: index, row: 5 })),
+        loop: true,
+      },
+      idleLeft: {
+        frames: Array.from({ length: 6 }, (_, index) => ({ col: index, row: 8 })),
+        loop: true,
+      },
+      walkLeft: {
+        frames: Array.from({ length: 6 }, (_, index) => ({ col: index, row: 9 })),
+        loop: true,
+        frameDuration: 0.14,
+      },
+      runLeft: {
+        frames: Array.from({ length: 6 }, (_, index) => ({ col: index, row: 10 })),
+        loop: true,
+        frameDuration: 0.1,
+      },
+      idleUp: {
+        frames: Array.from({ length: 6 }, (_, index) => ({ col: index, row: 11 })),
+        loop: true,
+      },
+      walkUp: {
+        frames: Array.from({ length: 6 }, (_, index) => ({ col: index, row: 12 })),
+        loop: true,
+        frameDuration: 0.14,
+      },
+      runUp: {
+        frames: Array.from({ length: 6 }, (_, index) => ({ col: index, row: 13 })),
+        loop: true,
+        frameDuration: 0.1,
+      },
         dash: {
           frames: Array.from({ length: 8 }, (_, index) => ({ col: index, row: 6 })),
           loop: false,
@@ -173,5 +201,71 @@ describe('PlayerAnimationSystem', () => {
 
     expect(animatedSprite.currentAnimation).toBe('idleDown');
     expect(animatedSprite.playing).toBe(false);
+  });
+
+  it('selects idle loop that matches facing direction when stationary', () => {
+    const cases = [
+      ['down', 'idleDown'],
+      ['up', 'idleUp'],
+      ['left', 'idleLeft'],
+      ['right', 'idleRight'],
+    ];
+
+    for (const [facing, expectedAnimation] of cases) {
+      controller.velocityX = 0;
+      controller.velocityY = 0;
+      controller.facingDirection = facing;
+      animatedSprite.currentAnimation = 'runDown';
+      animatedSprite.playing = true;
+
+      system.update(0.016, [entityId]);
+
+      expect(animatedSprite.currentAnimation).toBe(expectedAnimation);
+      expect(animatedSprite.playing).toBe(false);
+    }
+  });
+
+  it('enters walk loops for all facings when velocity is moderate', () => {
+    const cases = [
+      { facing: 'down', velocity: { x: 0, y: controller.moveSpeed * 0.2 }, expected: 'walkDown' },
+      { facing: 'up', velocity: { x: 0, y: -controller.moveSpeed * 0.2 }, expected: 'walkUp' },
+      { facing: 'left', velocity: { x: -controller.moveSpeed * 0.2, y: 0 }, expected: 'walkLeft' },
+      { facing: 'right', velocity: { x: controller.moveSpeed * 0.2, y: 0 }, expected: 'walkRight' },
+    ];
+
+    for (const { facing, velocity, expected } of cases) {
+      controller.facingDirection = facing;
+      controller.velocityX = velocity.x;
+      controller.velocityY = velocity.y;
+      animatedSprite.currentAnimation = 'idleDown';
+      animatedSprite.playing = false;
+
+      system.update(0.016, [entityId]);
+
+      expect(animatedSprite.currentAnimation).toBe(expected);
+      expect(animatedSprite.playing).toBe(true);
+    }
+  });
+
+  it('enters run loops for all facings when velocity exceeds threshold', () => {
+    const cases = [
+      { facing: 'down', velocity: { x: 0, y: controller.moveSpeed * 0.95 }, expected: 'runDown' },
+      { facing: 'up', velocity: { x: 0, y: -controller.moveSpeed * 0.95 }, expected: 'runUp' },
+      { facing: 'left', velocity: { x: -controller.moveSpeed * 0.95, y: 0 }, expected: 'runLeft' },
+      { facing: 'right', velocity: { x: controller.moveSpeed * 0.95, y: 0 }, expected: 'runRight' },
+    ];
+
+    for (const { facing, velocity, expected } of cases) {
+      controller.facingDirection = facing;
+      controller.velocityX = velocity.x;
+      controller.velocityY = velocity.y;
+      animatedSprite.currentAnimation = 'walkDown';
+      animatedSprite.playing = true;
+
+      system.update(0.016, [entityId]);
+
+      expect(animatedSprite.currentAnimation).toBe(expected);
+      expect(animatedSprite.playing).toBe(true);
+    }
   });
 });

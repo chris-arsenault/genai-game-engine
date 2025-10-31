@@ -1,0 +1,132 @@
+{
+  "source": "assets/generated/images/ar-003/image-ar-003-kira-core-pack.png",
+  "generatedAt": "2025-10-31T13:58:54.003Z",
+  "frameSize": {
+    "width": 32,
+    "height": 32
+  },
+  "frames": [
+    {
+      "animationId": "idleDown",
+      "category": "idle",
+      "facing": "down",
+      "frameIndex": 0,
+      "output": "reports/art/player-locomotion-reference/kira-idle-down-frame0.png"
+    },
+    {
+      "animationId": "walkDown",
+      "category": "walk",
+      "facing": "down",
+      "frameIndex": 0,
+      "output": "reports/art/player-locomotion-reference/kira-walk-down-frame0.png"
+    },
+    {
+      "animationId": "runDown",
+      "category": "run",
+      "facing": "down",
+      "frameIndex": 0,
+      "output": "reports/art/player-locomotion-reference/kira-run-down-frame0.png"
+    },
+    {
+      "animationId": "idleLeft",
+      "category": "idle",
+      "facing": "left",
+      "frameIndex": 0,
+      "output": "reports/art/player-locomotion-reference/kira-idle-left-frame0.png"
+    },
+    {
+      "animationId": "walkLeft",
+      "category": "walk",
+      "facing": "left",
+      "frameIndex": 0,
+      "output": "reports/art/player-locomotion-reference/kira-walk-left-frame0.png"
+    },
+    {
+      "animationId": "runLeft",
+      "category": "run",
+      "facing": "left",
+      "frameIndex": 0,
+      "output": "reports/art/player-locomotion-reference/kira-run-left-frame0.png"
+    },
+    {
+      "animationId": "idleRight",
+      "category": "idle",
+      "facing": "right",
+      "frameIndex": 0,
+      "output": "reports/art/player-locomotion-reference/kira-idle-right-frame0.png"
+    },
+    {
+      "animationId": "walkRight",
+      "category": "walk",
+      "facing": "right",
+      "frameIndex": 0,
+      "output": "reports/art/player-locomotion-reference/kira-walk-right-frame0.png"
+    },
+    {
+      "animationId": "runRight",
+      "category": "run",
+      "facing": "right",
+      "frameIndex": 0,
+      "output": "reports/art/player-locomotion-reference/kira-run-right-frame0.png"
+    },
+    {
+      "animationId": "idleUp",
+      "category": "idle",
+      "facing": "up",
+      "frameIndex": 0,
+      "output": "reports/art/player-locomotion-reference/kira-idle-up-frame0.png"
+    },
+    {
+      "animationId": "walkUp",
+      "category": "walk",
+      "facing": "up",
+      "frameIndex": 0,
+      "output": "reports/art/player-locomotion-reference/kira-walk-up-frame0.png"
+    },
+    {
+      "animationId": "runUp",
+      "category": "run",
+      "facing": "up",
+      "frameIndex": 0,
+      "output": "reports/art/player-locomotion-reference/kira-run-up-frame0.png"
+    }
+  ],
+  "contacts": [
+    {
+      "facing": "down",
+      "sequence": [
+        "idleDown",
+        "walkDown",
+        "runDown"
+      ],
+      "output": "reports/art/player-locomotion-reference/kira-down-contact.png"
+    },
+    {
+      "facing": "left",
+      "sequence": [
+        "idleLeft",
+        "walkLeft",
+        "runLeft"
+      ],
+      "output": "reports/art/player-locomotion-reference/kira-left-contact.png"
+    },
+    {
+      "facing": "right",
+      "sequence": [
+        "idleRight",
+        "walkRight",
+        "runRight"
+      ],
+      "output": "reports/art/player-locomotion-reference/kira-right-contact.png"
+    },
+    {
+      "facing": "up",
+      "sequence": [
+        "idleUp",
+        "walkUp",
+        "runUp"
+      ],
+      "output": "reports/art/player-locomotion-reference/kira-up-contact.png"
+    }
+  ]
+}

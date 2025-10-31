@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { waitForGameLoad, collectConsoleErrors } from './setup.js';
+import { GameConfig } from '../../src/game/config/GameConfig.js';
 
 test.describe('Feedback overlays', () => {
   test('render prompts and movement pulses with audio controller active', async ({ page }) => {
@@ -67,13 +68,17 @@ test.describe('Feedback overlays', () => {
       return {
         available: Boolean(controller),
         lastMovementStamp: controller?._lastMovementStamp ?? 0,
-        lastPromptStamp: controller?._lastPromptStamp ?? 0
+        lastPromptStamp: controller?._lastPromptStamp ?? 0,
+        movementVolume: controller?.options?.movementVolume ?? null,
+        promptVolume: controller?.options?.promptVolume ?? null
       };
     });
 
     expect(audioState.available).toBe(true);
     expect(audioState.lastPromptStamp).toBeGreaterThan(0);
     expect(audioState.lastMovementStamp).toBeGreaterThan(0);
+    expect(audioState.movementVolume).toBeCloseTo(GameConfig.audio.sfxVolume * 0.65, 5);
+    expect(audioState.promptVolume).toBeCloseTo(GameConfig.audio.sfxVolume * 0.75, 5);
     expect(consoleErrors).toEqual([]);
   });
 });

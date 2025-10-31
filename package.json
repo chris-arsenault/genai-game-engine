@@ -26,6 +26,7 @@
     "art:track-bespoke": "node scripts/art/trackBespokeDeliverables.js",
     "art:summarize-neon-glow": "node scripts/art/summarizeNeonGlowApprovals.js",
     "art:decide-asset-route": "node scripts/art/decideAssetRouting.js",
+    "art:capture-locomotion": "node scripts/art/capturePlayerLocomotionFrames.js",
     "telemetry:check-parity": "node scripts/telemetry/checkQuestTelemetryParity.js",
     "telemetry:ack": "node scripts/telemetry/outboxAcknowledgement.js",
     "telemetry:dispatch-summary": "node scripts/telemetry/dispatchQuestTelemetrySummary.js",

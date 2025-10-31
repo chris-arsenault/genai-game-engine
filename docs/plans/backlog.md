@@ -324,8 +324,8 @@
 ### Session #168 Backlog Updates
 
 #### AR-003: Player Character Sprite (M2)
-- **Integration**: Generated directional placeholder sheet `image-ar-003-kira-core-pack.png`, wired idle/walk/run loops for every facing, and updated PlayerAnimationSystem + Jest coverage for facing-aware locomotion.
-- **Follow-up**: Swap in bespoke art once delivered, then capture refreshed autosave overlays and verify dash/slide transitions still align with the directional loops.
+- **Integration**: Generated directional placeholder sheet `image-ar-003-kira-core-pack.png`, wired idle/walk/run loops for every facing, expanded PlayerAnimationSystem coverage, and Session 169 exported idle/walk/run reference crops via `scripts/art/capturePlayerLocomotionFrames.js` (`reports/art/player-locomotion-reference/manifest.json`).
+- **Follow-up**: Swap in bespoke art once delivered and run traversal QA to confirm dash/slide transitions still align with the directional loops.
 
 #### AR-008: Adaptive Music Tracks (M7)
 - **Integration**: Retuned `GameConfig.audio.act2CrossroadsAmbient` (base/tension/combat gains + new combat state) and expanded AdaptiveMusicLayerController tests to protect updated fade sequencing.
@@ -882,7 +882,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Tags**: `gameplay`, `input`, `ui`
 - **Effort**: 3 hours
 - **Dependencies**: CORE-301
-- **Status**: In Progress — Canvas overlay palette unified across HUD layers and inventory overlay integrated; audio feedback polish review remains. Next steps focus on auditing movement audio cues, re-running HUD/prompt tests once polish lands, and documenting camera smoothing parameters for CORE-303 handoff.
+- **Status**: In Progress — Canvas overlay palette unified across HUD layers, inventory overlay integrated, and Session 169 locked in automated movement audio cue verification (Jest + Playwright). Remaining work covers documenting camera smoothing parameters for CORE-303 handoff.
 - **Description**: Provide immediate feedback for player input (camera centering, movement easing, interaction prompts) so WASD/E produce visible results.
 - **Acceptance Criteria**:
   - Camera centers on the player at start and follows smoothly during movement.

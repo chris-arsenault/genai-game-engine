@@ -1,5 +1,6 @@
 import { EventBus } from '../../../src/engine/events/EventBus.js';
 import { AudioFeedbackController } from '../../../src/game/audio/AudioFeedbackController.js';
+import { GameConfig } from '../../../src/game/config/GameConfig.js';
 
 describe('AudioFeedbackController', () => {
   let eventBus;
@@ -213,5 +214,58 @@ describe('AudioFeedbackController', () => {
     eventBus.emit('detective_vision:activated', {});
     controller.applyDetectiveVisionMix({ loopVolume: 0.26 });
     expect(setVolume).toHaveBeenCalledWith(0.26);
+  });
+
+  it('derives movement, prompt, and detective vision cue volumes from GameConfig defaults', () => {
+    const defaultEventBus = new EventBus();
+    const defaultAudioManager = { playSFX: jest.fn(() => null) };
+    let defaultNow = 0;
+    const defaultController = new AudioFeedbackController(defaultEventBus, defaultAudioManager, {
+      now: () => defaultNow,
+    });
+    defaultController.init();
+
+    defaultEventBus.emit('player:moving', { direction: { x: 0, y: 1 } });
+    expect(defaultAudioManager.playSFX).toHaveBeenCalledTimes(1);
+    const movementCalls = defaultAudioManager.playSFX.mock.calls;
+    const firstCall = movementCalls[movementCalls.length - 1];
+    expect(firstCall[0]).toBe('ui_movement_pulse');
+    expect(firstCall[1]).toBeDefined();
+    expect(firstCall[1]).toBeCloseTo(GameConfig.audio.sfxVolume * 0.65, 5);
+
+    defaultAudioManager.playSFX.mockClear();
+    defaultEventBus.emit('ui:show_prompt', { text: 'Queued prompt' });
+    expect(defaultAudioManager.playSFX).toHaveBeenCalledTimes(1);
+    const promptCalls = defaultAudioManager.playSFX.mock.calls;
+    const promptCall = promptCalls[promptCalls.length - 1];
+    expect(promptCall[0]).toBe('ui_prompt_ping');
+    expect(promptCall[1]).toBeCloseTo(GameConfig.audio.sfxVolume * 0.75, 5);
+
+    defaultAudioManager.playSFX.mockClear();
+    const loopStop = jest.fn();
+    defaultAudioManager.playSFX.mockImplementation((id, payload) => {
+      if (payload && typeof payload === 'object' && payload.loop) {
+        return { stop: loopStop };
+      }
+      return null;
+    });
+
+    defaultEventBus.emit('detective_vision:activated', {});
+    expect(defaultAudioManager.playSFX).toHaveBeenCalledTimes(2);
+    const [activationCall, loopCall] = defaultAudioManager.playSFX.mock.calls;
+    expect(activationCall[0]).toBe('investigation_clue_ping');
+    expect(activationCall[1]).toBeCloseTo(GameConfig.audio.detectiveVision.activationVolume, 5);
+    expect(loopCall[0]).toBe('investigation_trace_loop');
+    expect(loopCall[1]).toMatchObject({ loop: true });
+    expect(loopCall[1].volume).toBeCloseTo(GameConfig.audio.detectiveVision.loopVolume, 5);
+
+    defaultEventBus.emit('detective_vision:deactivated', {});
+    expect(defaultAudioManager.playSFX).toHaveBeenCalledTimes(3);
+    const recordedCalls = defaultAudioManager.playSFX.mock.calls;
+    const deactivateCall = recordedCalls[recordedCalls.length - 1];
+    expect(deactivateCall[0]).toBe('investigation_negative_hit');
+    expect(deactivateCall[1]).toBeCloseTo(GameConfig.audio.detectiveVision.deactivateVolume, 5);
+
+    defaultController.cleanup();
   });
 });
