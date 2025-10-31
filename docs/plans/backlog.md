@@ -24,6 +24,13 @@
 
 **Next Session Focus**: Share the neon glow approval summary with Narrative/RenderOps to capture sign-off on the neon district tileset, fold SaveManager telemetry budget events into CI/QA monitoring, and stage the next RenderOps lighting feedback pass.
 
+### Session #161 Backlog Updates
+
+#### M3-016: Save/Load System Implementation
+- Added share-ready QA distribution tooling (`src/game/tools/SaveLoadQADistributor.js`, `scripts/telemetry/distributeSaveLoadQa.js`) and staged delivery under `deliveries/qa/save-load/save-load/save-load-distribution-2025-10-31T04-42-21-907Z` with manifest plus feedback tracker for QA follow-up.
+- Routed `image-ar-003-kira-evasion-pack` to bespoke production using `scripts/art/decideAssetRouting.js`, updating manifest status/history after OpenAI generation was blocked by organization verification requirements.
+- Verification: `npm test -- SaveLoadQADistributor`, `npm test -- AssetRequestStatus`, `node scripts/telemetry/distributeSaveLoadQa.js --recipient=qa@thememorysyndicate.local`.
+
 ### Session #160 Backlog Updates
 
 #### M3-016: Save/Load System Implementation

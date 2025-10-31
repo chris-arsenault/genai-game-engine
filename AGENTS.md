@@ -41,8 +41,8 @@
 - Use the repository’s tooling conventions (npm scripts, Jest, Playwright) when validating work.
 
 ### Asset Sourcing Policy
-- When new art/audio/3D media is needed, use `web_search` to locate suitable assets or attempt to generate them via tools such as OpenAI image requests.
-- Document the selected asset source, usage context, and any licensing considerations in session notes or relevant docs.
+- When new art/audio/3D media is needed, call `mcp__game-mcp-server__generate_image` to create required 2D art assets before considering external sources or licensing; omit the deprecated `style` parameter and always set the `background` parameter (use `transparent` when alpha is required).
+- Document the selected asset source, usage context, background choice, and any licensing considerations in session notes or relevant docs.
 
 ### Verification & Reporting
 - Run `npm test` after meaningful implementation changes; add targeted suites (Playwright, profiling) when relevant.
@@ -152,6 +152,7 @@ This project relies on **game-mcp-server** for persistent knowledge and **mcp__p
 - `mcp__game-mcp-server__find_similar_patterns`
 - `mcp__game-mcp-server__validate_against_patterns`
 - `mcp__game-mcp-server__get_pattern_by_name`
+- `mcp__game-mcp-server__generate_image` (set the `background` parameter explicitly; no `style` support)
 
 **Narrative Team** (`narrative-writer`, `narrative-world-building`, `narrative-dialog`):
 - `mcp__game-mcp-server__store_narrative_element`

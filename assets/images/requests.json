@@ -240,19 +240,30 @@
     "arId": "AR-003",
     "title": "Kira Dash & Slide Animations",
     "creator": "Concept Pending",
-    "source": "Pending OpenAI Generation",
-    "license": "TBD – OpenAI Generation",
-    "status": "prompt-drafted",
+    "source": "Bespoke Animation Sprint – Pending Commission",
+    "license": "Internal Commission – Full Rights (Character Animation)",
+    "status": "bespoke-pending",
     "usage": "Supplemental dash and slide animations for Kira to support high-intensity autosave encounters.",
-    "notes": "Prompt drafted during Session 159 to cover lateral dash and low slide move sets; see docs/assets/generation-prompts-ar-001-005.md and generation payload staging.",
+    "notes": [
+      "Prompt drafted during Session 159 to cover lateral dash and low slide move sets; see docs/assets/generation-prompts-ar-001-005.md and generation payload staging.",
+      "Routing to bespoke art; OpenAI generation blocked pending org verification."
+    ],
     "placeholderGeneratedAt": null,
     "statusHistory": [
       {
         "status": "prompt-drafted",
         "recordedAt": "2025-10-31T04:50:00.000Z",
         "context": "Dash and slide animation prompt staged for OpenAI generation pipeline."
+      },
+      {
+        "status": "bespoke-pending",
+        "recordedAt": "2025-10-31T06:57:27.412Z",
+        "context": "Routing to bespoke art; OpenAI generation blocked pending org verification.",
+        "route": "bespoke"
       }
-    ]
+    ],
+    "updatedAt": "2025-10-31T06:57:27.412Z",
+    "route": "bespoke"
   },
   {
     "id": "image-ar-004-npc-civilian-pack",
