@@ -16,6 +16,22 @@ import {
   isSurfaceLockedForAgent,
 } from '../navigation/navigationUtils.js';
 
+function resolveFacingFromVector(vector) {
+  if (!vector) {
+    return null;
+  }
+  const { x = 0, y = 0 } = vector;
+  const absX = Math.abs(x);
+  const absY = Math.abs(y);
+  if (absX === 0 && absY === 0) {
+    return null;
+  }
+  if (absX >= absY) {
+    return x >= 0 ? 'right' : 'left';
+  }
+  return y >= 0 ? 'down' : 'up';
+}
+
 export class PlayerMovementSystem extends System {
   constructor(componentRegistry, eventBus, inputState) {
     super(componentRegistry, eventBus, ['PlayerController', 'Transform']);
@@ -91,6 +107,11 @@ export class PlayerMovementSystem extends System {
       const accel = controller.acceleration * deltaTime;
       controller.velocityX += moveVector.x * accel;
       controller.velocityY += moveVector.y * accel;
+
+      const facing = resolveFacingFromVector(moveVector);
+      if (facing) {
+        controller.facingDirection = facing;
+      }
 
       // Emit movement event
       this.eventBus.emit('player:moving', {

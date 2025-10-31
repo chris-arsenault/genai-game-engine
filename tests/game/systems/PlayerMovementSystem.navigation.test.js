@@ -109,5 +109,17 @@ describe('PlayerMovementSystem navigation constraints', () => {
     const transform = componentRegistry.getComponent(entityId, 'Transform');
     expect(transform.x).toBeGreaterThan(600);
   });
-});
 
+  it('updates controller facing direction based on latest movement input', () => {
+    const controller = componentRegistry.getComponent(entityId, 'PlayerController');
+    inputState.setVector(-1, 0);
+
+    system.update(0.016, [entityId]);
+
+    expect(controller.facingDirection).toBe('left');
+
+    inputState.setVector(0, 1);
+    system.update(0.016, [entityId]);
+    expect(controller.facingDirection).toBe('down');
+  });
+});

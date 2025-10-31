@@ -44,37 +44,113 @@ export function createPlayerEntity(entityManager, componentRegistry, x = 0, y = 
   });
   componentRegistry.addComponent(entityId, 'Sprite', sprite);
 
-  const dashFrames = Array.from({ length: 8 }, (_, index) => ({ col: index, row: 1 }));
-  const slideFrames = Array.from({ length: 8 }, (_, index) => ({ col: index, row: 2 }));
+  const animationRow = {
+    idleDown: 0,
+    walkDown: 1,
+    runDown: 2,
+    idleLeft: 3,
+    walkLeft: 4,
+    runLeft: 5,
+    idleRight: 6,
+    walkRight: 7,
+    runRight: 8,
+    idleUp: 9,
+    walkUp: 10,
+    runUp: 11,
+    dash: 12,
+    slide: 13,
+  };
+
+  const frames = (row, count = 6) => Array.from({ length: count }, (_, index) => ({ col: index, row }));
 
   const animatedSprite = new AnimatedSprite({
     image: null,
-    imageUrl: '/generated/images/ar-003/image-ar-003-kira-evasion-pack.png',
+    imageUrl: '/generated/images/ar-003/image-ar-003-kira-core-pack.png',
     frameWidth: 32,
     frameHeight: 32,
-    defaultAnimation: 'idle',
+    defaultAnimation: 'idleDown',
     animations: {
-      idle: {
-        frames: [{ col: 0, row: 1 }],
+      idleDown: {
+        frames: frames(animationRow.idleDown, 6),
         loop: true,
-        frameDuration: 0.25,
+        frameDuration: 0.28,
+      },
+      walkDown: {
+        frames: frames(animationRow.walkDown, 6),
+        loop: true,
+        frameDuration: 0.14,
+      },
+      runDown: {
+        frames: frames(animationRow.runDown, 6),
+        loop: true,
+        frameDuration: 0.1,
+      },
+      idleLeft: {
+        frames: frames(animationRow.idleLeft, 6),
+        loop: true,
+        frameDuration: 0.28,
+      },
+      walkLeft: {
+        frames: frames(animationRow.walkLeft, 6),
+        loop: true,
+        frameDuration: 0.14,
+      },
+      runLeft: {
+        frames: frames(animationRow.runLeft, 6),
+        loop: true,
+        frameDuration: 0.1,
+      },
+      idleRight: {
+        frames: frames(animationRow.idleRight, 6),
+        loop: true,
+        frameDuration: 0.28,
+      },
+      walkRight: {
+        frames: frames(animationRow.walkRight, 6),
+        loop: true,
+        frameDuration: 0.14,
+      },
+      runRight: {
+        frames: frames(animationRow.runRight, 6),
+        loop: true,
+        frameDuration: 0.1,
+      },
+      idleUp: {
+        frames: frames(animationRow.idleUp, 6),
+        loop: true,
+        frameDuration: 0.28,
+      },
+      walkUp: {
+        frames: frames(animationRow.walkUp, 6),
+        loop: true,
+        frameDuration: 0.14,
+      },
+      runUp: {
+        frames: frames(animationRow.runUp, 6),
+        loop: true,
+        frameDuration: 0.1,
       },
       dash: {
-        frames: dashFrames,
+        frames: frames(animationRow.dash, 8),
         loop: false,
         frameDuration: 0.055,
-        next: 'idle',
+        next: 'idleDown',
       },
       dashLoop: {
-        frames: dashFrames,
+        frames: frames(animationRow.dash, 6),
         loop: true,
         frameDuration: 0.06,
       },
       slide: {
-        frames: slideFrames,
+        frames: frames(animationRow.slide, 8),
         loop: false,
         frameDuration: 0.06,
-        next: 'idle',
+        next: 'idleDown',
+      },
+      idle: {
+        frames: frames(animationRow.idleDown, 6),
+        loop: true,
+        frameDuration: 0.28,
       },
     },
   });

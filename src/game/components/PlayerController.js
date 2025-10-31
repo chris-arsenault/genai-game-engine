@@ -43,6 +43,12 @@ export class PlayerController {
     // Internal velocity tracking (managed by PlayerMovementSystem)
     this.velocityX = 0;
     this.velocityY = 0;
+
+    /**
+     * Tracks the facing direction for animation resolution.
+     * Allowed values: 'down', 'up', 'left', 'right'
+     */
+    this.facingDirection = 'down';
   }
 
   /**

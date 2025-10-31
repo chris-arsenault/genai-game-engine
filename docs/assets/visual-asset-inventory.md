@@ -22,7 +22,7 @@
 | ----- | ----- | ----------- | ----- |
 | AR-001 | Deduction board UI | `image-ar-001-deduction-board-bg`, `image-ar-001-clue-node-pack`, `image-ar-001-evidence-icon-set`, `image-ar-001-ui-button-pack` | Prioritise cohesive neon-noir styling; hover/pressed states to support tactile investigation feel. |
 | AR-002 | Evidence placeholders | `image-ar-002-generic-marker`, `image-ar-002-fingerprint`, `image-ar-002-document`, `image-ar-002-neural-extractor`, `image-ar-002-blood-spatter` | Pair each sprite with narrative text variants for tutorial tooltips. |
-| AR-003 | Player sprite | `image-ar-003-player-kira-sprite`, `image-ar-003-kira-evasion-pack` | Requires 4-direction animations; ensure trench-coat silhouette distinct during stealth/combat transitions; new dash/slide pack complements autosave stress validation. |
+| AR-003 | Player sprite | `image-ar-003-player-kira-sprite`, `image-ar-003-kira-evasion-pack` | Directional placeholder (`image-ar-003-kira-core-pack`) now powers idle/walk/run; bespoke swap still needed to lock trench-coat silhouette while dash/slide pack covers autosave stress beats. |
 | AR-004 | NPC sprites | `image-ar-004-npc-civilian-pack`, `image-ar-004-npc-guard-pack` | Civilian palette must hint at faction allegiance; guards need visor glow to visualize detection state. |
 | AR-005 | District tilesets | `image-ar-005-tileset-neon-district`, `image-ar-005-tileset-corporate-spires`, `image-ar-005-tileset-archive-undercity`, `image-ar-005-tileset-zenith-sector` | Tilesets must ship with collision metadata once sourced/generated. |
 | AR-007 | Particle/overlay FX | `image-ar-007-particles-rain` (ai-generated), `image-ar-007-particles-neon-glow` (ai-generated), `image-ar-007-particles-memory-fragment` (ai-generated), `image-ar-007-screen-effects-pack` (pending-sourcing) | Optimise alpha usage for Canvas blending; test against 60 FPS threshold. Screen overlay pack still outstanding; other particle sheets staged under `assets/generated/ar-007/`. |
@@ -139,6 +139,10 @@
 ## Session 165 Updates
 - Shipping `scripts/audio/generateAr008AdaptiveStems.js` procedurally renders the AR-008 downtown tension/combat stems into `assets/generated/audio/ar-008/`, records loop metadata in `assets/generated/audio/ar-008/metadata.json`, and auto-updates `assets/music/requests.json` so adaptive music sourcing stays automation-only with seeded checksums.
 - Enhancing `scripts/art/packageRenderOpsLighting.js` now pushes every packet into the telemetry approval queue (`reports/telemetry/renderops-approvals/`) via `RenderOpsApprovalQueue`, mirroring actionable segment metadata so RenderOps approvals proceed without manual meetings or ad-hoc status pings.
+
+## Session 168 Updates
+- Generated a directional placeholder core sheet for Kira (`assets/generated/images/ar-003/image-ar-003-kira-core-pack.png`) via scripted automation (GPT concept archived at `image-ar-003-kira-core-pack-source.png`), updating manifests and runtime locomotion loops to cover idle/walk/run across all facings.
+- `scripts/art/monitorRenderOpsApprovals.js` now aggregates job status, queue totals, and actionable segment counts into `reports/art/renderops-approval-summary.json`; run with `--verbose` for aggregated dashboards or `--quiet` inside cron sweeps.
 
 ## Next Actions
 1. Distribute the latest RenderOps packet (`npm run art:package-renderops` then `npm run art:stage-renderops`) and attach the staged ZIP (`deliveries/renderops/.../*.zip`) plus `*-delivery.json` manifest when sharing with RenderOps; log feedback on actionable segments and regenerate after art tweaks.

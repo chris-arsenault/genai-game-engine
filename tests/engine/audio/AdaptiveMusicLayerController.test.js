@@ -238,7 +238,7 @@ describe('AdaptiveMusicLayerController', () => {
       tension: memoryParlorAmbient.tensionBaseVolume * memoryParlorAmbient.states.ambient.tension_layer,
       combat: memoryParlorAmbient.combatBaseVolume * memoryParlorAmbient.states.ambient.combat_layer,
     });
-  }
+  });
 
   it('matches act2 crossroads adaptive mix weights with downtown stems', async () => {
     controller.dispose();
@@ -266,7 +266,7 @@ describe('AdaptiveMusicLayerController', () => {
         },
       ],
       states: crossroads.states,
-      fadeDuration: 1.0,
+      fadeDuration: crossroads.fadeDuration,
     });
 
     const initialized = await controller.init();
@@ -279,14 +279,14 @@ describe('AdaptiveMusicLayerController', () => {
     const expectCrossroadsMix = (stateName, expectedVolumes) => {
       [ambientGain, tensionGain, combatGain].forEach((gain) => gain.linearRampToValueAtTime.mockClear());
 
-      controller.setState(stateName, { fadeDuration: 1.0, force: true });
+      controller.setState(stateName, { fadeDuration: crossroads.fadeDuration, force: true });
 
       const checkGain = (gain, expected) => {
         const calls = gain.linearRampToValueAtTime.mock.calls;
         expect(calls.length).toBeGreaterThan(0);
         const [target, when] = calls[calls.length - 1];
         expect(target).toBeCloseTo(expected, 5);
-        expect(when).toBeCloseTo(context.currentTime + 1.0, 5);
+        expect(when).toBeCloseTo(context.currentTime + crossroads.fadeDuration, 5);
       };
 
       checkGain(ambientGain, expectedVolumes.ambient);
@@ -295,28 +295,33 @@ describe('AdaptiveMusicLayerController', () => {
     };
 
     expectCrossroadsMix('decision', {
-      ambient: crossroads.baseVolume * crossroads.states.decision.ambient_base,
-      tension: crossroads.tensionBaseVolume * crossroads.states.decision.tension_layer,
-      combat: crossroads.combatBaseVolume * crossroads.states.decision.combat_layer,
+      ambient: 0.456,
+      tension: 0.306,
+      combat: 0,
     });
 
     expectCrossroadsMix('tension', {
-      ambient: crossroads.baseVolume * crossroads.states.tension.ambient_base,
-      tension: crossroads.tensionBaseVolume * crossroads.states.tension.tension_layer,
-      combat: crossroads.combatBaseVolume * crossroads.states.tension.combat_layer,
+      ambient: 0.348,
+      tension: 0.697,
+      combat: 0.1746,
     });
 
     expectCrossroadsMix('alert', {
-      ambient: crossroads.baseVolume * crossroads.states.alert.ambient_base,
-      tension: crossroads.tensionBaseVolume * crossroads.states.alert.tension_layer,
-      combat: crossroads.combatBaseVolume * crossroads.states.alert.combat_layer,
+      ambient: 0.288,
+      tension: 0.663,
+      combat: 0.4462,
     });
 
     expectCrossroadsMix('ambient', {
-      ambient: crossroads.baseVolume * crossroads.states.ambient.ambient_base,
-      tension: crossroads.tensionBaseVolume * crossroads.states.ambient.tension_layer,
-      combat: crossroads.combatBaseVolume * crossroads.states.ambient.combat_layer,
+      ambient: 0.552,
+      tension: 0,
+      combat: 0,
+    });
+
+    expectCrossroadsMix('combat', {
+      ambient: 0.228,
+      tension: 0.51,
+      combat: 0.97,
     });
   });
-);
 });

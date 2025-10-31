@@ -71,28 +71,54 @@ describe('PlayerAnimationSystem', () => {
     animatedSprite = new AnimatedSprite({
       frameWidth: 32,
       frameHeight: 32,
-      defaultAnimation: 'idle',
+      defaultAnimation: 'idleDown',
       animations: {
-        idle: {
-          frames: [{ col: 0, row: 0 }],
+        idleDown: {
+          frames: Array.from({ length: 6 }, (_, index) => ({ col: index, row: 0 })),
+          loop: true,
+        },
+        walkDown: {
+          frames: Array.from({ length: 6 }, (_, index) => ({ col: index, row: 1 })),
+          loop: true,
+          frameDuration: 0.12,
+        },
+        runDown: {
+          frames: Array.from({ length: 6 }, (_, index) => ({ col: index, row: 2 })),
+          loop: true,
+          frameDuration: 0.08,
+        },
+        idleRight: {
+          frames: Array.from({ length: 6 }, (_, index) => ({ col: index, row: 3 })),
+          loop: true,
+        },
+        walkRight: {
+          frames: Array.from({ length: 6 }, (_, index) => ({ col: index, row: 4 })),
+          loop: true,
+        },
+        runRight: {
+          frames: Array.from({ length: 6 }, (_, index) => ({ col: index, row: 5 })),
           loop: true,
         },
         dash: {
-          frames: Array.from({ length: 2 }, (_, index) => ({ col: index, row: 1 })),
+          frames: Array.from({ length: 8 }, (_, index) => ({ col: index, row: 6 })),
           loop: false,
           frameDuration: 0.05,
-          next: 'idle',
+          next: 'idleDown',
         },
         dashLoop: {
-          frames: Array.from({ length: 2 }, (_, index) => ({ col: index, row: 1 })),
+          frames: Array.from({ length: 6 }, (_, index) => ({ col: index, row: 6 })),
           loop: true,
           frameDuration: 0.05,
         },
         slide: {
-          frames: Array.from({ length: 2 }, (_, index) => ({ col: index, row: 2 })),
+          frames: Array.from({ length: 8 }, (_, index) => ({ col: index, row: 7 })),
           loop: false,
           frameDuration: 0.05,
-          next: 'idle',
+          next: 'idleDown',
+        },
+        idle: {
+          frames: Array.from({ length: 6 }, (_, index) => ({ col: index, row: 0 })),
+          loop: true,
         },
       },
     });
@@ -123,17 +149,29 @@ describe('PlayerAnimationSystem', () => {
 
     system.update(0.016, [entityId]);
 
-    expect(animatedSprite.currentAnimation).toBe('idle');
+    expect(animatedSprite.currentAnimation).toBe('idleDown');
     expect(animatedSprite.playing).toBe(false);
   });
 
-  it('uses dash loop animation while player is moving', () => {
-    controller.input.moveLeft = true;
-    system.__inputHelpers.__setMovement(true);
+  it('plays run animation when player velocity exceeds run threshold', () => {
+    controller.velocityX = controller.moveSpeed;
+    controller.velocityY = 0;
+    controller.facingDirection = 'right';
 
     system.update(0.016, [entityId]);
 
-    expect(animatedSprite.currentAnimation).toBe('dashLoop');
+    expect(animatedSprite.currentAnimation).toBe('runRight');
     expect(animatedSprite.playing).toBe(true);
+  });
+
+  it('plays idle animation when player is stationary', () => {
+    controller.velocityX = 0;
+    controller.velocityY = 0;
+    controller.facingDirection = 'down';
+
+    system.update(0.016, [entityId]);
+
+    expect(animatedSprite.currentAnimation).toBe('idleDown');
+    expect(animatedSprite.playing).toBe(false);
   });
 });

@@ -321,6 +321,20 @@
 - Distributed the telemetry reminder bundle and confirmed `.ics` import with analytics; staging manifest updated to reflect the share.
 - Lowered the warning threshold from 3 to 2 days to allow earlier alerting before the 2025-11-13 checkpoint.
 
+### Session #168 Backlog Updates
+
+#### AR-003: Player Character Sprite (M2)
+- **Integration**: Generated directional placeholder sheet `image-ar-003-kira-core-pack.png`, wired idle/walk/run loops for every facing, and updated PlayerAnimationSystem + Jest coverage for facing-aware locomotion.
+- **Follow-up**: Swap in bespoke art once delivered, then capture refreshed autosave overlays and verify dash/slide transitions still align with the directional loops.
+
+#### AR-008: Adaptive Music Tracks (M7)
+- **Integration**: Retuned `GameConfig.audio.act2CrossroadsAmbient` (base/tension/combat gains + new combat state) and expanded AdaptiveMusicLayerController tests to protect updated fade sequencing.
+- **Follow-up**: Validate the mix against live in-game triggers when the ambient base stem lands and document scrambler boost behavior for audio QA.
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- **Automation**: Hardened `scripts/art/monitorRenderOpsApprovals.js` (imports fixed, aggregated status/queue/actionable totals, Jest coverage) so telemetry sweeps surface actionable items with summary metrics.
+- **Follow-up**: Keep running the monitor during art automation sweeps (use `--verbose` for dashboards) and rely on the new summary fields when scheduling follow-up runs or auto-imports.
+
 ### Session #167 Backlog Updates
 
 #### AR-003: Player Character Sprite (M2)

@@ -4,6 +4,20 @@ function animationExists(animatedSprite, name) {
   return Boolean(animatedSprite?.animations && animatedSprite.animations[name]);
 }
 
+function capitalize(word = '') {
+  if (!word || typeof word !== 'string') {
+    return '';
+  }
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
+function resolveDirectionalAnimation(base, facing) {
+  if (!facing) {
+    return base;
+  }
+  return `${base}${capitalize(facing)}`;
+}
+
 /**
  * PlayerAnimationSystem
  *
@@ -67,22 +81,50 @@ export class PlayerAnimationSystem extends System {
 
       if (!state.activeOneShot) {
         // Determine baseline animation based on movement.
-        const isMoving =
-          typeof controller.isMoving === 'function'
-            ? controller.isMoving()
-            : Boolean(controller?.input?.moveLeft ||
-                controller?.input?.moveRight ||
-                controller?.input?.moveUp ||
-                controller?.input?.moveDown);
+        const velocityX = typeof controller.velocityX === 'number' ? controller.velocityX : 0;
+        const velocityY = typeof controller.velocityY === 'number' ? controller.velocityY : 0;
+        const speed = Math.hypot(velocityX, velocityY);
+        const moveSpeed = typeof controller.moveSpeed === 'number' ? controller.moveSpeed : 0;
 
-        if (isMoving && animationExists(animatedSprite, 'dashLoop')) {
-          if (animatedSprite.currentAnimation !== 'dashLoop') {
-            animatedSprite.play('dashLoop', { force: true, keepFrame: false, play: true });
+        let movementState = 'idle';
+        if (speed > moveSpeed * 0.75) {
+          movementState = 'run';
+        } else if (speed > moveSpeed * 0.1) {
+          movementState = 'walk';
+        }
+
+        let facingDirection = controller.facingDirection;
+        if (!facingDirection || typeof facingDirection !== 'string') {
+          if (Math.abs(velocityX) >= Math.abs(velocityY) && Math.abs(velocityX) > 0.01) {
+            facingDirection = velocityX >= 0 ? 'right' : 'left';
+          } else if (Math.abs(velocityY) > 0.01) {
+            facingDirection = velocityY >= 0 ? 'down' : 'up';
+          } else {
+            facingDirection = 'down';
           }
-        } else if (animationExists(animatedSprite, 'idle')) {
-          if (animatedSprite.currentAnimation !== 'idle') {
-            animatedSprite.play('idle', { force: true, keepFrame: true, play: false });
+        }
+
+        const candidateName = resolveDirectionalAnimation(movementState, facingDirection);
+        const fallbackName =
+          movementState === 'idle' ? 'idle' : resolveDirectionalAnimation('idle', facingDirection);
+
+        if (animationExists(animatedSprite, candidateName)) {
+          if (animatedSprite.currentAnimation !== candidateName) {
+            animatedSprite.play(candidateName, {
+              force: true,
+              keepFrame: movementState === 'idle',
+              play: movementState !== 'idle',
+            });
           }
+        } else if (
+          animationExists(animatedSprite, fallbackName) &&
+          animatedSprite.currentAnimation !== fallbackName
+        ) {
+          animatedSprite.play(fallbackName, { force: true, keepFrame: true, play: false });
+        }
+
+        if (movementState === 'idle' && animatedSprite.currentAnimation === candidateName) {
+          animatedSprite.playing = false;
         }
       }
 

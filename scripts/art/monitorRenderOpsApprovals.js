@@ -2,6 +2,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { importRenderOpsFeedback } from './importRenderOpsFeedback.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -99,6 +100,9 @@ async function main() {
   const jobFiles = await listJobFiles(TELEMETRY_ROOT);
   const summaryEntries = [];
   const newJobs = [];
+  const jobStatusTotals = {};
+  const queueTotals = {};
+  const actionableTotals = {};
 
   for (const jobPath of jobFiles) {
     let job;
@@ -139,9 +143,21 @@ async function main() {
       packetLabel: job.packet?.label ?? null,
       packetId: job.packet?.id ?? null,
       notes: job.packet?.instructions ?? [],
+      statusBreakdown: statusSummary,
     };
 
     summaryEntries.push(entry);
+
+    const normalizedStatus = (entry.status ?? 'unknown').toLowerCase();
+    jobStatusTotals[normalizedStatus] = (jobStatusTotals[normalizedStatus] ?? 0) + 1;
+
+    const queueKey = entry.queue ?? 'unassigned';
+    queueTotals[queueKey] = (queueTotals[queueKey] ?? 0) + 1;
+
+    for (const [status, count] of Object.entries(statusSummary)) {
+      const normalized = status.toLowerCase();
+      actionableTotals[normalized] = (actionableTotals[normalized] ?? 0) + count;
+    }
 
     const tracked = index.jobs[jobId];
     if (!tracked || tracked.processedAt !== processedAt) {
@@ -168,16 +184,31 @@ async function main() {
     }
   }
 
-  await writeJson(SUMMARY_PATH, {
+  const totalPendingSegments = Object.entries(actionableTotals).reduce((acc, [status, count]) => {
+    if (status === 'approved') {
+      return acc;
+    }
+    return acc + count;
+  }, 0);
+  const totalApprovedSegments = actionableTotals.approved ?? 0;
+
+  const summaryPayload = {
     generatedAt: new Date().toISOString(),
     totalJobs: summaryEntries.length,
     newJobs: newJobs.length,
+    jobStatusTotals,
+    queueTotals,
+    actionableSegmentsByStatus: actionableTotals,
+    totalPendingSegments,
+    totalApprovedSegments,
     entries: summaryEntries.sort((a, b) => {
       const left = a.processedAt || a.createdAt || '';
       const right = b.processedAt || b.createdAt || '';
       return right.localeCompare(left);
     }),
-  });
+  };
+
+  await writeJson(SUMMARY_PATH, summaryPayload);
 
   await writeJson(INDEX_PATH, index);
 
@@ -189,6 +220,9 @@ async function main() {
       for (const entry of summaryEntries) {
         console.log(`- ${entry.jobId}: status=${entry.status}, pending=${entry.pendingSegments}, approved=${entry.approvedSegments}`);
       }
+      console.log('[monitorRenderOpsApprovals] Actionable segments by status:', actionableTotals);
+      console.log('[monitorRenderOpsApprovals] Queue totals:', queueTotals);
+      console.log('[monitorRenderOpsApprovals] Job status totals:', jobStatusTotals);
     }
   }
 
@@ -203,9 +237,14 @@ async function main() {
   } else if (!args.quiet) {
     console.log('[monitorRenderOpsApprovals] No new RenderOps approvals detected.');
   }
+  return summaryPayload;
 }
 
-main().catch((error) => {
-  console.error('[monitorRenderOpsApprovals] Unhandled error:', error);
-  process.exitCode = 1;
-});
+if (import.meta.url === `file://${__filename}`) {
+  main().catch((error) => {
+    console.error('[monitorRenderOpsApprovals] Unhandled error:', error);
+    process.exitCode = 1;
+  });
+}
+
+export { summarizeActionable, main };
