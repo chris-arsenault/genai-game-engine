@@ -4,6 +4,7 @@ import { factionSlice } from './slices/factionSlice.js';
 import { tutorialSlice } from './slices/tutorialSlice.js';
 import { dialogueSlice } from './slices/dialogueSlice.js';
 import { inventorySlice } from './slices/inventorySlice.js';
+import { districtSlice } from './slices/districtSlice.js';
 
 const DEFAULT_ACTION_HISTORY = 50;
 const DEFAULT_DIALOGUE_HISTORY_LIMIT = 10;
@@ -15,6 +16,7 @@ const sliceRegistry = {
   tutorial: tutorialSlice,
   dialogue: dialogueSlice,
   inventory: inventorySlice,
+  district: districtSlice,
 };
 
 function isDevEnvironment() {
@@ -512,6 +514,107 @@ export class WorldStateStore {
           },
         });
       }),
+
+      this.eventBus.on('district:registered', (payload = {}) => {
+        const districtId = payload.districtId ?? payload.id ?? null;
+        if (!districtId) return;
+        this.dispatch({
+          type: 'DISTRICT_REGISTERED',
+          domain: 'district',
+          payload: {
+            districtId,
+            definition: payload.definition ?? null,
+          },
+        });
+      }),
+
+      this.eventBus.on('district:control_changed', (payload = {}) => {
+        const districtId = payload.districtId ?? null;
+        const controllingFaction = payload.controllingFaction ?? payload.factionId ?? null;
+        if (!districtId || !controllingFaction) return;
+        this.dispatch({
+          type: 'DISTRICT_CONTROL_CHANGED',
+          domain: 'district',
+          payload: {
+            districtId,
+            controllingFaction,
+            source: payload.source ?? null,
+          },
+        });
+      }),
+
+      this.eventBus.on('district:stability_set', (payload = {}) => {
+        const districtId = payload.districtId ?? null;
+        if (!districtId || typeof payload.stability !== 'number') return;
+        this.dispatch({
+          type: 'DISTRICT_STABILITY_SET',
+          domain: 'district',
+          payload: {
+            districtId,
+            stabilityValue: payload.stability,
+            rating: payload.rating ?? null,
+            source: payload.source ?? null,
+          },
+        });
+      }),
+
+      this.eventBus.on('district:stability_adjusted', (payload = {}) => {
+        const districtId = payload.districtId ?? null;
+        if (!districtId || typeof payload.delta !== 'number') return;
+        this.dispatch({
+          type: 'DISTRICT_STABILITY_ADJUSTED',
+          domain: 'district',
+          payload: {
+            districtId,
+            delta: payload.delta,
+            source: payload.source ?? null,
+          },
+        });
+      }),
+
+      this.eventBus.on('district:restriction_set', (payload = {}) => {
+        const districtId = payload.districtId ?? null;
+        const restrictionId = payload.restrictionId ?? payload.id ?? null;
+        if (!districtId || !restrictionId || typeof payload.active !== 'boolean') return;
+        this.dispatch({
+          type: 'DISTRICT_RESTRICTION_SET',
+          domain: 'district',
+          payload: {
+            districtId,
+            restrictionId,
+            active: Boolean(payload.active),
+            metadata: payload.metadata ?? null,
+          },
+        });
+      }),
+
+      this.eventBus.on('district:route_unlocked', (payload = {}) => {
+        const districtId = payload.districtId ?? null;
+        const routeId = payload.routeId ?? payload.id ?? null;
+        if (!districtId || !routeId) return;
+        this.dispatch({
+          type: 'DISTRICT_ROUTE_UNLOCKED',
+          domain: 'district',
+          payload: {
+            districtId,
+            routeId,
+            source: payload.source ?? null,
+          },
+        });
+      }),
+
+      this.eventBus.on('district:fast_travel_set', (payload = {}) => {
+        const districtId = payload.districtId ?? null;
+        if (!districtId || typeof payload.enabled !== 'boolean') return;
+        this.dispatch({
+          type: 'DISTRICT_FAST_TRAVEL_SET',
+          domain: 'district',
+          payload: {
+            districtId,
+            enabled: Boolean(payload.enabled),
+          },
+        });
+      }),
     ];
 
     this.subscriptions = subscriptions.filter(Boolean);
@@ -672,6 +775,7 @@ export class WorldStateStore {
     const tutorial = sliceRegistry.tutorial.serialize(this.state.tutorial);
     const dialogue = sliceRegistry.dialogue.serialize(this.state.dialogue);
     const inventory = sliceRegistry.inventory.serialize(this.state.inventory);
+    const districts = sliceRegistry.district.serialize(this.state.district);
 
     return {
       storyFlags,
@@ -680,6 +784,7 @@ export class WorldStateStore {
       tutorial,
       dialogue,
       inventory,
+      districts,
       tutorialComplete: Boolean(tutorial?.completed),
     };
   }
@@ -698,6 +803,7 @@ export class WorldStateStore {
       tutorial: snapshot.tutorial ?? {},
       dialogue: snapshot.dialogue ?? {},
       inventory: snapshot.inventory ?? {},
+      districts: snapshot.districts ?? {},
     };
 
     this.dispatch({

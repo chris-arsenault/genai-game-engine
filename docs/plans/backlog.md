@@ -24,6 +24,22 @@
 
 **Next Session Focus**: Share the neon glow approval summary with Narrative/RenderOps to capture sign-off on the neon district tileset, fold SaveManager telemetry budget events into CI/QA monitoring, and stage the next RenderOps lighting feedback pass.
 
+### Session #150 Backlog Updates
+
+#### M3-012: District Data Definitions
+- Authored district metadata modules for Neon Districts, Corporate Spires, Archive Undercity, and Zenith Sector with controlling faction, stability, access, and environmental descriptors (`src/game/data/districts/`).
+- Added registry exports plus validation tests (`tests/game/data/districts/districts.test.js`) ensuring faction references, security levels, and requirements remain consistent.
+- Verification: `npm test -- district`.
+
+#### M3-013: WorldStateManager Implementation
+- Extended WorldStateStore with a dedicated district slice capturing control changes, stability history, restrictions, and infiltration unlocks; wired new district:* events for runtime updates.
+- Snapshot/hydrate routines now persist district state alongside existing quest/story/faction slices, with coverage in `tests/game/state/districtSlice.test.js`.
+
+#### M3-022: District Access Evaluation Utilities
+- Added `DistrictAccessEvaluator` helpers to surface unmet knowledge, quest, faction, ability, equipment, and restriction blockers for each district (`src/game/progression/DistrictAccessEvaluator.js`).
+- Authored progression unit suite validating lock/unlock flows, restriction handling, and contextual overrides (`tests/game/progression/DistrictAccessEvaluator.test.js`).
+- Verification: `npm test -- district`.
+
 ### Session #149 Backlog Updates
 
 #### UX-173: Debug Audio Overlay Ergonomics
