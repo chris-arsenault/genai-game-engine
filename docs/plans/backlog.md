@@ -47,6 +47,13 @@
 - Added helper coverage under `tests/game/ui/helpers/districtTravelViewModel.test.js` to guard route/blocker summaries.
 - Verification: `npm test -- districtTravelViewModel`.
 
+### Session #155 Backlog Updates
+
+#### M3-016: Save/Load System Implementation
+- Normalized SaveManager slot identifiers, enforced manual slot capacity limits, and added slot metadata helpers with expanded Jest coverage (`src/game/managers/SaveManager.js`, `tests/game/managers/SaveManager.test.js`).
+- Introduced the Save/Load overlay with manual slot and load workflows, refreshed control bindings, and new regression tests validating the UI interactions (`src/game/ui/SaveLoadOverlay.js`, `src/game/Game.js`, `tests/game/ui/SaveLoadOverlay.test.js`).
+- Verification: `npm test -- --runTestsByPath tests/game/managers/SaveManager.test.js tests/game/ui/SaveLoadOverlay.test.js`.
+
 ### Session #153 Backlog Updates
 
 #### M3-022: District Access Evaluation Utilities

@@ -62,6 +62,7 @@ import { AdaptiveMoodEmitter } from './audio/AdaptiveMoodEmitter.js';
 import { SuspicionMoodMapper } from './audio/SuspicionMoodMapper.js';
 import { GameplayAdaptiveAudioBridge } from './audio/GameplayAdaptiveAudioBridge.js';
 import { SaveInspectorOverlay } from './ui/SaveInspectorOverlay.js';
+import { SaveLoadOverlay } from './ui/SaveLoadOverlay.js';
 import { CrossroadsPromptController } from './narrative/CrossroadsPromptController.js';
 import { CrossroadsBranchTransitionController } from './narrative/CrossroadsBranchTransitionController.js';
 import { NavigationMeshService } from './navigation/NavigationMeshService.js';
@@ -240,6 +241,7 @@ export class Game {
     this.caseFileUI = null;
     this.deductionBoard = null;
     this.audioFeedback = null;
+    this.saveLoadOverlay = null;
     this.saveInspectorOverlay = null;
     this.crossroadsPromptController = null;
     this.crossroadsBranchTransitionController = null;
@@ -922,6 +924,15 @@ export class Game {
       {}
     );
     this.controlBindingsOverlay.init();
+
+    this.saveLoadOverlay = new SaveLoadOverlay(
+      this.engine.canvas,
+      this.eventBus,
+      {
+        saveManager: this.saveManager,
+      }
+    );
+    this.saveLoadOverlay.init();
 
     // Create interaction prompt overlay (HUD)
     this.interactionPromptOverlay = new InteractionPromptOverlay(
@@ -2541,6 +2552,9 @@ export class Game {
     if (this.interactionPromptOverlay) {
       this.interactionPromptOverlay.update(deltaTime);
     }
+    if (this.saveLoadOverlay) {
+      this.saveLoadOverlay.update(deltaTime);
+    }
     if (this.saveInspectorOverlay) {
       this.saveInspectorOverlay.update(deltaTime);
     }
@@ -2571,6 +2585,10 @@ export class Game {
 
     if (this.districtTravelOverlay && this.inputState.wasJustPressed('travel')) {
       this.districtTravelOverlay.toggle('input:travel');
+    }
+
+    if (this.saveLoadOverlay && this.inputState.wasJustPressed('saveLoad')) {
+      this.saveLoadOverlay.toggle('input:saveLoad');
     }
 
     if (this.saveInspectorOverlay && this.inputState.wasJustPressed('saveInspector')) {
@@ -3325,6 +3343,10 @@ export class Game {
       this.saveInspectorOverlay.render();
     }
 
+    if (this.saveLoadOverlay) {
+      this.saveLoadOverlay.render();
+    }
+
     // Render tutorial overlay (kept highest priority for in-world guidance)
     if (this.tutorialOverlay) {
       this.tutorialOverlay.render(ctx);
@@ -3436,6 +3458,9 @@ export class Game {
     }
     if (this.crossroadsBranchOverlay && this.crossroadsBranchOverlay.cleanup) {
       this.crossroadsBranchOverlay.cleanup();
+    }
+    if (this.saveLoadOverlay && this.saveLoadOverlay.cleanup) {
+      this.saveLoadOverlay.cleanup();
     }
     if (this.saveInspectorOverlay && this.saveInspectorOverlay.cleanup) {
       this.saveInspectorOverlay.cleanup();

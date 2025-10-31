@@ -1085,6 +1085,67 @@ describe('SaveManager', () => {
 
       consoleSpy.mockRestore();
     });
+
+    test('should enforce manual slot capacity by evicting oldest slot', () => {
+      saveManager.config.maxSaveSlots = 2;
+
+      const dateSpy = jest.spyOn(Date, 'now');
+      dateSpy
+        .mockReturnValueOnce(1000)
+        .mockReturnValueOnce(1000)
+        .mockReturnValueOnce(2000)
+        .mockReturnValueOnce(2000)
+        .mockReturnValueOnce(3000)
+        .mockReturnValueOnce(3000);
+
+      const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+
+      try {
+        expect(saveManager.saveGame('slot1')).toBe(true);
+        expect(saveManager.saveGame('slot2')).toBe(true);
+
+        localStorageMock.removeItem.mockClear();
+
+        expect(saveManager.saveGame('slot3')).toBe(true);
+
+        const slots = saveManager.getSaveSlots();
+        expect(slots.length).toBe(2);
+        expect(slots.some((entry) => entry.slot === 'slot1')).toBe(false);
+        expect(localStorageMock.removeItem).toHaveBeenCalledWith(
+          `${saveManager.config.storageKeyPrefix}slot1`
+        );
+      } finally {
+        dateSpy.mockRestore();
+        logSpy.mockRestore();
+      }
+    });
+
+    test('should normalize slot names and preserve labels', () => {
+      const result = saveManager.saveGame('  My Custom Slot  ');
+      expect(result).toBe(true);
+
+      const slots = saveManager.getSaveSlots();
+      expect(slots[0]).toMatchObject({
+        slot: 'my-custom-slot',
+        label: 'My Custom Slot',
+        slotType: 'manual',
+      });
+    });
+
+    test('should expose slot metadata lookup helpers', () => {
+      saveManager.saveGame('story_progress');
+
+      const metadata = saveManager.getSaveSlotMetadata('story_progress');
+      expect(metadata).toMatchObject({
+        slot: 'story_progress',
+        label: 'story_progress',
+        slotType: 'manual',
+        snapshotSource: 'legacy-managers',
+      });
+
+      expect(saveManager.slotExists('story_progress')).toBe(true);
+      expect(saveManager.slotExists('missing_slot')).toBe(false);
+    });
   });
 
   // ==================== ERROR HANDLING TESTS ====================

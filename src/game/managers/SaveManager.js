@@ -53,6 +53,7 @@ export class SaveManager {
       metadataKey: 'save_metadata',
       version: 1,
       maxSaveSlots: 10,
+      maxSlotNameLength: 32,
       verifyWorldStateParity: true,
     };
 
@@ -163,6 +164,7 @@ export class SaveManager {
    * @returns {boolean} Success
    */
   saveGame(slot = 'autosave') {
+    const resolvedSlot = this._normalizeSlotName(slot);
     try {
       // Calculate current playtime
       const playtime = Date.now() - this.gameStartTime;
@@ -186,42 +188,46 @@ export class SaveManager {
       }
 
       // Create save object
+      const slotLabel =
+        typeof slot === 'string' && slot.trim().length ? slot.trim() : resolvedSlot;
+
       const saveData = {
         version: this.config.version,
         timestamp: Date.now(),
         playtime,
-        slot,
+        slot: resolvedSlot,
         gameData,
         meta: {
           snapshotSource: snapshot ? 'worldStateStore' : 'legacy-managers',
+          slotLabel,
         },
       };
 
       // Serialize and save to persistent storage
       const serialized = JSON.stringify(saveData);
-      const storageKey = this.config.storageKeyPrefix + slot;
+      const storageKey = this.config.storageKeyPrefix + resolvedSlot;
       if (!this.storage) {
         throw new Error('Storage unavailable');
       }
       this.storage.setItem(storageKey, serialized);
 
       // Update save metadata
-      this.updateSaveMetadata(slot, saveData);
+      this.updateSaveMetadata(resolvedSlot, saveData);
 
       // Emit success event
       this.eventBus.emit('game:saved', {
-        slot,
+        slot: resolvedSlot,
         timestamp: saveData.timestamp,
         playtime: saveData.playtime,
       });
 
       this._lastInventoryAutosave = Date.now();
-      console.log(`[SaveManager] Game saved to slot: ${slot}`);
+      console.log(`[SaveManager] Game saved to slot: ${resolvedSlot}`);
       return true;
     } catch (error) {
       console.error('[SaveManager] Failed to save game:', error);
       this.eventBus.emit('game:save_failed', {
-        slot,
+        slot: resolvedSlot,
         error: error.message,
       });
       return false;
@@ -234,17 +240,18 @@ export class SaveManager {
    * @returns {boolean} Success
    */
   loadGame(slot = 'autosave') {
+    const resolvedSlot = this._normalizeSlotName(slot);
     try {
       if (!this.storage) {
         throw new Error('Storage unavailable');
       }
 
       // Retrieve save data from storage
-      const storageKey = this.config.storageKeyPrefix + slot;
+      const storageKey = this.config.storageKeyPrefix + resolvedSlot;
       const serialized = this.storage.getItem(storageKey);
 
       if (!serialized) {
-        console.warn(`[SaveManager] No save found in slot: ${slot}`);
+        console.warn(`[SaveManager] No save found in slot: ${resolvedSlot}`);
         return false;
       }
 
@@ -272,17 +279,17 @@ export class SaveManager {
 
       // Emit success event
       this.eventBus.emit('game:loaded', {
-        slot,
+        slot: resolvedSlot,
         timestamp: saveData.timestamp,
         playtime: saveData.playtime,
       });
 
-      console.log(`[SaveManager] Game loaded from slot: ${slot}`);
+      console.log(`[SaveManager] Game loaded from slot: ${resolvedSlot}`);
       return true;
     } catch (error) {
       console.error('[SaveManager] Failed to load game:', error);
       this.eventBus.emit('game:load_failed', {
-        slot,
+        slot: resolvedSlot,
         error: error.message,
       });
       return false;
@@ -299,21 +306,62 @@ export class SaveManager {
         throw new Error('Storage unavailable');
       }
 
-      const metadataSerialized = this.storage.getItem(this.config.metadataKey);
-      if (!metadataSerialized) {
-        return [];
-      }
+      const metadata = this._readMetadata();
+      const entries = Object.entries(metadata);
+      entries.sort((a, b) => {
+        const timestampA = a[1]?.timestamp ?? 0;
+        const timestampB = b[1]?.timestamp ?? 0;
+        return timestampB - timestampA;
+      });
 
-      const metadata = JSON.parse(metadataSerialized);
-      return Object.entries(metadata).map(([slot, data]) => ({
-        slot,
-        timestamp: data.timestamp,
-        playtime: data.playtime,
-        version: data.version,
-      }));
+      return entries.map(([slot, data]) => this._transformMetadataEntry(slot, data));
     } catch (error) {
       console.error('[SaveManager] Failed to get save slots:', error);
       return [];
+    }
+  }
+
+  /**
+   * Retrieve metadata for a specific save slot.
+   * @param {string} slot
+   * @returns {Object|null}
+   */
+  getSaveSlotMetadata(slot) {
+    const resolvedSlot = this._normalizeSlotName(slot);
+
+    try {
+      if (!this.storage) {
+        throw new Error('Storage unavailable');
+      }
+
+      const metadata = this._readMetadata();
+      const entry = metadata[resolvedSlot];
+      if (!entry) {
+        return null;
+      }
+      return this._transformMetadataEntry(resolvedSlot, entry);
+    } catch (error) {
+      console.error('[SaveManager] Failed to read save slot metadata:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Determine whether a save slot exists.
+   * @param {string} slot
+   * @returns {boolean}
+   */
+  slotExists(slot) {
+    const resolvedSlot = this._normalizeSlotName(slot);
+    try {
+      if (!this.storage) {
+        throw new Error('Storage unavailable');
+      }
+      const metadata = this._readMetadata();
+      return Object.prototype.hasOwnProperty.call(metadata, resolvedSlot);
+    } catch (error) {
+      console.error('[SaveManager] Failed to check save slot existence:', error);
+      return false;
     }
   }
 
@@ -323,24 +371,24 @@ export class SaveManager {
    * @returns {boolean} Success
    */
   deleteSave(slot) {
+    const resolvedSlot = this._normalizeSlotName(slot);
     try {
       if (!this.storage) {
         throw new Error('Storage unavailable');
       }
 
       // Remove from storage
-      const storageKey = this.config.storageKeyPrefix + slot;
+      const storageKey = this.config.storageKeyPrefix + resolvedSlot;
       this.storage.removeItem(storageKey);
 
       // Remove from metadata
-      const metadataSerialized = this.storage.getItem(this.config.metadataKey);
-      if (metadataSerialized) {
-        const metadata = JSON.parse(metadataSerialized);
-        delete metadata[slot];
-        this.storage.setItem(this.config.metadataKey, JSON.stringify(metadata));
+      const metadata = this._readMetadata();
+      if (Object.prototype.hasOwnProperty.call(metadata, resolvedSlot)) {
+        delete metadata[resolvedSlot];
+        this._writeMetadata(metadata);
       }
 
-      console.log(`[SaveManager] Deleted save slot: ${slot}`);
+      console.log(`[SaveManager] Deleted save slot: ${resolvedSlot}`);
       return true;
     } catch (error) {
       console.error('[SaveManager] Failed to delete save:', error);
@@ -359,19 +407,29 @@ export class SaveManager {
         throw new Error('Storage unavailable');
       }
 
-      // Get existing metadata
-      const metadataSerialized = this.storage.getItem(this.config.metadataKey);
-      const metadata = metadataSerialized ? JSON.parse(metadataSerialized) : {};
+      const resolvedSlot = this._normalizeSlotName(slot);
+      const metadata = this._readMetadata();
+      const slotExists = Object.prototype.hasOwnProperty.call(metadata, resolvedSlot);
 
-      // Update metadata for this slot
-      metadata[slot] = {
+      metadata[resolvedSlot] = {
         timestamp: saveData.timestamp,
         playtime: saveData.playtime,
-        version: saveData.version,
+        version: saveData.version ?? this.config.version,
+        slotType: this._isAutosaveSlot(resolvedSlot) ? 'auto' : 'manual',
+        label: saveData.meta?.slotLabel ?? resolvedSlot,
+        snapshotSource: saveData.meta?.snapshotSource ?? null,
       };
 
-      // Save updated metadata
-      this.storage.setItem(this.config.metadataKey, JSON.stringify(metadata));
+      let removedSlots = [];
+      if (!slotExists && !this._isAutosaveSlot(resolvedSlot)) {
+        removedSlots = this._enforceSlotCapacity(metadata, resolvedSlot);
+      }
+
+      this._writeMetadata(metadata);
+
+      for (const removedSlot of removedSlots) {
+        this._removeSlotStorage(removedSlot);
+      }
     } catch (error) {
       console.error('[SaveManager] Failed to update save metadata:', error);
     }
@@ -398,6 +456,138 @@ export class SaveManager {
       console.log('[SaveManager] Interval autosave triggered');
       this.saveGame('autosave');
       this.lastAutosaveTime = currentTime;
+    }
+  }
+
+  _normalizeSlotName(slot) {
+    if (typeof slot === 'number' && Number.isFinite(slot)) {
+      const numeric = Math.max(0, Math.floor(slot));
+      return `slot${numeric}`.slice(0, this.config.maxSlotNameLength ?? 32);
+    }
+
+    const fallback = 'autosave';
+    if (typeof slot !== 'string') {
+      return fallback;
+    }
+
+    const trimmed = slot.trim();
+    if (!trimmed.length) {
+      return fallback;
+    }
+
+    const lowered = trimmed.toLowerCase();
+    if (lowered === 'autosave') {
+      return 'autosave';
+    }
+
+    const sanitized = lowered
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9_-]/g, '-')
+      .replace(/-{2,}/g, '-')
+      .replace(/^[-_]+/, '')
+      .replace(/[-_]+$/, '');
+
+    const limit = Math.max(8, this.config.maxSlotNameLength ?? 32);
+    const truncated = sanitized.slice(0, limit);
+    return truncated.length ? truncated : fallback;
+  }
+
+  _isAutosaveSlot(slot) {
+    return slot === 'autosave';
+  }
+
+  _readMetadata() {
+    const serialized = this.storage?.getItem?.(this.config.metadataKey);
+    if (!serialized) {
+      return {};
+    }
+
+    const parsed = JSON.parse(serialized);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return {};
+    }
+
+    return { ...parsed };
+  }
+
+  _writeMetadata(metadata) {
+    const payload = metadata && typeof metadata === 'object' ? metadata : {};
+    this.storage.setItem(this.config.metadataKey, JSON.stringify(payload));
+  }
+
+  _transformMetadataEntry(slot, raw = {}) {
+    const slotType = raw.slotType ?? (this._isAutosaveSlot(slot) ? 'auto' : 'manual');
+    const label = typeof raw.label === 'string' && raw.label.trim().length ? raw.label : slot;
+    return {
+      slot,
+      timestamp: raw.timestamp ?? null,
+      playtime: raw.playtime ?? 0,
+      version: raw.version ?? this.config.version,
+      slotType,
+      label,
+      snapshotSource: raw.snapshotSource ?? null,
+    };
+  }
+
+  _enforceSlotCapacity(metadata, preservedSlot) {
+    const removed = [];
+    const manualEntries = [];
+
+    for (const [slot, data] of Object.entries(metadata)) {
+      const slotType = data?.slotType ?? (this._isAutosaveSlot(slot) ? 'auto' : 'manual');
+      if (slotType === 'manual') {
+        manualEntries.push({
+          slot,
+          timestamp: Number.isFinite(data?.timestamp) ? data.timestamp : 0,
+        });
+      }
+    }
+
+    const maxSlotsValue = this._coerceNonNegativeInteger(this.config.maxSaveSlots);
+    const maxSlots = Math.max(1, maxSlotsValue || 0);
+
+    if (manualEntries.length <= maxSlots) {
+      return removed;
+    }
+
+    manualEntries.sort((a, b) => {
+      if (a.timestamp === b.timestamp) {
+        return a.slot.localeCompare(b.slot);
+      }
+      return a.timestamp - b.timestamp;
+    });
+
+    let removalsNeeded = manualEntries.length - maxSlots;
+    for (const entry of manualEntries) {
+      if (removalsNeeded <= 0) {
+        break;
+      }
+      if (entry.slot === preservedSlot) {
+        continue;
+      }
+      if (!Object.prototype.hasOwnProperty.call(metadata, entry.slot)) {
+        continue;
+      }
+
+      delete metadata[entry.slot];
+      removed.push(entry.slot);
+      removalsNeeded -= 1;
+    }
+
+    return removed;
+  }
+
+  _removeSlotStorage(slot) {
+    if (!this.storage) {
+      return;
+    }
+
+    try {
+      const storageKey = this.config.storageKeyPrefix + slot;
+      this.storage.removeItem(storageKey);
+      console.log(`[SaveManager] Pruned save slot due to capacity: ${slot}`);
+    } catch (error) {
+      console.warn('[SaveManager] Failed to prune save slot:', slot, error);
     }
   }
 

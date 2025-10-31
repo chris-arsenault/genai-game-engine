@@ -29,6 +29,7 @@ export const Controls = {
   faction: ['KeyR'], // Open reputation/faction UI
   disguise: ['KeyG'], // Open disguise UI (G for Gear/Garb)
   quest: ['KeyQ'], // Open quest log
+  saveLoad: ['KeyL'], // Open save/load management overlay
   saveInspector: ['KeyO'], // Toggle SaveManager inspector overlay
 
   // Control bindings
