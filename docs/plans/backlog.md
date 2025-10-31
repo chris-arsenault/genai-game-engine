@@ -169,6 +169,14 @@
 - Authored a sustained autosave stress test to validate repeated quest completion bursts retain slot focus and emit the expected `game:saved` cadence without failures (`tests/game/managers/SaveManager.test.js` autosave suite).
 - Verification: `npm test -- SaveManager`, `npm test -- SaveLoadQAPacketBuilder`, `npm run telemetry:package-save-load -- --iterations=2 --no-samples`.
 
+### Session #195 Backlog Updates
+
+#### M2-006: Deduction System and Theory Validation
+- Added `src/game/data/TheoryValidator.js` to centralize multi-solution theory validation, connection type enforcement, and hint generation; integrated CaseManager and DeductionSystem to consume the module and emit hint payloads.
+- Extended `TutorialCase` with an alternate valid solution graph plus explicit connection type allowances, and updated `DeductionBoard` rendering to surface multi-line feedback alongside hint messaging.
+- Expanded Jest coverage across the validator (`tests/game/data/TheoryValidator.test.js`), CaseManager, DeductionSystem, and DeductionBoard to guard new accuracy and hint behaviours.
+- Verification: `npm test` (suites pass except for the pre-existing `tests/engine/procedural/LayoutGraph.test.js` performance threshold flake, still >1 ms when rerun in isolation).
+
 ### Session #156 Backlog Updates
 
 #### M3-016: Save/Load System Implementation

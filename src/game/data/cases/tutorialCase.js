@@ -371,6 +371,47 @@ export const tutorialCase = {
       }
     ]
   },
+  alternateTheoryGraphs: [
+    {
+      id: 'neurosync-direct',
+      nodes: [
+        'clue_001_hollow',
+        'clue_002_professional',
+        'clue_003_neurosync',
+        'clue_004_personal',
+        'clue_005_tip_untraceable',
+        'clue_006_pattern'
+      ],
+      connections: [
+        {
+          from: 'clue_002_professional',
+          to: 'clue_001_hollow',
+          type: 'supports'
+        },
+        {
+          from: 'clue_003_neurosync',
+          to: 'clue_001_hollow',
+          type: 'supports'
+        },
+        {
+          from: 'clue_004_personal',
+          to: 'clue_003_neurosync',
+          type: 'supports'
+        },
+        {
+          from: 'clue_005_tip_untraceable',
+          to: 'clue_003_neurosync',
+          type: 'supports'
+        },
+        {
+          from: 'clue_006_pattern',
+          to: 'clue_002_professional',
+          type: 'supports'
+        }
+      ]
+    }
+  ],
+  allowedConnectionTypes: ['supports', 'contradicts'],
 
   // Solution criteria
   solution: {

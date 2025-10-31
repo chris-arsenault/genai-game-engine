@@ -6,6 +6,8 @@
  *
  * @class CaseManager
  */
+import { TheoryValidator } from '../data/TheoryValidator.js';
+
 export class CaseManager {
   /**
    * Create a CaseManager
@@ -24,6 +26,7 @@ export class CaseManager {
 
     // Theory validation
     this.theoryGraphs = new Map(); // caseId -> correct theory graph
+    this.theoryValidator = new TheoryValidator();
 
     // Listen for investigation events
     this.setupEventListeners();
@@ -128,11 +131,17 @@ export class CaseManager {
       evidenceIds = [],
       requiredClues = [],
       theoryGraph = null,
+      alternateTheoryGraphs = [],
+      theoryGraphs = null,
       accuracyThreshold = 0.7,
       rewards = {},
       scene = null,
       witnesses: witnessDefinitions = [],
-      tutorial: tutorialMetadata = null
+      tutorial: tutorialMetadata = null,
+      allowedConnectionTypes = null,
+      optionalClueIds = [],
+      narrative = null,
+      hintOverrides = null
     } = caseData;
 
     if (this.cases.has(id)) {
@@ -162,6 +171,18 @@ export class CaseManager {
       theoryGraph, // Correct theory structure
       playerTheory: { nodes: [], connections: [] }, // Player's current theory
       accuracyThreshold, // Minimum accuracy to solve (0.0-1.0)
+      alternateTheoryGraphs: Array.isArray(alternateTheoryGraphs)
+        ? alternateTheoryGraphs.map((graph) => ({ ...graph }))
+        : [],
+      theoryGraphs: Array.isArray(theoryGraphs)
+        ? theoryGraphs.map((graph) => ({ ...graph }))
+        : [],
+      allowedConnectionTypes: Array.isArray(allowedConnectionTypes)
+        ? Array.from(new Set(allowedConnectionTypes.filter((type) => typeof type === 'string')))
+        : null,
+      optionalClueIds: Array.isArray(optionalClueIds)
+        ? Array.from(new Set(optionalClueIds.filter((idValue) => typeof idValue === 'string')))
+        : [],
 
       // Metadata
       startTime: Date.now(),
@@ -180,7 +201,9 @@ export class CaseManager {
         : [],
 
       // Tutorial metadata snapshot
-      tutorial: tutorialMetadata ? { ...tutorialMetadata } : null
+      tutorial: tutorialMetadata ? { ...tutorialMetadata } : null,
+      narrative: narrative ? { ...narrative } : null,
+      hintOverrides: hintOverrides ? { ...hintOverrides } : null
     };
 
     this.cases.set(id, caseFile);
@@ -405,97 +428,37 @@ export class CaseManager {
       return { valid: false, accuracy: 0, feedback: 'Case not found' };
     }
 
-    if (!caseFile.theoryGraph) {
-      console.warn(`[CaseManager] No theory graph defined for case: ${caseId}`);
-      return { valid: true, accuracy: 1.0, feedback: 'No validation required' };
-    }
+    const validation = this.theoryValidator.validate(playerTheory, caseFile, {
+      clueLookup: this.clueDatabase,
+      threshold: caseFile.accuracyThreshold,
+      allowedConnectionTypes: caseFile.allowedConnectionTypes
+    });
 
-    // Calculate accuracy
-    const accuracy = this.calculateTheoryAccuracy(playerTheory, caseFile.theoryGraph);
+    caseFile.playerTheory = validation.normalizedTheory;
+    caseFile.accuracy = validation.accuracy;
 
-    // Update case file
-    caseFile.playerTheory = playerTheory;
-    caseFile.accuracy = accuracy;
+    const hasSolutionGraph =
+      Boolean(caseFile.theoryGraph) ||
+      (Array.isArray(caseFile.alternateTheoryGraphs) && caseFile.alternateTheoryGraphs.length > 0) ||
+      (Array.isArray(caseFile.theoryGraphs) && caseFile.theoryGraphs.length > 0);
 
-    // Check if accuracy meets threshold
-    const valid = accuracy >= caseFile.accuracyThreshold;
-
-    if (valid) {
-      this.solveCase(caseId, accuracy);
+    if (hasSolutionGraph && validation.valid) {
+      this.solveCase(caseId, validation.accuracy);
     }
 
     this.eventBus.emit('theory:validated', {
       caseId,
-      accuracy,
-      valid,
-      threshold: caseFile.accuracyThreshold
+      accuracy: validation.accuracy,
+      valid: validation.valid,
+      threshold: caseFile.accuracyThreshold,
+      hints: validation.hints,
+      missingConnections: validation.missingConnections,
+      extraConnections: validation.extraConnections,
+      invalidConnections: validation.invalidConnections,
+      solutionId: validation.solutionId
     });
 
-    return {
-      valid,
-      accuracy,
-      feedback: this.generateTheoryFeedback(accuracy, caseFile.accuracyThreshold)
-    };
-  }
-
-  /**
-   * Calculate theory accuracy
-   * @param {Object} playerTheory
-   * @param {Object} correctTheory
-   * @returns {number} Accuracy (0.0 to 1.0)
-   */
-  calculateTheoryAccuracy(playerTheory, correctTheory) {
-    // Simple graph matching algorithm
-    // In a full implementation, this would be more sophisticated
-
-    const correctConnections = new Set(
-      correctTheory.connections.map(c => `${c.from}:${c.to}:${c.type}`)
-    );
-
-    const playerConnections = new Set(
-      playerTheory.connections.map(c => `${c.from}:${c.to}:${c.type}`)
-    );
-
-    if (correctConnections.size === 0) {
-      return 1.0;
-    }
-
-    // Count matches
-    let matches = 0;
-    for (const conn of playerConnections) {
-      if (correctConnections.has(conn)) {
-        matches++;
-      }
-    }
-
-    // Calculate accuracy
-    // Penalize for missing connections and incorrect connections
-    const precision = playerConnections.size > 0 ? matches / playerConnections.size : 0;
-    const recall = matches / correctConnections.size;
-
-    // F1 score
-    if (precision + recall === 0) return 0;
-    const accuracy = (2 * precision * recall) / (precision + recall);
-
-    return Math.max(0, Math.min(1, accuracy));
-  }
-
-  /**
-   * Generate feedback based on accuracy
-   * @param {number} accuracy
-   * @param {number} threshold
-   * @returns {string}
-   */
-  generateTheoryFeedback(accuracy, threshold) {
-    if (accuracy >= threshold) {
-      return 'Your theory is sound. The pieces fit together.';
-    } else if (accuracy >= threshold * 0.8) {
-      return 'You are close, but some connections do not hold up.';
-    } else if (accuracy >= threshold * 0.5) {
-      return 'Your theory has some merit, but critical evidence is missing or misinterpreted.';
-    } else {
-      return 'This theory does not fit the evidence. Reexamine the clues.';
-    }
+    return validation;
   }
 
   /**

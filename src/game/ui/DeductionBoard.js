@@ -49,6 +49,7 @@ export class DeductionBoard {
     this.visible = false;
     this.theoryAccuracy = 0;
     this.validationFeedback = '';
+    this.validationMessages = [];
 
     // Button areas (will be set up in render)
     this.validateButton = { x: 20, y: height - 60, width: 120, height: 40 };
@@ -174,6 +175,7 @@ export class DeductionBoard {
     });
     this.theoryAccuracy = 0;
     this.validationFeedback = '';
+    this.validationMessages = [];
   }
 
   /**
@@ -334,7 +336,19 @@ export class DeductionBoard {
 
     if (result) {
       this.theoryAccuracy = result.accuracy || 0;
-      this.validationFeedback = result.feedback || '';
+      const messages = [];
+      if (result.feedback) {
+        messages.push(result.feedback);
+      }
+      if (Array.isArray(result.hints)) {
+        result.hints.forEach((hint) => {
+          if (typeof hint === 'string' && hint.trim().length > 0) {
+            messages.push(hint);
+          }
+        });
+      }
+      this.validationMessages = messages;
+      this.validationFeedback = messages.join('\n');
     }
   }
 
@@ -568,13 +582,24 @@ export class DeductionBoard {
    * @private
    */
   _renderFeedback(ctx) {
-    if (this.validationFeedback) {
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '14px Arial';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
-      ctx.fillText(this.validationFeedback, 20, 20);
+    const lines = this.validationMessages.length > 0
+      ? this.validationMessages
+      : (this.validationFeedback ? [this.validationFeedback] : []);
+
+    if (lines.length === 0) {
+      return;
     }
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '14px Arial';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+
+    let offsetY = 20;
+    lines.forEach((line) => {
+      ctx.fillText(line, 20, offsetY);
+      offsetY += 18;
+    });
   }
 
   /**

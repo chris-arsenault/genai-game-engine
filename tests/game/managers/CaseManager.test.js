@@ -541,10 +541,12 @@ describe('CaseManager', () => {
 
       expect(result.valid).toBe(true);
       expect(result.accuracy).toBeGreaterThanOrEqual(0.7);
+      expect(result.hints).toHaveLength(0);
       expect(mockEventBus.emit).toHaveBeenCalledWith('theory:validated',
         expect.objectContaining({
           caseId: 'case_1',
-          valid: true
+          valid: true,
+          hints: expect.any(Array)
         })
       );
     });
@@ -561,6 +563,7 @@ describe('CaseManager', () => {
 
       expect(result.valid).toBe(false);
       expect(result.accuracy).toBeLessThan(0.7);
+      expect(result.hints.length).toBeGreaterThan(0);
     });
 
     it('should calculate partial accuracy', () => {
@@ -586,7 +589,7 @@ describe('CaseManager', () => {
       };
 
       const highResult = caseManager.validateTheory('case_1', highAccuracyTheory);
-      expect(highResult.feedback).toContain('sound');
+      expect(highResult.feedback).toContain('holds together');
 
       // Create low accuracy case
       caseManager.createCase({
@@ -638,6 +641,8 @@ describe('CaseManager', () => {
 
       expect(result.valid).toBe(true);
       expect(result.accuracy).toBe(1.0);
+      const caseFile = caseManager.getCase('case_no_theory');
+      expect(caseFile.status).toBe('active');
     });
   });
 
