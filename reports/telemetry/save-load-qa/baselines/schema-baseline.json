@@ -1,0 +1,27 @@
+{
+  "sections": {
+    "storyFlags": {
+      "minCount": 2,
+      "requiredKeys": [
+        "investigation_started",
+        "tutorial_completed"
+      ]
+    },
+    "inventory": {
+      "minCount": 2,
+      "requiredEquippedSlots": [
+        "primaryWeapon",
+        "tool"
+      ]
+    },
+    "district": {
+      "minCount": 2
+    },
+    "npc": {
+      "minCount": 2
+    },
+    "tutorial": {
+      "mustBeCompleted": true
+    }
+  }
+}

@@ -5,18 +5,29 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { prepareSaveLoadQADistribution } from '../../src/game/tools/SaveLoadQADistributor.js';
+import { enqueueSaveLoadValidationJob } from '../../src/game/tools/SaveLoadQAValidatorQueue.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const DEFAULT_PACKETS_ROOT = path.resolve(__dirname, '../../reports/telemetry/save-load-qa');
 const DEFAULT_DELIVERIES_ROOT = path.resolve(__dirname, '../../deliveries/qa/save-load');
+const DEFAULT_VALIDATOR_ROOT = path.resolve(
+  __dirname,
+  '../../reports/telemetry/validator-queue'
+);
+const DEFAULT_BASELINE_ROOT = path.resolve(
+  __dirname,
+  '../../reports/telemetry/save-load-qa/baselines'
+);
 
 function parseArgs(argv) {
   const options = {
     packetsRoot: DEFAULT_PACKETS_ROOT,
     deliveriesRoot: DEFAULT_DELIVERIES_ROOT,
     recipients: [],
+    validatorRoot: DEFAULT_VALIDATOR_ROOT,
+    baselineRoot: DEFAULT_BASELINE_ROOT,
   };
 
   for (const arg of argv) {
@@ -38,6 +49,16 @@ function parseArgs(argv) {
       if (value) {
         options.recipients.push(value);
       }
+    } else if (arg.startsWith('--validator-root=')) {
+      options.validatorRoot = path.resolve(
+        process.cwd(),
+        arg.slice('--validator-root='.length)
+      );
+    } else if (arg.startsWith('--baseline-root=')) {
+      options.baselineRoot = path.resolve(
+        process.cwd(),
+        arg.slice('--baseline-root='.length)
+      );
     }
   }
 
@@ -54,6 +75,8 @@ function printHelp() {
     '  --packet-dir=<path>       Specific packet directory to distribute',
     '  --archive=<path>          Optional archive path to include (defaults to sibling ZIP)',
     '  --recipient=<email>       QA recipient to document in the delivery manifest (repeatable)',
+    '  --validator-root=<path>   Root directory for validator queue outputs',
+    '  --baseline-root=<path>    Directory containing latency/schema baselines',
     '  -h, --help                Show this help message',
     '',
   ];
@@ -106,6 +129,21 @@ async function main() {
     qaRecipients: options.recipients,
   });
 
+  const queueResult = await enqueueSaveLoadValidationJob({
+    distributionDir: result.distributionDir,
+    manifest: result.manifest,
+    manifestPath: result.manifestPath,
+    metadata: result.metadata,
+    queueRoot: options.validatorRoot,
+    baselineRoot: options.baselineRoot,
+  });
+
+  const hasFailures = queueResult.job.status !== 'passed';
+  const issueLines = queueResult.job.issues.map(
+    (issue) =>
+      `  - (${issue.type}/${issue.metric}) ${issue.message} [expected: ${formatIssueValue(issue.expected)}, actual: ${formatIssueValue(issue.actual)}, severity: ${issue.severity}]`
+  );
+
   process.stdout.write(
     [
       `[distributeSaveLoadQa] Distribution staged at ${result.distributionDir}`,
@@ -113,11 +151,29 @@ async function main() {
       `[distributeSaveLoadQa] Archive: ${
         result.archivePath ?? 'none (archive not available or skipped)'
       }`,
+      `[distributeSaveLoadQa] Validator job staged at ${queueResult.jobPath}`,
+      hasFailures
+        ? '[distributeSaveLoadQa] Validation issues detected:\n' + issueLines.join('\n')
+        : '[distributeSaveLoadQa] Validation passed against baseline thresholds',
     ].join('\n') + '\n'
   );
+
+  if (hasFailures) {
+    process.exitCode = 1;
+  }
 }
 
 main().catch((error) => {
   process.stderr.write(`[distributeSaveLoadQa] Failed: ${error.message}\n`);
   process.exitCode = 1;
 });
+
+function formatIssueValue(value) {
+  if (Array.isArray(value)) {
+    return value.join(', ');
+  }
+  if (value === null || typeof value === 'undefined') {
+    return 'n/a';
+  }
+  return typeof value === 'object' ? JSON.stringify(value) : String(value);
+}

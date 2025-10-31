@@ -1,0 +1,64 @@
+{
+  "jobId": "c2d9170c-9d13-4e3b-941c-e1ee89d8bb68",
+  "queue": "renderops-lighting",
+  "status": "pending_review",
+  "createdAt": "2025-10-31T08:50:35.195Z",
+  "packet": {
+    "id": "caa6051f-f7ac-4eae-906f-a46053aaeffc",
+    "label": "act2-crossroads",
+    "packetDir": "/home/tsonu/src/genai-game-engine/reports/art/renderops-packets/act2-crossroads-2025-10-31T08-50-35-169Z",
+    "shareManifestPath": "/home/tsonu/src/genai-game-engine/reports/art/renderops-packets/act2-crossroads-2025-10-31T08-50-35-169Z/share-manifest.json",
+    "deliveryManifestPath": "/home/tsonu/src/genai-game-engine/reports/art/renderops-packets/act2-crossroads-2025-10-31T08-50-35-169Z-delivery.json",
+    "instructions": [
+      "Share the generated ZIP bundle with the RenderOps team via the secure art handoff channel.",
+      "Include PACKET_README.md in the communication so context and actionable segments are visible up front.",
+      "After RenderOps responds, update the placeholder audit and regenerate the packet if art tweaks were requested.",
+      "Flag the `attachments/` directory when sharing so supplemental references are reviewed alongside the metrics."
+    ],
+    "summary": {
+      "total": 11,
+      "statusCounts": {
+        "skipped": 2,
+        "ok": 9
+      },
+      "metadataDriftCount": 0,
+      "skippedCount": 2
+    }
+  },
+  "actionableSegments": [
+    {
+      "segmentId": "crossroads_floor_safehouse",
+      "status": "skipped",
+      "category": "floors",
+      "presetId": "safehouse_idle",
+      "issues": [],
+      "projected": {
+        "luminance": null,
+        "targetLuminance": null,
+        "deviation": null
+      }
+    },
+    {
+      "segmentId": "crossroads_branch_walkway",
+      "status": "skipped",
+      "category": "floors",
+      "presetId": "branch_idle",
+      "issues": [],
+      "projected": {
+        "luminance": null,
+        "targetLuminance": null,
+        "deviation": null
+      }
+    }
+  ],
+  "delivery": {
+    "bundle": {
+      "format": "zip",
+      "fileName": "act2-crossroads-2025-10-31T08-50-35-169Z.zip",
+      "absolutePath": "/home/tsonu/src/genai-game-engine/reports/art/renderops-packets/act2-crossroads-2025-10-31T08-50-35-169Z.zip",
+      "checksumSha256": "27e8a8a4da227eb33fe5411e274ced8de93115be74d7e2b8dad480114431657f",
+      "sizeBytes": 12035
+    },
+    "attachmentCount": 2
+  }
+}

@@ -131,6 +131,10 @@
 - New artifacts `reports/art/renderops-feedback.json` and `reports/art/renderops-feedback.md` capture the aggregated history, per-segment status, and reviewer notes so art, lighting, and narrative can coordinate revisions without parsing email threads or ad-hoc docs.
 - When feedback lands, import it, regenerate the RenderOps packet if required (`npm run art:package-renderops`), and link the feedback entry in `assets/images/requests.json` notes for any segments that shift back to `needs_revision`.
 
+## Session 165 Updates
+- Shipping `scripts/audio/generateAr008AdaptiveStems.js` procedurally renders the AR-008 downtown tension/combat stems into `assets/generated/audio/ar-008/`, records loop metadata in `assets/generated/audio/ar-008/metadata.json`, and auto-updates `assets/music/requests.json` so adaptive music sourcing stays automation-only with seeded checksums.
+- Enhancing `scripts/art/packageRenderOpsLighting.js` now pushes every packet into the telemetry approval queue (`reports/telemetry/renderops-approvals/`) via `RenderOpsApprovalQueue`, mirroring actionable segment metadata so RenderOps approvals proceed without manual meetings or ad-hoc status pings.
+
 ## Next Actions
 1. Distribute the latest RenderOps packet (`npm run art:package-renderops` then `npm run art:stage-renderops`) and attach the staged ZIP (`deliveries/renderops/.../*.zip`) plus `*-delivery.json` manifest when sharing with RenderOps; log feedback on actionable segments and regenerate after art tweaks.
 2. Follow `reports/art/placeholder-replacement-schedule.md` to drive weekly bespoke assignments and annotate `assets/images/requests.json` with source/licensing updates upon completion.
