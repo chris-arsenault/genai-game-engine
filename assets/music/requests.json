@@ -11,7 +11,7 @@
   },
   {
     "id": "music-memory-parlor-tension-001",
-    "title": "Goodnightmare – Procedural Tension Stem",
+    "title": "Goodnightmare \u2013 Procedural Tension Stem",
     "creator": "Codex Audio Lab",
     "source": "Generated in-session via procedural sine/noise synthesis",
     "license": "CC0 / Original work (self-authored)",
@@ -21,7 +21,7 @@
   },
   {
     "id": "music-memory-parlor-combat-001",
-    "title": "Goodnightmare – Procedural Combat Stem",
+    "title": "Goodnightmare \u2013 Procedural Combat Stem",
     "creator": "Codex Audio Lab",
     "source": "Generated in-session via procedural sine/noise synthesis",
     "license": "CC0 / Original work (self-authored)",
@@ -35,9 +35,9 @@
     "creator": "Codex Audio Generator",
     "source": "scripts/audio/generateAr008AdaptiveStems.js",
     "license": "CC0 / Original work (automation)",
-    "status": "generated",
+    "status": "integrated",
     "usage": "AR-008 downtown district adaptive tension layer.",
-    "notes": "Loop 64.0s at 44100Hz (2ch); seed=ar008-tension; checksum=71108a93f42f0808d5fa725e96e38ab276bcb7fa43fc0114db355226bb822325",
+    "notes": "Loop 64.0s at 44100Hz (2ch); seed=ar008-tension; checksum=71108a93f42f0808d5fa725e96e38ab276bcb7fa43fc0114db355226bb822325 | Integrated into GameConfig.audio.act2CrossroadsAmbient for downtown adaptive mixes.",
     "metadata": {
       "file": "assets/generated/audio/ar-008/ar-008-downtown-tension.wav",
       "loopStartSeconds": 0,
@@ -61,9 +61,9 @@
     "creator": "Codex Audio Generator",
     "source": "scripts/audio/generateAr008AdaptiveStems.js",
     "license": "CC0 / Original work (automation)",
-    "status": "generated",
+    "status": "integrated",
     "usage": "AR-008 downtown district adaptive combat escalation layer.",
-    "notes": "Loop 64.0s at 44100Hz (2ch); seed=ar008-combat; checksum=d96454ecec4ddcceaa2d21318faebe25a7fdf0c6daefcc1375a0784cc4550271",
+    "notes": "Loop 64.0s at 44100Hz (2ch); seed=ar008-combat; checksum=d96454ecec4ddcceaa2d21318faebe25a7fdf0c6daefcc1375a0784cc4550271 | Integrated into GameConfig.audio.act2CrossroadsAmbient for downtown adaptive mixes.",
     "metadata": {
       "file": "assets/generated/audio/ar-008/ar-008-downtown-combat.wav",
       "loopStartSeconds": 0,

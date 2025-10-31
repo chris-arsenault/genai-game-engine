@@ -167,6 +167,7 @@ export class PlayerMovementSystem extends System {
     controller.input.deductionBoard = this.input.isPressed('deductionBoard');
     controller.input.inventory = this.input.isPressed('inventory');
     controller.input.pause = this.input.isPressed('pause');
+    controller.input.dodge = this.input.isPressed('dodge');
   }
 
   /**

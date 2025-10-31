@@ -13,6 +13,7 @@
  * @property {boolean} input.deductionBoard - Tab key pressed
  * @property {boolean} input.inventory - I key pressed
  * @property {boolean} input.pause - ESC key pressed
+ * @property {boolean} input.dodge - Shift key pressed (dash / slide trigger)
  * @property {number} moveSpeed - Base movement speed (pixels/second)
  * @property {number} acceleration - How fast speed changes (pixels/second²)
  * @property {number} friction - Deceleration multiplier (0.0 to 1.0)
@@ -31,7 +32,8 @@ export class PlayerController {
       interact: false,
       deductionBoard: false,
       inventory: false,
-      pause: false
+      pause: false,
+      dodge: false
     };
 
     this.moveSpeed = moveSpeed;

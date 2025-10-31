@@ -7,6 +7,7 @@
 
 import { Transform } from '../components/Transform.js';
 import { Sprite } from '../components/Sprite.js';
+import { AnimatedSprite } from '../components/AnimatedSprite.js';
 import { PlayerController } from '../components/PlayerController.js';
 import { Collider } from '../components/Collider.js';
 import { FactionMember } from '../components/FactionMember.js';
@@ -31,17 +32,54 @@ export function createPlayerEntity(entityManager, componentRegistry, x = 0, y = 
   const transform = new Transform(x, y, 0, 1, 1);
   componentRegistry.addComponent(entityId, 'Transform', transform);
 
-  // Add Sprite component (placeholder visual)
+  // Add Sprite component (animation-driven visual)
   const sprite = new Sprite({
-    image: null, // Will be replaced with actual player sprite
+    image: null,
     width: 32,
-    height: 48,
+    height: 32,
     layer: 'entities',
     zIndex: 10,
-    color: '#00CCFF', // Detective blue placeholder
+    color: '#00CCFF',
     visible: true
   });
   componentRegistry.addComponent(entityId, 'Sprite', sprite);
+
+  const dashFrames = Array.from({ length: 8 }, (_, index) => ({ col: index, row: 1 }));
+  const slideFrames = Array.from({ length: 8 }, (_, index) => ({ col: index, row: 2 }));
+
+  const animatedSprite = new AnimatedSprite({
+    image: null,
+    imageUrl: '/generated/images/ar-003/image-ar-003-kira-evasion-pack.png',
+    frameWidth: 32,
+    frameHeight: 32,
+    defaultAnimation: 'idle',
+    animations: {
+      idle: {
+        frames: [{ col: 0, row: 1 }],
+        loop: true,
+        frameDuration: 0.25,
+      },
+      dash: {
+        frames: dashFrames,
+        loop: false,
+        frameDuration: 0.055,
+        next: 'idle',
+      },
+      dashLoop: {
+        frames: dashFrames,
+        loop: true,
+        frameDuration: 0.06,
+      },
+      slide: {
+        frames: slideFrames,
+        loop: false,
+        frameDuration: 0.06,
+        next: 'idle',
+      },
+    },
+  });
+
+  componentRegistry.addComponent(entityId, 'AnimatedSprite', animatedSprite);
 
   // Add PlayerController component
   const controller = new PlayerController({

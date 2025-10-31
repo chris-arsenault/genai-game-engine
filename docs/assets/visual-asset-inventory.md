@@ -40,6 +40,7 @@
 
 ## Session 166 Updates
 - Re-routed `image-ar-003-kira-evasion-pack` through `mcp__generate-image__generate_image`, saving the transparent dash/slide sprite sheet to `assets/generated/images/ar-003/image-ar-003-kira-evasion-pack.png` and updating manifests to `ai-generated` with GPT-Image-1 provenance so autosave stress encounters can consume the new frames immediately.
+- Session 167 wired the dash/slide pack into the new AnimatedSprite/PlayerAnimation runtime layer so player dash/slide states render from `image-ar-003-kira-evasion-pack` with Jest validation.
 - Cleared RenderOps approval queue job `c2d9170c-9d13-4e3b-941c-e1ee89d8bb68` by importing narrative-approved feedback (`reports/art/renderops-feedback.json`) and updating `reports/telemetry/renderops-approvals/...` to mark safehouse floor and branch walkway segments as `approved`.
 
 ## Session 107 Updates

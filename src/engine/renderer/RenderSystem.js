@@ -221,7 +221,27 @@ export class RenderSystem {
 
     // Draw image or color rectangle
     if (sprite.image && sprite.image instanceof HTMLImageElement && sprite.image.complete) {
-      ctx.drawImage(sprite.image, drawX, drawY, sprite.width, sprite.height);
+      const hasSourceRect =
+        Number.isFinite(sprite.sourceX) &&
+        Number.isFinite(sprite.sourceY) &&
+        Number.isFinite(sprite.sourceWidth) &&
+        Number.isFinite(sprite.sourceHeight);
+
+      if (hasSourceRect) {
+        ctx.drawImage(
+          sprite.image,
+          sprite.sourceX,
+          sprite.sourceY,
+          sprite.sourceWidth,
+          sprite.sourceHeight,
+          drawX,
+          drawY,
+          sprite.width,
+          sprite.height
+        );
+      } else {
+        ctx.drawImage(sprite.image, drawX, drawY, sprite.width, sprite.height);
+      }
     } else {
       // Fallback to colored rectangle
       ctx.fillStyle = sprite.color;

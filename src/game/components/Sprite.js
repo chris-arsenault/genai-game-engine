@@ -11,6 +11,10 @@
  * @property {boolean} visible - Whether sprite should be rendered
  * @property {number} alpha - Opacity (0.0 to 1.0)
  * @property {string} color - Fallback color if no image (e.g., "#FF0000")
+ * @property {?number} sourceX - Source X coordinate within the sprite image (pixels)
+ * @property {?number} sourceY - Source Y coordinate within the sprite image (pixels)
+ * @property {?number} sourceWidth - Source width within the sprite image (pixels)
+ * @property {?number} sourceHeight - Source height within the sprite image (pixels)
  */
 export class Sprite {
   constructor({
@@ -21,7 +25,11 @@ export class Sprite {
     zIndex = 0,
     visible = true,
     alpha = 1.0,
-    color = '#FFFFFF'
+    color = '#FFFFFF',
+    sourceX = null,
+    sourceY = null,
+    sourceWidth = null,
+    sourceHeight = null,
   } = {}) {
     this.image = image;
     this.width = width;
@@ -31,6 +39,10 @@ export class Sprite {
     this.visible = visible;
     this.alpha = alpha;
     this.color = color;
+    this.sourceX = sourceX;
+    this.sourceY = sourceY;
+    this.sourceWidth = sourceWidth;
+    this.sourceHeight = sourceHeight;
   }
 
   /**
