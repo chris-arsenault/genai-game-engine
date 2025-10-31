@@ -1,6 +1,25 @@
 {
-  "generatedAt": "2025-10-31T08:47:54.262Z",
+  "generatedAt": "2025-10-31T20:29:34.379Z",
   "stems": [
+    {
+      "file": "assets/generated/audio/ar-008/ar-008-downtown-ambient.wav",
+      "loopStartSeconds": 0,
+      "loopEndSeconds": 64,
+      "sampleRate": 44100,
+      "channels": 2,
+      "seed": "ar008-ambient",
+      "statistics": {
+        "peak": 0.7831075191497803,
+        "rms": {
+          "left": 0.2697341197531668,
+          "right": 0.26436699826438953
+        }
+      },
+      "checksumSha256": "2bef998b22f8c1d91209385ecf3efe0e6e7332f83dcf5da34e86e170b0b7e5c8",
+      "id": "music-downtown-ambient-001",
+      "title": "Downtown Pulse Ambient Stem",
+      "usage": "AR-008 downtown district adaptive ambient base layer."
+    },
     {
       "file": "assets/generated/audio/ar-008/ar-008-downtown-tension.wav",
       "loopStartSeconds": 0,

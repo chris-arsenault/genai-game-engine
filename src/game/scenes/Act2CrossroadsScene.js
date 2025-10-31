@@ -1052,8 +1052,8 @@ export class Act2CrossroadsScene {
 
     const config = GameConfig?.audio?.act2CrossroadsAmbient || {};
     const ambientOptions = {
-      trackId: config.trackId ?? 'music-act2-crossroads-ambient-001',
-      trackUrl: config.trackUrl ?? '/music/act2/crossroads-ambient.ogg',
+      trackId: config.trackId ?? 'music-downtown-ambient-001',
+      trackUrl: config.trackUrl ?? '/generated/audio/ar-008/ar-008-downtown-ambient.wav',
       baseVolume: config.baseVolume ?? 0.58,
       scramblerBoost: config.scramblerBoost ?? 0.18,
       fadeDuration: config.fadeDuration ?? 1.4,

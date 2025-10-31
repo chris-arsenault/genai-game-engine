@@ -80,5 +80,31 @@
       },
       "checksumSha256": "d96454ecec4ddcceaa2d21318faebe25a7fdf0c6daefcc1375a0784cc4550271"
     }
+  },
+  {
+    "id": "music-downtown-ambient-001",
+    "title": "Downtown Pulse Ambient Stem",
+    "creator": "Codex Audio Generator",
+    "source": "scripts/audio/generateAr008AdaptiveStems.js",
+    "license": "CC0 / Original work (automation)",
+    "status": "integrated",
+    "usage": "AR-008 downtown district adaptive ambient base layer.",
+    "notes": "Loop 64.0s at 44100Hz (2ch); seed=ar008-ambient; checksum=2bef998b22f8c1d91209385ecf3efe0e6e7332f83dcf5da34e86e170b0b7e5c8 | Integrated into GameConfig.audio.act2CrossroadsAmbient as the procedural ambient base stem.",
+    "metadata": {
+      "file": "assets/generated/audio/ar-008/ar-008-downtown-ambient.wav",
+      "loopStartSeconds": 0,
+      "loopEndSeconds": 64,
+      "sampleRate": 44100,
+      "channels": 2,
+      "seed": "ar008-ambient",
+      "statistics": {
+        "peak": 0.7831075191497803,
+        "rms": {
+          "left": 0.2697341197531668,
+          "right": 0.26436699826438953
+        }
+      },
+      "checksumSha256": "2bef998b22f8c1d91209385ecf3efe0e6e7332f83dcf5da34e86e170b0b7e5c8"
+    }
   }
 ]

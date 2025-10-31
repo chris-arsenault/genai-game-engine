@@ -1,6 +1,6 @@
 {
   "weekNumber": 1,
-  "generatedAt": "2025-10-30T13:35:23.801Z",
+  "generatedAt": "2025-10-31T20:25:57.173Z",
   "updatesApplied": 5,
   "plannedCount": 5,
   "statusBreakdown": {
@@ -41,7 +41,7 @@
       "id": "image-ar-005-tileset-neon-district",
       "status": "bespoke-in-review",
       "artist": "Axiom Studio",
-      "approvedOn": null,
+      "approvedOn": "2025-11-17",
       "receivedOn": "2025-11-15"
     }
   ],

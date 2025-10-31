@@ -2,6 +2,7 @@ import { generateAdaptiveStem } from '../../../src/game/tools/AdaptiveAudioStemG
 
 describe('AdaptiveAudioStemGenerator', () => {
   test.each([
+    ['ambient'],
     ['tension'],
     ['combat'],
   ])('generates %s stem with expected structure', (mode) => {
@@ -33,7 +34,7 @@ describe('AdaptiveAudioStemGenerator', () => {
   });
 
   test('throws for unsupported mode', () => {
-    expect(() => generateAdaptiveStem({ mode: 'ambient' })).toThrow(
+    expect(() => generateAdaptiveStem({ mode: 'stealth' })).toThrow(
       /Unsupported mode/
     );
   });

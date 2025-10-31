@@ -1,0 +1,52 @@
+{
+  "packetId": "82c2e905-408a-4784-80d1-ea142e9879b6",
+  "label": "act2-crossroads",
+  "createdAt": "2025-10-31T20:26:00.520Z",
+  "bundle": {
+    "format": "zip",
+    "relativePath": "../act2-crossroads-2025-10-31T20-26-00-520Z.zip"
+  },
+  "files": {
+    "report": "lighting-preview.json",
+    "summary": "lighting-preview-summary.md",
+    "readme": "PACKET_README.md",
+    "metadata": "metadata.json",
+    "shareManifest": "share-manifest.json",
+    "attachments": [
+      "attachments/neon-glow-approvals-json-summary.json",
+      "attachments/neon-glow-approvals-markdown-summary.md"
+    ]
+  },
+  "summary": {
+    "total": 12,
+    "statusCounts": {
+      "ok": 12
+    },
+    "metadataDriftCount": 0,
+    "skippedCount": 0
+  },
+  "actionableSegmentCount": 0,
+  "actionableSegments": [],
+  "attachments": [
+    {
+      "filename": "attachments/neon-glow-approvals-json-summary.json",
+      "label": "Neon glow approvals — JSON summary",
+      "originalPath": "/home/tsonu/src/genai-game-engine/reports/art/neon-glow-approval-status.json",
+      "sizeBytes": 25054,
+      "checksumSha256": "df23b287d04dfdc4c4c71029bc3990f704482c5eb962f99b74c0fadf70a3d7bf"
+    },
+    {
+      "filename": "attachments/neon-glow-approvals-markdown-summary.md",
+      "label": "Neon glow approvals — Markdown summary",
+      "originalPath": "/home/tsonu/src/genai-game-engine/reports/art/neon-glow-approval-status.md",
+      "sizeBytes": 9169,
+      "checksumSha256": "594216dbcf24027e0f0b04516c74a67767cfef99690a14b52954d48caabe68ae"
+    }
+  ],
+  "instructions": [
+    "Share the generated ZIP bundle with the RenderOps team via the secure art handoff channel.",
+    "Include PACKET_README.md in the communication so context and actionable segments are visible up front.",
+    "After RenderOps responds, update the placeholder audit and regenerate the packet if art tweaks were requested.",
+    "Flag the `attachments/` directory when sharing so supplemental references are reviewed alongside the metrics."
+  ]
+}

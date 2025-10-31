@@ -5,11 +5,11 @@ const DEFAULT_CHANNELS = 2;
 const DEFAULT_DURATION_SECONDS = 64;
 
 /**
- * Generate an adaptive audio stem for tension/combat layers.
+ * Generate an adaptive audio stem for ambient/tension/combat layers.
  * Returns a PCM WAV buffer plus metadata for downstream ingestion.
  *
  * @param {object} options
- * @param {'tension'|'combat'} options.mode - Stem flavour to generate.
+ * @param {'ambient'|'tension'|'combat'} options.mode - Stem flavour to generate.
  * @param {number} [options.durationSeconds=64] - Loop duration in seconds.
  * @param {number} [options.sampleRate=44100] - PCM sample rate.
  * @param {number} [options.channels=2] - Channel count (1 or 2).
@@ -25,7 +25,7 @@ export function generateAdaptiveStem(options) {
     seed = 'ar008',
   } = options ?? {};
 
-  if (mode !== 'tension' && mode !== 'combat') {
+  if (mode !== 'ambient' && mode !== 'tension' && mode !== 'combat') {
     throw new Error(`generateAdaptiveStem: Unsupported mode "${mode}"`);
   }
   if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) {
@@ -46,10 +46,14 @@ export function generateAdaptiveStem(options) {
 
   for (let i = 0; i < totalSamples; i += 1) {
     const t = i / sampleRate;
-    const baseSample =
-      mode === 'tension'
-        ? tensionSample(t, i, sampleRate, prng)
-        : combatSample(t, i, sampleRate, prng);
+    let baseSample;
+    if (mode === 'ambient') {
+      baseSample = ambientSample(t, i, sampleRate, prng);
+    } else if (mode === 'tension') {
+      baseSample = tensionSample(t, i, sampleRate, prng);
+    } else {
+      baseSample = combatSample(t, i, sampleRate, prng);
+    }
     const enveloped = baseSample * envelopes[i];
     left[i] = clamp(enveloped, -1, 1);
     if (right) {
@@ -76,6 +80,32 @@ export function generateAdaptiveStem(options) {
       checksumSha256: createHash('sha256').update(wavBuffer).digest('hex'),
     },
   };
+}
+
+function ambientSample(t, index, sampleRate, prng) {
+  const padFreq = 48; // low-mid pad fundamental
+  const subFreq = 24; // subharmonic support
+  const shimmerFreq = 640; // airy shimmer overtone
+
+  const drift = 0.55 + 0.45 * Math.sin(2 * Math.PI * 0.015 * t);
+  const pad =
+    0.5 * Math.sin(2 * Math.PI * padFreq * t + Math.sin(t * 0.12)) * drift;
+  const sub =
+    0.3 * Math.sin(2 * Math.PI * subFreq * t + Math.cos(t * 0.08)) * 0.65;
+  const shimmer =
+    0.12 *
+    Math.sin(2 * Math.PI * shimmerFreq * t + Math.sin(t * 0.5)) *
+    (0.25 + 0.75 * Math.sin(2 * Math.PI * 0.05 * t) ** 2);
+  const filteredNoise = (prng() * 2 - 1) * 0.03;
+
+  if (index === 0) {
+    ambientSample._last = 0;
+  }
+
+  const raw = pad + sub + shimmer + filteredNoise;
+  const smoothed = 0.75 * ambientSample._last + 0.25 * raw;
+  ambientSample._last = smoothed;
+  return smoothed;
 }
 
 function tensionSample(t, index, sampleRate, prng) {

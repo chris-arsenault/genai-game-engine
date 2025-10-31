@@ -225,8 +225,8 @@ export const GameConfig = {
     },
 
     act2CrossroadsAmbient: {
-      trackId: 'music-act2-crossroads-ambient-001',
-      trackUrl: '/music/act2/crossroads-ambient.ogg',
+      trackId: 'music-downtown-ambient-001',
+      trackUrl: '/generated/audio/ar-008/ar-008-downtown-ambient.wav',
       baseVolume: 0.6,
       scramblerBoost: 0.18,
       fadeDuration: 1.6,

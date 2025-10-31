@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Generates the AR-008 adaptive music stems (tension/combat) using procedural synthesis.
+ * Generates the AR-008 adaptive music stems (ambient/tension/combat) using procedural synthesis.
  * Outputs loopable WAV files under assets/generated/audio/ar-008/ and updates the music
  * request manifest with metadata for adaptive playback.
  */
@@ -93,7 +93,26 @@ function upsertRequest(entries, record) {
   if (index === -1) {
     entries.push(record);
   } else {
-    entries[index] = { ...entries[index], ...record };
+    const existing = entries[index] ?? {};
+    const merged = { ...existing, ...record };
+
+    if (
+      existing.status &&
+      existing.status !== 'generated' &&
+      record.status === 'generated'
+    ) {
+      merged.status = existing.status;
+    }
+
+    if (existing.notes && record.notes) {
+      const existingSuffix = existing.notes.split('|').slice(1).join('|').trim();
+      if (existingSuffix.length > 0) {
+        const baseNote = record.notes.split('|')[0].trim();
+        merged.notes = `${baseNote} | ${existingSuffix}`.trim();
+      }
+    }
+
+    entries[index] = merged;
   }
   return entries;
 }
@@ -135,6 +154,13 @@ async function main() {
   await ensureDir(options.outputDir);
 
   const stems = [
+    {
+      mode: 'ambient',
+      filename: 'ar-008-downtown-ambient.wav',
+      description: 'AR-008 downtown district adaptive ambient base layer.',
+      requestId: 'music-downtown-ambient-001',
+      title: 'Downtown Pulse Ambient Stem',
+    },
     {
       mode: 'tension',
       filename: 'ar-008-downtown-tension.wav',

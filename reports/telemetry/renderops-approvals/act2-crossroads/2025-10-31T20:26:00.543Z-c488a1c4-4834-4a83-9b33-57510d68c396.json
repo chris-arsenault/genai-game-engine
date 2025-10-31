@@ -1,0 +1,38 @@
+{
+  "jobId": "c488a1c4-4834-4a83-9b33-57510d68c396",
+  "queue": "renderops-lighting",
+  "status": "ready_for_ack",
+  "createdAt": "2025-10-31T20:26:00.543Z",
+  "packet": {
+    "id": "82c2e905-408a-4784-80d1-ea142e9879b6",
+    "label": "act2-crossroads",
+    "packetDir": "/home/tsonu/src/genai-game-engine/reports/art/renderops-packets/act2-crossroads-2025-10-31T20-26-00-520Z",
+    "shareManifestPath": "/home/tsonu/src/genai-game-engine/reports/art/renderops-packets/act2-crossroads-2025-10-31T20-26-00-520Z/share-manifest.json",
+    "deliveryManifestPath": "/home/tsonu/src/genai-game-engine/reports/art/renderops-packets/act2-crossroads-2025-10-31T20-26-00-520Z-delivery.json",
+    "instructions": [
+      "Share the generated ZIP bundle with the RenderOps team via the secure art handoff channel.",
+      "Include PACKET_README.md in the communication so context and actionable segments are visible up front.",
+      "After RenderOps responds, update the placeholder audit and regenerate the packet if art tweaks were requested.",
+      "Flag the `attachments/` directory when sharing so supplemental references are reviewed alongside the metrics."
+    ],
+    "summary": {
+      "total": 12,
+      "statusCounts": {
+        "ok": 12
+      },
+      "metadataDriftCount": 0,
+      "skippedCount": 0
+    }
+  },
+  "actionableSegments": [],
+  "delivery": {
+    "bundle": {
+      "format": "zip",
+      "fileName": "act2-crossroads-2025-10-31T20-26-00-520Z.zip",
+      "absolutePath": "/home/tsonu/src/genai-game-engine/reports/art/renderops-packets/act2-crossroads-2025-10-31T20-26-00-520Z.zip",
+      "checksumSha256": "04ddfbf4367600d18064b344a92d342f2ba83cecd016ca967ceba6216f0d38ae",
+      "sizeBytes": 11896
+    },
+    "attachmentCount": 2
+  }
+}
