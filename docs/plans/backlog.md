@@ -2836,7 +2836,7 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Detective coat, distinctive look
   - 4-direction or 8-direction movement
 - **File**: `assets/images/requests.json`
-- **Status**: In Progress — bespoke idle/walk/run sheet delivered; rerun normalization/config scripts and traversal QA before swapping into runtime.
+- **Status**: Ready for Review — bespoke idle/walk/run sheet delivered, normalization/config scripts rerun, traversal overlay Playwright smokes green, and dash/slide loops validated via PlayerAnimationSystem Jest coverage.
 
 ### High Priority Assets (P1 - Required for M3-M6)
 
