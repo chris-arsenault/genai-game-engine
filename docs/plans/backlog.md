@@ -5,8 +5,8 @@
 
 ## Document Overview
 
-**Version**: 1.2
-**Last Updated**: 2025-10-31
+**Version**: 1.3
+**Last Updated**: 2025-10-31 (Session 173 backlog alignment)
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
@@ -20,10 +20,15 @@
 | AR-050 | P0 | In Progress | Visual asset sourcing pipeline now covers Act 2 Crossroads selection conduit/pad, checkpoint glow/plaza, safehouse arc, boundary walls, and column beam overlays with CC0/CC-BY references captured in manifests; Session 112 calibrated tint/alpha parameters (~0.13 columns/conduits, ~0.75 boundaries), Session 113 added a lighting preview harness plus queued the AR-001–AR-005 generation batch, Session 114 boosted conduit/glow/column luminance so previewed segments meet thresholds, Session 115 delivered placeholder atlases for AR-001–AR-005, Session 116 layered RenderOps packet/placeholder audit automation, Session 117 shipped prioritized replacement plans, Session 118 produced a four-week bespoke art sprint schedule plus delivery staging CLI, Session 121 automated week-one bespoke status ingestion with licensing approvals recorded in manifests/reports, Session 171 added TRACK_BESPOKE_ROOT overrides plus Jest coverage to keep `scripts/art/trackBespokeDeliverables.js` ingest sweeps reproducible, and Session 172 generated safehouse floor, briefing pad, and branch walkway textures via GPT-Image-1 with manifests flipped to `ai-generated`. | Resume RenderOps ingestion once SaveManager/WorldState parity wraps; align neon signage sign-off with narrative before the next bespoke batch, integrate the new floor/pad/walkway assets into lighting previews, and run the refreshed CLI/Playwright smoke in nightly automation. |
 | TUT-201 | P0 | Completed | Tutorial case blocked at step 3 (`evidence_detection`) because legacy scene entities bypassed ECS detection events. | ECS-aligned tutorial scene entities shipped Session #51; re-run tutorial smoke tests after combat audio validation. |
 | AUDIO-351 | P0 | Completed | Validate live combat/disguise trigger routing through `AmbientSceneAudioController` using real combat loop events. | Adaptive audio routing now responds to gameplay emits; telemetry verified by Jest/Playwright suites and new infiltration benchmark. |
-| PERF-214 | P1 | Pending | Browser-level performance profiling for adaptive audio + overlay interactions to confirm <16 ms frame time budget. | Run Chromium/Firefox performance audits with combat/stealth transitions, log hotspots, and file perf follow-ups as needed. |
-| UX-173 | P1 | Pending | Improve debug audio overlay ergonomics (keyboard shortcuts, focus management). | Prototype keyboard navigation + focus traps, add Jest/Playwright coverage for accessibility interactions. |
+| PERF-214 | P1 | Completed | Profiling harness restored; `npm run profile` runs without module errors and captures infiltration telemetry. | Monitor profiling harness results in CI and schedule the next performance sweep after overlay integration lands. |
+| UX-173 | P1 | Completed | Debug audio overlay now fully keyboard navigable with Shift+Alt+A shortcut, focus trap, and Playwright coverage. | Continue watching the automated Playwright spec for regressions during future overlay changes. |
 
 **Next Session Focus**: Drive the neon district approval loop entirely through the RenderOps automation scripts (`scripts/art/packageRenderOpsLighting.js`, `scripts/art/trackBespokeDeliverables.js`), extend SaveManager telemetry hooks so CI captures every budget regression automatically, and queue the next lighting feedback pass via generated packets—no manual reviews or sign-off meetings.
+
+### Session #173 Backlog Maintenance
+
+- Realigned `docs/plans/backlog.md` with MCP backlog statuses: PERF-214 and UX-173 marked as completed with follow-up monitoring notes.
+- No new content or asset generation performed; scope limited to documentation/backlog hygiene.
 
 ### Session #172 Backlog Updates
 
