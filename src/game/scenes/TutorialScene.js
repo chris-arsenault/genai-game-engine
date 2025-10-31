@@ -26,6 +26,7 @@ import { QuestTriggerRegistry } from '../quests/QuestTriggerRegistry.js';
 import { QUEST_001_HOLLOW_CASE } from '../data/quests/act1Quests.js';
 import { createNPCEntity } from '../entities/NPCEntity.js';
 import { createMartinezDialogue } from '../data/dialogues/MartinezWitnessDialogue.js';
+import { createMrsChenDialogue } from '../data/dialogues/MrsChenWitnessDialogue.js';
 
 const TUTORIAL_TRIGGER_IDS = Object.freeze({
   DETECTIVE_VISION: 'tutorial_detective_vision_training',
@@ -293,15 +294,20 @@ export class TutorialScene {
       return;
     }
 
-    if (typeof dialogueSystem.getDialogueTree === 'function') {
-      const existing = dialogueSystem.getDialogueTree('martinez_witness_interview');
-      if (existing) {
-        return;
+    const ensureDialogue = (dialogueId, factory) => {
+      if (typeof dialogueSystem.getDialogueTree === 'function') {
+        const existing = dialogueSystem.getDialogueTree(dialogueId);
+        if (existing) {
+          return;
+        }
       }
-    }
 
-    const dialogueTree = createMartinezDialogue();
-    dialogueSystem.registerDialogueTree(dialogueTree);
+      const tree = factory();
+      dialogueSystem.registerDialogueTree(tree);
+    };
+
+    ensureDialogue('martinez_witness_interview', createMartinezDialogue);
+    ensureDialogue('mrs_chen_witness_interview', createMrsChenDialogue);
   }
 
   /**

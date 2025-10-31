@@ -2137,6 +2137,8 @@ _Progress 2025-11-09 (Session #139 audio/perf polish): Augmented performanceSnap
 - **Tags**: `narrative`, `investigation`
 - **Effort**: 5 hours
 - **Dependencies**: M2-004, narrative team input
+- **Status**: ✅ Completed — tutorial case data, witnesses, and theory graph now mirror the Act 1 M1.1 quest specification.
+- **Latest Progress**: 2025-11-03 session refreshed `tutorialCase.js`, aligned Martinez/Mrs. Chen dialogues, and validated structure via `npm test -- tutorialCase`.
 - **Description**: "The Hollow Case" tutorial case
 - **Files**:
   - `src/game/data/cases/tutorialCase.js`
