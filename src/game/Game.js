@@ -1198,6 +1198,9 @@ export class Game {
     );
 
     this.playerEntityId = sceneData.playerId;
+    if (this.districtTravelOverlay && typeof this.districtTravelOverlay.setPlayerEntityId === 'function') {
+      this.districtTravelOverlay.setPlayerEntityId(this.playerEntityId);
+    }
     this.activeScene = {
       id: sceneData.sceneName || 'act1_hollow_case',
       entities: Array.isArray(sceneData.sceneEntities) ? [...sceneData.sceneEntities] : [],

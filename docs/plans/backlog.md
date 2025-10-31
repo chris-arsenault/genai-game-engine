@@ -47,6 +47,18 @@
 - Added helper coverage under `tests/game/ui/helpers/districtTravelViewModel.test.js` to guard route/blocker summaries.
 - Verification: `npm test -- districtTravelViewModel`.
 
+### Session #153 Backlog Updates
+
+#### M3-022: District Access Evaluation Utilities
+- Hooked `navigation:movement_blocked` events into `DistrictTravelOverlay` so traversal denials automatically reveal blockers and focus the relevant district entry (`src/game/ui/DistrictTravelOverlay.js`).
+- Authored focused automation (`tests/game/ui/DistrictTravelOverlay.events.test.js`, `tests/e2e/district-travel-traversal.spec.js`) to guard the new gating flow across Jest and Playwright.
+- Verification: `npm test -- --runTestsByPath tests/game/ui/DistrictTravelOverlay.events.test.js`, `npx playwright test tests/e2e/district-travel-traversal.spec.js`.
+
+#### M3-013: WorldStateManager Implementation
+- Extended SaveManager parity coverage so district and NPC slices flow through snapshot/hydration alongside legacy collectors (`tests/game/managers/SaveManager.test.js`).
+- Added cross-system validation ensuring traversal gating Playwright smoke exercises the expanded world-state snapshot during traversal denial scenarios.
+- Verification: `npm test -- --runTestsByPath tests/game/managers/SaveManager.test.js tests/game/ui/DistrictTravelOverlay.events.test.js`, `npx playwright test tests/e2e/district-travel-traversal.spec.js`.
+
 #### M3-013: WorldStateManager Implementation
 - Added `npcSlice` with reducers/selectors for recognition, suspicion, alert, and interview events plus snapshot/hydration support (`src/game/state/slices/npcSlice.js`).
 - Extended `WorldStateStore` event wiring and snapshot tests so NPC state is persisted and restored (`tests/game/state/worldStateStore.test.js`, `tests/game/state/npcSlice.test.js`).

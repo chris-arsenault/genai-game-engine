@@ -353,6 +353,126 @@ describe('SaveManager', () => {
       managerWithStore.cleanup();
     });
 
+    test('persists and hydrates district and npc slices via world state store', () => {
+      const districtSnapshot = {
+        byId: {
+          neon_districts: {
+            id: 'neon_districts',
+            name: 'Neon Districts',
+            tier: 'foundation',
+            access: {
+              defaultUnlocked: true,
+              fastTravelEnabled: true,
+              requirements: {},
+              restrictions: [],
+              unlockedRoutes: [],
+              restrictionLog: [],
+            },
+            analytics: {
+              lastLockdownAt: 123456,
+            },
+          },
+        },
+        changeLog: [
+          {
+            type: 'registered',
+            districtId: 'neon_districts',
+            timestamp: 42,
+          },
+        ],
+        lastUpdatedAt: 123456,
+      };
+
+      const npcSnapshot = {
+        byId: {
+          npc_echo: {
+            id: 'npc_echo',
+            name: 'Echo Operative',
+            factionId: 'wraith_network',
+            status: 'alert',
+            knowsPlayer: true,
+            interactions: {
+              interviews: 1,
+              recognitions: 0,
+              witnessedCrimes: 0,
+            },
+            suspicion: {
+              active: false,
+              reason: null,
+              updatedAt: null,
+            },
+            alert: {
+              active: true,
+              reason: 'security_breach',
+              updatedAt: 987654,
+            },
+            lastInteractionAt: 987654,
+            history: [
+              {
+                type: 'alerted',
+                reason: 'security_breach',
+                timestamp: 987654,
+              },
+            ],
+            tags: ['resistance'],
+          },
+        },
+        changeLog: [
+          {
+            type: 'alerted',
+            npcId: 'npc_echo',
+            reason: 'security_breach',
+            timestamp: 987654,
+          },
+        ],
+        lastUpdatedAt: 987654,
+      };
+
+      const snapshot = {
+        storyFlags: {},
+        quests: {},
+        factions: {},
+        tutorial: {},
+        tutorialComplete: false,
+        dialogue: {},
+        inventory: { items: [], equipped: {} },
+        districts: districtSnapshot,
+        npcs: npcSnapshot,
+      };
+
+      const worldStateStore = {
+        snapshot: jest.fn(() => snapshot),
+        hydrate: jest.fn(),
+      };
+
+      const managerWithStore = new SaveManager(eventBus, {
+        ...mockManagers,
+        worldStateStore,
+      });
+      managerWithStore.init();
+
+      const result = managerWithStore.saveGame('district_npc_slot');
+      expect(result).toBe(true);
+
+      const saveKey = managerWithStore.config.storageKeyPrefix + 'district_npc_slot';
+      const saveData = JSON.parse(localStorageMock.store[saveKey]);
+
+      expect(saveData.gameData.districts).toEqual(districtSnapshot);
+      expect(saveData.gameData.npcs).toEqual(npcSnapshot);
+
+      worldStateStore.snapshot.mockClear();
+      managerWithStore.loadGame('district_npc_slot');
+
+      expect(worldStateStore.hydrate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          districts: districtSnapshot,
+          npcs: npcSnapshot,
+        })
+      );
+
+      managerWithStore.cleanup();
+    });
+
     test('logs parity warning when snapshot differs from legacy data', () => {
       const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 

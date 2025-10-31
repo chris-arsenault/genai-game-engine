@@ -49,6 +49,11 @@ export class DistrictTravelOverlay {
     this.ctx = canvas.getContext('2d');
     this.eventBus = eventBus;
     this.store = options.store ?? null;
+    this.playerEntityId = Number.isFinite(options.playerEntityId)
+      ? options.playerEntityId
+      : null;
+    this.traversalNoticeDurationMs = options.traversalNoticeDurationMs ?? 6000;
+    this.traversalCooldownMs = options.traversalCooldownMs ?? 750;
 
     this.visible = false;
     this.fadeSpeed = options.fadeSpeed ?? 6;
@@ -58,6 +63,9 @@ export class DistrictTravelOverlay {
     this.entries = [];
     this.selectedIndex = 0;
     this._lastSnapshotSignature = null;
+    this._lastTraversalNotice = null;
+    this.lastTraversalNotice = null;
+    this._lastTraversalDeniedAt = 0;
 
     this.layout = {
       width: options.width ?? 720,
@@ -128,6 +136,7 @@ export class DistrictTravelOverlay {
     this._offToggle = null;
     this._offShow = null;
     this._offHide = null;
+    this._offTraversalDenied = null;
   }
 
   init() {
@@ -159,6 +168,20 @@ export class DistrictTravelOverlay {
       this._offHide = this.eventBus.on('ui:travel:hide', (payload = {}) => {
         this.hide(payload.source ?? 'event:hide');
       });
+      this._offTraversalDenied = this.eventBus.on(
+        'navigation:movement_blocked',
+        (payload = {}) => {
+          this._handleTraversalDenied(payload);
+        }
+      );
+    }
+  }
+
+  setPlayerEntityId(entityId) {
+    if (Number.isFinite(entityId)) {
+      this.playerEntityId = entityId;
+    } else {
+      this.playerEntityId = null;
     }
   }
 
@@ -327,6 +350,18 @@ export class DistrictTravelOverlay {
       x + width - PANEL_PADDING,
       y + PANEL_PADDING + 2
     );
+
+    const notice = this._getActiveTraversalNotice();
+    if (notice) {
+      ctx.font = header.subtitleFont;
+      ctx.fillStyle = header.subtitleColor;
+      ctx.textAlign = 'left';
+      ctx.fillText(
+        this._formatTraversalNotice(notice),
+        x + PANEL_PADDING,
+        y + PANEL_PADDING + 20
+      );
+    }
     ctx.restore();
   }
 
@@ -572,7 +607,14 @@ export class DistrictTravelOverlay {
       this._unsubscribeStore();
       this._unsubscribeStore = null;
     }
-    for (const off of [this._offMoveUp, this._offMoveDown, this._offToggle, this._offShow, this._offHide]) {
+    for (const off of [
+      this._offMoveUp,
+      this._offMoveDown,
+      this._offToggle,
+      this._offShow,
+      this._offHide,
+      this._offTraversalDenied,
+    ]) {
       if (typeof off === 'function') {
         off();
       }
@@ -582,6 +624,183 @@ export class DistrictTravelOverlay {
     this._offToggle = null;
     this._offShow = null;
     this._offHide = null;
+    this._offTraversalDenied = null;
+  }
+
+  _handleTraversalDenied(payload = {}) {
+    if (!payload || typeof payload !== 'object') {
+      return;
+    }
+
+    if (this.playerEntityId != null && payload.entityId !== this.playerEntityId) {
+      return;
+    }
+
+    const reason = payload.reason ?? 'unknown';
+    if (reason !== 'locked_surface' && reason !== 'outside_nav_mesh') {
+      return;
+    }
+
+    const timestamp = this._now();
+    const withinCooldown = timestamp - this._lastTraversalDeniedAt < this.traversalCooldownMs;
+    this._lastTraversalDeniedAt = timestamp;
+    const shouldReveal = !withinCooldown || !this.visible;
+
+    this.refresh();
+
+    const targetIndex = this._resolveTraversalTargetIndex(payload);
+    if (targetIndex != null && Number.isFinite(targetIndex)) {
+      this.selectedIndex = clamp(targetIndex, 0, Math.max(0, this.entries.length - 1));
+    }
+
+    const surfaceTags = Array.isArray(payload.surfaceTags)
+      ? payload.surfaceTags.map((tag) => String(tag))
+      : [];
+
+    const notice = {
+      reason,
+      surfaceId: payload.surfaceId ?? null,
+      surfaceTags,
+      sceneId: payload.sceneId ?? null,
+      timestamp,
+      expiresAt: timestamp + this.traversalNoticeDurationMs,
+    };
+
+    this._lastTraversalNotice = notice;
+    this.lastTraversalNotice = {
+      reason: notice.reason,
+      surfaceId: notice.surfaceId,
+      surfaceTags: [...notice.surfaceTags],
+      sceneId: notice.sceneId,
+      timestamp: notice.timestamp,
+    };
+
+    if (shouldReveal) {
+      this.show('event:traversal_denied');
+    }
+  }
+
+  _resolveTraversalTargetIndex(payload = {}) {
+    if (!Array.isArray(this.entries) || this.entries.length === 0) {
+      return null;
+    }
+
+    const districtId = payload.districtId ?? null;
+    if (districtId) {
+      const matchIndex = this.entries.findIndex(
+        (entry) => entry.districtId === districtId
+      );
+      if (matchIndex !== -1) {
+        return matchIndex;
+      }
+    }
+
+    const surfaceId = payload.surfaceId ?? null;
+    if (surfaceId) {
+      const matchIndex = this.entries.findIndex((entry) => {
+        const hasRoute = Array.isArray(entry.routes)
+          ? entry.routes.some((route) => route.id === surfaceId)
+          : false;
+        const hasRestriction = Array.isArray(entry.restrictions)
+          ? entry.restrictions.some((restriction) => restriction.id === surfaceId)
+          : false;
+        return hasRoute || hasRestriction;
+      });
+      if (matchIndex !== -1) {
+        return matchIndex;
+      }
+    }
+
+    const surfaceTags = Array.isArray(payload.surfaceTags)
+      ? payload.surfaceTags.map((tag) => String(tag).toLowerCase())
+      : [];
+
+    if (surfaceTags.length) {
+      const tagMatchIndex = this.entries.findIndex((entry) => {
+        if (Array.isArray(entry.routes)) {
+          const matchRoute = entry.routes.some((route) => {
+            if (!route) {
+              return false;
+            }
+            const type = String(route.type || '').toLowerCase();
+            const routeId = route.id ? String(route.id).toLowerCase() : null;
+            if (surfaceTags.includes(type)) {
+              return true;
+            }
+            if (routeId && surfaceTags.includes(routeId)) {
+              return true;
+            }
+            return false;
+          });
+          if (matchRoute) {
+            return true;
+          }
+        }
+
+        if (Array.isArray(entry.blockers)) {
+          const blockerMatch = entry.blockers.some((blocker) => {
+            if (typeof blocker !== 'string') {
+              return false;
+            }
+            const lower = blocker.toLowerCase();
+            return surfaceTags.some((tag) => lower.includes(tag));
+          });
+          if (blockerMatch) {
+            return true;
+          }
+        }
+
+        return false;
+      });
+
+      if (tagMatchIndex !== -1) {
+        return tagMatchIndex;
+      }
+    }
+
+    const lockedIndex = this.entries.findIndex((entry) => !entry.status?.accessible);
+    if (lockedIndex !== -1) {
+      return lockedIndex;
+    }
+
+    return null;
+  }
+
+  _getActiveTraversalNotice() {
+    if (!this._lastTraversalNotice) {
+      return null;
+    }
+    if (this._lastTraversalNotice.expiresAt <= this._now()) {
+      this._lastTraversalNotice = null;
+      return null;
+    }
+    return this._lastTraversalNotice;
+  }
+
+  _formatTraversalNotice(notice) {
+    const parts = [];
+    if (notice.reason === 'locked_surface') {
+      parts.push('Traversal blocked');
+    } else if (notice.reason === 'outside_nav_mesh') {
+      parts.push('Outside navigation mesh');
+    } else {
+      parts.push('Traversal denied');
+    }
+
+    if (Array.isArray(notice.surfaceTags) && notice.surfaceTags.length) {
+      parts.push(`tags: ${notice.surfaceTags.join(', ')}`);
+    } else if (notice.surfaceId) {
+      parts.push(`surface: ${notice.surfaceId}`);
+    }
+
+    return parts.join(' · ');
+  }
+
+  _now() {
+    if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
+      return performance.now();
+    }
+    return Date.now();
   }
 }
 
