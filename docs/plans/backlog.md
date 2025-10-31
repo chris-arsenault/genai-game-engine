@@ -17,13 +17,23 @@
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
 | BUG-201 | P0 | Completed | Collision system crashes on load when Collider metadata overwrites shape definitions (`shapeA`/`shapeB` null). Refactoring Collider component to preserve `shapeType` while keeping ECS registration stable; adding guards/tests. | Land collider refactor + guard rails, expand physics regression tests, and run targeted Jest suites (`CollisionSystem`, `physics/integration`, `integration-full`) before CI handoff. |
-| AR-050 | P0 | Pending | Visual asset sourcing pipeline now covers Act 2 Crossroads selection conduit/pad, checkpoint glow/plaza, safehouse arc, boundary walls, and column beam overlays with CC0/CC-BY references captured in manifests; Session 112 calibrated tint/alpha parameters (~0.13 columns/conduits, ~0.75 boundaries), Session 113 added a lighting preview harness plus queued the AR-001–AR-005 generation batch, Session 114 boosted conduit/glow/column luminance so previewed segments meet thresholds, Session 115 delivered placeholder atlases for AR-001–AR-005, Session 116 layered RenderOps packet/placeholder audit automation, Session 117 shipped prioritized replacement plans, Session 118 produced a four-week bespoke art sprint schedule plus delivery staging CLI, and Session 121 automated week-one bespoke status ingestion with licensing approvals recorded in manifests/reports. | Resume RenderOps ingestion once SaveManager/WorldState parity wraps; align neon signage sign-off with narrative before the next bespoke batch. |
+| AR-050 | P0 | In Progress | Visual asset sourcing pipeline now covers Act 2 Crossroads selection conduit/pad, checkpoint glow/plaza, safehouse arc, boundary walls, and column beam overlays with CC0/CC-BY references captured in manifests; Session 112 calibrated tint/alpha parameters (~0.13 columns/conduits, ~0.75 boundaries), Session 113 added a lighting preview harness plus queued the AR-001–AR-005 generation batch, Session 114 boosted conduit/glow/column luminance so previewed segments meet thresholds, Session 115 delivered placeholder atlases for AR-001–AR-005, Session 116 layered RenderOps packet/placeholder audit automation, Session 117 shipped prioritized replacement plans, Session 118 produced a four-week bespoke art sprint schedule plus delivery staging CLI, Session 121 automated week-one bespoke status ingestion with licensing approvals recorded in manifests/reports, and Session 171 added TRACK_BESPOKE_ROOT overrides plus Jest coverage to keep `scripts/art/trackBespokeDeliverables.js` ingest sweeps reproducible. | Resume RenderOps ingestion once SaveManager/WorldState parity wraps; align neon signage sign-off with narrative before the next bespoke batch, and run the refreshed CLI/Playwright smoke in nightly automation. |
 | TUT-201 | P0 | Completed | Tutorial case blocked at step 3 (`evidence_detection`) because legacy scene entities bypassed ECS detection events. | ECS-aligned tutorial scene entities shipped Session #51; re-run tutorial smoke tests after combat audio validation. |
 | AUDIO-351 | P0 | Completed | Validate live combat/disguise trigger routing through `AmbientSceneAudioController` using real combat loop events. | Adaptive audio routing now responds to gameplay emits; telemetry verified by Jest/Playwright suites and new infiltration benchmark. |
 | PERF-214 | P1 | Pending | Browser-level performance profiling for adaptive audio + overlay interactions to confirm <16 ms frame time budget. | Run Chromium/Firefox performance audits with combat/stealth transitions, log hotspots, and file perf follow-ups as needed. |
 | UX-173 | P1 | Pending | Improve debug audio overlay ergonomics (keyboard shortcuts, focus management). | Prototype keyboard navigation + focus traps, add Jest/Playwright coverage for accessibility interactions. |
 
 **Next Session Focus**: Drive the neon district approval loop entirely through the RenderOps automation scripts (`scripts/art/packageRenderOpsLighting.js`, `scripts/art/trackBespokeDeliverables.js`), extend SaveManager telemetry hooks so CI captures every budget regression automatically, and queue the next lighting feedback pass via generated packets—no manual reviews or sign-off meetings.
+
+### Session #171 Backlog Updates
+
+#### CORE-301: Act 1 Scene Visual Bring-Up
+- Exported palette summary metadata from `loadAct1Scene` and recorded automated smoke coverage (`tests/game/scenes/Act1Scene.palette.test.js`, `tests/e2e/act1-palette-smoke.spec.js`) so the tuned neon palette remains verifiable in CI.
+- Verification: `npm test -- Act1Scene.palette.test.js` (covered via suite) and `npm run test:e2e -- tests/e2e/act1-palette-smoke.spec.js`.
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- Added `TRACK_BESPOKE_ROOT` overrides to `scripts/art/trackBespokeDeliverables.js` and paired Jest coverage (`tests/scripts/trackBespokeDeliverables.test.js`) to keep bespoke ingestion reproducible inside automation runs.
+- Verification: `npm test -- trackBespokeDeliverables.test.js`.
 
 ### Session #166 Backlog Updates
 
@@ -870,7 +880,8 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Tags**: `gameplay`, `rendering`
 - **Effort**: 4 hours
 - **Dependencies**: Layered renderer dynamic layer support (Session #26)
-- **Status**: In Progress — Scene decal, caution tape, and ambient props implemented; needs browser smoke for palette tuning.
+- **Status**: In Review — Scene decal, caution tape, and ambient props implemented; automated palette smoke now verifies the tuned crime scene colors.
+- **Progress (Session #171)**: Exposed palette summary metadata from `loadAct1Scene` and added Jest (`tests/game/scenes/Act1Scene.palette.test.js`) plus Playwright (`tests/e2e/act1-palette-smoke.spec.js`) coverage so the neon crime scene palette stays locked in CI.
 - **Description**: Ensure the Act 1 investigative scene presents readable context on load (ground decal, boundaries, NPC silhouettes, crime scene marker) so players immediately understand where they are.
 - **Acceptance Criteria**:
   - Crime scene trigger area renders using the ground layer and remains aligned as the camera moves.

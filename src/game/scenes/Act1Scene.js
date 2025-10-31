@@ -117,6 +117,14 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus, 
 
   const sceneEntities = [];
   const cleanupHandlers = [];
+  const paletteSummary = {
+    groundDecal: null,
+    cautionTape: [],
+    evidenceMarkers: [],
+    ambientProps: [],
+    crimeSceneArea: null,
+    boundaries: [],
+  };
   const questTriggerToolkit = new TriggerMigrationToolkit(componentRegistry, eventBus);
 
   // 1. Create player at spawn point
@@ -135,13 +143,22 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus, 
   }
 
   // 1b. Dress the crime scene ground decal, caution markers, and ambient props
-  const visualSetPieces = createCrimeSceneVisuals(entityManager, componentRegistry);
+  const visualSetPieces = createCrimeSceneVisuals(
+    entityManager,
+    componentRegistry,
+    paletteSummary
+  );
   sceneEntities.push(...visualSetPieces);
   console.log(`[Act1Scene] Visual set dressing entities created: ${visualSetPieces.length}`);
 
   // 2. Create crime scene area trigger
   // This trigger completes objective 1: "Arrive at the crime scene"
-  const areaTriggerId = createCrimeSceneArea(entityManager, componentRegistry, eventBus);
+  const areaTriggerId = createCrimeSceneArea(
+    entityManager,
+    componentRegistry,
+    eventBus,
+    paletteSummary
+  );
   sceneEntities.push(areaTriggerId);
   console.log(`[Act1Scene] Crime scene area created: ${areaTriggerId}`);
 
@@ -243,7 +260,8 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus, 
       boundary.x,
       boundary.y,
       boundary.width,
-      boundary.height
+      boundary.height,
+      paletteSummary
     );
     sceneEntities.push(boundaryId);
   }
@@ -279,6 +297,13 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus, 
     sceneEntities,
     sceneName: 'act1_hollow_case',
     spawnPoint: { x: 150, y: 300 },
+    metadata: {
+      paletteSummary,
+      crimeSceneDimensions: {
+        width: CRIME_SCENE_WIDTH,
+        height: CRIME_SCENE_HEIGHT,
+      },
+    },
     cleanup: () => {
       for (const off of cleanupHandlers) {
         if (typeof off === 'function') {
@@ -294,9 +319,10 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus, 
  * @param {Object} entityManager
  * @param {Object} componentRegistry
  * @param {Object} eventBus
+ * @param {Object} paletteSummary
  * @returns {string} Entity ID
  */
-function createCrimeSceneArea(entityManager, componentRegistry, eventBus) {
+function createCrimeSceneArea(entityManager, componentRegistry, eventBus, paletteSummary) {
   // Create trigger entity
   const entityId = entityManager.createEntity('area_trigger');
 
@@ -331,6 +357,18 @@ function createCrimeSceneArea(entityManager, componentRegistry, eventBus) {
   sprite.type = 'Sprite';
   componentRegistry.addComponent(entityId, sprite);
 
+  if (paletteSummary && !paletteSummary.crimeSceneArea) {
+    paletteSummary.crimeSceneArea = {
+      color: sprite.color,
+      alpha: sprite.alpha,
+      layer: sprite.layer,
+      zIndex: sprite.zIndex ?? 0,
+      radius: collider.radius,
+      width: sprite.width,
+      height: sprite.height,
+    };
+  }
+
   // Set up trigger event listener
   // Note: The InteractionSystem will handle emitting 'area:entered' event
   // when player enters this zone
@@ -346,9 +384,10 @@ function createCrimeSceneArea(entityManager, componentRegistry, eventBus) {
  * @param {number} y
  * @param {number} width
  * @param {number} height
+ * @param {Object} paletteSummary
  * @returns {string} Entity ID
  */
-function createBoundary(entityManager, componentRegistry, x, y, width, height) {
+function createBoundary(entityManager, componentRegistry, x, y, width, height, paletteSummary) {
   const entityId = entityManager.createEntity('boundary');
 
   // Add Transform component
@@ -382,6 +421,17 @@ function createBoundary(entityManager, componentRegistry, x, y, width, height) {
   sprite.type = 'Sprite';
   componentRegistry.addComponent(entityId, sprite);
 
+  if (paletteSummary && Array.isArray(paletteSummary.boundaries)) {
+    paletteSummary.boundaries.push({
+      color: sprite.color,
+      alpha: sprite.alpha,
+      layer: sprite.layer,
+      zIndex: sprite.zIndex ?? 0,
+      width: sprite.width,
+      height: sprite.height,
+    });
+  }
+
   return entityId;
 }
 
@@ -406,7 +456,11 @@ export function unloadAct1Scene(entityManager, sceneEntities) {
   console.log('[Act1Scene] Unloading Act 1 scene...');
 
   for (const entityId of sceneEntities) {
-    entityManager.removeEntity(entityId);
+    if (entityManager && typeof entityManager.removeEntity === 'function') {
+      entityManager.removeEntity(entityId);
+    } else if (entityManager && typeof entityManager.destroyEntity === 'function') {
+      entityManager.destroyEntity(entityId);
+    }
   }
 
   console.log('[Act1Scene] Act 1 scene unloaded');
@@ -416,22 +470,23 @@ export function unloadAct1Scene(entityManager, sceneEntities) {
  * Create collection of crime scene visual set dressing entities
  * @param {Object} entityManager
  * @param {Object} componentRegistry
+ * @param {Object} paletteSummary
  * @returns {Array<string>} Entity IDs
  */
-function createCrimeSceneVisuals(entityManager, componentRegistry) {
+function createCrimeSceneVisuals(entityManager, componentRegistry, paletteSummary) {
   const entities = [];
 
-  entities.push(createGroundDecal(entityManager, componentRegistry));
-  entities.push(...createCautionTape(entityManager, componentRegistry));
-  entities.push(...createEvidenceMarkers(entityManager, componentRegistry));
-  entities.push(...createAmbientProps(entityManager, componentRegistry));
+  entities.push(createGroundDecal(entityManager, componentRegistry, paletteSummary));
+  entities.push(...createCautionTape(entityManager, componentRegistry, paletteSummary));
+  entities.push(...createEvidenceMarkers(entityManager, componentRegistry, paletteSummary));
+  entities.push(...createAmbientProps(entityManager, componentRegistry, paletteSummary));
 
   return entities;
 }
 
 export { createCrimeSceneArea };
 
-function createGroundDecal(entityManager, componentRegistry) {
+function createGroundDecal(entityManager, componentRegistry, paletteSummary) {
   const entityId = entityManager.createEntity('crime_scene_ground');
   const transform = new Transform(SCENE_CENTER_X, SCENE_CENTER_Y, 0, 1, 1);
   componentRegistry.addComponent(entityId, 'Transform', transform);
@@ -447,10 +502,21 @@ function createGroundDecal(entityManager, componentRegistry) {
   });
   componentRegistry.addComponent(entityId, 'Sprite', sprite);
 
+  if (paletteSummary && !paletteSummary.groundDecal) {
+    paletteSummary.groundDecal = {
+      color: sprite.color,
+      alpha: sprite.alpha,
+      layer: sprite.layer,
+      zIndex: sprite.zIndex ?? 0,
+      width: sprite.width,
+      height: sprite.height,
+    };
+  }
+
   return entityId;
 }
 
-function createCautionTape(entityManager, componentRegistry) {
+function createCautionTape(entityManager, componentRegistry, paletteSummary) {
   const stripeConfigs = [
     { rotation: 0.12, offsetX: 0, offsetY: -30 },
     { rotation: -0.18, offsetX: 30, offsetY: 40 }
@@ -478,11 +544,22 @@ function createCautionTape(entityManager, componentRegistry) {
     });
     componentRegistry.addComponent(entityId, 'Sprite', sprite);
 
+    if (paletteSummary && Array.isArray(paletteSummary.cautionTape)) {
+      paletteSummary.cautionTape.push({
+        color: sprite.color,
+        alpha: sprite.alpha,
+        layer: sprite.layer,
+        zIndex: sprite.zIndex ?? 0,
+        width: sprite.width,
+        height: sprite.height,
+      });
+    }
+
     return entityId;
   });
 }
 
-function createEvidenceMarkers(entityManager, componentRegistry) {
+function createEvidenceMarkers(entityManager, componentRegistry, paletteSummary) {
   const markerConfigs = [
     { x: SCENE_CENTER_X - 120, y: SCENE_CENTER_Y - 20 },
     { x: SCENE_CENTER_X + 40, y: SCENE_CENTER_Y - 80 },
@@ -506,11 +583,22 @@ function createEvidenceMarkers(entityManager, componentRegistry) {
     });
     componentRegistry.addComponent(entityId, 'Sprite', sprite);
 
+    if (paletteSummary && Array.isArray(paletteSummary.evidenceMarkers)) {
+      paletteSummary.evidenceMarkers.push({
+        color: sprite.color,
+        alpha: sprite.alpha,
+        layer: sprite.layer,
+        zIndex: sprite.zIndex ?? 0,
+        width: sprite.width,
+        height: sprite.height,
+      });
+    }
+
     return entityId;
   });
 }
 
-function createAmbientProps(entityManager, componentRegistry) {
+function createAmbientProps(entityManager, componentRegistry, paletteSummary) {
   const propConfigs = [
     {
       id: 'ambient_floodlight_left',
@@ -565,6 +653,18 @@ function createAmbientProps(entityManager, componentRegistry) {
       visible: true
     });
     componentRegistry.addComponent(entityId, 'Sprite', sprite);
+
+    if (paletteSummary && Array.isArray(paletteSummary.ambientProps)) {
+      paletteSummary.ambientProps.push({
+        id: config.id,
+        color: sprite.color,
+        alpha: sprite.alpha,
+        layer: sprite.layer,
+        zIndex: sprite.zIndex ?? 0,
+        width: sprite.width,
+        height: sprite.height,
+      });
+    }
 
     return entityId;
   });

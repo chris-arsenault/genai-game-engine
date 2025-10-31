@@ -68,12 +68,31 @@ describe('Act1Scene quest trigger migration', () => {
       on: jest.fn(),
       emit: jest.fn(),
     };
+    const paletteSummary = {
+      groundDecal: null,
+      cautionTape: [],
+      evidenceMarkers: [],
+      ambientProps: [],
+      crimeSceneArea: null,
+      boundaries: [],
+    };
 
     const outstandingBefore = QuestTriggerRegistry.listOutstandingMigrations();
     expect(outstandingBefore.some((entry) => entry.id === definition.id)).toBe(true);
 
-    const entityId = createCrimeSceneArea(entityManager, componentRegistry, eventBus);
+    const entityId = createCrimeSceneArea(
+      entityManager,
+      componentRegistry,
+      eventBus,
+      paletteSummary
+    );
     expect(entityId).toBe(101);
+    expect(paletteSummary.crimeSceneArea).toEqual(
+      expect.objectContaining({
+        color: '#ff6f61',
+        layer: 'ground',
+      })
+    );
 
     expect(componentRegistry.hasComponent).toHaveBeenCalledWith(101, 'Quest');
     const questCall = componentRegistry.addComponent.mock.calls.find(
