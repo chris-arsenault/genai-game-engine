@@ -194,4 +194,77 @@ describe('SaveLoadOverlay', () => {
 
     overlay.cleanup();
   });
+
+  test('maintains selection when autosave refresh updates slot ordering', () => {
+    const manualSlots = [
+      {
+        slot: 'slot1',
+        label: 'slot1',
+        timestamp: 10,
+        playtime: 5_000,
+        snapshotSource: 'legacy',
+      },
+      {
+        slot: 'slot2',
+        label: 'slot2',
+        timestamp: 8,
+        playtime: 4_000,
+        snapshotSource: 'worldStateStore',
+      },
+    ];
+
+    const saveManager = {
+      config: { maxSaveSlots: 3 },
+      getSaveSlots: jest.fn(() => {
+        const autosaveEntry = {
+          slot: 'autosave',
+          slotType: 'auto',
+          timestamp: 20,
+          playtime: 12_000,
+          snapshotSource: 'worldStateStore',
+        };
+        const manualEntries = manualSlots.map((entry) => ({ ...entry, slotType: 'manual' }));
+        return [autosaveEntry, ...manualEntries];
+      }),
+      getSaveSlotMetadata: jest.fn((slot) => {
+        if (slot === 'autosave') {
+          return {
+            slot: 'autosave',
+            timestamp: 20,
+            playtime: 12_000,
+            snapshotSource: 'worldStateStore',
+          };
+        }
+        const match = manualSlots.find((entry) => entry.slot === slot);
+        return match ? { ...match } : null;
+      }),
+      saveGame: jest.fn(() => true),
+      loadGame: jest.fn(() => true),
+    };
+
+    const overlay = new SaveLoadOverlay(canvas, eventBus, { saveManager });
+    overlay.init();
+    overlay.show('refresh-test');
+
+    // Select slot2 (index 2: autosave -> slot1 -> slot2)
+    overlay.changeSelection(2);
+    expect(overlay.slots[overlay.selectedIndex].slot).toBe('slot2');
+
+    // Add a new manual slot with newer timestamp and update slot1 timestamp
+    manualSlots[0] = { ...manualSlots[0], timestamp: 30 };
+    manualSlots.push({
+      slot: 'slot3',
+      label: 'slot3',
+      timestamp: 40,
+      playtime: 9_000,
+      snapshotSource: 'worldStateStore',
+    });
+
+    eventBus.emit('game:saved', { slot: 'autosave' });
+
+    expect(overlay.visible).toBe(true);
+    expect(overlay.slots[overlay.selectedIndex].slot).toBe('slot2');
+
+    overlay.cleanup();
+  });
 });

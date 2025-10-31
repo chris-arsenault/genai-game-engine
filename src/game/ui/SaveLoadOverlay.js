@@ -313,6 +313,18 @@ export class SaveLoadOverlay {
       return;
     }
 
+    const previousSelection = this.slots && this.slots.length
+      ? this.slots[Math.min(this.selectedIndex, this.slots.length - 1)]
+      : null;
+    const previousIdentifier = previousSelection
+      ? (
+        (typeof previousSelection.slot === 'string' && previousSelection.slot.length
+          ? previousSelection.slot
+          : null) ??
+        (typeof previousSelection.id === 'string' && previousSelection.id.length ? previousSelection.id : null)
+      )
+      : null;
+
     const metadataList = this.saveManager.getSaveSlots();
     const entries = [];
 
@@ -365,10 +377,7 @@ export class SaveLoadOverlay {
     }
 
     this.slots = entries;
-
-    if (this.selectedIndex >= this.slots.length) {
-      this.selectedIndex = Math.max(0, this.slots.length - 1);
-    }
+    this._restoreSelection(previousIdentifier);
   }
 
   changeSelection(direction) {
@@ -508,6 +517,39 @@ export class SaveLoadOverlay {
       playtime: null,
       snapshotSource: null,
     };
+  }
+
+  _restoreSelection(previousIdentifier) {
+    if (!Array.isArray(this.slots) || !this.slots.length) {
+      this.selectedIndex = 0;
+      return;
+    }
+
+    if (typeof previousIdentifier === 'string' && previousIdentifier.length) {
+      const matchIndex = this.slots.findIndex((entry) => {
+        if (!entry) {
+          return false;
+        }
+        if (typeof entry.slot === 'string' && entry.slot === previousIdentifier) {
+          return true;
+        }
+        if (typeof entry.id === 'string' && entry.id === previousIdentifier) {
+          return true;
+        }
+        return false;
+      });
+
+      if (matchIndex >= 0) {
+        this.selectedIndex = matchIndex;
+        return;
+      }
+    }
+
+    if (this.selectedIndex >= this.slots.length) {
+      this.selectedIndex = Math.max(0, this.slots.length - 1);
+    } else if (this.selectedIndex < 0) {
+      this.selectedIndex = 0;
+    }
   }
 
   _renderPanel(ctx, x, y, width, height) {

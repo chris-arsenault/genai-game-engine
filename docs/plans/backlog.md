@@ -54,6 +54,14 @@
 - Introduced the Save/Load overlay with manual slot and load workflows, refreshed control bindings, and new regression tests validating the UI interactions (`src/game/ui/SaveLoadOverlay.js`, `src/game/Game.js`, `tests/game/ui/SaveLoadOverlay.test.js`).
 - Verification: `npm test -- --runTestsByPath tests/game/managers/SaveManager.test.js tests/game/ui/SaveLoadOverlay.test.js`.
 
+### Session #156 Backlog Updates
+
+#### M3-016: Save/Load System Implementation
+- Added `profileSaveLoadLatency` utilities (`src/game/managers/saveLoadProfiling.js`) plus `npm run telemetry:profile-save-load`, confirming manual slot loads average 0.46ms with representative world snapshots and stay well under the <2s target.
+- Stabilized SaveLoad overlay selection across autosave refreshes and expanded Jest coverage so manual slot focus persists when new saves reorder the list (`src/game/ui/SaveLoadOverlay.js`, `tests/game/ui/SaveLoadOverlay.test.js`).
+- Authored save payload summary tooling for QA/telemetry alignment (`src/game/managers/savePayloadSummary.js`, `npm run telemetry:save-payload-summary`) providing schema counts and equipped-slot breakdowns ahead of review.
+- Verification: `npm test`, `npm run telemetry:profile-save-load`, `npm run telemetry:save-payload-summary`.
+
 ### Session #153 Backlog Updates
 
 #### M3-022: District Access Evaluation Utilities
