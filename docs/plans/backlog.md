@@ -24,13 +24,17 @@
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
 | BUG-201 | P0 | Completed | Collision system crashes on load when Collider metadata overwrites shape definitions (`shapeA`/`shapeB` null). Refactoring Collider component to preserve `shapeType` while keeping ECS registration stable; adding guards/tests. | Land collider refactor + guard rails, expand physics regression tests, and run targeted Jest suites (`CollisionSystem`, `physics/integration`, `integration-full`) before CI handoff. |
-| AR-050 | P0 | In Progress | Visual asset sourcing pipeline now covers Act 2 Crossroads selection conduit/pad, checkpoint glow/plaza, safehouse arc, boundary walls, and column beam overlays with CC0/CC-BY references captured in manifests; Session 112 calibrated tint/alpha parameters (~0.13 columns/conduits, ~0.75 boundaries), Session 113 added a lighting preview harness plus queued the AR-001–AR-005 generation batch, Session 114 boosted conduit/glow/column luminance so previewed segments meet thresholds, Session 115 delivered placeholder atlases for AR-001–AR-005, Session 116 layered RenderOps packet/placeholder audit automation, Session 117 shipped prioritized replacement plans, Session 118 produced a four-week bespoke art sprint schedule plus delivery staging CLI, Session 121 automated week-one bespoke status ingestion with licensing approvals recorded in manifests/reports, Session 171 added TRACK_BESPOKE_ROOT overrides plus Jest coverage to keep `scripts/art/trackBespokeDeliverables.js` ingest sweeps reproducible, Session 172 generated safehouse floor, briefing pad, and branch walkway textures via GPT-Image-1 with manifests flipped to `ai-generated`, Session 175 reran `scripts/art/packageRenderOpsLighting.js` to ship `reports/art/renderops-packets/act2-crossroads-2025-10-31T16-03-38-011Z` alongside a ready_for_ack approval job, Session 189 refreshed the bespoke cadence (track-bespoke → package-renderops → export-crossroads-luminance) yielding packet `act2-crossroads-2025-10-31T20-26-00-520Z` with zero actionable segments and approval queue `2025-10-31T20:26:00.543Z-c488a1c4-4834-4a83-9b33-57510d68c396.json`, and Session 191 captured RenderOps acknowledgement while regenerating the approval summary (0 pending actionable segments). | Monitor RenderOps feedback for the 2025-10-31 packet and prep the week-two bespoke sweep (`npm run art:track-bespoke -- --week=2`) on 2025-11-07. |
+| AR-050 | P0 | In Progress | Visual asset sourcing pipeline now covers Act 2 Crossroads selection conduit/pad, checkpoint glow/plaza, safehouse arc, boundary walls, and column beam overlays with CC0/CC-BY references captured in manifests; Session 112 calibrated tint/alpha parameters (~0.13 columns/conduits, ~0.75 boundaries), Session 113 added a lighting preview harness plus queued the AR-001–AR-005 generation batch, Session 114 boosted conduit/glow/column luminance so previewed segments meet thresholds, Session 115 delivered placeholder atlases for AR-001–AR-005, Session 116 layered RenderOps packet/placeholder audit automation, Session 117 shipped prioritized replacement plans, Session 118 produced a four-week bespoke art sprint schedule plus delivery staging CLI, Session 121 automated week-one bespoke status ingestion with licensing approvals recorded in manifests/reports, Session 171 added TRACK_BESPOKE_ROOT overrides plus Jest coverage to keep `scripts/art/trackBespokeDeliverables.js` ingest sweeps reproducible, Session 172 generated safehouse floor, briefing pad, and branch walkway textures via GPT-Image-1 with manifests flipped to `ai-generated`, Session 175 reran `scripts/art/packageRenderOpsLighting.js` to ship `reports/art/renderops-packets/act2-crossroads-2025-10-31T16-03-38-011Z` alongside a ready_for_ack approval job, Session 189 refreshed the bespoke cadence (track-bespoke → package-renderops → export-crossroads-luminance) yielding packet `act2-crossroads-2025-10-31T20-26-00-520Z` with zero actionable segments and approval queue `2025-10-31T20:26:00.543Z-c488a1c4-4834-4a83-9b33-57510d68c396.json`, and Session 191 captured RenderOps acknowledgement while regenerating the approval summary (0 pending actionable segments). | Run `npm run art:track-bespoke -- --week=2` on 2025-11-07 to generate the week-two packet automatically, then execute `npm run art:export-crossroads-luminance` to capture the script-driven tolerance report. |
 | TUT-201 | P0 | Completed | Tutorial case blocked at step 3 (`evidence_detection`) because legacy scene entities bypassed ECS detection events. | ECS-aligned tutorial scene entities shipped Session #51; re-run tutorial smoke tests after combat audio validation. |
 | AUDIO-351 | P0 | Completed | Validate live combat/disguise trigger routing through `AmbientSceneAudioController` using real combat loop events. | Adaptive audio routing now responds to gameplay emits; telemetry verified by Jest/Playwright suites and new infiltration benchmark. |
 | PERF-214 | P1 | Completed | Profiling harness restored; `npm run profile` runs without module errors and captures infiltration telemetry. | Monitor profiling harness results in CI and schedule the next performance sweep after overlay integration lands. |
 | UX-173 | P1 | Completed | Debug audio overlay now fully keyboard navigable with Shift+Alt+A shortcut, focus trap, and Playwright coverage. | Continue watching the automated Playwright spec for regressions during future overlay changes. |
 
-**Next Session Focus**: Drive the neon district approval loop entirely through the RenderOps automation scripts (`scripts/art/packageRenderOpsLighting.js`, `scripts/art/trackBespokeDeliverables.js`) and queue the next lighting feedback pass via generated packets—no manual reviews or sign-off meetings. Telemetry and performance testing work remains frozen.
+**Next Session Focus**:
+- Run the AR-005 automation queue (`node scripts/art/queueGenerationRequests.js`) for Corporate Spires, Archive Undercity, and Zenith Sector so all tilesets advance without manual sourcing.
+- Stage the Neon District atlas integration check by lining up seam/collision automation once the tilemap hooks land; defer any manual spot-checks.
+- Execute the 2025-11-07 AR-050 bespoke sweep (`npm run art:track-bespoke -- --week=2` → `npm run art:export-crossroads-luminance`) and keep the scripted tolerance report archived.
+- Continue automated LayoutGraph benchmarking (`npm run benchmark:layout-graph`) and investigation profiling (`npm run profile -- --scenario=investigation`) to cover M2-020 regression monitoring.
 
 ### Session #173 Backlog Maintenance
 
@@ -433,7 +437,7 @@
 
 #### AR-050: Visual Asset Sourcing Pipeline
 - **Automation**: Replayed `npm run art:track-bespoke → art:package-renderops → art:export-crossroads-luminance`, updating `assets/images/requests.json` week-one statuses, generating renderops packet `reports/art/renderops-packets/act2-crossroads-2025-10-31T20-26-00-520Z` (ZIP + delivery manifest), and exporting luminance snapshot `reports/art/luminance-snapshots/act2-crossroads/act2-crossroads-luminance-2025-10-31T20-26-05-365Z` with all 12 segments in tolerance; approval queue entry staged at `reports/telemetry/renderops-approvals/act2-crossroads/2025-10-31T20:26:00.543Z-c488a1c4-4834-4a83-9b33-57510d68c396.json`.
-- **Follow-up**: Monitor RenderOps feedback after the 2025-10-31 acknowledgement and regenerate the packet if revisions surface ahead of the 2025-11-07 bespoke tracking sweep.
+- **Follow-up**: Re-run the automated sweep (`npm run art:track-bespoke -- --week=2` → `npm run art:package-renderops` → `npm run art:export-crossroads-luminance`) on 2025-11-07 and use the generated approval summary to decide on any reruns.
 
 #### AR-008: Adaptive Music Tracks (M7)
 - **Integration**: Added ambient/base mode support to `AdaptiveAudioStemGenerator`, regenerated ambient/tension/combat stems via `scripts/audio/generateAr008AdaptiveStems.js`, updated `GameConfig.audio.act2CrossroadsAmbient` and scene defaults to reference `music-downtown-ambient-001`, and extended Jest coverage to include the ambient stem path.
@@ -2020,6 +2024,8 @@ _Progress 2025-11-09 (Session #139 audio/perf polish): Augmented performanceSnap
   - Theory accuracy calculated correctly
   - Correct theories trigger progression
   - Unit tests cover edge cases
+- **Status**: Review Approved — Session 198 backlog sweep confirmed automated Jest coverage and in-game validation satisfy acceptance criteria with no manual QA required.
+- **Latest Update**: 2025-11-03 review-approved classification recorded in MCP; maintain regression coverage via existing Jest suites.
 
 #### M2-007: Deduction Board Polish
 - **Priority**: P2
@@ -2303,7 +2309,7 @@ _Progress 2025-11-09 (Session #139 audio/perf polish): Augmented performanceSnap
 - **Status**: In Progress — Session 196 fortified LayoutGraph performance coverage.
 - **Latest Update**:
   - Stabilized LayoutGraph performance regression by sampling multiple runs and enforcing frame-budget aligned thresholds to eliminate sub-1ms flakes.
-  - Remaining follow-up: profile LayoutGraph with larger node counts and sweep for other unrealistic timing assertions.
+- Remaining follow-up: schedule automated LayoutGraph benchmarks (`npm run benchmark:layout-graph`) and investigation perf sweeps (`npm run profile -- --scenario=investigation`) so scripted runs surface regressions without manual profiling.
 
 ---
 
@@ -2901,7 +2907,10 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Archive Undercity: Dark, ancient tech (16x16 tiles)
   - Zenith Sector: Futuristic, imposing (16x16 tiles)
 - **File**: `assets/images/requests.json`
-- **Status**: Prompt briefs covering all four districts packaged via `art:package-generation-prompts` (`assets/images/generation-payloads/ar-001-005.json`); awaiting asset generation and collision annotation.
+- **Status**: Neon District atlas generated via automation and logged in manifests; remaining districts will be produced through the `queueGenerationRequests` pipeline with seam/collision metadata sourced from script outputs—no manual review paths remain.
+- **Next Steps**:
+  - Queue the remaining AR-005 tilesets via `node scripts/art/queueGenerationRequests.js --filter=image-ar-005-tileset-corporate-spires,image-ar-005-tileset-archive-undercity,image-ar-005-tileset-zenith-sector`.
+  - Re-run the manifest sync (same script without `--dry-run`) once GPT generation completes so `assets/images/requests.json` captures completion automatically.
 
 #### AR-006: UI Sound Effects (M2-M6)
 - **Type**: Audio
