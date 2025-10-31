@@ -24,7 +24,10 @@ from PIL import Image
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 SOURCE_PATH = PROJECT_ROOT / 'assets/generated/images/ar-003/image-ar-003-kira-evasion-pack.png'
-CORE_SOURCE_PATH = PROJECT_ROOT / 'assets/generated/images/ar-003/image-ar-003-kira-core-pack.png'
+CORE_SOURCE_CANDIDATES: Tuple[Path, ...] = (
+  PROJECT_ROOT / 'assets/generated/images/ar-003/image-ar-003-kira-core-pack-bespoke.png',
+  PROJECT_ROOT / 'assets/generated/images/ar-003/image-ar-003-kira-core-pack.png',
+)
 NORMALIZED_PACK_PATH = PROJECT_ROOT / 'assets/generated/images/ar-003/image-ar-003-kira-evasion-pack-normalized.png'
 NORMALIZED_CORE_PATH = PROJECT_ROOT / 'assets/generated/images/ar-003/image-ar-003-kira-core-pack-normalized.png'
 MANIFEST_PATH = PROJECT_ROOT / 'assets/generated/images/ar-003/image-ar-003-kira-evasion-pack-normalized.json'
@@ -159,11 +162,22 @@ def write_normalized_pack(dash_frames: Sequence[Image.Image], slide_frames: Sequ
   }
 
 
+def resolve_core_source_path() -> Path:
+  for candidate in CORE_SOURCE_CANDIDATES:
+    if candidate.exists():
+      return candidate
+  raise FileNotFoundError(
+    'Core sprite sheet not found; expected one of: '
+    + ', '.join(str(path) for path in CORE_SOURCE_CANDIDATES)
+  )
+
+
 def merge_with_core_pack(
   dash_frames: Sequence[Image.Image],
   slide_frames: Sequence[Image.Image],
+  core_source_path: Path,
 ) -> dict:
-  core = Image.open(CORE_SOURCE_PATH).convert('RGBA')
+  core = Image.open(core_source_path).convert('RGBA')
   original_columns = core.size[0] // FRAME_SIZE
   rows = core.size[1] // FRAME_SIZE
 
@@ -186,6 +200,7 @@ def merge_with_core_pack(
   merged.save(NORMALIZED_CORE_PATH)
 
   return {
+    'coreSource': str(core_source_path.relative_to(PROJECT_ROOT)).replace('\\', '/'),
     'normalizedCore': str(NORMALIZED_CORE_PATH.relative_to(PROJECT_ROOT)).replace('\\', '/'),
     'rows': rows,
     'columns': max_columns,
@@ -199,8 +214,7 @@ def merge_with_core_pack(
 def main() -> None:
   if not SOURCE_PATH.exists():
     raise FileNotFoundError(f'Source atlas not found: {SOURCE_PATH}')
-  if not CORE_SOURCE_PATH.exists():
-    raise FileNotFoundError(f'Core sprite sheet not found: {CORE_SOURCE_PATH}')
+  core_source_path = resolve_core_source_path()
 
   image = Image.open(SOURCE_PATH).convert('RGBA')
   components = find_components(image)
@@ -214,10 +228,11 @@ def main() -> None:
   slide_frames = [normalize_frame(image, box) for box in slide_components]
 
   atlas_info = write_normalized_pack(dash_frames, slide_frames)
-  core_info = merge_with_core_pack(dash_frames, slide_frames)
+  core_info = merge_with_core_pack(dash_frames, slide_frames, core_source_path)
 
   manifest = {
     'source': str(SOURCE_PATH.relative_to(PROJECT_ROOT)).replace('\\', '/'),
+    'coreSource': core_info['coreSource'],
     'generatedAt': __import__('datetime').datetime.utcnow().isoformat() + 'Z',
     'frameSize': FRAME_SIZE,
     'dashFrames': [

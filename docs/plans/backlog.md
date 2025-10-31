@@ -37,6 +37,17 @@
 - Realigned `docs/plans/backlog.md` with MCP backlog statuses: PERF-214 and UX-173 marked as completed with follow-up monitoring notes.
 - No new content or asset generation performed; scope limited to documentation/backlog hygiene.
 
+### Session #184 Backlog Updates
+
+#### AR-003: Player Character Sprite (M2)
+- Ingested the bespoke idle/walk/run sheet by rerunning `python scripts/art/normalize_kira_evasion_pack.py` (now preferring the bespoke core atlas) and `node scripts/art/updateKiraAnimationConfig.js`, regenerating the normalized atlas/manifest plus runtime config.
+- Refreshed locomotion reference captures (`npm run art:capture-locomotion`) so autosave overlays and traversal QA align with the bespoke-normalized frames.
+- Verification: `npm test`.
+
+#### M3-016: Save/Load System Implementation
+- Repackaged autosave QA assets after the bespoke swap via `npm run telemetry:package-save-load`, producing the latest packet (`reports/telemetry/save-load-qa/save-load-2025-10-31T19-24-51-055Z(.zip)`) and latency summary for validator baselines.
+- Verification: `npm run telemetry:package-save-load`.
+
 ### Session #183 Backlog Cleanup
 
 - Closed M3-013 (WorldStateManager) and AR-007 (particle effects) after validating that automated coverage satisfies all acceptance criteria.

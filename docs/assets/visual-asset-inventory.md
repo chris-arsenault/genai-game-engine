@@ -164,6 +164,11 @@
 - Generated bespoke idle/walk/run sprite sheet for Kira (`assets/generated/images/ar-003/image-ar-003-kira-core-pack-bespoke.png`) via OpenAI gpt-image-1, upgrading `image-ar-003-player-kira-sprite` to `ai-generated` in `assets/images/requests.json`.
 - Normalization pipeline still pending—rerun `python scripts/art/normalize_kira_evasion_pack.py` and `node scripts/art/updateKiraAnimationConfig.js` before swapping the sprite sheet into runtime configs.
 
+## Session 184 Updates
+- Reran `python scripts/art/normalize_kira_evasion_pack.py` with bespoke art preferred as the core source, regenerating `image-ar-003-kira-core-pack-normalized.png` and updating the manifest with provenance metadata for AR-003/M3-016 ingestion.
+- Refreshed the auto-generated animation config via `node scripts/art/updateKiraAnimationConfig.js`, keeping gameplay-facing `kiraAnimationConfig.js` synchronized with the latest dash/slide normalization manifest.
+- Captured a new locomotion reference set (`npm run art:capture-locomotion`) so autosave overlays and traversal QA review the bespoke idle/walk/run frames; outputs and manifest timestamps now reference the bespoke-normalized atlas.
+
 ## Next Actions
 1. Distribute the latest RenderOps packet (`npm run art:package-renderops` then `npm run art:stage-renderops`) and attach the staged ZIP (`deliveries/renderops/.../*.zip`) plus `*-delivery.json` manifest when sharing with RenderOps; log feedback on actionable segments and regenerate after art tweaks.
 2. Follow `reports/art/placeholder-replacement-schedule.md` to drive weekly bespoke assignments and annotate `assets/images/requests.json` with source/licensing updates upon completion.

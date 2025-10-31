@@ -1,6 +1,7 @@
 {
   "source": "assets/generated/images/ar-003/image-ar-003-kira-evasion-pack.png",
-  "generatedAt": "2025-10-31T18:17:11.283402Z",
+  "coreSource": "assets/generated/images/ar-003/image-ar-003-kira-core-pack-bespoke.png",
+  "generatedAt": "2025-10-31T19:21:22.116200Z",
   "frameSize": 32,
   "dashFrames": [
     {
@@ -242,9 +243,10 @@
       "rows": 2
     },
     "normalizedCore": {
+      "coreSource": "assets/generated/images/ar-003/image-ar-003-kira-core-pack-bespoke.png",
       "normalizedCore": "assets/generated/images/ar-003/image-ar-003-kira-core-pack-normalized.png",
-      "rows": 14,
-      "columns": 10,
+      "rows": 32,
+      "columns": 32,
       "dashRow": 12,
       "slideRow": 13,
       "dashColumns": [

@@ -1,7 +1,7 @@
 /**
  * Auto-generated file.
  * Source manifest: assets/generated/images/ar-003/image-ar-003-kira-evasion-pack-normalized.json
- * Generated via scripts/art/updateKiraAnimationConfig.js on 2025-10-31T18:28:38.028Z
+ * Generated via scripts/art/updateKiraAnimationConfig.js on 2025-10-31T19:21:29.647Z
  *
  * Do not edit manually—run the script after updating the normalized atlas.
  */
@@ -58,7 +58,7 @@ export const kiraAnimationConfig = {
   },
   metadata: {
     manifestPath: "assets/generated/images/ar-003/image-ar-003-kira-evasion-pack-normalized.json",
-    generatedAt: "2025-10-31T18:28:38.028Z"
+    generatedAt: "2025-10-31T19:21:29.647Z"
   }
 };
 
