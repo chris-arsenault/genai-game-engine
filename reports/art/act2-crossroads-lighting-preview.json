@@ -8,21 +8,45 @@
       "configAlpha": 0.98,
       "colour": "#142031",
       "overlay": {
-        "averageAlpha": null,
+        "averageAlpha": 0.9019607843137255,
         "metadataAverageAlpha": null,
         "delta": null
       },
       "projected": {
-        "alpha": null,
-        "luminance": null,
-        "trend": null,
-        "deviation": null,
-        "allowedDeviation": null,
-        "maxLuminance": null,
-        "targetLuminance": null
+        "alpha": 0.883921568627451,
+        "luminance": 0.012405814274301322,
+        "trend": "under",
+        "deviation": -0.08759418572569869,
+        "allowedDeviation": 0.12,
+        "maxLuminance": 0.28,
+        "targetLuminance": 0.1
       },
       "issues": [],
-      "status": "skipped"
+      "status": "ok"
+    },
+    {
+      "segmentId": "crossroads_briefing_pad",
+      "category": "floors",
+      "assetId": "act2_crossroads_briefing_pad_v1",
+      "presetId": "briefing_focus",
+      "configAlpha": 0.9,
+      "colour": "#1f3050",
+      "overlay": {
+        "averageAlpha": 0.1568627450980392,
+        "metadataAverageAlpha": 0.157,
+        "delta": 0.00013725490196078716
+      },
+      "projected": {
+        "alpha": 0.1411764705882353,
+        "luminance": 0.004213268029055894,
+        "trend": "under",
+        "deviation": -0.025786731970944103,
+        "allowedDeviation": 0.05,
+        "maxLuminance": 0.12,
+        "targetLuminance": 0.03
+      },
+      "issues": [],
+      "status": "ok"
     },
     {
       "segmentId": "crossroads_branch_walkway",
@@ -32,21 +56,21 @@
       "configAlpha": 0.94,
       "colour": "#182b44",
       "overlay": {
-        "averageAlpha": null,
+        "averageAlpha": 0.8941176470588236,
         "metadataAverageAlpha": null,
         "delta": null
       },
       "projected": {
-        "alpha": null,
-        "luminance": null,
-        "trend": null,
-        "deviation": null,
-        "allowedDeviation": null,
-        "maxLuminance": null,
-        "targetLuminance": null
+        "alpha": 0.8404705882352941,
+        "luminance": 0.019661121466995397,
+        "trend": "under",
+        "deviation": -0.00033887853300460305,
+        "allowedDeviation": 0.05,
+        "maxLuminance": 0.08,
+        "targetLuminance": 0.02
       },
       "issues": [],
-      "status": "skipped"
+      "status": "ok"
     },
     {
       "segmentId": "crossroads_selection_pad",
@@ -266,10 +290,9 @@
     }
   ],
   "summary": {
-    "total": 11,
+    "total": 12,
     "statusCounts": {
-      "skipped": 2,
-      "ok": 9
+      "ok": 12
     },
     "hotspots": [],
     "deviations": [],

@@ -30,6 +30,20 @@
 - Realigned `docs/plans/backlog.md` with MCP backlog statuses: PERF-214 and UX-173 marked as completed with follow-up monitoring notes.
 - No new content or asset generation performed; scope limited to documentation/backlog hygiene.
 
+### Session #174 Backlog Updates
+
+#### AR-007: Particle Effects (M7)
+- Wired the newly generated `image-ar-007-screen-effects-pack` (flash/scanline/glitch) into `FxOverlay`, adding additive screen treatments for detective vision and forensic cues alongside refreshed Jest coverage (`tests/game/ui/FxOverlay.test.js`).
+- Verification: `npm test -- --runTestsByPath tests/game/ui/FxOverlay.test.js`.
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- Generated safehouse floor, branch walkway, and mission briefing pad derivatives through `node scripts/art/generateOverlayDerivatives.js --filter image-ar-050-crossroads-floor-safehouse,image-ar-050-crossroads-branch-walkway,image-ar-050-crossroads-briefing-pad`, publishing them under `assets/overlays/act2-crossroads/`.
+- Regenerated the lighting preview with `node scripts/art/previewCrossroadsLighting.js --tolerance=0.03 --out=reports/art/act2-crossroads-lighting-preview.json`, yielding 12/12 segments within tolerance and updated Act 2 art config metadata for briefing pad overlay targets.
+
+#### M3-013: WorldStateManager Implementation
+- Extended `SaveManager.runAutosaveBurst` with optional inspector export support, piping burst summaries through telemetry and bolstering regression coverage (`tests/game/managers/SaveManager.test.js`).
+- Verification: `npm test -- --runTestsByPath tests/game/managers/SaveManager.test.js`.
+
 ### Session #172 Backlog Updates
 
 #### AR-007: Particle Effects (M7)

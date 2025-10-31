@@ -116,6 +116,62 @@
       }
     },
     {
+      "id": "image-ar-050-crossroads-floor-safehouse",
+      "sourceUrl": "file://assets/generated/ar-050/image-ar-050-crossroads-floor-safehouse.png",
+      "output": "act2_crossroads_floor_safehouse.png",
+      "operations": {
+        "resize": {
+          "width": 2048
+        },
+        "normalize": true,
+        "alphaFromLuma": {
+          "threshold": 118,
+          "softness": 90,
+          "invert": true,
+          "floor": 26,
+          "ceiling": 230
+        },
+        "opacity": 0.95
+      }
+    },
+    {
+      "id": "image-ar-050-crossroads-branch-walkway",
+      "sourceUrl": "file://assets/generated/ar-050/image-ar-050-crossroads-branch-walkway.png",
+      "output": "act2_crossroads_branch_walkway.png",
+      "operations": {
+        "resize": {
+          "width": 2048
+        },
+        "normalize": true,
+        "alphaFromLuma": {
+          "threshold": 110,
+          "softness": 88,
+          "invert": true,
+          "floor": 32,
+          "ceiling": 228
+        },
+        "opacity": 0.93
+      }
+    },
+    {
+      "id": "image-ar-050-crossroads-briefing-pad",
+      "sourceUrl": "file://assets/generated/ar-050/image-ar-050-crossroads-briefing-pad.png",
+      "output": "act2_crossroads_briefing_pad.png",
+      "operations": {
+        "resize": {
+          "width": 1920
+        },
+        "normalize": true,
+        "alphaFromLuma": {
+          "threshold": 100,
+          "softness": 85,
+          "floor": 40,
+          "ceiling": 240
+        },
+        "opacity": 0.9
+      }
+    },
+    {
       "id": "image-ar-050-crossroads-selection-pad",
       "openverseId": "67a16c30-eb3c-4b8e-88f5-f1e31bfddb5a",
       "sourceUrl": "https://live.staticflickr.com/65535/52845556684_5e179a56aa_b.jpg",

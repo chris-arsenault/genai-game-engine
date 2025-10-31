@@ -468,6 +468,8 @@ export class SaveManager {
    * @param {string} [options.slot='autosave'] - Slot to target during the burst.
    * @param {boolean} [options.collectResults=false] - Whether to include per-iteration success flags.
    * @param {Function} [options.onIteration] - Optional callback for each iteration.
+   * @param {boolean} [options.exportInspector=false] - When true, exports inspector telemetry after the burst.
+   * @param {object} [options.exportOptions] - Options forwarded to exportInspectorSummary when exportInspector is true.
    * @returns {Promise<object>} Summary of the burst execution.
    */
   async runAutosaveBurst(options = {}) {
@@ -500,9 +502,18 @@ export class SaveManager {
       }
     }
 
+    let exportResult = null;
+    const shouldExport = options.exportInspector === true;
+    if (shouldExport) {
+      exportResult = await this.exportInspectorSummary(options.exportOptions || {});
+    }
+
     const summary = { iterations, failures, slot };
     if (collect) {
       summary.results = results;
+    }
+    if (shouldExport) {
+      summary.exportResult = exportResult;
     }
     if (this.eventBus && typeof this.eventBus.emit === 'function') {
       this.eventBus.emit('telemetry:autosave_burst_completed', summary);

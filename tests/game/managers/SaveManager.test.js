@@ -1107,6 +1107,34 @@ describe('SaveManager', () => {
       expect(hook).toHaveBeenCalledTimes(2);
       warnSpy.mockRestore();
     });
+
+    test('optionally exports inspector telemetry after burst completes', async () => {
+      const exportStub = {
+        summary: { source: 'worldStateStore' },
+        artifacts: [{ filename: 'stress.json', type: 'json', content: '{}' }],
+      };
+      const exportSpy = jest
+        .spyOn(saveManager, 'exportInspectorSummary')
+        .mockResolvedValue(exportStub);
+
+      const eventPayloads = [];
+      eventBus.on('telemetry:autosave_burst_completed', (payload) => {
+        eventPayloads.push(payload);
+      });
+
+      const summary = await saveManager.runAutosaveBurst({
+        iterations: 2,
+        exportInspector: true,
+        exportOptions: { prefix: 'stress-test' },
+      });
+
+      expect(exportSpy).toHaveBeenCalledWith({ prefix: 'stress-test' });
+      expect(summary.exportResult).toBe(exportStub);
+      expect(eventPayloads).toHaveLength(1);
+      expect(eventPayloads[0].exportResult).toBe(exportStub);
+
+      exportSpy.mockRestore();
+    });
   });
 
   // ==================== SLOT MANAGEMENT TESTS ====================

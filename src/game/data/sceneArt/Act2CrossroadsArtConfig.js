@@ -20,6 +20,18 @@ export const Act2CrossroadsArtConfig = Object.freeze({
       tags: Object.freeze(['safehouse', 'floor']),
     }),
     Object.freeze({
+      id: 'crossroads_briefing_pad',
+      color: '#1f3050',
+      alpha: 0.9,
+      assetId: 'act2_crossroads_briefing_pad_v1',
+      metadata: Object.freeze({
+        lightingPreset: 'briefing_focus',
+        narrativeCue: 'zara_briefing_focus',
+        overlayAverageAlpha: 0.157,
+      }),
+      tags: Object.freeze(['briefing', 'spotlight']),
+    }),
+    Object.freeze({
       id: 'crossroads_branch_walkway',
       color: '#182b44',
       alpha: 0.94,

@@ -437,7 +437,7 @@
     "license": "Internal generation (OpenAI gpt-image-1)",
     "status": "ai-generated",
     "usage": "Floor texture for safehouse staging area in Act 2 Crossroads.",
-    "notes": "Matches assetId act2_crossroads_floor_safehouse_v1; needs woven carbon fiber texture with blue underlighting. | Generated during Session 172 via GPT-Image-1 as seamless carbon-fiber tile with cool blue seam lighting to match Crossroads safehouse palette.",
+    "notes": "Matches assetId act2_crossroads_floor_safehouse_v1; needs woven carbon fiber texture with blue underlighting. | Generated during Session 172 via GPT-Image-1 as seamless carbon-fiber tile with cool blue seam lighting to match Crossroads safehouse palette. Session 174 derivative exported to assets/overlays/act2-crossroads/act2_crossroads_floor_safehouse.png and verified in the refreshed lighting preview (reports/art/act2-crossroads-lighting-preview.json).",
     "generatedAt": "2025-10-31T14:49:55Z"
   },
   {
@@ -449,7 +449,7 @@
     "license": "Internal generation (OpenAI gpt-image-1)",
     "status": "ai-generated",
     "usage": "Briefing pad floor highlight for Zara briefing vignette.",
-    "notes": "Align with assetId act2_crossroads_briefing_pad_v1; include glass inlay and spotlight cues. | Generated during Session 172 via GPT-Image-1 with translucent concentric rings, orange/blue spotlight gradients, and transparent falloff for composite placement.",
+    "notes": "Align with assetId act2_crossroads_briefing_pad_v1; include glass inlay and spotlight cues. | Generated during Session 172 via GPT-Image-1 with translucent concentric rings, orange/blue spotlight gradients, and transparent falloff for composite placement. Session 174 derivative exported to assets/overlays/act2-crossroads/act2_crossroads_briefing_pad.png and validated through the updated lighting preview run.",
     "generatedAt": "2025-10-31T14:49:55Z"
   },
   {
@@ -461,7 +461,7 @@
     "license": "Internal generation (OpenAI gpt-image-1)",
     "status": "ai-generated",
     "usage": "Walkway leading to branch consoles in Crossroads scene.",
-    "notes": "Map to assetId act2_crossroads_branch_walkway_v1; include directional arrowing for narrative flow. | Generated during Session 172 via GPT-Image-1 as a long rectangular strip with cyan edge lighting, embedded chevrons, and transparent margins for modular placement.",
+    "notes": "Map to assetId act2_crossroads_branch_walkway_v1; include directional arrowing for narrative flow. | Generated during Session 172 via GPT-Image-1 as a long rectangular strip with cyan edge lighting, embedded chevrons, and transparent margins for modular placement. Session 174 derivative exported to assets/overlays/act2-crossroads/act2_crossroads_branch_walkway.png and confirmed via the lighting preview tolerance sweep.",
     "generatedAt": "2025-10-31T14:49:55Z"
   },
   {
