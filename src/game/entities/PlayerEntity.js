@@ -61,11 +61,17 @@ export function createPlayerEntity(entityManager, componentRegistry, x = 0, y = 
     slide: 13,
   };
 
-  const frames = (row, count = 6) => Array.from({ length: count }, (_, index) => ({ col: index, row }));
+  const frames = (row, countOrColumns = 6) => {
+    if (Array.isArray(countOrColumns)) {
+      return countOrColumns.map((col) => ({ col, row }));
+    }
+    const count = countOrColumns;
+    return Array.from({ length: count }, (_, index) => ({ col: index, row }));
+  };
 
   const animatedSprite = new AnimatedSprite({
     image: null,
-    imageUrl: '/generated/images/ar-003/image-ar-003-kira-core-pack.png',
+    imageUrl: '/generated/images/ar-003/image-ar-003-kira-core-pack-normalized.png',
     frameWidth: 32,
     frameHeight: 32,
     defaultAnimation: 'idleDown',
@@ -131,18 +137,18 @@ export function createPlayerEntity(entityManager, componentRegistry, x = 0, y = 
         frameDuration: 0.1,
       },
       dash: {
-        frames: frames(animationRow.dash, 8),
+        frames: frames(animationRow.dash, [0, 1, 2, 3, 4, 5]),
         loop: false,
         frameDuration: 0.055,
         next: 'idleDown',
       },
       dashLoop: {
-        frames: frames(animationRow.dash, 6),
+        frames: frames(animationRow.dash, [0, 1, 2, 3, 4, 5]),
         loop: true,
         frameDuration: 0.06,
       },
       slide: {
-        frames: frames(animationRow.slide, 8),
+        frames: frames(animationRow.slide, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
         loop: false,
         frameDuration: 0.06,
         next: 'idleDown',

@@ -128,7 +128,7 @@ describe('PlayerAnimationSystem', () => {
         frameDuration: 0.1,
       },
         dash: {
-          frames: Array.from({ length: 8 }, (_, index) => ({ col: index, row: 6 })),
+          frames: Array.from({ length: 6 }, (_, index) => ({ col: index, row: 6 })),
           loop: false,
           frameDuration: 0.05,
           next: 'idleDown',
@@ -139,7 +139,7 @@ describe('PlayerAnimationSystem', () => {
           frameDuration: 0.05,
         },
         slide: {
-          frames: Array.from({ length: 8 }, (_, index) => ({ col: index, row: 7 })),
+          frames: Array.from({ length: 10 }, (_, index) => ({ col: index, row: 7 })),
           loop: false,
           frameDuration: 0.05,
           next: 'idleDown',

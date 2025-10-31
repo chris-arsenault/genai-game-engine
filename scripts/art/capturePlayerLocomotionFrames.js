@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, '..', '..');
 
 const SPRITE_RELATIVE_PATH =
-  'assets/generated/images/ar-003/image-ar-003-kira-core-pack.png';
+  'assets/generated/images/ar-003/image-ar-003-kira-core-pack-normalized.png';
 const OUTPUT_RELATIVE_DIR = 'reports/art/player-locomotion-reference';
 
 const FRAME_WIDTH = 32;

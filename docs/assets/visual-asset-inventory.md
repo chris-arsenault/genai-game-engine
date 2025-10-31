@@ -22,7 +22,7 @@
 | ----- | ----- | ----------- | ----- |
 | AR-001 | Deduction board UI | `image-ar-001-deduction-board-bg`, `image-ar-001-clue-node-pack`, `image-ar-001-evidence-icon-set`, `image-ar-001-ui-button-pack` | Prioritise cohesive neon-noir styling; hover/pressed states to support tactile investigation feel. |
 | AR-002 | Evidence placeholders | `image-ar-002-generic-marker`, `image-ar-002-fingerprint`, `image-ar-002-document`, `image-ar-002-neural-extractor`, `image-ar-002-blood-spatter` | Pair each sprite with narrative text variants for tutorial tooltips. |
-| AR-003 | Player sprite | `image-ar-003-player-kira-sprite`, `image-ar-003-kira-evasion-pack` | Directional placeholder (`image-ar-003-kira-core-pack`) now powers idle/walk/run; bespoke swap still needed to lock trench-coat silhouette while dash/slide pack covers autosave stress beats. |
+| AR-003 | Player sprite | `image-ar-003-player-kira-sprite`, `image-ar-003-kira-evasion-pack` | Directional placeholder (`image-ar-003-kira-core-pack-normalized`) now powers idle/walk/run while the normalized dash/slide rows replace the generated evasion pack; bespoke swap still needed to lock trench-coat silhouette for the final art pass. |
 | AR-004 | NPC sprites | `image-ar-004-npc-civilian-pack`, `image-ar-004-npc-guard-pack` | Civilian palette must hint at faction allegiance; guards need visor glow to visualize detection state. |
 | AR-005 | District tilesets | `image-ar-005-tileset-neon-district`, `image-ar-005-tileset-corporate-spires`, `image-ar-005-tileset-archive-undercity`, `image-ar-005-tileset-zenith-sector` | Tilesets must ship with collision metadata once sourced/generated. |
 | AR-007 | Particle/overlay FX | `image-ar-007-particles-rain` (ai-generated), `image-ar-007-particles-neon-glow` (ai-generated), `image-ar-007-particles-memory-fragment` (ai-generated), `image-ar-007-screen-effects-pack` (ai-generated) | Sprite sheets integrated into ParticleEmitterRuntime with detective vision cue emissions; automated Jest harness keeps composite bursts within 60 FPS budgets (Playwright coverage still pending). |
@@ -43,6 +43,7 @@
 ## Session 166 Updates
 - Re-routed `image-ar-003-kira-evasion-pack` through `mcp__generate-image__generate_image`, saving the transparent dash/slide sprite sheet to `assets/generated/images/ar-003/image-ar-003-kira-evasion-pack.png` and updating manifests to `ai-generated` with GPT-Image-1 provenance so autosave stress encounters can consume the new frames immediately.
 - Session 167 wired the dash/slide pack into the new AnimatedSprite/PlayerAnimation runtime layer so player dash/slide states render from `image-ar-003-kira-evasion-pack` with Jest validation.
+- Session 179 normalized the generated atlas into `assets/generated/images/ar-003/image-ar-003-kira-evasion-pack-normalized.png`, merged the frames into `image-ar-003-kira-core-pack-normalized.png`, and regenerated locomotion reference captures for autosave overlay authors (`reports/art/player-locomotion-reference/manifest.json`).
 - Cleared RenderOps approval queue job `c2d9170c-9d13-4e3b-941c-e1ee89d8bb68` by importing narrative-approved feedback (`reports/art/renderops-feedback.json`) and updating `reports/telemetry/renderops-approvals/...` to mark safehouse floor and branch walkway segments as `approved`.
 
 ## Session 172 Updates

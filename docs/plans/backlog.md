@@ -89,7 +89,7 @@
 
 #### M3-016: Save/Load System Implementation
 - Re-routed `image-ar-003-kira-evasion-pack` through GPT-Image-1 automation, updating `assets/images/requests.json` to `ai-generated` and storing the transparent dash/slide sprite sheet at `assets/generated/images/ar-003/image-ar-003-kira-evasion-pack.png`. Manifests/docs now note the automation provenance and next integration step.
-- Next: normalize the generated dash/slide atlas (`image-ar-003-kira-evasion-pack`) into consistent rows before wiring it into the player animation set, then refresh autosave overlay captures once the sheet is aligned.
+- Session 179 normalized the generated dash/slide atlas (see `assets/generated/images/ar-003/image-ar-003-kira-evasion-pack-normalized.png` + manifest) and merged the frames into `image-ar-003-kira-core-pack-normalized.png`, refreshing autosave overlay captures once the sheet aligned.
 
 #### AR-008: Adaptive Music Tracks (M7)
 - Added AdaptiveMusicLayerController regression coverage (`tests/engine/audio/AdaptiveMusicLayerController.test.js`) that validates ambient/tension/combat volume weights derived from `GameConfig.audio.memoryParlorAmbient`, protecting future mix tweaks for downtown stems.
@@ -398,8 +398,8 @@
 ### Session #167 Backlog Updates
 
 #### AR-003: Player Character Sprite (M2)
-- **Integration**: AnimatedSprite and PlayerAnimation systems now drive the runtime player visuals, consuming `image-ar-003-kira-evasion-pack` for dash/slide states with automated Jest coverage.
-- **Follow-up**: Swap in bespoke idle/walk/run sheets once delivered and capture updated autosave overlays.
+- **Integration**: AnimatedSprite and PlayerAnimation systems now drive the runtime player visuals, consuming the normalized `image-ar-003-kira-core-pack-normalized.png` (dash/slide rows sourced from `image-ar-003-kira-evasion-pack-normalized.png`) with automated Jest coverage.
+- **Follow-up**: Swap in bespoke idle/walk/run sheets once delivered and rerun traversal QA to ensure dash/slide transitions stay in sync post-art swap.
 
 #### AR-008: Adaptive Music Tracks (M7)
 - **Integration**: Hooked downtown tension/combat stems into `GameConfig.audio.act2CrossroadsAmbient` and extended AdaptiveMusic regression tests so the ambient controller exercises the new layers.

@@ -228,11 +228,11 @@
     "arId": "AR-003",
     "title": "Kira Player Sprite Sheet",
     "creator": "Codex Placeholder Generator",
-    "source": "assets/generated/images/ar-003/image-ar-003-kira-core-pack.png",
+    "source": "assets/generated/images/ar-003/image-ar-003-kira-core-pack-normalized.png",
     "license": "Internal placeholder (automated directional sheet)",
     "status": "placeholder-generated",
     "usage": "32x32 sprite sheet with idle, walk, run, dash, and slide animations across four directions.",
-    "notes": "Detective coat silhouette with readable silhouette; 6 frames per locomotion loop. Rev B introduces directional placeholders generated via scripted tooling (Session 168) with dash/slide rows for runtime integration. Session 169 captured idle/walk/run reference crops via scripts/art/capturePlayerLocomotionFrames.js (see reports/art/player-locomotion-reference/manifest.json) for autosave overlay alignment ahead of bespoke swap. Original gpt-image concept preserved at assets/generated/images/ar-003/image-ar-003-kira-core-pack-source.png for art reference. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md.",
+    "notes": "Detective coat silhouette with readable silhouette; 6 frames per locomotion loop. Rev B introduces directional placeholders generated via scripted tooling (Session 168) with dash/slide rows for runtime integration. Session 169 captured idle/walk/run reference crops via scripts/art/capturePlayerLocomotionFrames.js (see reports/art/player-locomotion-reference/manifest.json) for autosave overlay alignment ahead of bespoke swap. Session 179 normalized dash/slide rows into assets/generated/images/ar-003/image-ar-003-kira-core-pack-normalized.png (manifest: assets/generated/images/ar-003/image-ar-003-kira-evasion-pack-normalized.json) and refreshed locomotion captures. Original gpt-image concept preserved at assets/generated/images/ar-003/image-ar-003-kira-core-pack-source.png for art reference. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md.",
     "placeholderGeneratedAt": "2025-10-31T13:35:32.444Z"
   },
   {
@@ -246,7 +246,8 @@
     "usage": "Supplemental dash and slide animations for Kira to support high-intensity autosave encounters.",
     "notes": [
       "Prompt drafted during Session 159 to cover lateral dash and low slide move sets; see docs/assets/generation-prompts-ar-001-005.md and generation payload staging.",
-      "Re-routed to OpenAI image generation in Session 166; output stored under assets/generated/images/ar-003/ with transparent spritesheet layout for dash and slide frames."
+      "Re-routed to OpenAI image generation in Session 166; output stored under assets/generated/images/ar-003/ with transparent spritesheet layout for dash and slide frames.",
+      "Session 179 produced normalized derivatives at assets/generated/images/ar-003/image-ar-003-kira-evasion-pack-normalized.png (see companion manifest) and merged frames into the updated core sheet."
     ],
     "placeholderGeneratedAt": null,
     "statusHistory": [

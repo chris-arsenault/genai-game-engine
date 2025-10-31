@@ -1,0 +1,272 @@
+{
+  "source": "assets/generated/images/ar-003/image-ar-003-kira-evasion-pack.png",
+  "generatedAt": "2025-10-31T18:17:11.283402Z",
+  "frameSize": 32,
+  "dashFrames": [
+    {
+      "bounds": {
+        "minX": 0,
+        "minY": 132,
+        "maxX": 149,
+        "maxY": 386
+      },
+      "normalizedColumn": 0,
+      "normalizedRow": 0
+    },
+    {
+      "bounds": {
+        "minX": 180,
+        "minY": 132,
+        "maxX": 381,
+        "maxY": 393
+      },
+      "normalizedColumn": 1,
+      "normalizedRow": 0
+    },
+    {
+      "bounds": {
+        "minX": 371,
+        "minY": 132,
+        "maxX": 553,
+        "maxY": 393
+      },
+      "normalizedColumn": 2,
+      "normalizedRow": 0
+    },
+    {
+      "bounds": {
+        "minX": 531,
+        "minY": 132,
+        "maxX": 717,
+        "maxY": 393
+      },
+      "normalizedColumn": 3,
+      "normalizedRow": 0
+    },
+    {
+      "bounds": {
+        "minX": 715,
+        "minY": 132,
+        "maxX": 894,
+        "maxY": 393
+      },
+      "normalizedColumn": 4,
+      "normalizedRow": 0
+    },
+    {
+      "bounds": {
+        "minX": 899,
+        "minY": 132,
+        "maxX": 1023,
+        "maxY": 393
+      },
+      "normalizedColumn": 5,
+      "normalizedRow": 0
+    }
+  ],
+  "slideFrames": [
+    {
+      "bounds": {
+        "minX": 0,
+        "minY": 514,
+        "maxX": 153,
+        "maxY": 738
+      },
+      "normalizedColumn": 0,
+      "normalizedRow": 1
+    },
+    {
+      "bounds": {
+        "minX": 177,
+        "minY": 514,
+        "maxX": 346,
+        "maxY": 738
+      },
+      "normalizedColumn": 1,
+      "normalizedRow": 1
+    },
+    {
+      "bounds": {
+        "minX": 371,
+        "minY": 514,
+        "maxX": 553,
+        "maxY": 738
+      },
+      "normalizedColumn": 2,
+      "normalizedRow": 1
+    },
+    {
+      "bounds": {
+        "minX": 597,
+        "minY": 514,
+        "maxX": 794,
+        "maxY": 738
+      },
+      "normalizedColumn": 3,
+      "normalizedRow": 1
+    },
+    {
+      "bounds": {
+        "minX": 841,
+        "minY": 514,
+        "maxX": 1023,
+        "maxY": 738
+      },
+      "normalizedColumn": 4,
+      "normalizedRow": 1
+    },
+    {
+      "bounds": {
+        "minX": 0,
+        "minY": 776,
+        "maxX": 143,
+        "maxY": 988
+      },
+      "normalizedColumn": 5,
+      "normalizedRow": 1
+    },
+    {
+      "bounds": {
+        "minX": 176,
+        "minY": 776,
+        "maxX": 340,
+        "maxY": 988
+      },
+      "normalizedColumn": 6,
+      "normalizedRow": 1
+    },
+    {
+      "bounds": {
+        "minX": 379,
+        "minY": 776,
+        "maxX": 568,
+        "maxY": 988
+      },
+      "normalizedColumn": 7,
+      "normalizedRow": 1
+    },
+    {
+      "bounds": {
+        "minX": 592,
+        "minY": 776,
+        "maxX": 794,
+        "maxY": 988
+      },
+      "normalizedColumn": 8,
+      "normalizedRow": 1
+    },
+    {
+      "bounds": {
+        "minX": 821,
+        "minY": 776,
+        "maxX": 1016,
+        "maxY": 988
+      },
+      "normalizedColumn": 9,
+      "normalizedRow": 1
+    }
+  ],
+  "outputs": {
+    "normalizedAtlas": {
+      "normalizedAtlas": "assets/generated/images/ar-003/image-ar-003-kira-evasion-pack-normalized.png",
+      "dash": [
+        {
+          "column": 0,
+          "row": 0
+        },
+        {
+          "column": 1,
+          "row": 0
+        },
+        {
+          "column": 2,
+          "row": 0
+        },
+        {
+          "column": 3,
+          "row": 0
+        },
+        {
+          "column": 4,
+          "row": 0
+        },
+        {
+          "column": 5,
+          "row": 0
+        }
+      ],
+      "slide": [
+        {
+          "column": 0,
+          "row": 1
+        },
+        {
+          "column": 1,
+          "row": 1
+        },
+        {
+          "column": 2,
+          "row": 1
+        },
+        {
+          "column": 3,
+          "row": 1
+        },
+        {
+          "column": 4,
+          "row": 1
+        },
+        {
+          "column": 5,
+          "row": 1
+        },
+        {
+          "column": 6,
+          "row": 1
+        },
+        {
+          "column": 7,
+          "row": 1
+        },
+        {
+          "column": 8,
+          "row": 1
+        },
+        {
+          "column": 9,
+          "row": 1
+        }
+      ],
+      "frameSize": 32,
+      "columns": 10,
+      "rows": 2
+    },
+    "normalizedCore": {
+      "normalizedCore": "assets/generated/images/ar-003/image-ar-003-kira-core-pack-normalized.png",
+      "rows": 14,
+      "columns": 10,
+      "dashRow": 12,
+      "slideRow": 13,
+      "dashColumns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "slideColumns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ]
+    }
+  }
+}
