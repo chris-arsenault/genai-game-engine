@@ -9,11 +9,12 @@
   - `reference-selected` – candidate reference gathered, needs conversion or bespoke art.
   - `prompt-packaged` – OpenAI-ready brief packaged into JSON payloads and staged for generation.
   - `derivative-generated` – overlay or processed asset rendered into `assets/overlays/`.
-  - `bespoke-scheduled` – commission queued with vendor in the bespoke sprint schedule.
-  - `bespoke-in-progress` – vendor actively producing iterations during the commissioned window.
-  - `bespoke-in-review` – deliverable received, undergoing internal review or revision loop.
-  - `bespoke-approved` – final art approved/licensed; placeholder retired in manifests.
-  - `bespoke-pending` – waiting on vendor kickoff or materials despite being scheduled.
+  - `bespoke-scheduled` – **legacy**; replaced by automated `mcp__generate-image__generate_image` runs.
+  - `bespoke-in-progress` – **legacy**; do not use (automation handles iteration).
+  - `bespoke-in-review` – **legacy**; automation delivers ready-to-use assets.
+  - `bespoke-approved` – **legacy**; manifests now flip directly from `ai-generated` to `shipped`.
+  - `bespoke-pending` – **legacy**; remove from manifests as automation eliminates vendor queues.
+- **Automation Update (2025-10-31)**: All new or outstanding asset work must be executed through `mcp__generate-image__generate_image` or derivative scripts. External vendors, manual review loops, and approval meetings are removed from the pipeline.
 
 ## Outstanding Requests
 
@@ -28,9 +29,9 @@
 | AR-050 | Act 2 Crossroads art bundle | All `image-ar-050-*` entries | Map one-to-one with `act2_crossroads_*` assetIds for the bespoke scene lighting revamp. |
 
 ## Sourcing Plan
-- Phase 1 (today): Complete inventory (done) and shortlist CC0/CC-BY references via `web_search` starting with AR-050 lighting overlays.
-- Phase 2: For requests without suitable references, schedule OpenAI image generation prompts with exact framing notes from `notes` fields.
-- Phase 3: Update `assets/manifests/` entries with final asset metadata, citing source links and licenses in `usage`.
+- Phase 1 (today): Complete inventory (done) and shortlist inspirational references via `web_search` starting with AR-050 lighting overlays (for prompt guidance only).
+- Phase 2: Execute `mcp__generate-image__generate_image` runs for every outstanding visual request, wiring prompt metadata directly from the `notes` fields.
+- Phase 3: Update `assets/manifests/` entries with generated asset metadata, background selections, and automation provenance—no external licensing required.
 
 ## Session 162 Updates
 - Generated new AR-007 particle sprite sheets (rain, neon glow, memory fragment) via GPT-Image-1 and staged them under `assets/generated/ar-007/` with transparent backgrounds for additive blending.

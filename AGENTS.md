@@ -32,6 +32,7 @@
 - Use the MCP backlog as the operational source of truth: create new tasks with `mcp__game-mcp-server__create_backlog_item`, keep status/notes current via `mcp__game-mcp-server__update_backlog_item`, and retrieve work queues with `mcp__game-mcp-server__search_backlog_semantic`, `mcp__game-mcp-server__search_backlog_by_tag`, or `mcp__game-mcp-server__get_top_backlog_items` before sprint planning or daily execution.
 - Mirror changes from the MCP backlog back to `docs/plans/backlog.md` only after the MCP items are updated so the markdown file remains a read-friendly reflection of the canonical MCP records.
 - Ignore artifacts stored under `archive/` unless explicitly asked to reference historical materials; do not modify archived files during active tasks.
+- Enforce fully automated QA: rely exclusively on scripted validations (Jest, Playwright, profiling harnesses); never schedule or wait for manual sweeps or external approvals.
 - Do not support manual QA processes of any kind.
 
 **Non-negotiable:** - Focus on implementing new content, new features, unit tests, and e2e tests. Do not work on unnecessary telemetry or CI processes.  Focus on closing existing workstreams instead of extending with new acceptance criteria.
@@ -42,8 +43,8 @@
 - Use the repository’s tooling conventions (npm scripts, Jest, Playwright) when validating work.
 
 ### Asset Sourcing Policy
-- When new art/audio/3D media is needed, call `mcp__generate-image__generate_image` to create required 2D art assets before considering external sources or licensing; omit the deprecated `style` parameter and always set the `background` parameter (use `transparent` when alpha is required) and the `file_location` parameter to the absolute path where the image should be saved.
-- Document the selected asset source, usage context, background choice, and any licensing considerations in session notes or relevant docs.
+- When new art/audio/3D media is needed, call `mcp__generate-image__generate_image` (or existing derivative automation) to create the required assets—external vendors, bespoke scheduling, and manual approvals are not permitted; set `background` explicitly (use `transparent` when alpha is required) and provide an absolute `file_location`.
+- Document the generated asset metadata, usage context, background choice, and automation run details in session notes or relevant docs.
 
 ### Verification & Reporting
 - Run `npm test` after meaningful implementation changes; add targeted suites (Playwright, profiling) when relevant.
@@ -82,7 +83,7 @@ src/
 2. **Planning:** `architect` converts research into implementation plans with narrative hooks.
 3. **Narrative:** Narrative trio (writer, world-building, dialog) shapes story, lore, quests.
 4. **Implementation:** `engine-dev` and `gameplay-dev` build systems and mechanics.
-5. **Testing & QA:** `test-engineer` maintains coverage; `playtester` captures experiential feedback.
+5. **Testing & Automation:** `test-engineer` maintains automated coverage; `playtest-automation` bots capture experiential telemetry.
 6. **Optimization:** `optimizer` protects frame-time budgets and memory profiles.
 7. **Documentation:** `documenter` keeps technical docs, lore, and player guides current.
 

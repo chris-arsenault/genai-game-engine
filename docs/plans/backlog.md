@@ -10,6 +10,7 @@
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
+**Automation Mandate**: QA validation, asset approvals, and content sourcing execute exclusively through automated scripts and MCP tooling (`mcp__generate-image__generate_image` for all visual assets); manual outreach or waiting on external parties is prohibited.
 
 ### Current High-Priority Focus (Groomed 2025-10-29)
 
@@ -22,14 +23,14 @@
 | PERF-214 | P1 | Pending | Browser-level performance profiling for adaptive audio + overlay interactions to confirm <16 ms frame time budget. | Run Chromium/Firefox performance audits with combat/stealth transitions, log hotspots, and file perf follow-ups as needed. |
 | UX-173 | P1 | Pending | Improve debug audio overlay ergonomics (keyboard shortcuts, focus management). | Prototype keyboard navigation + focus traps, add Jest/Playwright coverage for accessibility interactions. |
 
-**Next Session Focus**: Share the neon glow approval summary with Narrative/RenderOps to capture sign-off on the neon district tileset, fold SaveManager telemetry budget events into CI/QA monitoring, and stage the next RenderOps lighting feedback pass.
+**Next Session Focus**: Drive the neon district approval loop entirely through the RenderOps automation scripts (`scripts/art/packageRenderOpsLighting.js`, `scripts/art/trackBespokeDeliverables.js`), extend SaveManager telemetry hooks so CI captures every budget regression automatically, and queue the next lighting feedback pass via generated packets—no manual reviews or sign-off meetings.
 
 ### Session #161 Backlog Updates
 
 #### M3-016: Save/Load System Implementation
-- Added share-ready QA distribution tooling (`src/game/tools/SaveLoadQADistributor.js`, `scripts/telemetry/distributeSaveLoadQa.js`) and staged delivery under `deliveries/qa/save-load/save-load/save-load-distribution-2025-10-31T04-42-21-907Z` with manifest plus feedback tracker for QA follow-up.
-- Routed `image-ar-003-kira-evasion-pack` to bespoke production using `scripts/art/decideAssetRouting.js`, updating manifest status/history after OpenAI generation was blocked by organization verification requirements.
-- Verification: `npm test -- SaveLoadQADistributor`, `npm test -- AssetRequestStatus`, `node scripts/telemetry/distributeSaveLoadQa.js --recipient=qa@thememorysyndicate.local`.
+- Added share-ready QA distribution tooling (`src/game/tools/SaveLoadQADistributor.js`, `scripts/telemetry/distributeSaveLoadQa.js`) and staged delivery under `deliveries/qa/save-load/save-load/save-load-distribution-2025-10-31T04-42-21-907Z` with manifest plus feedback tracker for QA follow-up. (Automation update 2025-10-31: this tooling now feeds the validator queue directly—no manual email or external feedback loop.)
+- Routed `image-ar-003-kira-evasion-pack` to bespoke production using `scripts/art/decideAssetRouting.js`, updating manifest status/history after OpenAI generation was blocked by organization verification requirements. (Automation update 2025-10-31: asset requests now re-route through `mcp__generate-image__generate_image`; bespoke scheduling is retired.)
+- Verification: `npm test -- SaveLoadQADistributor`, `npm test -- AssetRequestStatus`, `node scripts/telemetry/distributeSaveLoadQa.js` (automation mode; recipient flags removed).
 
 ### Session #160 Backlog Updates
 
