@@ -30,6 +30,8 @@
 
 - Integrated the safehouse floor, briefing pad, and branch walkway derivatives into `assets/overlays/act2-crossroads/` via `node scripts/art/generateOverlayDerivatives.js --filter image-ar-050-crossroads-floor-safehouse,image-ar-050-crossroads-branch-walkway,image-ar-050-crossroads-briefing-pad`, then reran `node scripts/art/previewCrossroadsLighting.js --tolerance=0.03 --out=reports/art/act2-crossroads-lighting-preview.json` to confirm all 12 tracked segments land within tolerance.
 - Session 197 generated `image-ar-005-tileset-neon-district` via GPT-Image-1 and staged the atlas under `assets/generated/images/ar-005/`; requests/manifests updated to reflect ai-generated status while remaining AR-005 tiles continue pending sourcing.
+- 2025-10-31: Queued Corporate Spires, Archive Undercity, and Zenith Sector tilesets via `node scripts/art/queueGenerationRequests.js --filter=image-ar-005-tileset-corporate-spires,image-ar-005-tileset-archive-undercity,image-ar-005-tileset-zenith-sector`, producing `assets/images/generation-queue/2025-10-31T22-51-38-840Z-ar-005.jsonl` with manifest entries advanced to `generation-queued`.
+- 2025-10-31: Ran `npm run art:analyze-tileset -- --image=assets/generated/images/ar-005/image-ar-005-tileset-neon-district.png`, generating `reports/art/neon-district-tileset-analysis.json` (4096 tiles scanned, 108 seam/collision warnings) to drive automated metadata authoring.
 
 ## Sourcing Plan
 - Phase 1 (today): Complete inventory (done) and shortlist inspirational references via `web_search` starting with AR-050 lighting overlays (for prompt guidance only).

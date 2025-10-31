@@ -512,10 +512,14 @@
     "creator": "Codex Placeholder Generator",
     "source": "assets/generated/ar-placeholders/image-ar-005-tileset-corporate-spires.png",
     "license": "Internal placeholder (Session 115)",
-    "status": "placeholder-generated",
+    "status": "generation-queued",
     "usage": "16x16 tile atlas for sterile high-tech interiors.",
     "notes": "Feature frosted glass, chrome flooring, and light columns. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
-    "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00"
+    "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
+    "generationQueue": "generation-queue/2025-10-31T22-51-38-840Z-ar-005.jsonl",
+    "generationQueuedAt": "2025-10-31T22:51:38.840Z",
+    "generationQueueLabel": "Corporate Spires Tileset",
+    "generationQueueNotes": "Feature frosted glass, chrome flooring, and light columns. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
   },
   {
     "id": "image-ar-005-tileset-archive-undercity",
@@ -524,10 +528,14 @@
     "creator": "Codex Placeholder Generator",
     "source": "assets/generated/ar-placeholders/image-ar-005-tileset-archive-undercity.png",
     "license": "Internal placeholder (Session 115)",
-    "status": "placeholder-generated",
+    "status": "generation-queued",
     "usage": "16x16 tile atlas for ancient underground data vaults.",
     "notes": "Blend corroded metal with glowing conduits and dust particles. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
-    "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00"
+    "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
+    "generationQueue": "generation-queue/2025-10-31T22-51-38-840Z-ar-005.jsonl",
+    "generationQueuedAt": "2025-10-31T22:51:38.840Z",
+    "generationQueueLabel": "Archive Undercity Tileset",
+    "generationQueueNotes": "Blend corroded metal with glowing conduits and dust particles. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
   },
   {
     "id": "image-ar-005-tileset-zenith-sector",
@@ -536,10 +544,14 @@
     "creator": "Codex Placeholder Generator",
     "source": "assets/generated/ar-placeholders/image-ar-005-tileset-zenith-sector.png",
     "license": "Internal placeholder (Session 115)",
-    "status": "placeholder-generated",
+    "status": "generation-queued",
     "usage": "16x16 tile atlas for imposing futurist plazas.",
     "notes": "Incorporate holographic banners and elevated rail tracks. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
-    "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00"
+    "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
+    "generationQueue": "generation-queue/2025-10-31T22-51-38-840Z-ar-005.jsonl",
+    "generationQueuedAt": "2025-10-31T22:51:38.840Z",
+    "generationQueueLabel": "Zenith Sector Tileset",
+    "generationQueueNotes": "Incorporate holographic banners and elevated rail tracks. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
   },
   {
     "id": "image-ar-007-particles-rain",
@@ -769,3 +781,4 @@
     "notes": "AssetId act2_crossroads_boundary_south_v1; perforated steel panel adds armored venting cues while keeping collision silhouette readable. Openverse ID 7b9870f8-1647-4fa6-a29b-62361aa1f4f7 (\"perforated steel panel in stairway\"). | Overlay derivative generated in Session 111 via npm run art:generate-crossroads-overlays -> assets/overlays/act2-crossroads/act2_crossroads_boundary_south.png"
   }
 ]
+

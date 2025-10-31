@@ -31,10 +31,10 @@
 | UX-173 | P1 | Completed | Debug audio overlay now fully keyboard navigable with Shift+Alt+A shortcut, focus trap, and Playwright coverage. | Continue watching the automated Playwright spec for regressions during future overlay changes. |
 
 **Next Session Focus**:
-- Run the AR-005 automation queue (`node scripts/art/queueGenerationRequests.js`) for Corporate Spires, Archive Undercity, and Zenith Sector so all tilesets advance without manual sourcing.
-- Stage the Neon District atlas integration check by lining up seam/collision automation once the tilemap hooks land; defer any manual spot-checks.
-- Execute the 2025-11-07 AR-050 bespoke sweep (`npm run art:track-bespoke -- --week=2` → `npm run art:export-crossroads-luminance`) and keep the scripted tolerance report archived.
-- Continue automated LayoutGraph benchmarking (`npm run benchmark:layout-graph`) and investigation profiling (`npm run profile -- --scenario=investigation`) to cover M2-020 regression monitoring.
+- Monitor the AR-005 tileset queue (`assets/images/generation-queue/2025-10-31T22-51-38-840Z-ar-005.jsonl`) and rerun the manifest sync once GPT generation completes so Corporate Spires, Archive Undercity, and Zenith Sector atlases land automatically.
+- Translate the Neon District seam/collision analysis (`npm run art:analyze-tileset`) into authored metadata by triaging the 108 warnings in `reports/art/neon-district-tileset-analysis.json`; integrate priority seams before enabling in-engine previews.
+- Execute the 2025-11-07 AR-050 bespoke sweep (`npm run art:track-bespoke -- --week=2` → `npm run art:export-crossroads-luminance`) and archive the scripted tolerance report.
+- Trend LayoutGraph benchmark + investigation profiling outputs (`npm run benchmark:layout-graph`, `npm run profile -- --scenario=investigation`) so M2-020 perf monitoring stays automated.
 
 ### Session #173 Backlog Maintenance
 
@@ -2306,10 +2306,12 @@ _Progress 2025-11-09 (Session #139 audio/perf polish): Augmented performanceSnap
   - 60 FPS maintained with investigation UI open
   - No critical bugs
   - Memory usage stable
-- **Status**: In Progress — Session 196 fortified LayoutGraph performance coverage.
+- **Status**: In Progress — LayoutGraph guardrails refreshed and automated monitoring in place.
 - **Latest Update**:
   - Stabilized LayoutGraph performance regression by sampling multiple runs and enforcing frame-budget aligned thresholds to eliminate sub-1ms flakes.
-- Remaining follow-up: schedule automated LayoutGraph benchmarks (`npm run benchmark:layout-graph`) and investigation perf sweeps (`npm run profile -- --scenario=investigation`) so scripted runs surface regressions without manual profiling.
+  - 2025-10-31: Added `npm run benchmark:layout-graph` (see `reports/perf/layout-graph-benchmark-2025-10-31.json`) with 60/120/180 node passes all well under the 16 ms budget.
+  - 2025-10-31: Captured investigation profiling via `npm run profile -- --scenario=investigation`, archived at `benchmark-results/m1-profile-1761951451560.json` for trend comparison.
+- Remaining follow-up: automate regression alerting from benchmark/profile outputs and investigate any benchmarks exceeding 8 ms mean or 12 ms worst-case in future runs.
 
 ---
 
@@ -2907,10 +2909,10 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Archive Undercity: Dark, ancient tech (16x16 tiles)
   - Zenith Sector: Futuristic, imposing (16x16 tiles)
 - **File**: `assets/images/requests.json`
-- **Status**: Neon District atlas generated via automation and logged in manifests; remaining districts will be produced through the `queueGenerationRequests` pipeline with seam/collision metadata sourced from script outputs—no manual review paths remain.
+- **Status**: Neon District atlas generated via automation and logged in manifests; Corporate Spires, Archive Undercity, and Zenith Sector queued on 2025-10-31 (`assets/images/generation-queue/2025-10-31T22-51-38-840Z-ar-005.jsonl`) with seam/collision analysis staged through `npm run art:analyze-tileset`.
 - **Next Steps**:
-  - Queue the remaining AR-005 tilesets via `node scripts/art/queueGenerationRequests.js --filter=image-ar-005-tileset-corporate-spires,image-ar-005-tileset-archive-undercity,image-ar-005-tileset-zenith-sector`.
-  - Re-run the manifest sync (same script without `--dry-run`) once GPT generation completes so `assets/images/requests.json` captures completion automatically.
+  - Monitor GPT Image fulfillment and rerun the manifest sync (same script without `--dry-run`) once outputs complete so `assets/images/requests.json` captures completion automatically.
+  - Triage the 108 seam/collision warnings in `reports/art/neon-district-tileset-analysis.json` and promote confirmed seams into authored metadata before Neon District tile integration preview.
 
 #### AR-006: UI Sound Effects (M2-M6)
 - **Type**: Audio
