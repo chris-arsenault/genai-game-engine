@@ -14,6 +14,8 @@
 
 import { factionSlice } from '../state/slices/factionSlice.js';
 import { tutorialSlice } from '../state/slices/tutorialSlice.js';
+import { districtSlice } from '../state/slices/districtSlice.js';
+import { npcSlice } from '../state/slices/npcSlice.js';
 import {
   createInspectorExportArtifacts,
   SPATIAL_HISTORY_BUDGET_BYTES
@@ -696,6 +698,8 @@ export class SaveManager {
           spatialHash: null,
         },
         controlBindings: this._collectControlBindingsSummary(),
+        districts: buildEmptyDistrictInspectorSummary(),
+        npcs: buildEmptyNpcInspectorSummary(),
       };
     }
 
@@ -707,6 +711,8 @@ export class SaveManager {
     let tutorialSnapshots = [];
     let latestSnapshot = null;
     let tutorialTranscript = [];
+    let districtInspectorSummary = buildEmptyDistrictInspectorSummary();
+    let npcInspectorSummary = buildEmptyNpcInspectorSummary();
 
     try {
       cascadeSummary = this.worldStateStore.select(
@@ -740,6 +746,22 @@ export class SaveManager {
       }
     }
 
+    try {
+      const districtRoot = this.worldStateStore.select(districtSlice.selectors.selectRoot);
+      const districtRecords = this.worldStateStore.select(districtSlice.selectors.selectAllDistricts);
+      districtInspectorSummary = buildDistrictInspectorSummary(districtRoot, districtRecords);
+    } catch (error) {
+      console.warn('[SaveManager] Failed to gather district telemetry for inspector', error);
+    }
+
+    try {
+      const npcRoot = this.worldStateStore.select(npcSlice.selectors.selectRoot);
+      const npcRecords = this.worldStateStore.select(npcSlice.selectors.selectNpcSummaries);
+      npcInspectorSummary = buildNpcInspectorSummary(npcRoot, npcRecords);
+    } catch (error) {
+      console.warn('[SaveManager] Failed to gather NPC telemetry for inspector', error);
+    }
+
     const factionInspectorSummary = {
       ...(cascadeSummary ?? { lastCascadeEvent: null, cascadeTargets: [] }),
       recentMemberRemovals: Array.isArray(recentMemberRemovals)
@@ -762,6 +784,8 @@ export class SaveManager {
         spatialHash: spatialMetrics,
       },
       controlBindings,
+      districts: districtInspectorSummary,
+      npcs: npcInspectorSummary,
     };
   }
 
@@ -1254,6 +1278,232 @@ function summarizeInventoryState(inventory) {
     quantities,
     equipped: inventory.equipped ? { ...inventory.equipped } : {},
   };
+}
+
+function buildEmptyDistrictInspectorSummary() {
+  return {
+    lastUpdatedAt: null,
+    lastLockdownAt: null,
+    restrictedDistricts: [],
+    metrics: {
+      total: 0,
+      restricted: 0,
+      fastTravelDisabled: 0,
+      infiltrationLocked: 0,
+      infiltrationUnlocked: 0,
+      lockdownEvents: 0,
+    },
+  };
+}
+
+function buildDistrictInspectorSummary(rootState, districts) {
+  const summary = buildEmptyDistrictInspectorSummary();
+  if (rootState && typeof rootState === 'object') {
+    summary.lastUpdatedAt = rootState.lastUpdatedAt ?? null;
+  }
+
+  const records = Array.isArray(districts) ? districts : [];
+  const restrictedRecords = [];
+
+  let fastTravelDisabled = 0;
+  let infiltrationLocked = 0;
+  let infiltrationUnlocked = 0;
+  let lockdownEvents = 0;
+  let lastLockdownAt = null;
+
+  for (const record of records) {
+    if (!record || typeof record !== 'object') {
+      continue;
+    }
+
+    const access = record.access ?? {};
+    const restrictions = Array.isArray(access.restrictions) ? access.restrictions : [];
+    const activeRestrictions = restrictions.filter((entry) => entry && entry.active);
+
+    const fastTravelEnabled = Boolean(access.fastTravelEnabled);
+    if (!fastTravelEnabled) {
+      fastTravelDisabled += 1;
+    }
+
+    const infiltrationRoutes = Array.isArray(record.infiltrationRoutes)
+      ? record.infiltrationRoutes
+      : [];
+    const unlockedRoutes = infiltrationRoutes.filter((route) => route && route.unlocked);
+    infiltrationUnlocked += unlockedRoutes.length;
+    infiltrationLocked += Math.max(0, infiltrationRoutes.length - unlockedRoutes.length);
+
+    const analytics = record.analytics ?? {};
+    if (Number.isFinite(analytics.lockdownsTriggered)) {
+      lockdownEvents += Math.max(0, Math.floor(analytics.lockdownsTriggered));
+    }
+    if (Number.isFinite(analytics.lastLockdownAt)) {
+      lastLockdownAt = Math.max(lastLockdownAt ?? 0, analytics.lastLockdownAt);
+    }
+
+    if (activeRestrictions.length) {
+      let lastRestrictionChangeAt = null;
+      for (const restriction of activeRestrictions) {
+        if (Number.isFinite(restriction?.lastChangedAt)) {
+          lastRestrictionChangeAt = Math.max(
+            lastRestrictionChangeAt ?? restriction.lastChangedAt,
+            restriction.lastChangedAt
+          );
+        }
+      }
+      if (!lastRestrictionChangeAt && Array.isArray(access.restrictionLog) && access.restrictionLog.length) {
+        const lastEntry = access.restrictionLog[access.restrictionLog.length - 1];
+        if (Number.isFinite(lastEntry?.timestamp)) {
+          lastRestrictionChangeAt = lastEntry.timestamp;
+        }
+      }
+
+      restrictedRecords.push({
+        id: record.id ?? null,
+        name: record.name ?? record.id ?? 'Unknown district',
+        tier: record.tier ?? null,
+        controllingFaction: record.controllingFaction?.current ?? null,
+        stability: {
+          rating: record.stability?.rating ?? null,
+          value: Number.isFinite(record.stability?.current)
+            ? record.stability.current
+            : null,
+          lastChangedAt: record.stability?.lastChangedAt ?? null,
+        },
+        fastTravelEnabled,
+        activeRestrictionCount: activeRestrictions.length,
+        lastRestrictionChangeAt: lastRestrictionChangeAt ?? null,
+        restrictions: activeRestrictions.map((restriction) => ({
+          id: restriction.id ?? null,
+          type: restriction.type ?? 'generic',
+          description: restriction.description ?? '',
+          lastChangedAt: restriction.lastChangedAt ?? null,
+        })),
+        infiltrationLocked: Math.max(
+          0,
+          infiltrationRoutes.length - unlockedRoutes.length
+        ),
+        infiltrationUnlocked: unlockedRoutes.length,
+        lockdownsTriggered: Math.max(
+          0,
+          Number.isFinite(analytics.lockdownsTriggered)
+            ? Math.floor(analytics.lockdownsTriggered)
+            : 0
+        ),
+        lastLockdownAt: Number.isFinite(analytics.lastLockdownAt)
+          ? analytics.lastLockdownAt
+          : null,
+      });
+    }
+  }
+
+  restrictedRecords.sort((a, b) => {
+    const countDiff = (b.activeRestrictionCount ?? 0) - (a.activeRestrictionCount ?? 0);
+    if (countDiff !== 0) {
+      return countDiff;
+    }
+    const timeA = a.lastRestrictionChangeAt ?? 0;
+    const timeB = b.lastRestrictionChangeAt ?? 0;
+    return timeB - timeA;
+  });
+
+  summary.restrictedDistricts = restrictedRecords.slice(0, 8);
+  summary.metrics = {
+    total: records.length,
+    restricted: restrictedRecords.length,
+    fastTravelDisabled,
+    infiltrationLocked,
+    infiltrationUnlocked,
+    lockdownEvents,
+  };
+  summary.lastLockdownAt = lastLockdownAt ?? null;
+
+  return summary;
+}
+
+function buildEmptyNpcInspectorSummary() {
+  return {
+    lastUpdatedAt: null,
+    alerts: [],
+    suspicious: [],
+    metrics: {
+      total: 0,
+      alerts: 0,
+      suspicious: 0,
+      knowsPlayer: 0,
+      witnessedCrimes: 0,
+    },
+  };
+}
+
+function buildNpcInspectorSummary(rootState, npcSummaries) {
+  const summary = buildEmptyNpcInspectorSummary();
+  if (rootState && typeof rootState === 'object') {
+    summary.lastUpdatedAt = rootState.lastUpdatedAt ?? null;
+  }
+
+  const records = Array.isArray(npcSummaries) ? npcSummaries : [];
+  const alerting = [];
+  const suspicious = [];
+  let knowsPlayer = 0;
+  let witnessedCrimes = 0;
+
+  for (const npc of records) {
+    if (!npc || typeof npc !== 'object') {
+      continue;
+    }
+
+    if (npc.knowsPlayer) {
+      knowsPlayer += 1;
+    }
+
+    const witnessed = Number.isFinite(npc.witnessedCrimes)
+      ? npc.witnessedCrimes
+      : Number.isFinite(npc.interactions?.witnessedCrimes)
+        ? npc.interactions.witnessedCrimes
+        : 0;
+    witnessedCrimes += Math.max(0, witnessed);
+
+    if (npc.alert?.active) {
+      alerting.push({
+        id: npc.id ?? null,
+        name: npc.name ?? npc.id ?? 'Unknown NPC',
+        factionId: npc.factionId ?? null,
+        reason: npc.alert.reason ?? null,
+        updatedAt: Number.isFinite(npc.alert.updatedAt)
+          ? npc.alert.updatedAt
+          : npc.lastInteractionAt ?? null,
+        status: npc.status ?? 'unknown',
+      });
+    }
+
+    if (npc.suspicion?.active) {
+      suspicious.push({
+        id: npc.id ?? null,
+        name: npc.name ?? npc.id ?? 'Unknown NPC',
+        factionId: npc.factionId ?? null,
+        reason: npc.suspicion.reason ?? null,
+        updatedAt: Number.isFinite(npc.suspicion.updatedAt)
+          ? npc.suspicion.updatedAt
+          : npc.lastInteractionAt ?? null,
+        status: npc.status ?? 'unknown',
+      });
+    }
+  }
+
+  alerting.sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
+  suspicious.sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
+
+  summary.alerts = alerting.slice(0, 10);
+  summary.suspicious = suspicious.slice(0, 10);
+  summary.metrics = {
+    total: records.length,
+    alerts: alerting.length,
+    suspicious: suspicious.length,
+    knowsPlayer,
+    witnessedCrimes,
+  };
+
+  return summary;
 }
 
 function deepEqual(a, b) {

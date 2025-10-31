@@ -64,6 +64,19 @@
 - Extended `WorldStateStore` event wiring and snapshot tests so NPC state is persisted and restored (`tests/game/state/worldStateStore.test.js`, `tests/game/state/npcSlice.test.js`).
 - Verification: `npm test -- npcSlice worldStateStore`.
 
+### Session #154 Backlog Updates
+
+#### M3-013: WorldStateManager Implementation
+- Enhanced `SaveManager.getInspectorSummary()` to surface district restriction and NPC alert telemetry from the WorldStateStore slices, feeding the inspector overlay/export stack with traversal gating data.
+- Added helper summaries and regression coverage in `tests/game/managers/SaveManager.test.js` so district/NPC parity checks remain guarded alongside legacy collectors.
+- Updated `SaveInspectorOverlay` to render restricted districts, fast-travel locks, and NPC alert highlights with refreshed metrics and Jest coverage (`tests/game/ui/SaveInspectorOverlay.test.js`).
+- Verification: `npm test -- --runTestsByPath tests/game/managers/SaveManager.test.js tests/game/ui/SaveInspectorOverlay.test.js`.
+
+#### M3-016: Save/Load System Implementation
+- Extended inspector export tooling to serialize the new district/NPC summaries, enriching JSON artifacts with lockdown counts and alert logs for QA review.
+- Documented next steps to complete slot-level Save/Load workflows now that inspector parity covers the expanded slices.
+- Verification: `npm test -- --runTestsByPath tests/game/telemetry/inspectorTelemetryExporter.test.js`.
+
 ### Session #149 Backlog Updates
 
 #### UX-173: Debug Audio Overlay Ergonomics

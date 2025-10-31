@@ -22,7 +22,7 @@ export class SaveInspectorOverlay {
     this.visible = false;
 
     this.width = config.width ?? 340;
-    this.height = config.height ?? 280;
+    this.height = config.height ?? 380;
     this.x = config.x ?? canvas.width - this.width - 40;
     this.y = config.y ?? canvas.height - this.height - 40;
 
@@ -265,12 +265,19 @@ export class SaveInspectorOverlay {
         latest: null,
         recent: [],
       },
+      districts: this._buildEmptyDistrictSummary(),
+      npcs: this._buildEmptyNpcSummary(),
       controlBindings: this._buildEmptyControlBindingsSummary(),
       metrics: {
         cascadeEvents: 0,
         cascadeTargets: 0,
         tutorialSnapshots: 0,
         controlBindingEvents: 0,
+        restrictedDistricts: 0,
+        fastTravelDisabled: 0,
+        lockedRoutes: 0,
+        npcAlerts: 0,
+        npcSuspicion: 0,
       },
     };
   }
@@ -319,8 +326,16 @@ export class SaveInspectorOverlay {
       ? [normalized.tutorial.latest, ...recent.filter((entry) => entry.timestamp !== normalized.tutorial.latest.timestamp)]
       : recent;
 
+    normalized.districts = this._normalizeDistrictSummary(raw.districts);
+    normalized.npcs = this._normalizeNpcSummary(raw.npcs);
     normalized.controlBindings = this._normalizeControlBindings(raw.controlBindings);
-    normalized.metrics = this._calculateMetrics(cascadeTargets, recentSnapshots, normalized.controlBindings);
+    normalized.metrics = this._calculateMetrics(
+      cascadeTargets,
+      recentSnapshots,
+      normalized.controlBindings,
+      normalized.districts,
+      normalized.npcs
+    );
 
     return normalized;
   }
@@ -382,6 +397,138 @@ export class SaveInspectorOverlay {
       return fallback;
     }
     return items.join(', ');
+  }
+
+  _buildEmptyDistrictSummary() {
+    return {
+      lastUpdatedAt: null,
+      lastLockdownAt: null,
+      restricted: [],
+      metrics: {
+        total: 0,
+        restricted: 0,
+        fastTravelDisabled: 0,
+        infiltrationLocked: 0,
+        infiltrationUnlocked: 0,
+        lockdownEvents: 0,
+      },
+    };
+  }
+
+  _buildEmptyNpcSummary() {
+    return {
+      lastUpdatedAt: null,
+      alerts: [],
+      suspicious: [],
+      metrics: {
+        total: 0,
+        alerts: 0,
+        suspicious: 0,
+        knowsPlayer: 0,
+        witnessedCrimes: 0,
+      },
+    };
+  }
+
+  _normalizeDistrictSummary(rawDistricts) {
+    if (!rawDistricts || typeof rawDistricts !== 'object') {
+      return this._buildEmptyDistrictSummary();
+    }
+
+    const summary = this._buildEmptyDistrictSummary();
+    summary.lastUpdatedAt = rawDistricts.lastUpdatedAt ?? null;
+    summary.lastLockdownAt = rawDistricts.lastLockdownAt ?? null;
+
+    const metrics = rawDistricts.metrics ?? {};
+    summary.metrics = {
+      total: this._coerceNonNegativeInteger(metrics.total ?? 0),
+      restricted: this._coerceNonNegativeInteger(metrics.restricted ?? 0),
+      fastTravelDisabled: this._coerceNonNegativeInteger(metrics.fastTravelDisabled ?? 0),
+      infiltrationLocked: this._coerceNonNegativeInteger(metrics.infiltrationLocked ?? 0),
+      infiltrationUnlocked: this._coerceNonNegativeInteger(metrics.infiltrationUnlocked ?? 0),
+      lockdownEvents: this._coerceNonNegativeInteger(metrics.lockdownEvents ?? 0),
+    };
+
+    const restricted = Array.isArray(rawDistricts.restrictedDistricts)
+      ? rawDistricts.restrictedDistricts
+      : [];
+
+    summary.restricted = restricted.slice(0, 4).map((record) => {
+      const restrictions = Array.isArray(record?.restrictions)
+        ? record.restrictions.map((entry) => ({
+            id: entry?.id ?? null,
+            type: entry?.type ?? 'generic',
+            description: entry?.description ?? '',
+            lastChangedAt: entry?.lastChangedAt ?? null,
+            relative: this.formatRelativeTime(entry?.lastChangedAt ?? null),
+          }))
+        : [];
+
+      const lastRestrictionChangeAt = record?.lastRestrictionChangeAt ?? null;
+      const fastTravelEnabled = record?.fastTravelEnabled !== false;
+
+      return {
+        id: record?.id ?? null,
+        name: record?.name ?? 'Unknown district',
+        tier: record?.tier ?? null,
+        fastTravelEnabled,
+        controllingFaction: record?.controllingFaction ?? null,
+        stabilityRating: record?.stability?.rating ?? null,
+        stabilityValue: typeof record?.stability?.value === 'number'
+          ? record.stability.value
+          : null,
+        lastRestrictionChangeAt,
+        lastRestrictionRelative: this.formatRelativeTime(lastRestrictionChangeAt),
+        restrictions,
+        infiltrationLocked: this._coerceNonNegativeInteger(record?.infiltrationLocked ?? 0),
+        infiltrationUnlocked: this._coerceNonNegativeInteger(record?.infiltrationUnlocked ?? 0),
+        lockdownsTriggered: this._coerceNonNegativeInteger(record?.lockdownsTriggered ?? 0),
+        lastLockdownAt: record?.lastLockdownAt ?? null,
+        lastLockdownRelative: this.formatRelativeTime(record?.lastLockdownAt ?? null),
+      };
+    });
+
+    return summary;
+  }
+
+  _normalizeNpcSummary(rawNpcs) {
+    if (!rawNpcs || typeof rawNpcs !== 'object') {
+      return this._buildEmptyNpcSummary();
+    }
+
+    const summary = this._buildEmptyNpcSummary();
+    summary.lastUpdatedAt = rawNpcs.lastUpdatedAt ?? null;
+
+    const metrics = rawNpcs.metrics ?? {};
+    summary.metrics = {
+      total: this._coerceNonNegativeInteger(metrics.total ?? 0),
+      alerts: this._coerceNonNegativeInteger(metrics.alerts ?? 0),
+      suspicious: this._coerceNonNegativeInteger(metrics.suspicious ?? 0),
+      knowsPlayer: this._coerceNonNegativeInteger(metrics.knowsPlayer ?? 0),
+      witnessedCrimes: this._coerceNonNegativeInteger(metrics.witnessedCrimes ?? 0),
+    };
+
+    const alerts = Array.isArray(rawNpcs.alerts) ? rawNpcs.alerts : [];
+    const suspicious = Array.isArray(rawNpcs.suspicious) ? rawNpcs.suspicious : [];
+
+    const normalizeNpcEntry = (entry) => {
+      const updatedAt = entry?.updatedAt ?? null;
+      return {
+        id: entry?.id ?? null,
+        name: entry?.name ?? 'Unknown NPC',
+        factionId: entry?.factionId ?? null,
+        factionName: this.resolveFactionName(entry?.factionId ?? null),
+        status: entry?.status ?? 'unknown',
+        reason: entry?.reason ?? null,
+        updatedAt,
+        relative: this.formatRelativeTime(updatedAt),
+      };
+    };
+
+    summary.alerts = alerts.slice(0, 5).map(normalizeNpcEntry);
+    summary.suspicious = suspicious.slice(0, 5).map(normalizeNpcEntry);
+
+    return summary;
   }
 
   _buildEmptyControlBindingsSummary() {
@@ -710,7 +857,11 @@ export class SaveInspectorOverlay {
 
     cursorY = this._renderCascadeSection(ctx, textX, cursorY, maxWidth, lineHeight);
     cursorY += 8;
+    cursorY = this._renderDistrictSection(ctx, textX, cursorY, maxWidth, lineHeight);
+    cursorY += 8;
     cursorY = this._renderTutorialSection(ctx, textX, cursorY, maxWidth, lineHeight);
+    cursorY += 8;
+    cursorY = this._renderNpcSection(ctx, textX, cursorY, maxWidth, lineHeight);
     cursorY += 8;
     this._renderControlBindingsSection(ctx, textX, cursorY, maxWidth, lineHeight);
 
@@ -770,6 +921,99 @@ export class SaveInspectorOverlay {
     return cursorY;
   }
 
+  _renderDistrictSection(ctx, x, cursorY, maxWidth, lineHeight) {
+    ctx.font = this.style.sectionTitle.font;
+    ctx.fillStyle = this.style.sectionTitle.color;
+    ctx.fillText('Traversal Locks', x, cursorY);
+    cursorY += lineHeight;
+
+    ctx.font = this.style.text.font;
+    const districts = this.summary.districts ?? this._buildEmptyDistrictSummary();
+    const metrics = districts.metrics ?? this._buildEmptyDistrictSummary().metrics;
+
+    ctx.fillStyle = this.style.text.colorPrimary;
+    ctx.fillText(
+      this.truncateText(
+        `Restricted districts: ${metrics.restricted}/${metrics.total}`,
+        90
+      ),
+      x,
+      cursorY
+    );
+    cursorY += lineHeight;
+    ctx.fillText(
+      this.truncateText(`Fast travel disabled: ${metrics.fastTravelDisabled}`, 90),
+      x,
+      cursorY
+    );
+    cursorY += lineHeight;
+    ctx.fillText(
+      this.truncateText(`Locked routes: ${metrics.infiltrationLocked}`, 90),
+      x,
+      cursorY
+    );
+    cursorY += lineHeight;
+
+    if (Number.isFinite(districts.lastLockdownAt) && districts.lastLockdownAt) {
+      ctx.fillStyle = this.style.text.colorSecondary;
+      ctx.fillText(
+        this.truncateText(
+          `Last lockdown ${this.formatRelativeTime(districts.lastLockdownAt)}`,
+          90
+        ),
+        x,
+        cursorY
+      );
+      cursorY += lineHeight;
+      ctx.fillStyle = this.style.text.colorPrimary;
+    }
+
+    const restricted = Array.isArray(districts.restricted) ? districts.restricted : [];
+    if (!restricted.length) {
+      ctx.fillStyle = this.style.text.colorSecondary;
+      ctx.fillText('No active traversal restrictions', x, cursorY);
+      cursorY += lineHeight;
+      return cursorY;
+    }
+
+    for (const record of restricted.slice(0, 3)) {
+      ctx.fillStyle = this.style.text.colorPrimary;
+      const label = `${this.truncateText(record.name, 26)} — ${record.restrictions.length} lock(s)`;
+      ctx.fillText(this.truncateText(label, 90), x, cursorY);
+      cursorY += lineHeight;
+
+      ctx.fillStyle = this.style.text.colorSecondary;
+      const detailParts = [];
+      if (!record.fastTravelEnabled) {
+        detailParts.push('fast travel disabled');
+      }
+      if (record.lastRestrictionChangeAt) {
+        detailParts.push(`updated ${record.lastRestrictionRelative}`);
+      }
+      detailParts.push(`routes locked ${record.infiltrationLocked}`);
+      ctx.fillText(this.truncateText(detailParts.join(' • '), 90), x, cursorY);
+      cursorY += lineHeight;
+
+      const topRestriction = record.restrictions?.[0];
+      if (topRestriction) {
+        const restrictionLabel = topRestriction.description || topRestriction.type || 'Restriction detail unavailable';
+        ctx.fillText(this.truncateText(restrictionLabel, 90), x, cursorY);
+        cursorY += lineHeight;
+      }
+
+      if (record.lastLockdownAt) {
+        ctx.fillText(
+          this.truncateText(`Last lockdown ${record.lastLockdownRelative}`, 90),
+          x,
+          cursorY
+        );
+        cursorY += lineHeight;
+      }
+    }
+
+    return cursorY;
+  }
+
   /**
    * Render tutorial timeline section.
    * @private
@@ -811,6 +1055,74 @@ export class SaveInspectorOverlay {
       ctx.fillStyle = this.style.text.colorPrimary;
       const label = `${this.truncateText(entry.eventLabel, 28)} — ${entry.relative}`;
       ctx.fillText(this.truncateText(label, 90), x, cursorY);
+      cursorY += lineHeight;
+    }
+
+    return cursorY;
+  }
+
+  _renderNpcSection(ctx, x, cursorY, maxWidth, lineHeight) {
+    ctx.font = this.style.sectionTitle.font;
+    ctx.fillStyle = this.style.sectionTitle.color;
+    ctx.fillText('NPC Alerts', x, cursorY);
+    cursorY += lineHeight;
+
+    ctx.font = this.style.text.font;
+    const npcs = this.summary.npcs ?? this._buildEmptyNpcSummary();
+    const metrics = npcs.metrics ?? this._buildEmptyNpcSummary().metrics;
+
+    ctx.fillStyle = this.style.text.colorPrimary;
+    ctx.fillText(
+      this.truncateText(`Alerts: ${metrics.alerts}  Suspicion: ${metrics.suspicious}`, 90),
+      x,
+      cursorY
+    );
+    cursorY += lineHeight;
+    ctx.fillText(
+      this.truncateText(
+        `Knows player: ${metrics.knowsPlayer}  Witnessed crimes: ${metrics.witnessedCrimes}`,
+        90
+      ),
+      x,
+      cursorY
+    );
+    cursorY += lineHeight;
+
+    const alerts = Array.isArray(npcs.alerts) ? npcs.alerts : [];
+    const suspicion = Array.isArray(npcs.suspicious) ? npcs.suspicious : [];
+
+    if (!alerts.length && !suspicion.length) {
+      ctx.fillStyle = this.style.text.colorSecondary;
+      ctx.fillText('No active alerts or suspicion flags', x, cursorY);
+      cursorY += lineHeight;
+      return cursorY;
+    }
+
+    for (const entry of alerts.slice(0, 2)) {
+      ctx.fillStyle = this.style.text.colorPrimary;
+      const factionLabel = entry.factionName ?? entry.factionId ?? 'Unknown faction';
+      const label = `Alert: ${this.truncateText(entry.name, 24)} (${this.truncateText(factionLabel, 20)})`;
+      ctx.fillText(this.truncateText(label, 90), x, cursorY);
+      cursorY += lineHeight;
+
+      ctx.fillStyle = this.style.text.colorSecondary;
+      const reason = entry.reason ? `${entry.reason}` : 'reason unavailable';
+      const detail = `${reason} • ${entry.relative}`;
+      ctx.fillText(this.truncateText(detail, 90), x, cursorY);
+      cursorY += lineHeight;
+    }
+
+    for (const entry of suspicion.slice(0, 2)) {
+      ctx.fillStyle = this.style.text.colorPrimary;
+      const factionLabel = entry.factionName ?? entry.factionId ?? 'Unknown faction';
+      const label = `Suspicion: ${this.truncateText(entry.name, 24)} (${this.truncateText(factionLabel, 20)})`;
+      ctx.fillText(this.truncateText(label, 90), x, cursorY);
+      cursorY += lineHeight;
+
+      ctx.fillStyle = this.style.text.colorSecondary;
+      const reason = entry.reason ? `${entry.reason}` : 'reason unavailable';
+      const detail = `${reason} • ${entry.relative}`;
+      ctx.fillText(this.truncateText(detail, 90), x, cursorY);
       cursorY += lineHeight;
     }
 
@@ -1012,9 +1324,15 @@ export class SaveInspectorOverlay {
     ctx.fillStyle = this.style.text.colorPrimary;
 
     const metrics = this.summary.metrics ?? this._buildEmptySummary().metrics;
+    const districtTotals = this.summary.districts?.metrics ?? this._buildEmptyDistrictSummary().metrics;
     const lines = [
       `Cascade events tracked: ${metrics.cascadeEvents}`,
       `Active cascade targets: ${metrics.cascadeTargets}`,
+      `Restricted districts: ${metrics.restrictedDistricts}/${districtTotals.total}`,
+      `Fast travel disabled: ${metrics.fastTravelDisabled}`,
+      `Locked infiltration routes: ${metrics.lockedRoutes}`,
+      `NPC alerts active: ${metrics.npcAlerts}`,
+      `Suspicion escalations: ${metrics.npcSuspicion}`,
       `Tutorial timeline entries: ${metrics.tutorialSnapshots}`,
       `Control binding events: ${metrics.controlBindingEvents}`,
     ];
@@ -1034,7 +1352,7 @@ export class SaveInspectorOverlay {
    * @returns {{cascadeEvents: number, cascadeTargets: number, tutorialSnapshots: number}}
    * @private
    */
-  _calculateMetrics(cascadeTargets, tutorialSnapshots, controlBindings) {
+  _calculateMetrics(cascadeTargets, tutorialSnapshots, controlBindings, districtSummary, npcSummary) {
     const normalizedCascadeTargets = Array.isArray(cascadeTargets) ? cascadeTargets : [];
     const cascadeEvents = normalizedCascadeTargets.reduce(
       (total, target) => total + (target?.cascadeCount ?? 0),
@@ -1045,12 +1363,19 @@ export class SaveInspectorOverlay {
 
     const tutorialEntryCount = Array.isArray(tutorialSnapshots) ? tutorialSnapshots.length : 0;
     const controlBindingEvents = controlBindings?.totalEvents ?? 0;
+    const districtMetrics = districtSummary?.metrics ?? {};
+    const npcMetrics = npcSummary?.metrics ?? {};
 
     return {
       cascadeEvents,
       cascadeTargets: uniqueCascadeTargets,
       tutorialSnapshots: tutorialEntryCount,
       controlBindingEvents: this._coerceNonNegativeInteger(controlBindingEvents),
+      restrictedDistricts: this._coerceNonNegativeInteger(districtMetrics.restricted ?? 0),
+      fastTravelDisabled: this._coerceNonNegativeInteger(districtMetrics.fastTravelDisabled ?? 0),
+      lockedRoutes: this._coerceNonNegativeInteger(districtMetrics.infiltrationLocked ?? 0),
+      npcAlerts: this._coerceNonNegativeInteger(npcMetrics.alerts ?? 0),
+      npcSuspicion: this._coerceNonNegativeInteger(npcMetrics.suspicious ?? 0),
     };
   }
 

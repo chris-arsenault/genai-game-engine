@@ -104,6 +104,71 @@ describe('SaveInspectorOverlay', () => {
             },
           ],
         },
+        districts: {
+          lastUpdatedAt: now - 4000,
+          lastLockdownAt: now - 2000,
+          metrics: {
+            total: 3,
+            restricted: 1,
+            fastTravelDisabled: 1,
+            infiltrationLocked: 2,
+            infiltrationUnlocked: 3,
+            lockdownEvents: 1,
+          },
+          restrictedDistricts: [
+            {
+              id: 'neon_district',
+              name: 'Neon District',
+              tier: 'foundation',
+              fastTravelEnabled: false,
+              controllingFaction: 'wraith_network',
+              stability: { rating: 'volatile', value: 34, lastChangedAt: now - 4100 },
+              lastRestrictionChangeAt: now - 1500,
+              restrictions: [
+                {
+                  id: 'lockdown_gate',
+                  type: 'lockdown',
+                  description: 'Security lockdown active',
+                  lastChangedAt: now - 1500,
+                },
+              ],
+              infiltrationLocked: 2,
+              infiltrationUnlocked: 1,
+              lockdownsTriggered: 1,
+              lastLockdownAt: now - 2000,
+            },
+          ],
+        },
+        npcs: {
+          lastUpdatedAt: now - 3000,
+          metrics: {
+            total: 4,
+            alerts: 1,
+            suspicious: 1,
+            knowsPlayer: 1,
+            witnessedCrimes: 2,
+          },
+          alerts: [
+            {
+              id: 'npc_echo',
+              name: 'Echo Operative',
+              factionId: 'wraith_network',
+              status: 'alert',
+              reason: 'security breach',
+              updatedAt: now - 1000,
+            },
+          ],
+          suspicious: [
+            {
+              id: 'npc_scout',
+              name: 'Perimeter Scout',
+              factionId: 'cipher_collective',
+              status: 'suspicious',
+              reason: 'trespassing',
+              updatedAt: now - 800,
+            },
+          ],
+        },
         controlBindings: {
           source: 'observation-log',
           totalEvents: 4,
@@ -166,6 +231,17 @@ describe('SaveInspectorOverlay', () => {
     expect(overlay.summary.metrics.cascadeTargets).toBe(1);
     expect(overlay.summary.metrics.tutorialSnapshots).toBe(2);
     expect(overlay.summary.metrics.controlBindingEvents).toBe(4);
+    expect(overlay.summary.metrics.restrictedDistricts).toBe(1);
+    expect(overlay.summary.metrics.fastTravelDisabled).toBe(1);
+    expect(overlay.summary.metrics.npcAlerts).toBe(1);
+    expect(overlay.summary.districts.restricted[0].name).toBe('Neon District');
+    expect(overlay.summary.districts.restricted[0].restrictions[0].description).toContain('Security lockdown');
+    expect(overlay.summary.npcs.alerts[0]).toEqual(
+      expect.objectContaining({ id: 'npc_echo', reason: 'security breach' })
+    );
+    expect(overlay.summary.npcs.suspicious[0]).toEqual(
+      expect.objectContaining({ id: 'npc_scout', reason: 'trespassing' })
+    );
     expect(overlay.summary.controlBindings.totalEvents).toBe(4);
     expect(overlay.summary.controlBindings.actionsVisitedCount).toBe(2);
     expect(overlay.summary.controlBindings.listModesVisited).toEqual(['sections', 'conflicts']);

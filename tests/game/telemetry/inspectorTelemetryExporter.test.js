@@ -164,10 +164,76 @@ describe('inspectorTelemetryExporter', () => {
           lastAction: 'interact',
           longestAction: 'inventory',
         },
-        ratios: {
-          selectionBlocked: { numerator: 1, denominator: 6 },
-          pageNavigationBlocked: { numerator: 1, denominator: 2 },
+      ratios: {
+        selectionBlocked: { numerator: 1, denominator: 6 },
+        pageNavigationBlocked: { numerator: 1, denominator: 2 },
+      },
+      },
+      districts: {
+        lastUpdatedAt: Date.UTC(2025, 9, 30, 17, 3, 30),
+        lastLockdownAt: Date.UTC(2025, 9, 30, 17, 3, 45),
+        metrics: {
+          total: 5,
+          restricted: 2,
+          fastTravelDisabled: 1,
+          infiltrationLocked: 4,
+          infiltrationUnlocked: 6,
+          lockdownEvents: 3,
         },
+        restrictedDistricts: [
+          {
+            id: 'neon_districts',
+            name: 'Neon Districts',
+            tier: 'foundation',
+            fastTravelEnabled: false,
+            controllingFaction: 'wraith_network',
+            stability: { rating: 'volatile', value: 32 },
+            activeRestrictionCount: 2,
+            lastRestrictionChangeAt: Date.UTC(2025, 9, 30, 17, 3, 40),
+            restrictions: [
+              {
+                id: 'lockdown_gate',
+                type: 'lockdown',
+                description: 'Security lockdown active',
+                lastChangedAt: Date.UTC(2025, 9, 30, 17, 3, 40),
+              },
+            ],
+            infiltrationLocked: 2,
+            infiltrationUnlocked: 1,
+            lockdownsTriggered: 2,
+            lastLockdownAt: Date.UTC(2025, 9, 30, 17, 3, 45),
+          },
+        ],
+      },
+      npcs: {
+        lastUpdatedAt: Date.UTC(2025, 9, 30, 17, 3, 50),
+        metrics: {
+          total: 6,
+          alerts: 2,
+          suspicious: 1,
+          knowsPlayer: 2,
+          witnessedCrimes: 3,
+        },
+        alerts: [
+          {
+            id: 'npc_echo',
+            name: 'Echo Operative',
+            factionId: 'wraith_network',
+            status: 'alert',
+            reason: 'security breach',
+            updatedAt: Date.UTC(2025, 9, 30, 17, 3, 55),
+          },
+        ],
+        suspicious: [
+          {
+            id: 'npc_scout',
+            name: 'Perimeter Scout',
+            factionId: 'cipher_collective',
+            status: 'suspicious',
+            reason: 'trespassing',
+            updatedAt: Date.UTC(2025, 9, 30, 17, 3, 52),
+          },
+        ],
       },
     };
 
@@ -226,6 +292,31 @@ describe('inspectorTelemetryExporter', () => {
     expect(sanitized.controlBindings.ratios.selectionBlocked.denominator).toBe(6);
     expect(sanitized.controlBindings.ratios.selectionBlocked.value).toBeCloseTo(0.167, 3);
     expect(sanitized.controlBindings.ratios.pageNavigationBlocked.value).toBe(0.5);
+    expect(sanitized.districts.metrics).toEqual(
+      expect.objectContaining({
+        total: 5,
+        restricted: 2,
+        fastTravelDisabled: 1,
+        infiltrationLocked: 4,
+        lockdownEvents: 3,
+      })
+    );
+    expect(sanitized.districts.restrictedDistricts[0]).toEqual(
+      expect.objectContaining({
+        id: 'neon_districts',
+        infiltrationLocked: 2,
+        lastLockdownIso: new Date(Date.UTC(2025, 9, 30, 17, 3, 45)).toISOString(),
+      })
+    );
+    expect(sanitized.npcs.metrics).toEqual(
+      expect.objectContaining({ alerts: 2, suspicious: 1, knowsPlayer: 2 })
+    );
+    expect(sanitized.npcs.alerts[0]).toEqual(
+      expect.objectContaining({
+        id: 'npc_echo',
+        updatedIso: new Date(Date.UTC(2025, 9, 30, 17, 3, 55)).toISOString(),
+      })
+    );
 
     expect(artifacts).toHaveLength(5);
 
@@ -245,6 +336,8 @@ describe('inspectorTelemetryExporter', () => {
     expect(parsed.controlBindings.metrics.selectionMoves).toBe(5);
     expect(parsed.controlBindings.dwell.averageMs).toBe(1500);
     expect(parsed.controlBindings.ratios.selectionBlocked.percentage).toBe('17%');
+    expect(parsed.districts.metrics.lockdownEvents).toBe(3);
+    expect(parsed.npcs.metrics.alerts).toBe(2);
 
     const cascadeCsv = artifacts.find(
       (artifact) => artifact.type === 'csv' && artifact.section === 'cascade'

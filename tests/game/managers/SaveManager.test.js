@@ -2,6 +2,8 @@ import { SaveManager } from '../../../src/game/managers/SaveManager.js';
 import { EventBus } from '../../../src/engine/events/EventBus.js';
 import { factionSlice } from '../../../src/game/state/slices/factionSlice.js';
 import { tutorialSlice } from '../../../src/game/state/slices/tutorialSlice.js';
+import { districtSlice } from '../../../src/game/state/slices/districtSlice.js';
+import { npcSlice } from '../../../src/game/state/slices/npcSlice.js';
 
 describe('SaveManager', () => {
   let saveManager;
@@ -1398,6 +1400,31 @@ describe('SaveManager', () => {
           pageNavigationBlocked: { numerator: 0, denominator: 0, value: 0, percentage: '0%' },
         },
       });
+      expect(summary.districts).toEqual({
+        lastUpdatedAt: null,
+        lastLockdownAt: null,
+        restrictedDistricts: [],
+        metrics: {
+          total: 0,
+          restricted: 0,
+          fastTravelDisabled: 0,
+          infiltrationLocked: 0,
+          infiltrationUnlocked: 0,
+          lockdownEvents: 0,
+        },
+      });
+      expect(summary.npcs).toEqual({
+        lastUpdatedAt: null,
+        alerts: [],
+        suspicious: [],
+        metrics: {
+          total: 0,
+          alerts: 0,
+          suspicious: 0,
+          knowsPlayer: 0,
+          witnessedCrimes: 0,
+        },
+      });
       expect(summary.generatedAt).toEqual(expect.any(Number));
     });
 
@@ -1523,6 +1550,66 @@ describe('SaveManager', () => {
           pageNavigationBlocked: { numerator: 1, denominator: 2 },
         },
       };
+      const districtRoot = {
+        byId: {},
+        changeLog: [],
+        lastUpdatedAt: 555,
+      };
+      const districtRecords = [
+        {
+          id: 'neon_districts',
+          name: 'Neon Districts',
+          tier: 'foundation',
+          controllingFaction: { current: 'wraith_network' },
+          stability: { rating: 'volatile', current: 32, lastChangedAt: 410 },
+          access: {
+            fastTravelEnabled: false,
+            restrictions: [
+              {
+                id: 'lockdown_gate',
+                type: 'lockdown',
+                description: 'Security lockdown active',
+                active: true,
+                lastChangedAt: 333,
+              },
+            ],
+            restrictionLog: [
+              { restrictionId: 'lockdown_gate', active: true, timestamp: 333 },
+            ],
+          },
+          infiltrationRoutes: [
+            { id: 'route_north', unlocked: false },
+            { id: 'route_south', unlocked: true },
+          ],
+          analytics: { lockdownsTriggered: 2, lastLockdownAt: 444 },
+        },
+      ];
+      const npcRoot = {
+        lastUpdatedAt: 777,
+      };
+      const npcSummaries = [
+        {
+          id: 'npc_echo',
+          name: 'Echo Operative',
+          factionId: 'wraith_network',
+          status: 'alert',
+          knowsPlayer: true,
+          lastInteractionAt: 552,
+          witnessedCrimes: 1,
+          alert: { active: true, reason: 'security_breach', updatedAt: 557 },
+          suspicion: { active: true, reason: 'trespassing', updatedAt: 556 },
+        },
+        {
+          id: 'npc_scout',
+          name: 'Perimeter Scout',
+          factionId: 'cipher_collective',
+          status: 'patrol',
+          knowsPlayer: false,
+          witnessedCrimes: 0,
+          alert: { active: false },
+          suspicion: { active: false },
+        },
+      ];
 
       const store = {
         select: jest.fn((selector) => {
@@ -1537,6 +1624,18 @@ describe('SaveManager', () => {
           }
           if (selector === tutorialSlice.selectors.selectLatestPromptSnapshot) {
             return latestSnapshot;
+          }
+          if (selector === districtSlice.selectors.selectRoot) {
+            return districtRoot;
+          }
+          if (selector === districtSlice.selectors.selectAllDistricts) {
+            return districtRecords;
+          }
+          if (selector === npcSlice.selectors.selectRoot) {
+            return npcRoot;
+          }
+          if (selector === npcSlice.selectors.selectNpcSummaries) {
+            return npcSummaries;
           }
           return null;
         }),
@@ -1610,7 +1709,40 @@ describe('SaveManager', () => {
           pageNavigationBlocked: { numerator: 1, denominator: 2, value: 0.5, percentage: '50%' },
         },
       });
-      expect(store.select).toHaveBeenCalledTimes(4);
+      expect(summary.districts.metrics).toEqual(
+        expect.objectContaining({
+          total: 1,
+          restricted: 1,
+          fastTravelDisabled: 1,
+          infiltrationLocked: 1,
+          infiltrationUnlocked: 1,
+          lockdownEvents: 2,
+        })
+      );
+      expect(summary.districts.restrictedDistricts[0]).toEqual(
+        expect.objectContaining({
+          id: 'neon_districts',
+          activeRestrictionCount: 1,
+          fastTravelEnabled: false,
+        })
+      );
+      expect(summary.districts.lastLockdownAt).toBe(444);
+      expect(summary.npcs.metrics).toEqual(
+        expect.objectContaining({
+          total: 2,
+          alerts: 1,
+          suspicious: 1,
+          knowsPlayer: 1,
+          witnessedCrimes: 1,
+        })
+      );
+      expect(summary.npcs.alerts[0]).toEqual(
+        expect.objectContaining({ id: 'npc_echo', reason: 'security_breach' })
+      );
+      expect(summary.npcs.suspicious[0]).toEqual(
+        expect.objectContaining({ id: 'npc_echo', reason: 'trespassing' })
+      );
+      expect(store.select).toHaveBeenCalledTimes(8);
       expect(mockManagers.spatialMetricsProvider).toHaveBeenCalledTimes(1);
       expect(mockManagers.controlBindingsObservationProvider).toHaveBeenCalledTimes(1);
 

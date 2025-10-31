@@ -77,6 +77,19 @@ function sanitizeNonNegativeInteger(value) {
   return Number.isFinite(numeric) ? Math.max(0, Math.floor(numeric)) : 0;
 }
 
+function sanitizeTimestampValue(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function sanitizeTimestampIso(value) {
+  const numeric = sanitizeTimestampValue(value);
+  return numeric !== null ? new Date(numeric).toISOString() : null;
+}
+
 function formatDurationLabel(ms) {
   const value = sanitizeNonNegativeInteger(ms);
   if (value <= 0) {
@@ -319,6 +332,146 @@ function sanitizeControlBindings(controlBindings) {
   };
 }
 
+function sanitizeDistrictSummary(districts) {
+  if (!districts || typeof districts !== 'object') {
+    return {
+      lastUpdatedAt: null,
+      lastUpdatedIso: null,
+      lastLockdownAt: null,
+      lastLockdownIso: null,
+      metrics: {
+        total: 0,
+        restricted: 0,
+        fastTravelDisabled: 0,
+        infiltrationLocked: 0,
+        infiltrationUnlocked: 0,
+        lockdownEvents: 0,
+      },
+      restrictedDistricts: [],
+    };
+  }
+
+  const metrics = districts.metrics ?? {};
+  const restrictedDistricts = Array.isArray(districts.restrictedDistricts)
+    ? districts.restrictedDistricts.map((record) => {
+        const restrictions = Array.isArray(record?.restrictions)
+          ? record.restrictions.map((entry) => {
+              const lastChangedAt = sanitizeTimestampValue(entry?.lastChangedAt);
+              return {
+                id: entry?.id ?? null,
+                type: entry?.type ?? 'generic',
+                description: entry?.description ?? '',
+                lastChangedAt,
+                lastChangedIso: sanitizeTimestampIso(entry?.lastChangedAt),
+              };
+            })
+          : [];
+
+        const lastRestrictionChangeAt = sanitizeTimestampValue(record?.lastRestrictionChangeAt);
+        const lastLockdownAt = sanitizeTimestampValue(record?.lastLockdownAt);
+
+        return {
+          id: record?.id ?? null,
+          name: record?.name ?? null,
+          tier: record?.tier ?? null,
+          fastTravelEnabled: record?.fastTravelEnabled !== false,
+          controllingFaction: record?.controllingFaction ?? null,
+          stabilityRating: record?.stability?.rating ?? null,
+          stabilityValue: Number.isFinite(record?.stability?.value)
+            ? Number(record.stability.value)
+            : null,
+          activeRestrictionCount: sanitizeNonNegativeInteger(
+            record?.activeRestrictionCount ?? restrictions.length
+          ),
+          infiltrationLocked: sanitizeNonNegativeInteger(record?.infiltrationLocked ?? 0),
+          infiltrationUnlocked: sanitizeNonNegativeInteger(record?.infiltrationUnlocked ?? 0),
+          lockdownsTriggered: sanitizeNonNegativeInteger(record?.lockdownsTriggered ?? 0),
+          lastRestrictionChangeAt,
+          lastRestrictionChangeIso: sanitizeTimestampIso(record?.lastRestrictionChangeAt),
+          lastLockdownAt,
+          lastLockdownIso: sanitizeTimestampIso(record?.lastLockdownAt),
+          restrictions,
+        };
+      })
+    : [];
+
+  return {
+    lastUpdatedAt: sanitizeTimestampValue(districts.lastUpdatedAt),
+    lastUpdatedIso: sanitizeTimestampIso(districts.lastUpdatedAt),
+    lastLockdownAt: sanitizeTimestampValue(districts.lastLockdownAt),
+    lastLockdownIso: sanitizeTimestampIso(districts.lastLockdownAt),
+    metrics: {
+      total: sanitizeNonNegativeInteger(metrics.total ?? 0),
+      restricted: sanitizeNonNegativeInteger(metrics.restricted ?? 0),
+      fastTravelDisabled: sanitizeNonNegativeInteger(metrics.fastTravelDisabled ?? 0),
+      infiltrationLocked: sanitizeNonNegativeInteger(metrics.infiltrationLocked ?? 0),
+      infiltrationUnlocked: sanitizeNonNegativeInteger(metrics.infiltrationUnlocked ?? 0),
+      lockdownEvents: sanitizeNonNegativeInteger(metrics.lockdownEvents ?? 0),
+    },
+    restrictedDistricts,
+  };
+}
+
+function sanitizeNpcEntry(entry) {
+  if (!entry || typeof entry !== 'object') {
+    return {
+      id: null,
+      name: null,
+      factionId: null,
+      factionName: null,
+      status: null,
+      reason: null,
+      updatedAt: null,
+      updatedIso: null,
+    };
+  }
+
+  const updatedAt = sanitizeTimestampValue(entry.updatedAt);
+  return {
+    id: entry.id ?? null,
+    name: entry.name ?? null,
+    factionId: entry.factionId ?? null,
+    factionName: resolveFactionName(entry.factionId, entry.factionName ?? null),
+    status: entry.status ?? null,
+    reason: entry.reason ?? null,
+    updatedAt,
+    updatedIso: sanitizeTimestampIso(updatedAt),
+  };
+}
+
+function sanitizeNpcSummary(npcs) {
+  if (!npcs || typeof npcs !== 'object') {
+    return {
+      lastUpdatedAt: null,
+      lastUpdatedIso: null,
+      metrics: {
+        total: 0,
+        alerts: 0,
+        suspicious: 0,
+        knowsPlayer: 0,
+        witnessedCrimes: 0,
+      },
+      alerts: [],
+      suspicious: [],
+    };
+  }
+
+  const metrics = npcs.metrics ?? {};
+  return {
+    lastUpdatedAt: sanitizeTimestampValue(npcs.lastUpdatedAt),
+    lastUpdatedIso: sanitizeTimestampIso(npcs.lastUpdatedAt),
+    metrics: {
+      total: sanitizeNonNegativeInteger(metrics.total ?? 0),
+      alerts: sanitizeNonNegativeInteger(metrics.alerts ?? 0),
+      suspicious: sanitizeNonNegativeInteger(metrics.suspicious ?? 0),
+      knowsPlayer: sanitizeNonNegativeInteger(metrics.knowsPlayer ?? 0),
+      witnessedCrimes: sanitizeNonNegativeInteger(metrics.witnessedCrimes ?? 0),
+    },
+    alerts: Array.isArray(npcs.alerts) ? npcs.alerts.map(sanitizeNpcEntry) : [],
+    suspicious: Array.isArray(npcs.suspicious) ? npcs.suspicious.map(sanitizeNpcEntry) : [],
+  };
+}
+
 function sanitizeSpatialTelemetry(spatial) {
   if (!spatial || typeof spatial !== 'object') {
     return null;
@@ -414,6 +567,8 @@ function sanitizeSummary(summary) {
   const engine = summary?.engine ?? {};
   const spatialHash = sanitizeSpatialTelemetry(engine.spatialHash);
   const controlBindings = sanitizeControlBindings(summary?.controlBindings);
+  const districts = sanitizeDistrictSummary(summary?.districts);
+  const npcs = sanitizeNpcSummary(summary?.npcs);
 
   return {
     generatedAt,
@@ -454,6 +609,8 @@ function sanitizeSummary(summary) {
       spatialHash,
     },
     controlBindings,
+    districts,
+    npcs,
   };
 }
 
@@ -612,6 +769,8 @@ export function createInspectorExportArtifacts(summary, options = {}) {
       tutorial: sanitizedSummary.tutorial,
       engine: sanitizedSummary.engine,
       controlBindings: sanitizedSummary.controlBindings,
+      districts: sanitizedSummary.districts,
+      npcs: sanitizedSummary.npcs,
     };
     artifacts.push({
       type: 'json',
