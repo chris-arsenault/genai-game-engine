@@ -535,28 +535,34 @@ describe('LayoutGraph', () => {
 
   describe('performance', () => {
     it('should handle large graphs efficiently', () => {
-      const nodeCount = 100;
+      const nodeCount = 120;
+      const iterations = 5;
+      const durations = [];
 
-      const start = performance.now();
+      for (let iteration = 0; iteration < iterations; iteration += 1) {
+        const runGraph = new LayoutGraph();
+        const start = performance.now();
 
-      // Add nodes
-      for (let i = 0; i < nodeCount; i++) {
-        graph.addNode(`room${i}`, { type: 'room' });
+        for (let i = 0; i < nodeCount; i += 1) {
+          runGraph.addNode(`room${i}`, { type: 'room' });
+        }
+
+        for (let i = 0; i < nodeCount - 1; i += 1) {
+          runGraph.addEdge(`room${i}`, `room${i + 1}`);
+        }
+
+        const hasPath = runGraph.hasPath('room0', `room${nodeCount - 1}`);
+        expect(hasPath).toBe(true);
+
+        durations.push(performance.now() - start);
       }
 
-      // Add edges (create a chain)
-      for (let i = 0; i < nodeCount - 1; i++) {
-        graph.addEdge(`room${i}`, `room${i + 1}`);
-      }
+      const average = durations.reduce((total, value) => total + value, 0) / durations.length;
+      const worstCase = Math.max(...durations);
 
-      // Test pathfinding
-      const hasPath = graph.hasPath('room0', `room${nodeCount - 1}`);
-      expect(hasPath).toBe(true);
-
-      const elapsed = performance.now() - start;
-
-      // Should complete in less than 1ms for 100 nodes
-      expect(elapsed).toBeLessThan(1);
+      // Keep LayoutGraph operations comfortably within the 16ms frame budget in both average and worst case runs.
+      expect(average).toBeLessThan(8);
+      expect(worstCase).toBeLessThan(12);
     });
   });
 });

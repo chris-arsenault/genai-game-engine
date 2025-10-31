@@ -2300,6 +2300,10 @@ _Progress 2025-11-09 (Session #139 audio/perf polish): Augmented performanceSnap
   - 60 FPS maintained with investigation UI open
   - No critical bugs
   - Memory usage stable
+- **Status**: In Progress — Session 196 fortified LayoutGraph performance coverage.
+- **Latest Update**:
+  - Stabilized LayoutGraph performance regression by sampling multiple runs and enforcing frame-budget aligned thresholds to eliminate sub-1ms flakes.
+  - Remaining follow-up: profile LayoutGraph with larger node counts and sweep for other unrealistic timing assertions.
 
 ---
 
