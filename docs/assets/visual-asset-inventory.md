@@ -177,6 +177,13 @@
 ## Session 187 Updates
 - Completed AR-002 evidence sprite art review, recording findings in `docs/assets/reviews/ar-002-evidence-sprites.md` and adding automated guards (`tests/assets/ar002Sprites.test.js`, `tests/game/entities/EvidenceEntity.test.js`) to watch 32×32 metadata and heuristic sprite selection.
 
+## Session 189 Updates
+- Replayed the bespoke tracking cadence (`npm run art:track-bespoke`) to ingest week-one approvals, generating `reports/art/week1-bespoke-progress.json` (3/5 assets approved, 1 pending, 1 in review) and syncing manifest statuses ahead of week-two intake.
+- Packaged and staged the refreshed Act 2 Crossroads lighting packet (`reports/art/renderops-packets/act2-crossroads-2025-10-31T20-26-00-520Z`, ZIP + delivery manifest) via `npm run art:package-renderops` and `npm run art:stage-renderops`, ready for RenderOps delivery under `deliveries/renderops/act2-crossroads/act2-crossroads-2025-10-31T20-26-00-520Z/`.
+- Exported `reports/art/luminance-snapshots/act2-crossroads/act2-crossroads-luminance-2025-10-31T20-26-05-365Z.{json,md}` confirming all 12 segments remain within luminance targets.
+- Week-two bespoke tracking sweep scheduled for **2025-11-07** using `npm run art:track-bespoke -- --week=2` once new asset notes land in `assets/images/requests.json`.
+
 ## Next Actions
-1. Distribute the latest RenderOps packet (`npm run art:package-renderops` then `npm run art:stage-renderops`) and attach the staged ZIP (`deliveries/renderops/.../*.zip`) plus `*-delivery.json` manifest when sharing with RenderOps; log feedback on actionable segments and regenerate after art tweaks.
+1. Share the staged 2025-10-31 RenderOps packet (`deliveries/renderops/act2-crossroads/act2-crossroads-2025-10-31T20-26-00-520Z/*.zip`) with RenderOps, capturing feedback/acks in `reports/telemetry/renderops-approvals/` before regenerating after adjustments.
 2. Follow `reports/art/placeholder-replacement-schedule.md` to drive weekly bespoke assignments and annotate `assets/images/requests.json` with source/licensing updates upon completion.
+3. Run the scheduled week-two bespoke tracking pass on 2025-11-07 via `npm run art:track-bespoke -- --week=2` and update manifests/reports with new approvals.

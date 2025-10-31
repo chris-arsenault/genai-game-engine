@@ -442,7 +442,7 @@
 
 #### UX-410: Overlay navigation shortcut feedback
 - **Automation**: Processed observation log `telemetry-artifacts/ux/control-bindings/20251031T203500Z/observation.json` through `scripts/ux/exportControlBindingsObservations.js --label autosave-20251031`, generating JSON/Markdown summaries (`reports/ux/control-bindings-observation-summary-autosave-20251031.*`) with updated heuristics and recommendations.
-- **Follow-up**: Attach the 2025-10-31 summaries to UX documentation and book the next export window to keep keyboard navigation telemetry fresh.
+- **Follow-up**: Logged the autosave-20251031 findings in `docs/ux/control-bindings-observation-autosave-20251031.md` and scheduled the next exporter run for 2025-11-07 (`node scripts/ux/exportControlBindingsObservations.js --label autosave-20251107`).
 
 ### Session #167 Backlog Updates
 
