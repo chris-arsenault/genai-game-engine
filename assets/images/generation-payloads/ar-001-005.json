@@ -154,10 +154,12 @@
       "title": "Neon District Tileset",
       "usage": "16x16 tile atlas for rain-soaked neon city blocks.",
       "notes": "Needs wet reflections, signage layers, and animated neon strips. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md",
-      "status": "pending-sourcing",
+      "status": "ai-generated",
       "prompt": "16x16 pixel art tileset, rain-soaked neon boulevard, reflective asphalt, holographic signage frames, animated puddle highlights, modular facades with fire escapes, cyan and magenta light gradients, includes corner, edge, interior tiles, exported on transparent atlas grid",
       "negativePrompt": "blurry, low detail, muted colors, anachronistic fashion, steampunk, fantasy armor, logo watermark, text overlay, hands, humanoid distortion, artifacting, low resolution, grainy",
-      "label": "Neon District Tileset"
+      "label": "Neon District Tileset",
+      "generatedAt": "2025-10-31T22:30:30Z",
+      "outputPath": "assets/generated/images/ar-005/image-ar-005-tileset-neon-district.png"
     },
     {
       "requestId": "image-ar-005-tileset-corporate-spires",

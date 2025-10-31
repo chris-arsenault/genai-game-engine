@@ -16,7 +16,7 @@
     "title": "Deduction Board UI Background",
     "creator": "Codex Placeholder Generator",
     "source": "assets/generated/ar-placeholders/image-ar-001-deduction-board-bg.png",
-    "license": "Internal Commission – Full Rights (UI Systems)",
+    "license": "Internal Commission \u2013 Full Rights (UI Systems)",
     "status": "bespoke-approved",
     "scheduledWeek": 1,
     "scheduledOn": "2025-11-13",
@@ -71,7 +71,7 @@
     "title": "Clue Node Sprite Variations",
     "creator": "Codex Placeholder Generator",
     "source": "assets/generated/ar-placeholders/image-ar-001-clue-node-pack.png",
-    "license": "Internal Commission – Full Rights (UI Systems)",
+    "license": "Internal Commission \u2013 Full Rights (UI Systems)",
     "status": "bespoke-approved",
     "scheduledWeek": 1,
     "scheduledOn": "2025-11-13",
@@ -127,7 +127,7 @@
     "title": "Evidence Type Icon Set",
     "creator": "Codex Placeholder Generator",
     "source": "assets/generated/ar-placeholders/image-ar-001-evidence-icon-set.png",
-    "license": "Internal Commission – UI Iconography Pack",
+    "license": "Internal Commission \u2013 UI Iconography Pack",
     "status": "bespoke-approved",
     "scheduledWeek": 1,
     "scheduledOn": "2025-11-13",
@@ -451,14 +451,12 @@
     "id": "image-ar-005-tileset-neon-district",
     "arId": "AR-005",
     "title": "Neon District Tileset",
-    "creator": "Codex Placeholder Generator",
-    "source": "assets/generated/ar-placeholders/image-ar-005-tileset-neon-district.png",
-    "license": "Internal Commission – Environment Tiles (Act 2)",
-    "status": "bespoke-in-review",
-    "scheduledWeek": 1,
-    "scheduledOn": "2025-11-13",
+    "creator": "Codex Autonomous Agent (GPT-Image-1)",
+    "source": "assets/generated/images/ar-005/image-ar-005-tileset-neon-district.png",
+    "license": "Internal generation (OpenAI gpt-image-1)",
+    "status": "ai-generated",
     "usage": "16x16 tile atlas for rain-soaked neon city blocks.",
-    "notes": "Needs wet reflections, signage layers, and animated neon strips. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use. | Week 1 bespoke slot kicked off 2025-11-13; art brief includes latest lighting preview metrics. | Narrative approved neon signage cues and branch triggers during Session 125 review; manifest updated accordingly.",
+    "notes": "Needs wet reflections, signage layers, and animated neon strips. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use. | Week 1 bespoke slot kicked off 2025-11-13; art brief includes latest lighting preview metrics. | Narrative approved neon signage cues and branch triggers during Session 125 review; manifest updated accordingly | Session 197 generated AI Neon District tileset via GPT-Image-1 to replace vendor backlog; asset staged under assets/generated/images/ar-005/.",
     "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
     "statusHistory": [
       {
@@ -495,21 +493,17 @@
         "context": "Reflection polish applied; signage glow pending approval with Narrative for branch cues.",
         "receivedOn": "2025-11-15",
         "approvedOn": null
+      },
+      {
+        "status": "ai-generated",
+        "recordedAt": "2025-10-31T22:29:53Z",
+        "route": "ai",
+        "context": "Session 197 delivered GPT-Image-1 Neon District tileset and shifted AR-005 off the bespoke queue."
       }
     ],
-    "artist": "Axiom Studio",
-    "bespokeReceivedOn": "2025-11-15",
-    "bespokeNotes": [
-      "Blocking pass delivered; needs reflection polish + signage layer.",
-      "Reflection polish applied; signage glow pending approval with Narrative for branch cues.",
-      "Narrative approved signage cues; lock palette variants for branching patrols.",
-      "Reflection polish applied; signage glow pending approval with Narrative for branch cues.",
-      "Reflection polish applied; signage glow pending approval with Narrative for branch cues."
-    ],
-    "updatedAt": "2025-10-31T20:25:57.172Z",
-    "deliverablePath": "assets/bespoke/week1/image-ar-005-tileset-neon-district_v2.png",
-    "bespokeApprovedOn": "2025-11-17",
-    "bespokeReviewedBy": "Narrative Lead: I. Ramos"
+    "updatedAt": "2025-10-31T22:29:53Z",
+    "route": "ai",
+    "generatedAt": "2025-10-31T22:29:53Z"
   },
   {
     "id": "image-ar-005-tileset-corporate-spires",
