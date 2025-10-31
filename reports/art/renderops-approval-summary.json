@@ -1,7 +1,20 @@
 {
-  "generatedAt": "2025-10-31T13:16:20.391Z",
-  "totalJobs": 1,
+  "generatedAt": "2025-10-31T14:12:57.818Z",
+  "totalJobs": 2,
   "newJobs": 1,
+  "jobStatusTotals": {
+    "completed": 1,
+    "unknown": 1
+  },
+  "queueTotals": {
+    "renderops-lighting": 1,
+    "unassigned": 1
+  },
+  "actionableSegmentsByStatus": {
+    "approved": 2
+  },
+  "totalPendingSegments": 0,
+  "totalApprovedSegments": 2,
   "entries": [
     {
       "jobId": "c2d9170c-9d13-4e3b-941c-e1ee89d8bb68",
@@ -21,7 +34,26 @@
         "Include PACKET_README.md in the communication so context and actionable segments are visible up front.",
         "After RenderOps responds, update the placeholder audit and regenerate the packet if art tweaks were requested.",
         "Flag the `attachments/` directory when sharing so supplemental references are reviewed alongside the metrics."
-      ]
+      ],
+      "statusBreakdown": {
+        "approved": 2
+      }
+    },
+    {
+      "jobId": "index",
+      "source": "/home/tsonu/src/genai-game-engine/reports/telemetry/renderops-approvals/index.json",
+      "feedbackLogPath": null,
+      "queue": null,
+      "status": null,
+      "createdAt": null,
+      "processedAt": null,
+      "actionableSegments": 0,
+      "approvedSegments": 0,
+      "pendingSegments": 0,
+      "packetLabel": null,
+      "packetId": null,
+      "notes": [],
+      "statusBreakdown": {}
     }
   ]
 }

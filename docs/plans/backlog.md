@@ -882,7 +882,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Tags**: `gameplay`, `input`, `ui`
 - **Effort**: 3 hours
 - **Dependencies**: CORE-301
-- **Status**: In Progress — Canvas overlay palette unified across HUD layers, inventory overlay integrated, and Session 169 locked in automated movement audio cue verification (Jest + Playwright). Remaining work covers documenting camera smoothing parameters for CORE-303 handoff.
+- **Status**: ✅ Completed — Canvas overlay palette unified across HUD layers, inventory overlay integrated, Session 169 locked in automated movement audio cue verification (Jest + Playwright), and Session 170 documented camera follow tuning with docs/gameplay/camera-centering.md plus CameraFollowSystem Jest coverage for CORE-303 handoff.
 - **Description**: Provide immediate feedback for player input (camera centering, movement easing, interaction prompts) so WASD/E produce visible results.
 - **Acceptance Criteria**:
   - Camera centers on the player at start and follows smoothly during movement.

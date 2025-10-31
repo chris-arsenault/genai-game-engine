@@ -142,7 +142,7 @@
 
 ## Session 168 Updates
 - Generated a directional placeholder core sheet for Kira (`assets/generated/images/ar-003/image-ar-003-kira-core-pack.png`) via scripted automation (GPT concept archived at `image-ar-003-kira-core-pack-source.png`), updating manifests and runtime locomotion loops to cover idle/walk/run across all facings.
-- `scripts/art/monitorRenderOpsApprovals.js` now aggregates job status, queue totals, and actionable segment counts into `reports/art/renderops-approval-summary.json`; run with `--verbose` for aggregated dashboards or `--quiet` inside cron sweeps.
+- `scripts/art/monitorRenderOpsApprovals.js` now aggregates job status, queue totals, and actionable segment counts into `reports/art/renderops-approval-summary.json`; add `--markdown` to emit a partner summary at `reports/art/renderops-approval-summary.md` for quick ingest into art reviews, and run with `--verbose` for aggregated dashboards or `--quiet` inside cron sweeps.
 
 ## Session 169 Updates
 - Authored `scripts/art/capturePlayerLocomotionFrames.js` plus npm hook `npm run art:capture-locomotion` to export Kira's idle/walk/run facings into `reports/art/player-locomotion-reference/`, producing both per-animation crops and facing contact sheets with a JSON manifest for documentation crosslinking.

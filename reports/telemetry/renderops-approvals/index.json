@@ -3,8 +3,14 @@
     "c2d9170c-9d13-4e3b-941c-e1ee89d8bb68": {
       "source": "/home/tsonu/src/genai-game-engine/reports/telemetry/renderops-approvals/act2-crossroads/2025-10-31T08:50:35.195Z-c2d9170c-9d13-4e3b-941c-e1ee89d8bb68.json",
       "processedAt": "2025-10-31T12:46:29Z",
-      "lastCheckedAt": "2025-10-31T13:16:20.391Z",
+      "lastCheckedAt": "2025-10-31T14:12:57.818Z",
       "status": "completed"
+    },
+    "index": {
+      "source": "/home/tsonu/src/genai-game-engine/reports/telemetry/renderops-approvals/index.json",
+      "processedAt": null,
+      "lastCheckedAt": "2025-10-31T14:12:57.818Z",
+      "status": null
     }
   }
 }

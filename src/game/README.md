@@ -164,6 +164,7 @@ Key gameplay feel parameters in `GameConfig.js`:
 - `camera.followSpeed`: 0.1 (lerp factor, lower = smoother)
 - `camera.lookAheadDistance`: 100 px (camera leads player movement)
 - `camera.deadzone`: 32 px (minimum movement before camera follows)
+- See `docs/gameplay/camera-centering.md` for detailed tuning guidance and coverage notes.
 
 ## Next Steps
 

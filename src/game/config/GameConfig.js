@@ -115,6 +115,18 @@ export const GameConfig = {
     }
   },
 
+  /**
+   * Camera tuning parameters consumed by CameraFollowSystem and engine Camera.
+   *
+   * - followSpeed: Normalized interpolation factor applied every frame. Lower values (0.05-0.2)
+   *   yield smoother motion because the camera only closes a fraction of the gap each update.
+   * - lookAheadDistance: Pixels to lead the player in the direction of current velocity, keeping
+   *   traversal destinations inside the viewport before the player arrives.
+   * - deadzone: Radius (in pixels) where minor player adjustments do not move the camera, preventing
+   *   jitter when interacting with small objects.
+   * - shakeDecay/minShakeThreshold: Tune post-impact shake falloff so investigative UI remains readable.
+   *   Shake stops once intensity drops below the configured minimum threshold.
+   */
   camera: {
     // Follow behavior
     followSpeed: 0.1, // lerp factor (0.0-1.0), lower = smoother

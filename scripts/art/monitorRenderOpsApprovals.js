@@ -11,6 +11,7 @@ const TELEMETRY_ROOT = path.resolve(process.cwd(), 'reports', 'telemetry', 'rend
 const INDEX_PATH = path.join(TELEMETRY_ROOT, 'index.json');
 const SUMMARY_DIR = path.resolve(process.cwd(), 'reports', 'art');
 const SUMMARY_PATH = path.join(SUMMARY_DIR, 'renderops-approval-summary.json');
+const MARKDOWN_SUMMARY_PATH = path.join(SUMMARY_DIR, 'renderops-approval-summary.md');
 
 function parseArgs(argv) {
   const args = { _: [] };
@@ -58,6 +59,67 @@ async function writeJson(filePath, data) {
   await fs.writeFile(filePath, payload, 'utf8');
 }
 
+function formatDictionarySection(dictionary, emptyMessage = '- None') {
+  const entries = Object.entries(dictionary ?? {});
+  if (entries.length === 0) {
+    return [emptyMessage];
+  }
+  return entries
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, value]) => `- ${key}: ${value}`);
+}
+
+function formatMarkdownSummary(summary) {
+  const lines = [];
+  lines.push('# RenderOps Approval Summary');
+  lines.push('');
+  lines.push(`Generated: ${summary.generatedAt}`);
+  lines.push('');
+  lines.push('## Totals');
+  lines.push('');
+  lines.push(`- Total jobs: ${summary.totalJobs}`);
+  lines.push(`- New jobs this run: ${summary.newJobs}`);
+  lines.push(`- Pending actionable segments: ${summary.totalPendingSegments}`);
+  lines.push(`- Approved actionable segments: ${summary.totalApprovedSegments}`);
+  lines.push('');
+  lines.push('### Job Status Totals');
+  lines.push(...formatDictionarySection(summary.jobStatusTotals));
+  lines.push('');
+  lines.push('### Queue Totals');
+  lines.push(...formatDictionarySection(summary.queueTotals));
+  lines.push('');
+  lines.push('### Actionable Segments By Status');
+  lines.push(...formatDictionarySection(summary.actionableSegmentsByStatus));
+  lines.push('');
+  lines.push('## Jobs');
+  lines.push('');
+  if (!summary.entries || summary.entries.length === 0) {
+    lines.push('No RenderOps approval jobs recorded.');
+  } else {
+    lines.push('| Job ID | Status | Queue | Pending | Approved | Processed At |');
+    lines.push('|-------|--------|-------|---------|----------|--------------|');
+    summary.entries.forEach((entry) => {
+      const jobId = entry.jobId ?? 'unknown';
+      const status = entry.status ?? 'unknown';
+      const queue = entry.queue ?? '—';
+      const pending = entry.pendingSegments ?? 0;
+      const approved = entry.approvedSegments ?? 0;
+      const processedAt = entry.processedAt ?? entry.createdAt ?? '—';
+      lines.push(`| ${jobId} | ${status} | ${queue} | ${pending} | ${approved} | ${processedAt} |`);
+    });
+  }
+  lines.push('');
+  lines.push('_Generated via `scripts/art/monitorRenderOpsApprovals.js --markdown`._');
+  lines.push('');
+  return `${lines.join('\n')}`;
+}
+
+async function writeMarkdownSummary(filePath, summary) {
+  const output = formatMarkdownSummary(summary);
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  await fs.writeFile(filePath, `${output}\n`, 'utf8');
+}
+
 async function listJobFiles(rootDir) {
   const results = [];
   async function walk(currentDir) {
@@ -88,6 +150,17 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   const verbose = Boolean(args.verbose);
   const autoImport = Boolean(args['auto-import'] ?? args.autoImport);
+  const markdownOption = args.markdown ?? args['markdown-summary'];
+  let markdownPath = null;
+  if (markdownOption !== undefined) {
+    if (markdownOption === true) {
+      markdownPath = MARKDOWN_SUMMARY_PATH;
+    } else {
+      markdownPath = path.isAbsolute(markdownOption)
+        ? markdownOption
+        : path.resolve(process.cwd(), markdownOption);
+    }
+  }
 
   let index = await readJson(INDEX_PATH, { jobs: {} });
   if (!index || typeof index !== 'object' || !index.jobs) {
@@ -209,6 +282,12 @@ async function main() {
   };
 
   await writeJson(SUMMARY_PATH, summaryPayload);
+  if (markdownPath) {
+    await writeMarkdownSummary(markdownPath, summaryPayload);
+    if (verbose) {
+      console.log(`[monitorRenderOpsApprovals] Markdown summary written to ${markdownPath}`);
+    }
+  }
 
   await writeJson(INDEX_PATH, index);
 
