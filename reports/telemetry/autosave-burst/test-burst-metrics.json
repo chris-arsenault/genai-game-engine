@@ -1,0 +1,15 @@
+{
+  "artifactsAttempted": 3,
+  "artifactsWritten": 3,
+  "failures": [],
+  "writerSummaries": [
+    {
+      "id": "writer_1",
+      "attempted": 3,
+      "successes": 3,
+      "failures": 0,
+      "durationMs": 1
+    }
+  ],
+  "durationMs": 1
+}

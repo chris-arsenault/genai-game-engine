@@ -17,7 +17,7 @@
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
 | BUG-201 | P0 | Completed | Collision system crashes on load when Collider metadata overwrites shape definitions (`shapeA`/`shapeB` null). Refactoring Collider component to preserve `shapeType` while keeping ECS registration stable; adding guards/tests. | Land collider refactor + guard rails, expand physics regression tests, and run targeted Jest suites (`CollisionSystem`, `physics/integration`, `integration-full`) before CI handoff. |
-| AR-050 | P0 | In Progress | Visual asset sourcing pipeline now covers Act 2 Crossroads selection conduit/pad, checkpoint glow/plaza, safehouse arc, boundary walls, and column beam overlays with CC0/CC-BY references captured in manifests; Session 112 calibrated tint/alpha parameters (~0.13 columns/conduits, ~0.75 boundaries), Session 113 added a lighting preview harness plus queued the AR-001–AR-005 generation batch, Session 114 boosted conduit/glow/column luminance so previewed segments meet thresholds, Session 115 delivered placeholder atlases for AR-001–AR-005, Session 116 layered RenderOps packet/placeholder audit automation, Session 117 shipped prioritized replacement plans, Session 118 produced a four-week bespoke art sprint schedule plus delivery staging CLI, Session 121 automated week-one bespoke status ingestion with licensing approvals recorded in manifests/reports, Session 171 added TRACK_BESPOKE_ROOT overrides plus Jest coverage to keep `scripts/art/trackBespokeDeliverables.js` ingest sweeps reproducible, and Session 172 generated safehouse floor, briefing pad, and branch walkway textures via GPT-Image-1 with manifests flipped to `ai-generated`. | Resume RenderOps ingestion once SaveManager/WorldState parity wraps; align neon signage sign-off with narrative before the next bespoke batch, integrate the new floor/pad/walkway assets into lighting previews, and run the refreshed CLI/Playwright smoke in nightly automation. |
+| AR-050 | P0 | In Progress | Visual asset sourcing pipeline now covers Act 2 Crossroads selection conduit/pad, checkpoint glow/plaza, safehouse arc, boundary walls, and column beam overlays with CC0/CC-BY references captured in manifests; Session 112 calibrated tint/alpha parameters (~0.13 columns/conduits, ~0.75 boundaries), Session 113 added a lighting preview harness plus queued the AR-001–AR-005 generation batch, Session 114 boosted conduit/glow/column luminance so previewed segments meet thresholds, Session 115 delivered placeholder atlases for AR-001–AR-005, Session 116 layered RenderOps packet/placeholder audit automation, Session 117 shipped prioritized replacement plans, Session 118 produced a four-week bespoke art sprint schedule plus delivery staging CLI, Session 121 automated week-one bespoke status ingestion with licensing approvals recorded in manifests/reports, Session 171 added TRACK_BESPOKE_ROOT overrides plus Jest coverage to keep `scripts/art/trackBespokeDeliverables.js` ingest sweeps reproducible, Session 172 generated safehouse floor, briefing pad, and branch walkway textures via GPT-Image-1 with manifests flipped to `ai-generated`, and Session 175 reran `scripts/art/packageRenderOpsLighting.js` to ship `reports/art/renderops-packets/act2-crossroads-2025-10-31T16-03-38-011Z` alongside a ready_for_ack approval job. | Resume RenderOps ingestion once SaveManager/WorldState parity wraps; align neon signage sign-off with narrative before the next bespoke batch, integrate the new floor/pad/walkway assets into lighting previews, and run the refreshed CLI/Playwright smoke in nightly automation. |
 | TUT-201 | P0 | Completed | Tutorial case blocked at step 3 (`evidence_detection`) because legacy scene entities bypassed ECS detection events. | ECS-aligned tutorial scene entities shipped Session #51; re-run tutorial smoke tests after combat audio validation. |
 | AUDIO-351 | P0 | Completed | Validate live combat/disguise trigger routing through `AmbientSceneAudioController` using real combat loop events. | Adaptive audio routing now responds to gameplay emits; telemetry verified by Jest/Playwright suites and new infiltration benchmark. |
 | PERF-214 | P1 | Completed | Profiling harness restored; `npm run profile` runs without module errors and captures infiltration telemetry. | Monitor profiling harness results in CI and schedule the next performance sweep after overlay integration lands. |
@@ -53,6 +53,20 @@
 #### AR-050: Visual Asset Sourcing Pipeline
 - Produced the Crossroads safehouse floor tile, mission briefing pad overlay, and branch walkway strip through GPT-Image-1, storing outputs under `assets/generated/ar-050/` and updating manifest statuses/notes to `ai-generated`.
 - Verification: Asset generation only (`mcp__generate-image__generate_image`); integrate assets into lighting previews before the next RenderOps packet.
+
+### Session #175 Backlog Updates
+
+#### AR-007: Particle Effects (M7)
+- Integrated the AR-007 rain/neon/memory sprite sheets into `ParticleEmitterRuntime` with sprite-aware rendering and detective vision cue emissions; expanded Jest coverage (`tests/game/fx/ParticleEmitterRuntime.test.js`, `tests/game/ui/DetectiveVisionOverlay.test.js`) to enforce particle budgets.
+- Verification: `npm test -- ParticleEmitterRuntime.test.js DetectiveVisionOverlay.test.js`.
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- Reran `scripts/art/packageRenderOpsLighting.js`, publishing `reports/art/renderops-packets/act2-crossroads-2025-10-31T16-03-38-011Z` (ZIP + manifests) and staging a ready_for_ack approval job in `reports/telemetry/renderops-approvals/` so Crossroads lighting packets reflect the latest overlays.
+- Verification: `node scripts/art/packageRenderOpsLighting.js`.
+
+#### M3-013: WorldStateManager Implementation
+- Added the autosave burst telemetry harness (`scripts/telemetry/runAutosaveBurstInspector.js`) and SaveManager integration coverage to fan inspector exports through TelemetryArtifactWriterAdapter, capturing writer metrics for dashboards.
+- Verification: `npm test -- tests/game/managers/SaveManager.test.js` and `node scripts/telemetry/runAutosaveBurstInspector.js --iterations=3 --prefix=test-burst`.
 
 ### Session #171 Backlog Updates
 
@@ -2839,7 +2853,7 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Memory fragment particles (8x8, ethereal)
   - Screen effects (flash, scanlines)
 - **File**: `assets/images/requests.json`
-- **Status**: Rain, neon glow, memory fragment, and screen-effect overlay sprites generated via GPT-Image-1 (Sessions 162 & 172) under `assets/generated/ar-007/`; remaining work is VFX integration and 60 FPS validation.
+- **Status**: Rain, neon glow, memory fragment, and screen-effect overlay sprites generated via GPT-Image-1 (Sessions 162 & 172) are now integrated into `ParticleEmitterRuntime` with automated 60 FPS stress harnesses (Session 175); Playwright coverage capturing detective/forensic cues remains.
 
 #### AR-008: Adaptive Music Tracks (M7)
 - **Type**: Audio

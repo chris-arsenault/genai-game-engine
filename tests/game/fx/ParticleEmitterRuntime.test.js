@@ -7,6 +7,7 @@ function createStubCanvas(width = 1280, height = 720) {
     beginPath: jest.fn(),
     ellipse: jest.fn(),
     fill: jest.fn(),
+    drawImage: jest.fn(),
     set globalAlpha(value) {
       this._globalAlpha = value;
     },
@@ -210,5 +211,92 @@ describe('ParticleEmitterRuntime', () => {
     expect(finalStats.activeEmitters).toBeLessThanOrEqual(3);
     expect(finalStats.activeParticles).toBeLessThanOrEqual(32);
     expect(finalStats.throttledSpawns).toBeGreaterThan(0);
+  });
+
+  it('renders sprite-based particles when sprite sheets are configured', () => {
+    const canvas = createStubCanvas();
+    const eventBus = createEventBus();
+    const spriteImage = { width: 256, height: 256 };
+    const runtime = new ParticleEmitterRuntime(canvas, eventBus, {
+      maxEmitters: 1,
+      maxParticlesPerEmitter: 4,
+      globalMaxParticles: 12,
+      getNow: () => 0,
+      presets: {
+        'test-sprite': {
+          spriteSheetId: 'test',
+          spread: [0, 0],
+          speed: [0, 0],
+          size: [20, 20],
+          lifespanMs: [260, 260],
+          baseAlpha: 1,
+          color: 'rgba(255, 255, 255, 1)',
+        },
+      },
+      spriteSheets: {
+        test: {
+          image: spriteImage,
+          frameWidth: 128,
+          frameHeight: 128,
+          frameCount: 4,
+          frameRate: 12,
+          scale: [0.3, 0.3],
+        },
+      },
+    });
+
+    runtime.attach();
+    eventBus.emit('fx:particle_emit', {
+      preset: 'test-sprite',
+      spawnCount: 2,
+      durationMs: 260,
+      intensity: 1,
+    });
+
+    runtime.render();
+    expect(canvas._ctx.drawImage).toHaveBeenCalled();
+  });
+
+  it('maintains particle budgets under AR-007 stress scenarios', () => {
+    const canvas = createStubCanvas();
+    const eventBus = createEventBus();
+    const spriteImage = { width: 1024, height: 1024 };
+    const runtime = new ParticleEmitterRuntime(canvas, eventBus, {
+      maxEmitters: 20,
+      maxParticlesPerEmitter: 42,
+      globalMaxParticles: 420,
+      getNow: () => 0,
+      spriteSheetLoader: () => spriteImage,
+    });
+
+    runtime.attach();
+
+    for (let frame = 0; frame < 18; frame += 1) {
+      eventBus.emit('fx:particle_emit', {
+        preset: 'detective-vision-rainfall',
+        spawnCount: 26,
+        durationMs: 720,
+        intensity: 0.95,
+      });
+      eventBus.emit('fx:particle_emit', {
+        preset: 'detective-vision-neon-bloom',
+        spawnCount: 18,
+        durationMs: 640,
+        intensity: 0.9,
+      });
+      eventBus.emit('fx:particle_emit', {
+        preset: 'detective-vision-memory-fragment',
+        spawnCount: 16,
+        durationMs: 820,
+        intensity: 1,
+      });
+      runtime.update(1 / 60);
+      runtime.render();
+    }
+
+    const stats = runtime.getStats();
+    expect(stats.activeParticles).toBeLessThanOrEqual(420);
+    expect(stats.maxParticlesPerEmitter).toBe(42);
+    expect(stats.globalMaxParticles).toBe(420);
   });
 });

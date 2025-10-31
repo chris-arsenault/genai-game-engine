@@ -148,6 +148,41 @@ describe('CompositeCueParticleBridge', () => {
     );
   });
 
+  it('maps detective vision environment cues to AR-007 presets', () => {
+    const bridge = createBridge();
+    bridge.attach();
+    const handler = listeners['fx:composite_cue'];
+
+    handler({
+      effectId: 'detectiveVisionRainfall',
+      coordinator: { durationMs: 720 },
+    });
+    expect(eventBus.emit).toHaveBeenLastCalledWith(
+      'fx:particle_emit',
+      expect.objectContaining({ preset: 'detective-vision-rainfall' })
+    );
+
+    eventBus.emit.mockClear();
+    handler({
+      effectId: 'detectiveVisionNeonBloom',
+      coordinator: { durationMs: 640 },
+    });
+    expect(eventBus.emit).toHaveBeenLastCalledWith(
+      'fx:particle_emit',
+      expect.objectContaining({ preset: 'detective-vision-neon-bloom' })
+    );
+
+    eventBus.emit.mockClear();
+    handler({
+      effectId: 'detectiveVisionMemoryFragmentBurst',
+      coordinator: { durationMs: 820 },
+    });
+    expect(eventBus.emit).toHaveBeenLastCalledWith(
+      'fx:particle_emit',
+      expect.objectContaining({ preset: 'detective-vision-memory-fragment' })
+    );
+  });
+
   it('maps disguise, prompt, and movement cues to dedicated presets', () => {
     const bridge = createBridge();
     bridge.attach();

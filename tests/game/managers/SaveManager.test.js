@@ -1135,6 +1135,35 @@ describe('SaveManager', () => {
 
       exportSpy.mockRestore();
     });
+
+    test('routes autosave burst exports through telemetry writers', async () => {
+      const writer = {
+        id: 'burst-writer',
+        write: jest.fn().mockResolvedValue(undefined),
+      };
+      const instrumented = new SaveManager(eventBus, {
+        ...mockManagers,
+        telemetryWriters: [writer],
+      });
+
+      instrumented.init();
+
+      const summary = await instrumented.runAutosaveBurst({
+        iterations: 2,
+        exportInspector: true,
+        exportOptions: { prefix: 'burst-harness' },
+      });
+
+      expect(writer.write).toHaveBeenCalled();
+      expect(summary.exportResult).toBeTruthy();
+      expect(summary.exportResult.metrics.writerSummaries).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: 'burst-writer', successes: expect.any(Number) }),
+        ])
+      );
+
+      instrumented.cleanup();
+    });
   });
 
   // ==================== SLOT MANAGEMENT TESTS ====================

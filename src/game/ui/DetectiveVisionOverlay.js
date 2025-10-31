@@ -12,6 +12,9 @@ import { emitOverlayVisibility } from './helpers/overlayEvents.js';
 const DEFAULT_HIGHLIGHT_REFRESH = 0.4;
 const DEFAULT_FADE_SPEED = 6;
 const ENERGY_LABEL_THRESHOLD = 0.35;
+const DETECTIVE_VISION_RAIN_INTERVAL = 0.8;
+const DETECTIVE_VISION_NEON_INTERVAL = 1.12;
+const DETECTIVE_VISION_MEMORY_INTERVAL_MS = 620;
 
 export class DetectiveVisionOverlay {
   /**
@@ -74,6 +77,9 @@ export class DetectiveVisionOverlay {
     };
 
     this._offHandlers = [];
+    this._rainFxTimer = 0;
+    this._neonFxTimer = 0;
+    this._lastMemoryFxAt = 0;
     this._statusSnapshot = {
       active: false,
       energy: this.energy,
@@ -123,6 +129,9 @@ export class DetectiveVisionOverlay {
       }
     }
     this.highlightTargets.clear();
+    this._rainFxTimer = 0;
+    this._neonFxTimer = 0;
+    this._lastMemoryFxAt = 0;
   }
 
   update(deltaTime) {
@@ -149,6 +158,20 @@ export class DetectiveVisionOverlay {
       if (this.highlightRefreshTimer <= 0) {
         this._refreshHighlightTargets();
         this.highlightRefreshTimer = this.options.highlightRefreshInterval;
+      }
+      this._rainFxTimer = Math.max(0, this._rainFxTimer - deltaTime);
+      if (this._rainFxTimer <= 0) {
+        this._rainFxTimer = DETECTIVE_VISION_RAIN_INTERVAL;
+        this._emitFxCue('detectiveVisionRainfall', {
+          durationMs: 720,
+        });
+      }
+      this._neonFxTimer = Math.max(0, this._neonFxTimer - deltaTime);
+      if (this._neonFxTimer <= 0) {
+        this._neonFxTimer = DETECTIVE_VISION_NEON_INTERVAL;
+        this._emitFxCue('detectiveVisionNeonBloom', {
+          durationMs: 640,
+        });
       }
     } else {
       this.pulseTime += deltaTime * 0.5;
@@ -192,6 +215,8 @@ export class DetectiveVisionOverlay {
     this.active = true;
     this.targetAlpha = 1;
     this.highlightRefreshTimer = 0;
+    this._rainFxTimer = 0;
+    this._neonFxTimer = 0;
     this._refreshHighlightTargets();
     emitOverlayVisibility(this.eventBus, 'detectiveVision', true, {
       duration: payload?.duration ?? null,
@@ -294,6 +319,16 @@ export class DetectiveVisionOverlay {
     }
 
     this.highlightTargets = nextTargets;
+    if (nextTargets.size > 0) {
+      const now = Date.now();
+      if (!this._lastMemoryFxAt || now - this._lastMemoryFxAt >= DETECTIVE_VISION_MEMORY_INTERVAL_MS) {
+        this._lastMemoryFxAt = now;
+        this._emitFxCue('detectiveVisionMemoryFragmentBurst', {
+          durationMs: 820,
+          context: { highlightCount: nextTargets.size },
+        });
+      }
+    }
   }
 
   _drawScreenTint(ctx) {

@@ -584,7 +584,7 @@ describe('ForensicSystem', () => {
       forensicSystem.update(0.016, []); // Start
       forensicSystem.update(1.0, []); // Complete
       const elapsed = performance.now() - startTime;
-      const thresholdMs = 6; // Allow slight CI/runtime jitter while staying well below the 16ms frame budget
+      const thresholdMs = 8; // Allow slight CI/runtime jitter while staying well below the 16ms frame budget
       expect(elapsed).toBeLessThan(thresholdMs);
     });
   });

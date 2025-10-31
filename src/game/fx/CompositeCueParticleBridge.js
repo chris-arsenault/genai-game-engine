@@ -438,6 +438,28 @@ export class CompositeCueParticleBridge {
         spawnCount: 20,
         cooldownMs: 240,
       },
+      detectiveVisionRainfall: {
+        preset: 'detective-vision-rainfall',
+        baseIntensity: 0.68,
+        maxIntensity: 0.94,
+        spawnCount: 24,
+        cooldownMs: 280,
+      },
+      detectiveVisionNeonBloom: {
+        preset: 'detective-vision-neon-bloom',
+        baseIntensity: 0.62,
+        maxIntensity: 0.9,
+        spawnCount: 18,
+        cooldownMs: 320,
+      },
+      detectiveVisionMemoryFragmentBurst: {
+        preset: 'detective-vision-memory-fragment',
+        baseIntensity: 0.7,
+        maxIntensity: 0.96,
+        spawnCount: 16,
+        cooldownMs: 360,
+        requireClearLane: true,
+      },
       default: {
         preset: 'generic-overlay-cue',
         baseIntensity: 0.4,
