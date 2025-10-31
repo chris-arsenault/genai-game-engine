@@ -7,6 +7,7 @@
 
 import { TutorialSystem } from '../../../src/game/systems/TutorialSystem.js';
 import { tutorialSteps } from '../../../src/game/data/tutorialSteps.js';
+import { setActionBindings, resetBindings } from '../../../src/game/state/controlBindingsStore.js';
 
 describe('TutorialSystem', () => {
   let tutorialSystem;
@@ -59,6 +60,7 @@ describe('TutorialSystem', () => {
   afterEach(() => {
     tutorialSystem.cleanup();
     localStorageMock.clear();
+    resetBindings();
     jest.clearAllMocks();
   });
 
@@ -189,6 +191,25 @@ describe('TutorialSystem', () => {
           totalSteps: tutorialSteps.length,
         })
       );
+    });
+
+    it('emits control_hint_updated when bindings change for the active step', () => {
+      tutorialSystem.completeStep(); // advance to movement step
+      mockEventBus.emit.mockClear();
+
+      setActionBindings('moveUp', ['KeyI']);
+      setActionBindings('moveLeft', ['KeyJ']);
+      setActionBindings('moveDown', ['KeyK']);
+      setActionBindings('moveRight', ['KeyL']);
+
+      const controlHintEvents = mockEventBus.emit.mock.calls.filter(
+        ([eventName]) => eventName === 'tutorial:control_hint_updated'
+      );
+
+      expect(controlHintEvents.length).toBeGreaterThan(0);
+      const [, payload] = controlHintEvents[controlHintEvents.length - 1];
+      expect(payload.stepId).toBe('movement');
+      expect(payload.controlHint.keys).toEqual(['I', 'J', 'K', 'L']);
     });
 
     it('should complete tutorial when reaching last step', () => {

@@ -172,7 +172,7 @@ describe('Investigation System Integration', () => {
       mockComponentRegistry._components.set(`${evidence3Id}:Transform`, evidence3Transform);
 
       // 4. Scan for evidence (should detect evidence 1 and 2, not 3 since it's hidden)
-      investigationSystem.scanForEvidence(playerTransform, [evidence1Id, evidence2Id, evidence3Id]);
+      investigationSystem.scanForEvidence(playerTransform, null, [evidence1Id, evidence2Id, evidence3Id]);
 
       const detectedEvents = events.filter(e => e.event === 'evidence:detected');
       expect(detectedEvents.length).toBe(2);
@@ -200,7 +200,7 @@ describe('Investigation System Integration', () => {
       investigationSystem.activateDetectiveVision();
 
       events = []; // Clear events
-      investigationSystem.scanForEvidence(playerTransform, [evidence3Id]);
+      investigationSystem.scanForEvidence(playerTransform, null, [evidence3Id]);
 
       const hiddenDetected = events.filter(e => e.event === 'evidence:detected');
       expect(hiddenDetected.length).toBe(1);
@@ -287,6 +287,50 @@ describe('Investigation System Integration', () => {
     });
   });
 
+  describe('Ability Gating', () => {
+    it('should enforce ability requirements before collecting gated evidence', () => {
+      caseManager.createCase({
+        id: 'analysis_case',
+        evidenceIds: ['evidence_analysis'],
+        requiredClues: [],
+        theoryGraph: { connections: [] }
+      });
+
+      caseManager.setActiveCase('analysis_case');
+
+      const playerId = mockEntityManager.createEntity();
+      mockEntityManager.tagEntity(playerId, 'player');
+      const playerTransform = new Transform(0, 0);
+      mockComponentRegistry._components.set(`${playerId}:Transform`, playerTransform);
+
+      const evidenceId = 2;
+      const evidence = new Evidence({
+        id: 'evidence_analysis',
+        caseId: 'analysis_case',
+        hidden: true,
+        requires: 'forensic_analysis'
+      });
+      const evidenceTransform = new Transform(4, 4);
+      mockComponentRegistry._components.set(`${evidenceId}:Evidence`, evidence);
+      mockComponentRegistry._components.set(`${evidenceId}:Transform`, evidenceTransform);
+
+      investigationSystem.collectEvidence(evidenceId, 'evidence_analysis');
+
+      const failureEvent = events.find(e => e.event === 'evidence:collection_failed');
+      expect(failureEvent).toBeDefined();
+      expect(failureEvent.data.required).toBe('forensic_analysis');
+
+      events = [];
+
+      investigationSystem.unlockAbility('forensic_analysis');
+      investigationSystem.collectEvidence(evidenceId, 'evidence_analysis');
+
+      const collectedEvent = events.find(e => e.event === 'evidence:collected');
+      expect(collectedEvent).toBeDefined();
+      expect(collectedEvent.data.evidenceId).toBe('evidence_analysis');
+    });
+  });
+
   describe('Detective Vision Integration', () => {
     it('should reveal hidden evidence and allow collection', () => {
       const playerId = mockEntityManager.createEntity();
@@ -308,7 +352,7 @@ describe('Investigation System Integration', () => {
       mockComponentRegistry._components.set(`${evidenceId}:Transform`, evidenceTransform);
 
       // Should not detect when vision inactive
-      investigationSystem.scanForEvidence(playerTransform, [evidenceId]);
+      investigationSystem.scanForEvidence(playerTransform, null, [evidenceId]);
       expect(events.filter(e => e.event === 'evidence:detected').length).toBe(0);
 
       // Activate detective vision
@@ -317,7 +361,7 @@ describe('Investigation System Integration', () => {
 
       // Should now detect
       events = [];
-      investigationSystem.scanForEvidence(playerTransform, [evidenceId]);
+      investigationSystem.scanForEvidence(playerTransform, null, [evidenceId]);
       expect(events.filter(e => e.event === 'evidence:detected').length).toBe(1);
 
       // Should be able to collect

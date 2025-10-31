@@ -87,6 +87,11 @@ sterile forensic sample container holding stylised blood spatter suspended in ge
 pixel art sprite sheet, 32x32 detective heroine named Kira, long coat with teal interior lining, cybernetic monocle, holstered scanner at hip, four directions (front, back, left, right), idle, walk, run animations with six frames each, neon noir palette with high contrast, consistent lighting, transparent background
 ```
 
+### Prompt: Dash & Slide Animations (`image-ar-003-kira-evasion-pack`)
+```
+pixel art animation pack, 32x32 heroine Kira performing lateral dash and low knee slide, eight frames per action, trench coat flaring with teal lining, cybernetic monocle glint frames, neon noir palette, transparent background, consistent lighting
+```
+
 ---
 
 ## AR-004 – NPC Sprite Packs

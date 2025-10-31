@@ -244,6 +244,27 @@ describe('CaseManager', () => {
       expect(caseFile.collectedEvidence.has('evidence_1')).toBe(true);
     });
 
+    it('should emit fx cue when evidence collected', () => {
+      caseManager.onEvidenceCollected({
+        caseId: 'case_1',
+        evidenceId: 'evidence_1'
+      });
+
+      const fxCalls = mockEventBus.emit.mock.calls.filter(([eventType]) => eventType === 'fx:overlay_cue');
+      expect(fxCalls).toEqual(
+        expect.arrayContaining([
+          [
+            'fx:overlay_cue',
+            expect.objectContaining({
+              effectId: 'caseEvidencePulse',
+              caseId: 'case_1',
+              evidenceId: 'evidence_1'
+            })
+          ],
+        ])
+      );
+    });
+
     it('should complete evidence collection objective', () => {
       const eventData = {
         caseId: 'case_1',
@@ -258,6 +279,27 @@ describe('CaseManager', () => {
         expect.objectContaining({
           caseId: 'case_1'
         })
+      );
+    });
+
+    it('should emit objective fx cue when objective completes', () => {
+      caseManager.onEvidenceCollected({
+        caseId: 'case_1',
+        evidenceId: 'evidence_1'
+      });
+
+      const fxCalls = mockEventBus.emit.mock.calls.filter(([eventType]) => eventType === 'fx:overlay_cue');
+      expect(fxCalls).toEqual(
+        expect.arrayContaining([
+          [
+            'fx:overlay_cue',
+            expect.objectContaining({
+              effectId: 'caseObjectivePulse',
+              caseId: 'case_1',
+              totalObjectives: 1
+            })
+          ],
+        ])
       );
     });
 
@@ -341,6 +383,27 @@ describe('CaseManager', () => {
 
       const caseFile = caseManager.getCase('case_1');
       expect(caseFile.discoveredClues.has('clue_1')).toBe(true);
+    });
+
+    it('should emit fx cue when clue derived', () => {
+      caseManager.onClueDerived({
+        caseId: 'case_1',
+        clueId: 'clue_1'
+      });
+
+      const fxCalls = mockEventBus.emit.mock.calls.filter(([eventType]) => eventType === 'fx:overlay_cue');
+      expect(fxCalls).toEqual(
+        expect.arrayContaining([
+          [
+            'fx:overlay_cue',
+            expect.objectContaining({
+              effectId: 'caseCluePulse',
+              caseId: 'case_1',
+              clueId: 'clue_1'
+            })
+          ],
+        ])
+      );
     });
 
     it('should complete clue discovery objective', () => {
@@ -552,6 +615,20 @@ describe('CaseManager', () => {
             abilities: ['forensic_kit']
           })
         })
+      );
+
+      const fxCalls = mockEventBus.emit.mock.calls.filter(([eventType]) => eventType === 'fx:overlay_cue');
+      expect(fxCalls).toEqual(
+        expect.arrayContaining([
+          [
+            'fx:overlay_cue',
+            expect.objectContaining({
+              effectId: 'caseSolvedBurst',
+              caseId: 'case_1',
+              accuracy: 0.85
+            })
+          ],
+        ])
       );
     });
 

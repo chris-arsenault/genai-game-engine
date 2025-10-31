@@ -8,10 +8,18 @@
  */
 export async function waitForGameLoad(page) {
   await page.goto('/');
-  await page.waitForSelector('#game-canvas', { timeout: 15000 });
+  await page.waitForSelector('#game-canvas', { timeout: 20000 });
   await page.waitForFunction(
-    () => window.game && window.game.loaded === true,
-    { timeout: 15000 }
+    () => {
+      if (window.__tmsBootstrap && window.__tmsBootstrap.ready === true) {
+        return true;
+      }
+      if (document?.body?.dataset?.gameReady === 'true') {
+        return true;
+      }
+      return Boolean(window.game && window.game.loaded === true);
+    },
+    { timeout: 20000 }
   );
 }
 

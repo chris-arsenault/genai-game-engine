@@ -4,6 +4,8 @@ import { factionSlice } from './slices/factionSlice.js';
 import { tutorialSlice } from './slices/tutorialSlice.js';
 import { dialogueSlice } from './slices/dialogueSlice.js';
 import { inventorySlice } from './slices/inventorySlice.js';
+import { districtSlice } from './slices/districtSlice.js';
+import { npcSlice } from './slices/npcSlice.js';
 
 const DEFAULT_ACTION_HISTORY = 50;
 const DEFAULT_DIALOGUE_HISTORY_LIMIT = 10;
@@ -15,6 +17,8 @@ const sliceRegistry = {
   tutorial: tutorialSlice,
   dialogue: dialogueSlice,
   inventory: inventorySlice,
+  npc: npcSlice,
+  district: districtSlice,
 };
 
 function isDevEnvironment() {
@@ -382,7 +386,25 @@ export class WorldStateStore {
             stepId: payload.stepId,
             stepIndex: payload.stepIndex,
             totalSteps: payload.totalSteps,
+            title: payload.title,
+            description: payload.description,
+            highlight: payload.highlight,
+            position: payload.position,
+            canSkip: payload.canSkip,
+            controlHint: payload.controlHint ?? null,
           },
+        });
+      }),
+
+      this.eventBus.on('tutorial:control_hint_updated', (payload = {}) => {
+        this.dispatch({
+          type: 'TUTORIAL_CONTROL_HINT_UPDATED',
+          domain: 'tutorial',
+          payload: {
+            stepId: payload.stepId ?? null,
+            controlHint: payload.controlHint ?? null,
+          },
+          timestamp: payload.updatedAt ?? Date.now(),
         });
       }),
 
@@ -491,6 +513,192 @@ export class WorldStateStore {
             dialogueId: payload.dialogueId,
             nodeId: payload.nodeId,
             choiceId: payload.choiceId,
+          },
+        });
+      }),
+
+      this.eventBus.on('npc:registered', (payload = {}) => {
+        const npcId = payload.npcId ?? payload.id ?? null;
+        if (!npcId) return;
+        this.dispatch({
+          type: 'NPC_REGISTERED',
+          domain: 'npc',
+          payload: {
+            npcId,
+            npcName: payload.npcName ?? payload.name ?? null,
+            npcFaction: payload.npcFaction ?? payload.factionId ?? null,
+          },
+        });
+      }),
+
+      this.eventBus.on('npc:interviewed', (payload = {}) => {
+        const npcId = payload.npcId ?? null;
+        if (!npcId) return;
+        this.dispatch({
+          type: 'NPC_INTERVIEWED',
+          domain: 'npc',
+          payload: {
+            npcId,
+            npcName: payload.npcName ?? null,
+            dialogueId: payload.dialogueId ?? null,
+          },
+        });
+      }),
+
+      this.eventBus.on('npc:recognized_player', (payload = {}) => {
+        const npcId = payload.npcId ?? null;
+        if (!npcId) return;
+        this.dispatch({
+          type: 'NPC_RECOGNIZED_PLAYER',
+          domain: 'npc',
+          payload: {
+            npcId,
+            npcName: payload.npcName ?? null,
+            npcFaction: payload.npcFaction ?? null,
+            playerKnown: payload.playerKnown ?? true,
+          },
+        });
+      }),
+
+      this.eventBus.on('npc:witnessed_crime', (payload = {}) => {
+        const npcId = payload.npcId ?? null;
+        if (!npcId) return;
+        this.dispatch({
+          type: 'NPC_WITNESSED_CRIME',
+          domain: 'npc',
+          payload: {
+            npcId,
+            npcName: payload.npcName ?? null,
+            crimeType: payload.crimeType ?? null,
+            severity: payload.severity ?? null,
+          },
+        });
+      }),
+
+      this.eventBus.on('npc:became_suspicious', (payload = {}) => {
+        const npcId = payload.npcId ?? null;
+        if (!npcId) return;
+        this.dispatch({
+          type: 'NPC_BECAME_SUSPICIOUS',
+          domain: 'npc',
+          payload: {
+            npcId,
+            npcName: payload.npcName ?? null,
+            reason: payload.reason ?? null,
+          },
+        });
+      }),
+
+      this.eventBus.on('npc:alerted', (payload = {}) => {
+        const npcId = payload.npcId ?? null;
+        if (!npcId) return;
+        this.dispatch({
+          type: 'NPC_ALERTED',
+          domain: 'npc',
+          payload: {
+            npcId,
+            reason: payload.reason ?? null,
+          },
+        });
+      }),
+
+      this.eventBus.on('district:registered', (payload = {}) => {
+        const districtId = payload.districtId ?? payload.id ?? null;
+        if (!districtId) return;
+        this.dispatch({
+          type: 'DISTRICT_REGISTERED',
+          domain: 'district',
+          payload: {
+            districtId,
+            definition: payload.definition ?? null,
+          },
+        });
+      }),
+
+      this.eventBus.on('district:control_changed', (payload = {}) => {
+        const districtId = payload.districtId ?? null;
+        const controllingFaction = payload.controllingFaction ?? payload.factionId ?? null;
+        if (!districtId || !controllingFaction) return;
+        this.dispatch({
+          type: 'DISTRICT_CONTROL_CHANGED',
+          domain: 'district',
+          payload: {
+            districtId,
+            controllingFaction,
+            source: payload.source ?? null,
+          },
+        });
+      }),
+
+      this.eventBus.on('district:stability_set', (payload = {}) => {
+        const districtId = payload.districtId ?? null;
+        if (!districtId || typeof payload.stability !== 'number') return;
+        this.dispatch({
+          type: 'DISTRICT_STABILITY_SET',
+          domain: 'district',
+          payload: {
+            districtId,
+            stabilityValue: payload.stability,
+            rating: payload.rating ?? null,
+            source: payload.source ?? null,
+          },
+        });
+      }),
+
+      this.eventBus.on('district:stability_adjusted', (payload = {}) => {
+        const districtId = payload.districtId ?? null;
+        if (!districtId || typeof payload.delta !== 'number') return;
+        this.dispatch({
+          type: 'DISTRICT_STABILITY_ADJUSTED',
+          domain: 'district',
+          payload: {
+            districtId,
+            delta: payload.delta,
+            source: payload.source ?? null,
+          },
+        });
+      }),
+
+      this.eventBus.on('district:restriction_set', (payload = {}) => {
+        const districtId = payload.districtId ?? null;
+        const restrictionId = payload.restrictionId ?? payload.id ?? null;
+        if (!districtId || !restrictionId || typeof payload.active !== 'boolean') return;
+        this.dispatch({
+          type: 'DISTRICT_RESTRICTION_SET',
+          domain: 'district',
+          payload: {
+            districtId,
+            restrictionId,
+            active: Boolean(payload.active),
+            metadata: payload.metadata ?? null,
+          },
+        });
+      }),
+
+      this.eventBus.on('district:route_unlocked', (payload = {}) => {
+        const districtId = payload.districtId ?? null;
+        const routeId = payload.routeId ?? payload.id ?? null;
+        if (!districtId || !routeId) return;
+        this.dispatch({
+          type: 'DISTRICT_ROUTE_UNLOCKED',
+          domain: 'district',
+          payload: {
+            districtId,
+            routeId,
+            source: payload.source ?? null,
+          },
+        });
+      }),
+
+      this.eventBus.on('district:fast_travel_set', (payload = {}) => {
+        const districtId = payload.districtId ?? null;
+        if (!districtId || typeof payload.enabled !== 'boolean') return;
+        this.dispatch({
+          type: 'DISTRICT_FAST_TRAVEL_SET',
+          domain: 'district',
+          payload: {
+            districtId,
+            enabled: Boolean(payload.enabled),
           },
         });
       }),
@@ -654,6 +862,8 @@ export class WorldStateStore {
     const tutorial = sliceRegistry.tutorial.serialize(this.state.tutorial);
     const dialogue = sliceRegistry.dialogue.serialize(this.state.dialogue);
     const inventory = sliceRegistry.inventory.serialize(this.state.inventory);
+    const districts = sliceRegistry.district.serialize(this.state.district);
+    const npcs = sliceRegistry.npc.serialize(this.state.npc);
 
     return {
       storyFlags,
@@ -662,6 +872,8 @@ export class WorldStateStore {
       tutorial,
       dialogue,
       inventory,
+      districts,
+      npcs,
       tutorialComplete: Boolean(tutorial?.completed),
     };
   }
@@ -680,6 +892,8 @@ export class WorldStateStore {
       tutorial: snapshot.tutorial ?? {},
       dialogue: snapshot.dialogue ?? {},
       inventory: snapshot.inventory ?? {},
+      districts: snapshot.districts ?? {},
+      npc: snapshot.npcs ?? snapshot.npc ?? {},
     };
 
     this.dispatch({

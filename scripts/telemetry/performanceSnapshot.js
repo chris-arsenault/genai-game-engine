@@ -8,6 +8,7 @@ import { Evidence } from '../../src/game/components/Evidence.js';
 import { FactionManager } from '../../src/game/managers/FactionManager.js';
 import { EventBus } from '../../src/engine/events/EventBus.js';
 import { BSPGenerator } from '../../src/game/procedural/BSPGenerator.js';
+import { DetectiveVisionOverlay } from '../../src/game/ui/DetectiveVisionOverlay.js';
 
 const DEFAULT_OUTPUT = 'telemetry-artifacts/performance/performance-metrics.json';
 const THRESHOLDS = {
@@ -15,6 +16,9 @@ const THRESHOLDS = {
   factionModifyAvgMs: 2,
   factionAttitudeAvgMs: 0.05,
   bspGenerationMs: 10,
+  detectiveVisionUpdateAvgMs: 0.6,
+  detectiveVisionRenderAvgMs: 0.75,
+  detectiveVisionCombinedAvgMs: 1,
 };
 
 function parseArgs(argv = process.argv.slice(2)) {
@@ -201,6 +205,159 @@ function summariseSamples(samples = []) {
   };
 }
 
+class DetectiveVisionComponentRegistryStub {
+  constructor(hiddenCount = 48) {
+    this.entityIds = [];
+    this.components = new Map();
+
+    for (let index = 0; index < hiddenCount; index += 1) {
+      const id = `hidden-${index}`;
+      this.entityIds.push(id);
+      this._setComponent(id, 'Evidence', {
+        id,
+        title: `Hidden Evidence ${index + 1}`,
+        hidden: true,
+        requires: 'detective_vision',
+        collected: false,
+        derivedClues: [],
+      });
+      this._setComponent(id, 'Transform', {
+        x: (index % 12) * 96 + 32,
+        y: Math.floor(index / 12) * 96 + 48,
+      });
+      this._setComponent(id, 'Sprite', {
+        width: 28,
+        height: 28,
+      });
+    }
+  }
+
+  _key(entityId, type) {
+    return `${entityId}:${type}`;
+  }
+
+  _setComponent(entityId, type, component) {
+    this.components.set(this._key(entityId, type), component);
+  }
+
+  queryEntities(required) {
+    if (!Array.isArray(required)) {
+      return [];
+    }
+    if (required.includes('Evidence') && required.includes('Transform')) {
+      return [...this.entityIds];
+    }
+    return [];
+  }
+
+  getComponent(entityId, type) {
+    return this.components.get(this._key(entityId, type)) ?? null;
+  }
+}
+
+function createMockContext() {
+  const noop = () => {};
+  return {
+    globalAlpha: 1,
+    lineWidth: 1,
+    fillStyle: '',
+    strokeStyle: '',
+    font: '',
+    textAlign: '',
+    textBaseline: '',
+    save: noop,
+    restore: noop,
+    beginPath: noop,
+    moveTo: noop,
+    lineTo: noop,
+    quadraticCurveTo: noop,
+    closePath: noop,
+    arc: noop,
+    fill: noop,
+    stroke: noop,
+    fillRect: noop,
+    strokeRect: noop,
+    fillText: noop,
+    measureText: () => ({ width: 128 }),
+  };
+}
+
+function measureDetectiveVisionOverlay(options = {}) {
+  const runs = Number.isFinite(options.runs) ? Math.max(1, options.runs) : 360;
+  const hiddenCount = Number.isFinite(options.hiddenCount) ? Math.max(1, options.hiddenCount) : 48;
+
+  const canvas = { width: 1920, height: 1080 };
+  const eventBus = new EventBus();
+  const componentRegistry = new DetectiveVisionComponentRegistryStub(hiddenCount);
+  const camera = {
+    worldToScreen(x, y) {
+      return { x, y };
+    },
+  };
+
+  const overlay = new DetectiveVisionOverlay(
+    canvas,
+    eventBus,
+    camera,
+    componentRegistry,
+    {
+      highlightRefreshInterval: options.highlightRefreshInterval ?? 0.25,
+      fadeSpeed: 8,
+    }
+  );
+  overlay.init();
+
+  const statusPayload = {
+    active: true,
+    energy: 4,
+    energyMax: 5,
+    cooldown: 0,
+    cooldownMax: 5,
+    canActivate: true,
+    timestamp: performance.now(),
+  };
+  eventBus.emit('detective_vision:status', statusPayload);
+  eventBus.emit('detective_vision:activated', { duration: 6 });
+
+  const ctx = createMockContext();
+  overlay.update(1 / 60);
+  overlay.render(ctx);
+
+  const updateSamples = [];
+  const renderSamples = [];
+  const combinedSamples = [];
+
+  for (let i = 0; i < runs; i += 1) {
+    const updateStart = performance.now();
+    overlay.update(1 / 60);
+    const updateElapsed = performance.now() - updateStart;
+
+    const renderStart = performance.now();
+    overlay.render(ctx);
+    const renderElapsed = performance.now() - renderStart;
+
+    updateSamples.push(updateElapsed);
+    renderSamples.push(renderElapsed);
+    combinedSamples.push(updateElapsed + renderElapsed);
+
+    if (i > 0 && i % 90 === 0) {
+      statusPayload.energy = Math.max(0.5, statusPayload.energy - 0.3);
+      statusPayload.cooldown = Math.max(0, statusPayload.cooldown - 0.1);
+      statusPayload.timestamp = performance.now();
+      eventBus.emit('detective_vision:status', { ...statusPayload });
+    }
+  }
+
+  eventBus.emit('detective_vision:deactivated', { reason: 'telemetry_profile' });
+  overlay.cleanup();
+
+  return {
+    update: summariseSamples(updateSamples),
+    render: summariseSamples(renderSamples),
+    combined: summariseSamples(combinedSamples),
+  };
+}
+
 async function ensureDirectory(filePath) {
   const dir = path.dirname(filePath);
   await fs.mkdir(dir, { recursive: true });
@@ -227,6 +384,7 @@ async function main() {
   const forensicSummary = measureForensicAnalysis();
   const factionSummary = measureFactionPerformance();
   const bspSummary = measureBspGeneration();
+  const detectiveVisionSummary = measureDetectiveVisionOverlay();
 
   const report = {
     generatedAt: new Date().toISOString(),
@@ -235,6 +393,18 @@ async function main() {
       factionModify: formatMetric(factionSummary.modify, THRESHOLDS.factionModifyAvgMs),
       factionAttitude: formatMetric(factionSummary.attitude, THRESHOLDS.factionAttitudeAvgMs),
       bspGeneration: formatMetric(bspSummary, THRESHOLDS.bspGenerationMs),
+      detectiveVisionUpdate: formatMetric(
+        detectiveVisionSummary.update,
+        THRESHOLDS.detectiveVisionUpdateAvgMs
+      ),
+      detectiveVisionRender: formatMetric(
+        detectiveVisionSummary.render,
+        THRESHOLDS.detectiveVisionRenderAvgMs
+      ),
+      detectiveVisionCombined: formatMetric(
+        detectiveVisionSummary.combined,
+        THRESHOLDS.detectiveVisionCombinedAvgMs
+      ),
     },
     thresholds: THRESHOLDS,
   };
@@ -246,6 +416,21 @@ async function main() {
   console.log('[performance-telemetry] Faction modify average:', report.metrics.factionModify.averageMs, 'ms');
   console.log('[performance-telemetry] Faction attitude average:', report.metrics.factionAttitude.averageMs, 'ms');
   console.log('[performance-telemetry] BSP generation average:', report.metrics.bspGeneration.averageMs, 'ms');
+  console.log(
+    '[performance-telemetry] Detective vision update average:',
+    report.metrics.detectiveVisionUpdate.averageMs,
+    'ms'
+  );
+  console.log(
+    '[performance-telemetry] Detective vision render average:',
+    report.metrics.detectiveVisionRender.averageMs,
+    'ms'
+  );
+  console.log(
+    '[performance-telemetry] Detective vision combined average:',
+    report.metrics.detectiveVisionCombined.averageMs,
+    'ms'
+  );
 
   const failedMetrics = Object.entries(report.metrics)
     .filter(([, metric]) => metric.passed === false)

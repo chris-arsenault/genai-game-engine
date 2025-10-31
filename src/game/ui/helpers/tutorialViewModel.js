@@ -35,6 +35,13 @@ const tutorialOverlaySelector = createSelector(
             canSkip: Boolean(prompt.canSkip),
             highlight: prompt.highlight ?? null,
             position: prompt.position ?? null,
+            controlHint: prompt.controlHint
+              ? {
+                  label: prompt.controlHint.label ?? null,
+                  keys: Array.isArray(prompt.controlHint.keys) ? [...prompt.controlHint.keys] : [],
+                  note: prompt.controlHint.note ?? null,
+                }
+              : null,
           }
         : null,
       progress: {

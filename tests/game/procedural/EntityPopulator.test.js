@@ -4,7 +4,7 @@
  */
 
 import { EntityPopulator } from '../../../src/game/procedural/EntityPopulator.js';
-import { EvidenceGraph, EvidenceType } from '../../../src/game/procedural/EvidenceGraph.js';
+import { EvidenceGraph, EvidenceType, RevealType } from '../../../src/game/procedural/EvidenceGraph.js';
 
 describe('EntityPopulator', () => {
   let populator;
@@ -99,6 +99,16 @@ describe('EntityPopulator', () => {
           position: { x: 15, y: 15 },
         },
       ],
+      evidence: [
+        {
+          id: 'evidence_1',
+          derivedClues: ['clue_alpha'],
+        },
+        {
+          id: 'evidence_2',
+          derivedClues: ['clue_beta', 'clue_gamma'],
+        },
+      ],
     };
   });
 
@@ -109,6 +119,14 @@ describe('EntityPopulator', () => {
       expect(defaultPopulator.enemyDensity).toBe(0.5);
       expect(defaultPopulator.backgroundNPCs).toBe(true);
       expect(defaultPopulator.evidencePlacement).toBe('normal');
+    });
+
+    it('should include derived clue identifiers from case data', () => {
+      const spawnData = populator.populate(mockDistrict, mockCaseData, 1010);
+      const evidence = spawnData.evidence.find((entry) => entry.evidenceId === 'evidence_2');
+
+      expect(evidence).toBeDefined();
+      expect(evidence.derivedClues).toEqual(['clue_beta', 'clue_gamma']);
     });
 
     it('should create with custom config', () => {
@@ -289,6 +307,43 @@ describe('EntityPopulator', () => {
 
       // Should skip invalid evidence
       expect(spawnData.evidence.length).toBe(0);
+    });
+
+    it('should hide clue-revealed evidence behind detective vision', () => {
+      mockCaseData.evidenceGraph.addDependency('evidence_1', 'evidence_2', {
+        revealType: RevealType.CLUE,
+      });
+
+      const spawnData = populator.populate(mockDistrict, mockCaseData, 54321);
+
+      const gatedEvidence = spawnData.evidence.find(e => e.evidenceId === 'evidence_2');
+      expect(gatedEvidence.hidden).toBe(true);
+      expect(gatedEvidence.requires).toBe('detective_vision');
+    });
+
+    it('should require forensic analysis when dependency metadata demands analysis', () => {
+      mockCaseData.evidenceGraph.addDependency('evidence_1', 'evidence_2', {
+        revealType: RevealType.ANALYSIS,
+      });
+
+      const spawnData = populator.populate(mockDistrict, mockCaseData, 999);
+
+      const gatedEvidence = spawnData.evidence.find(e => e.evidenceId === 'evidence_2');
+      expect(gatedEvidence.hidden).toBe(true);
+      expect(gatedEvidence.requires).toBe('forensic_analysis');
+    });
+
+    it('should respect explicit ability requirements in dependency metadata', () => {
+      mockCaseData.evidenceGraph.addDependency('evidence_1', 'evidence_2', {
+        revealType: RevealType.CLUE,
+        requiresAbility: 'memory_trace',
+      });
+
+      const spawnData = populator.populate(mockDistrict, mockCaseData, 1001);
+
+      const gatedEvidence = spawnData.evidence.find(e => e.evidenceId === 'evidence_2');
+      expect(gatedEvidence.hidden).toBe(true);
+      expect(gatedEvidence.requires).toBe('memory_trace');
     });
   });
 

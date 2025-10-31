@@ -38,6 +38,11 @@
       background: #1a1a2e;
     }
 
+    #game-canvas:focus {
+      outline: 2px solid rgba(102, 255, 255, 0.6);
+      outline-offset: 2px;
+    }
+
     #loading-screen {
       position: absolute;
       top: 0;
@@ -150,6 +155,59 @@
       border-top: 1px solid rgba(0, 255, 255, 0.35);
       padding-top: 6px;
       max-width: 320px;
+    }
+
+    #debug-fx {
+      margin-top: 8px;
+      border-top: 1px solid rgba(0, 255, 255, 0.35);
+      padding-top: 6px;
+      max-width: 360px;
+      width: min(100%, 360px);
+    }
+
+    .debug-fx-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    .debug-fx-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 6px;
+      background: rgba(10, 40, 60, 0.4);
+      border: 1px solid rgba(0, 255, 255, 0.24);
+      border-radius: 3px;
+      font-size: 11px;
+      color: #c6f8ff;
+    }
+
+    .debug-fx-card .label {
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: rgba(155, 231, 255, 0.85);
+    }
+
+    .debug-fx-card .value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: #7fffd4;
+    }
+
+    .debug-fx-warning {
+      margin-top: 6px;
+      font-size: 11px;
+      color: rgba(155, 231, 255, 0.85);
+    }
+
+    .debug-fx-warning[data-state="warning"] {
+      color: #ff9d9d;
+    }
+
+    .debug-fx-warning[data-state="ok"] {
+      color: #7fffd4;
     }
 
     .debug-meta {
@@ -368,6 +426,11 @@
       background: rgba(102, 255, 204, 0.6);
     }
 
+    .debug-sfx-tag-chip:focus {
+      outline: 2px solid rgba(102, 255, 204, 0.8);
+      outline-offset: 1px;
+    }
+
     .debug-sfx-list {
       display: flex;
       flex-direction: column;
@@ -385,6 +448,11 @@
       padding: 4px;
     }
 
+    .debug-sfx-row:focus-within {
+      border-color: rgba(102, 255, 255, 0.6);
+      box-shadow: 0 0 0 1px rgba(102, 255, 255, 0.25);
+    }
+
     .debug-sfx-row button {
       background: rgba(102, 255, 255, 0.2);
       border: 1px solid rgba(102, 255, 255, 0.5);
@@ -393,6 +461,11 @@
       padding: 2px 6px;
       border-radius: 4px;
       cursor: pointer;
+    }
+
+    .debug-sfx-row button:focus {
+      outline: 2px solid rgba(102, 255, 255, 0.85);
+      outline-offset: 1px;
     }
 
     .debug-sfx-row button:hover {
@@ -416,6 +489,11 @@
     .debug-sfx-empty {
       font-size: 11px;
       color: rgba(255, 255, 255, 0.6);
+    }
+
+    #debug-audio[data-focus-active="true"] {
+      outline: 1px solid rgba(102, 255, 255, 0.6);
+      box-shadow: 0 0 8px rgba(102, 255, 255, 0.25);
     }
 
     #debug-dialogue {
@@ -538,7 +616,7 @@
 </head>
 <body>
   <div id="game-container">
-    <canvas id="game-canvas" width="1280" height="720"></canvas>
+    <canvas id="game-canvas" width="1280" height="720" tabindex="0" aria-label="Game canvas"></canvas>
 
     <div id="loading-screen">
       <div class="loading-text">Loading The Memory Syndicate...</div>
@@ -558,6 +636,37 @@
         <div id="debug-spatial-list" class="debug-world-list">
           <div class="debug-world-row empty">No spatial data</div>
         </div>
+      </div>
+      <div id="debug-fx">
+        <div class="debug-title">FX Metrics</div>
+        <div id="debug-fx-meta" class="debug-meta">Awaiting samples…</div>
+        <div id="debug-fx-grid" class="debug-fx-grid">
+          <div class="debug-fx-card">
+            <span class="label">Active</span>
+            <span id="debug-fx-active" class="value">0</span>
+          </div>
+          <div class="debug-fx-card">
+            <span class="label">Queued</span>
+            <span id="debug-fx-queued" class="value">0</span>
+          </div>
+          <div class="debug-fx-card">
+            <span class="label">Throughput</span>
+            <span id="debug-fx-throughput" class="value">0.0 /s</span>
+          </div>
+          <div class="debug-fx-card">
+            <span class="label">Avg Throughput</span>
+            <span id="debug-fx-avg" class="value">0.0 /s</span>
+          </div>
+          <div class="debug-fx-card">
+            <span class="label">Peak Active</span>
+            <span id="debug-fx-peak-active" class="value">0</span>
+          </div>
+          <div class="debug-fx-card">
+            <span class="label">Peak Throughput</span>
+            <span id="debug-fx-peak-throughput" class="value">0.0 /s</span>
+          </div>
+        </div>
+        <div id="debug-fx-warning" class="debug-fx-warning" data-state="idle">No samples</div>
       </div>
       <div id="debug-systems">
         <div class="debug-title">Systems</div>
@@ -629,6 +738,7 @@
       </div>
       <div id="debug-audio">
         <div class="debug-title">Audio</div>
+        <div class="debug-meta">Shortcut: Shift+Alt+A · Esc exits audio focus</div>
         <div class="debug-audio-section">
           <div class="debug-subtitle">Adaptive State</div>
           <div id="debug-audio-state" class="debug-audio-meta">State: n/a</div>

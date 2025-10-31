@@ -20,7 +20,7 @@
 | ----- | ----- | ----------- | ----- |
 | AR-001 | Deduction board UI | `image-ar-001-deduction-board-bg`, `image-ar-001-clue-node-pack`, `image-ar-001-evidence-icon-set`, `image-ar-001-ui-button-pack` | Prioritise cohesive neon-noir styling; hover/pressed states to support tactile investigation feel. |
 | AR-002 | Evidence placeholders | `image-ar-002-generic-marker`, `image-ar-002-fingerprint`, `image-ar-002-document`, `image-ar-002-neural-extractor`, `image-ar-002-blood-spatter` | Pair each sprite with narrative text variants for tutorial tooltips. |
-| AR-003 | Player sprite | `image-ar-003-player-kira-sprite` | Requires 4-direction animations; ensure trench-coat silhouette distinct during stealth/combat transitions. |
+| AR-003 | Player sprite | `image-ar-003-player-kira-sprite`, `image-ar-003-kira-evasion-pack` | Requires 4-direction animations; ensure trench-coat silhouette distinct during stealth/combat transitions; new dash/slide pack complements autosave stress validation. |
 | AR-004 | NPC sprites | `image-ar-004-npc-civilian-pack`, `image-ar-004-npc-guard-pack` | Civilian palette must hint at faction allegiance; guards need visor glow to visualize detection state. |
 | AR-005 | District tilesets | `image-ar-005-tileset-neon-district`, `image-ar-005-tileset-corporate-spires`, `image-ar-005-tileset-archive-undercity`, `image-ar-005-tileset-zenith-sector` | Tilesets must ship with collision metadata once sourced/generated. |
 | AR-007 | Particle/overlay FX | `image-ar-007-particles-rain`, `image-ar-007-particles-neon-glow`, `image-ar-007-particles-memory-fragment`, `image-ar-007-screen-effects-pack` | Optimise alpha usage for Canvas blending; test against 60 FPS threshold. |

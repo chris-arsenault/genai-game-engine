@@ -1,5 +1,6 @@
 import { emitOverlayVisibility } from './helpers/overlayEvents.js';
 import { overlayTheme, withOverlayTheme } from './theme/overlayTheme.js';
+import { getBindingLabels } from '../utils/controlBindingPrompts.js';
 
 const DEFAULT_LAYOUT = {
   width: 480,
@@ -41,6 +42,7 @@ export class InventoryOverlay {
     this.items = [];
     this.equipped = {};
     this.selectedIndex = 0;
+    this._lastFxFocusIndex = -1;
     this.title = options.title ?? 'Evidence Locker';
 
     const { palette, typography, metrics } = overlayTheme;
@@ -97,6 +99,71 @@ export class InventoryOverlay {
     this._unsubscribeStore = null;
     this._offMoveUp = null;
     this._offMoveDown = null;
+  }
+
+  _getBindingLabel(action, fallback) {
+    const labels = getBindingLabels(action, { fallbackLabel: fallback });
+    if (Array.isArray(labels) && labels.length > 0) {
+      return labels.join(' / ');
+    }
+    if (typeof fallback === 'string' && fallback.length) {
+      return fallback;
+    }
+    return '—';
+  }
+
+  _getPrimaryBindingLabel(action, fallback) {
+    const labels = getBindingLabels(action, { fallbackLabel: fallback });
+    if (Array.isArray(labels) && labels.length > 0) {
+      return labels[0];
+    }
+    if (typeof fallback === 'string' && fallback.length) {
+      return fallback;
+    }
+    return '—';
+  }
+
+  _renderBindingHints(ctx, panelX, panelY, panelWidth) {
+    const padding = 24;
+    const maxWidth = panelWidth - padding * 2;
+    const baselineY = panelY + 68;
+
+    const hints = [
+      `Close: ${this._getBindingLabel('inventory', 'I')}`,
+      this._buildScrollHint(),
+      `Quest Log: ${this._getBindingLabel('quest', 'Q')}`,
+    ].filter(Boolean);
+
+    if (!hints.length) {
+      return;
+    }
+
+    let text = hints.join('  ·  ');
+    const working = [...hints];
+
+    ctx.save();
+    ctx.font = this.style.header.subtitleFont;
+    ctx.fillStyle = this.style.header.subtitleColor;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+
+    while (working.length > 1 && ctx.measureText(text).width > maxWidth) {
+      working.pop();
+      text = working.join('  ·  ');
+    }
+
+    ctx.fillText(text, panelX + panelWidth - padding, baselineY);
+    ctx.restore();
+  }
+
+  _buildScrollHint() {
+    const up = this._getPrimaryBindingLabel('moveUp', 'W');
+    const down = this._getPrimaryBindingLabel('moveDown', 'S');
+    if (!up && !down) {
+      return null;
+    }
+    const formatted = [up, down].filter(Boolean).join('/');
+    return formatted.length ? `Scroll: ${formatted}` : null;
   }
 
   init() {
@@ -162,10 +229,16 @@ export class InventoryOverlay {
 
     if (this.items.length === 0) {
       this.selectedIndex = 0;
+      this._lastFxFocusIndex = -1;
     } else if (this.selectedIndex >= this.items.length) {
       this.selectedIndex = this.items.length - 1;
     } else if (this.selectedIndex < 0) {
       this.selectedIndex = 0;
+    }
+
+    if (this.visible && this.items.length) {
+      this._lastFxFocusIndex = -1;
+      this._emitSelectionCue('state:update');
     }
   }
 
@@ -188,10 +261,18 @@ export class InventoryOverlay {
     }
     this.visible = true;
     this.targetAlpha = 1;
+    this._lastFxFocusIndex = -1;
     emitOverlayVisibility(this.eventBus, 'inventory', true, {
       source,
       count: this.items.length,
     });
+    this._emitFxCue('inventoryOverlayReveal', {
+      source,
+      count: this.items.length,
+    });
+    if (this.items.length) {
+      this._emitSelectionCue('show');
+    }
   }
 
   hide(source = 'hide') {
@@ -201,9 +282,13 @@ export class InventoryOverlay {
     const wasVisible = this.visible;
     this.visible = false;
     this.targetAlpha = 0;
+    this._lastFxFocusIndex = -1;
 
     if (wasVisible) {
       emitOverlayVisibility(this.eventBus, 'inventory', false, {
+        source,
+      });
+      this._emitFxCue('inventoryOverlayDismiss', {
         source,
       });
     }
@@ -235,6 +320,7 @@ export class InventoryOverlay {
         index: this.selectedIndex,
       });
     }
+    this._emitSelectionCue('input');
   }
 
   getSelectedItem() {
@@ -256,6 +342,37 @@ export class InventoryOverlay {
       segments.push(`${equippedCount} equipped`);
     }
     return segments.join(' · ');
+  }
+
+  _emitFxCue(effectId, context = {}) {
+    if (!this.eventBus || typeof this.eventBus.emit !== 'function') {
+      return;
+    }
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId,
+      source: 'InventoryOverlay',
+      context,
+    });
+  }
+
+  _emitSelectionCue(reason) {
+    if (!this.visible || !this.items.length) {
+      return;
+    }
+    if (this.selectedIndex < 0 || this.selectedIndex >= this.items.length) {
+      return;
+    }
+    if (this._lastFxFocusIndex === this.selectedIndex) {
+      return;
+    }
+    this._lastFxFocusIndex = this.selectedIndex;
+    const item = this.items[this.selectedIndex] || null;
+    this._emitFxCue('inventoryItemFocus', {
+      reason,
+      itemId: item?.id ?? null,
+      rarity: item?.rarity ?? null,
+      index: this.selectedIndex,
+    });
   }
 
   render(ctx) {
@@ -300,6 +417,8 @@ export class InventoryOverlay {
     ctx.font = this.style.header.subtitleFont;
     ctx.fillStyle = this.style.header.subtitleColor;
     ctx.fillText(this.getSummary(), panelX + 24, panelY + 56);
+
+    this._renderBindingHints(ctx, panelX, panelY, width);
 
     const listWidth = Math.floor(width * 0.45);
     const listX = panelX + 24;
@@ -485,6 +604,7 @@ export class InventoryOverlay {
       this._offMoveDown();
       this._offMoveDown = null;
     }
+    this._lastFxFocusIndex = -1;
   }
 
   isVendorItem(item) {

@@ -5,6 +5,10 @@
  */
 
 import { SeededRandom } from '../../engine/procedural/SeededRandom.js';
+import { RevealType } from './EvidenceGraph.js';
+
+const DEFAULT_DETECTIVE_VISION_ABILITY = 'detective_vision';
+const DEFAULT_FORENSIC_ANALYSIS_ABILITY = 'forensic_analysis';
 
 /**
  * Converts district and case data into spawn data for entities.
@@ -199,10 +203,12 @@ export class EntityPopulator {
 
       const position = placement.position || this._getRoomCenterPosition(room, rng);
 
-      // Get evidence dependencies (required knowledge to access)
-      const dependencies = (caseData.evidenceGraph && caseData.evidenceGraph.dependencies)
-        ? (caseData.evidenceGraph.dependencies.get(placement.evidenceId) || [])
+      const dependencies = typeof caseData.evidenceGraph?.getDependenciesFor === 'function'
+        ? caseData.evidenceGraph.getDependenciesFor(placement.evidenceId)
         : [];
+
+      const gating = this._deriveEvidenceGating(evidenceData, dependencies);
+      const derivedClues = this._resolveDerivedClues(placement.evidenceId, evidenceData, caseData);
 
       evidenceSpawnData.push({
         type: 'evidence',
@@ -213,9 +219,9 @@ export class EntityPopulator {
         caseId: caseData.id,
         title: evidenceData.description,
         description: evidenceData.description,
-        hidden: false, // TODO: Add hidden evidence logic based on dependencies
-        requires: dependencies.length > 0 ? dependencies[0] : null,
-        derivedClues: [], // Evidence can derive clues when collected
+        hidden: gating.hidden,
+        requires: gating.requires,
+        derivedClues,
         isSolutionFact: evidenceData.isSolutionFact || false,
       });
     }
@@ -266,6 +272,107 @@ export class EntityPopulator {
     }
 
     return objectSpawnData;
+  }
+
+  /**
+   * Determine gating configuration for evidence based on dependencies and metadata.
+   * @private
+   * @param {object} evidenceData
+   * @param {Array<{from: string, metadata: object}>} dependencies
+   * @returns {{hidden: boolean, requires: (string|null)}}
+   */
+  _deriveEvidenceGating(evidenceData, dependencies) {
+    const baseHidden = Boolean(evidenceData.hidden);
+    const baseRequires = this._normalizeAbilityRequirement(evidenceData.requires);
+
+    if (!Array.isArray(dependencies) || dependencies.length === 0) {
+      return {
+        hidden: baseHidden,
+        requires: baseRequires,
+      };
+    }
+
+    const explicitAbility = dependencies
+      .map(({ metadata }) => this._normalizeAbilityRequirement(metadata?.requiresAbility))
+      .find((ability) => ability !== null);
+
+    const hasAnalysisDependency = dependencies.some(({ metadata }) => (metadata?.revealType ?? RevealType.DIRECT) === RevealType.ANALYSIS);
+    const hasClueDependency = dependencies.some(({ metadata }) => (metadata?.revealType ?? RevealType.DIRECT) === RevealType.CLUE);
+
+    const hidden = baseHidden || hasAnalysisDependency || hasClueDependency;
+
+    if (explicitAbility) {
+      return { hidden, requires: explicitAbility };
+    }
+
+    if (hasAnalysisDependency) {
+      return { hidden, requires: DEFAULT_FORENSIC_ANALYSIS_ABILITY };
+    }
+
+    if (hasClueDependency) {
+      return { hidden, requires: DEFAULT_DETECTIVE_VISION_ABILITY };
+    }
+
+    return {
+      hidden,
+      requires: baseRequires,
+    };
+  }
+
+  /**
+   * Resolve derived clue IDs for evidence placement.
+   * @private
+   * @param {string} evidenceId
+   * @param {object} evidenceData
+   * @param {object} caseData
+   * @returns {Array<string>}
+   */
+  _resolveDerivedClues(evidenceId, evidenceData, caseData) {
+    const clues = new Set();
+
+    if (Array.isArray(evidenceData?.derivedClues)) {
+      for (const clueId of evidenceData.derivedClues) {
+        if (typeof clueId === 'string' && clueId.length > 0) {
+          clues.add(clueId);
+        }
+      }
+    }
+
+    if (clues.size === 0 && Array.isArray(caseData?.evidence)) {
+      const definition = caseData.evidence.find((entry) => entry?.id === evidenceId);
+      if (definition && Array.isArray(definition.derivedClues)) {
+        for (const clueId of definition.derivedClues) {
+          if (typeof clueId === 'string' && clueId.length > 0) {
+            clues.add(clueId);
+          }
+        }
+      }
+    }
+
+    return Array.from(clues);
+  }
+
+  /**
+   * Normalize ability requirement strings.
+   * @private
+   * @param {string|Array<string>|undefined|null} raw
+   * @returns {string|null}
+   */
+  _normalizeAbilityRequirement(raw) {
+    if (Array.isArray(raw)) {
+      for (const entry of raw) {
+        if (typeof entry === 'string' && entry.trim().length > 0) {
+          return entry.trim();
+        }
+      }
+      return null;
+    }
+
+    if (typeof raw === 'string' && raw.trim().length > 0) {
+      return raw.trim();
+    }
+
+    return null;
   }
 
   // Helper methods

@@ -198,6 +198,10 @@ export class CollisionSystem extends System {
     const shapeA = this.getColliderShape(transformA, colliderA);
     const shapeB = this.getColliderShape(transformB, colliderB);
 
+    if (!shapeA || !shapeB) {
+      return null;
+    }
+
     return detectCollision(shapeA, shapeB);
   }
 

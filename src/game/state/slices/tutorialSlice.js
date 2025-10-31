@@ -8,6 +8,17 @@ const sliceRuntimeConfig = {
   promptHistorySnapshotLimit: DEFAULT_PROMPT_SNAPSHOT_LIMIT,
 };
 
+function cloneControlHint(hint) {
+  if (!hint || typeof hint !== 'object') {
+    return null;
+  }
+  return {
+    label: hint.label ?? null,
+    keys: Array.isArray(hint.keys) ? [...hint.keys] : [],
+    note: hint.note ?? null,
+  };
+}
+
 function clonePrompt(prompt) {
   if (!prompt) return null;
   return {
@@ -20,6 +31,7 @@ function clonePrompt(prompt) {
     position: prompt.position ? { ...prompt.position } : null,
     canSkip: Boolean(prompt.canSkip),
     startedAt: prompt.startedAt ?? null,
+    controlHint: cloneControlHint(prompt.controlHint),
   };
 }
 
@@ -225,6 +237,7 @@ export const tutorialSlice = {
           next.totalSteps = payload.totalSteps;
         }
         next.stepStartedAt = timestamp;
+        const controlHint = cloneControlHint(payload.controlHint);
         const prompt = {
           title: payload.title ?? null,
           description: payload.description ?? null,
@@ -235,10 +248,43 @@ export const tutorialSlice = {
           position: payload.position ? { ...payload.position } : null,
           canSkip: Boolean(payload.canSkip),
           startedAt: timestamp,
+          controlHint,
         };
         next.currentPrompt = prompt;
         recordPromptHistory(next, prompt);
         hasChange = true;
+        break;
+      }
+
+      case 'TUTORIAL_CONTROL_HINT_UPDATED': {
+        const stepId = payload.stepId ?? next.currentStep ?? null;
+        const hint = cloneControlHint(payload.controlHint);
+        if (stepId && hint) {
+          let updated = false;
+          if (next.currentPrompt && next.currentPrompt.stepId === stepId) {
+            next.currentPrompt.controlHint = hint;
+            updated = true;
+          }
+          if (Array.isArray(next.promptHistory) && next.promptHistory.length > 0) {
+            for (let i = next.promptHistory.length - 1; i >= 0; i--) {
+              const entry = next.promptHistory[i];
+              if (entry?.stepId === stepId) {
+                next.promptHistory[i] = {
+                  ...entry,
+                  controlHint: hint,
+                };
+                updated = true;
+                break;
+              }
+            }
+          }
+          if (updated) {
+            recordPromptSnapshot(next, 'control_hint_updated', timestamp, {
+              stepId,
+            });
+            hasChange = true;
+          }
+        }
         break;
       }
 

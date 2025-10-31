@@ -17,6 +17,7 @@
  */
 import { emitOverlayVisibility } from './helpers/overlayEvents.js';
 import { factionSlice } from '../state/slices/factionSlice.js';
+import { getBindingLabels } from '../utils/controlBindingPrompts.js';
 
 export class ReputationUI {
   /**
@@ -76,6 +77,44 @@ export class ReputationUI {
 
     // Setup event listeners
     this.setupEventListeners();
+  }
+
+  _getBindingLabel(action, fallback) {
+    const labels = getBindingLabels(action, { fallbackLabel: fallback });
+    if (Array.isArray(labels) && labels.length > 0) {
+      return labels.join(' / ');
+    }
+    if (typeof fallback === 'string' && fallback.length) {
+      return fallback;
+    }
+    return '—';
+  }
+
+  _renderBindingHints(ctx) {
+    const padding = this.config.padding ?? 12;
+    const hints = [
+      `Close: ${this._getBindingLabel('faction', 'R')}`,
+      `Case File: ${this._getBindingLabel('caseFile', 'Tab')}`,
+      `Inventory: ${this._getBindingLabel('inventory', 'I')}`,
+    ];
+
+    const maxWidth = this.width - padding * 2;
+    const working = [...hints];
+    let text = working.join('  ·  ');
+
+    ctx.save();
+    ctx.font = `${this.config.fontSize - 2}px Arial`;
+    ctx.fillStyle = '#aaaaaa';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+
+    while (working.length > 1 && ctx.measureText(text).width > maxWidth) {
+      working.pop();
+      text = working.join('  ·  ');
+    }
+
+    ctx.fillText(text, this.x + this.width - padding, this.y + this.config.headerHeight / 2);
+    ctx.restore();
   }
 
   /**
@@ -284,11 +323,7 @@ export class ReputationUI {
     ctx.textBaseline = 'middle';
     ctx.fillText('FACTION STANDINGS', this.x + padding, this.y + headerHeight / 2);
 
-    // Draw close hint
-    ctx.font = `${fontSize - 2}px Arial`;
-    ctx.fillStyle = '#aaaaaa';
-    ctx.textAlign = 'right';
-    ctx.fillText('[R] Close', this.x + this.width - padding, this.y + headerHeight / 2);
+    this._renderBindingHints(ctx);
 
     const summaryHeight = this.renderCascadeSummary(ctx);
     const scrollAreaY = this.y + headerHeight + summaryHeight;

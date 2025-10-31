@@ -422,6 +422,54 @@ test.describe('Tutorial overlay', () => {
     expect(consoleErrors).toEqual([]);
   });
 
+  test('shows control hint keycaps and bright tutorial evidence hotspots', async ({ page }) => {
+    const consoleErrors = collectConsoleErrors(page);
+
+    await prepareTutorial(page);
+    await fastForwardTutorial(page, 'movement');
+
+    const controlHintKeys = await page.evaluate(() => {
+      const tutorialState = window.game.worldStateStore.getState().tutorial;
+      return Array.isArray(tutorialState.currentPrompt?.controlHint?.keys)
+        ? [...tutorialState.currentPrompt.controlHint.keys]
+        : [];
+    });
+
+    expect(controlHintKeys).toEqual(['W', '↑', 'A', '←', 'S', '↓', 'D', '→']);
+
+    const evidenceHotspots = await page.evaluate(() => {
+      const registry = window.game.componentRegistry;
+      const evidenceEntities = registry.queryEntities('Evidence');
+      return evidenceEntities.map((entityId) => {
+        const evidence = registry.getComponent(entityId, 'Evidence');
+        const sprite = registry.getComponent(entityId, 'Sprite');
+        return {
+          id: evidence?.id ?? null,
+          alpha: sprite?.alpha ?? null,
+          color: sprite?.color ?? null,
+        };
+      });
+    });
+
+    const extractor = evidenceHotspots.find((entry) => entry.id === 'ev_001_extractor');
+    const blood = evidenceHotspots.find((entry) => entry.id === 'ev_002_blood');
+    const residue = evidenceHotspots.find((entry) => entry.id === 'ev_003_residue');
+
+    for (const hotspot of [extractor, blood, residue]) {
+      expect(hotspot).toBeDefined();
+      expect(typeof hotspot.alpha).toBe('number');
+      expect(hotspot.alpha).toBeGreaterThanOrEqual(0.9);
+      expect(typeof hotspot.color).toBe('string');
+      expect(hotspot.color?.length).toBeGreaterThan(0);
+    }
+
+    expect(extractor.color).toBe('#00FF00');
+    expect(blood.color).toBe('#00FF00');
+    expect(residue.color).toBe('#00FF00');
+
+    expect(consoleErrors).toEqual([]);
+  });
+
   test('advances evidence detection step via proximity', async ({ page }) => {
     const consoleErrors = collectConsoleErrors(page);
 
@@ -718,6 +766,78 @@ test.describe('Tutorial overlay', () => {
     expect(state.storeStep).toBe('deduction_board_intro');
     expect(state.storeCompletedSteps).toContain('forensic_analysis');
     expect(state.promptHistory).toContain('forensic_analysis');
+    expect(consoleErrors).toEqual([]);
+  });
+
+  test('remapping interact updates control hints and prompts', async ({ page }) => {
+    const consoleErrors = collectConsoleErrors(page);
+
+    await prepareTutorial(page);
+
+    await page.keyboard.press('KeyK');
+    await page.waitForFunction(
+      () => Boolean(window.game?.controlBindingsOverlay?.visible)
+    );
+
+    await page.evaluate(() => {
+      const overlay = window.game.controlBindingsOverlay;
+      const index = overlay.actionEntries.findIndex((entry) => entry.action === 'interact');
+      if (index >= 0) {
+        overlay.selectedIndex = index;
+        overlay.beginCapture();
+      }
+    });
+
+    await page.keyboard.press('KeyJ');
+    await page.keyboard.press('Escape');
+
+    await page.waitForFunction(
+      () => window.game?.controlBindingsOverlay?.visible === false
+    );
+
+    await page.waitForFunction(
+      () => Array.isArray(window.game?.inputState?.controlBindings?.interact)
+        && window.game.inputState.controlBindings.interact[0] === 'KeyJ'
+    );
+
+    const resolvedHintKeys = await page.evaluate(async () => {
+      const module = await import('/src/game/utils/controlHintResolver.js');
+      const hint = module.resolveControlHint({
+        actions: ['interact'],
+        label: 'Collect Evidence',
+        note: 'Collect evidence with the interact key.',
+      });
+      if (!hint || !Array.isArray(hint.keys)) {
+        return [];
+      }
+      return hint.keys;
+    });
+
+    expect(resolvedHintKeys).toContain('J');
+
+    const promptText = await page.evaluate(() => {
+      window.game.eventBus.emit('ui:show_prompt', {
+        text: 'Press E to interact',
+        bindingAction: 'interact',
+        bindingFallback: 'interact',
+      });
+      const text = window.game.interactionPromptOverlay?.prompt?.text ?? '';
+      window.game.eventBus.emit('ui:hide_prompt');
+      return text;
+    });
+
+    expect(promptText).toContain('Press J');
+
+    await page.evaluate(() => {
+      window.game.controlBindingsOverlay.resetBinding('interact');
+      window.game.controlBindingsOverlay.hide('playwright-reset');
+    });
+
+    await page.waitForFunction(
+      () => Array.isArray(window.game?.inputState?.controlBindings?.interact)
+        && window.game.inputState.controlBindings.interact[0] === 'KeyE'
+    );
+
     expect(consoleErrors).toEqual([]);
   });
 

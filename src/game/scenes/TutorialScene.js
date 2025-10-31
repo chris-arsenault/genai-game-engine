@@ -24,6 +24,8 @@ import { InteractionZone } from '../components/InteractionZone.js';
 import { TriggerMigrationToolkit } from '../quests/TriggerMigrationToolkit.js';
 import { QuestTriggerRegistry } from '../quests/QuestTriggerRegistry.js';
 import { QUEST_001_HOLLOW_CASE } from '../data/quests/act1Quests.js';
+import { createNPCEntity } from '../entities/NPCEntity.js';
+import { createMartinezDialogue } from '../data/dialogues/MartinezWitnessDialogue.js';
 
 const TUTORIAL_TRIGGER_IDS = Object.freeze({
   DETECTIVE_VISION: 'tutorial_detective_vision_training',
@@ -125,6 +127,7 @@ export class TutorialScene {
     this.evidenceEntities = new Map();
     this.playerEntityId = null;
     this.sceneEntities = new Set();
+    this.witnessEntities = new Map();
     this._sceneCleanup = null;
     this._eventHandlers = [];
 
@@ -179,6 +182,15 @@ export class TutorialScene {
     this._cacheEvidenceEntities();
 
     this._registerSceneEventHandlers();
+
+    this._ensureTutorialDialogues();
+
+    const witnessEntityIds = this._spawnWitnesses(tutorialCase.witnesses || []);
+    for (const witnessEntityId of witnessEntityIds) {
+      if (witnessEntityId != null) {
+        this.sceneEntities.add(witnessEntityId);
+      }
+    }
 
     const questTriggerToolkit = new TriggerMigrationToolkit(this.componentRegistry, this.eventBus);
     const tutorialTriggerEntities = this._createTutorialQuestTriggers(questTriggerToolkit);
@@ -263,9 +275,164 @@ export class TutorialScene {
 
     const offEvidenceCollected = this.eventBus.on('evidence:collected', (data = {}) => {
       this._handleEvidenceCollected(data);
+      this._evaluateWitnessAvailability();
     });
 
-    this._eventHandlers.push(offEvidenceCollected);
+    const offObjectiveCompleted = this.eventBus.on('case:objective_completed', (data = {}) => {
+      if (data.caseId === tutorialCase.id) {
+        this._evaluateWitnessAvailability();
+      }
+    });
+
+    this._eventHandlers.push(offEvidenceCollected, offObjectiveCompleted);
+  }
+
+  _ensureTutorialDialogues() {
+    const dialogueSystem = this.game?.gameSystems?.dialogue;
+    if (!dialogueSystem || typeof dialogueSystem.registerDialogueTree !== 'function') {
+      return;
+    }
+
+    if (typeof dialogueSystem.getDialogueTree === 'function') {
+      const existing = dialogueSystem.getDialogueTree('martinez_witness_interview');
+      if (existing) {
+        return;
+      }
+    }
+
+    const dialogueTree = createMartinezDialogue();
+    dialogueSystem.registerDialogueTree(dialogueTree);
+  }
+
+  /**
+   * Spawn witness NPCs defined on the tutorial case.
+   * @param {Array<Object>} witnesses
+   * @returns {number[]} Entity IDs for spawned witnesses
+   * @private
+   */
+  _spawnWitnesses(witnesses = []) {
+    if (!Array.isArray(witnesses) || witnesses.length === 0) {
+      return [];
+    }
+
+    if (!(this.witnessEntities instanceof Map)) {
+      this.witnessEntities = new Map();
+    }
+
+    const spawnIds = [];
+
+    for (const witness of witnesses) {
+      if (!witness || typeof witness.id !== 'string') {
+        continue;
+      }
+
+      const { position = {} } = witness;
+      const entityId = createNPCEntity(this.entityManager, this.componentRegistry, {
+        id: witness.id,
+        name: witness.name ?? witness.id,
+        faction: witness.faction ?? 'civilian',
+        x: Number.isFinite(position.x) ? position.x : 0,
+        y: Number.isFinite(position.y) ? position.y : 0,
+        hasDialogue: Boolean(witness.dialogueId),
+        dialogueId: witness.dialogueId,
+        navigationAgent: witness.navigationAgent ?? null
+      });
+
+      const interactionZone = this.componentRegistry?.getComponent?.(entityId, 'InteractionZone');
+      if (interactionZone) {
+        if (Number.isFinite(witness.interaction?.radius)) {
+          interactionZone.radius = witness.interaction.radius;
+        }
+
+        if (typeof witness.interaction?.prompt === 'string' && witness.interaction.prompt.length > 0) {
+          interactionZone.prompt = witness.interaction.prompt;
+        }
+
+        if (typeof witness.interaction?.promptAction === 'string') {
+          interactionZone.promptAction = witness.interaction.promptAction;
+        }
+      }
+
+      this.witnessEntities.set(witness.id, {
+        entityId,
+        definition: witness,
+        unlocked: false,
+        defaultPrompt: interactionZone?.prompt ?? `Talk to ${witness.name ?? witness.id}`,
+        lockedPrompt: witness.interaction?.lockedPrompt ?? 'Collect more evidence before interviewing.'
+      });
+
+      spawnIds.push(entityId);
+    }
+
+    this._evaluateWitnessAvailability();
+
+    return spawnIds;
+  }
+
+  /**
+   * Evaluate witness prerequisites and toggle interaction availability.
+   * @private
+   */
+  _evaluateWitnessAvailability() {
+    if (!(this.witnessEntities instanceof Map) || this.witnessEntities.size === 0) {
+      return;
+    }
+
+    const caseFile = this.caseManager?.getCase?.(tutorialCase.id);
+    const collectedEvidence = caseFile?.collectedEvidence;
+    const objectives = Array.isArray(caseFile?.objectives) ? caseFile.objectives : [];
+
+    for (const [witnessId, entry] of this.witnessEntities.entries()) {
+      if (!entry || entry.entityId == null || !entry.definition) {
+        continue;
+      }
+
+      const interactionZone = this.componentRegistry?.getComponent?.(entry.entityId, 'InteractionZone');
+      if (!interactionZone) {
+        continue;
+      }
+
+      const requiredEvidence = Array.isArray(entry.definition.prerequisites?.requiredEvidence)
+        ? entry.definition.prerequisites.requiredEvidence
+        : [];
+      const requiredObjective = entry.definition.prerequisites?.requiredObjective ?? null;
+
+      const hasEvidence =
+        requiredEvidence.length === 0 ||
+        requiredEvidence.every((evidenceId) => {
+          if (!evidenceId) {
+            return true;
+          }
+          if (collectedEvidence instanceof Set) {
+            return collectedEvidence.has(evidenceId);
+          }
+          if (Array.isArray(collectedEvidence)) {
+            return collectedEvidence.includes(evidenceId);
+          }
+          return false;
+        });
+
+      const hasObjective =
+        !requiredObjective ||
+        objectives.some((objective) => objective.id === requiredObjective && objective.completed);
+
+      const shouldUnlock = hasEvidence && hasObjective;
+
+      if (shouldUnlock && !entry.unlocked) {
+        interactionZone.active = true;
+        interactionZone.prompt = entry.defaultPrompt;
+        entry.unlocked = true;
+        this.witnessEntities.set(witnessId, entry);
+      } else if (!shouldUnlock && entry.unlocked) {
+        interactionZone.active = false;
+        interactionZone.prompt = entry.lockedPrompt ?? entry.defaultPrompt;
+        entry.unlocked = false;
+        this.witnessEntities.set(witnessId, entry);
+      } else if (!shouldUnlock && entry.unlocked === false) {
+        interactionZone.active = false;
+        interactionZone.prompt = entry.lockedPrompt ?? entry.defaultPrompt;
+      }
+    }
   }
 
   /**
@@ -415,6 +582,10 @@ export class TutorialScene {
     }
 
     this.sceneEntities.clear();
+
+    if (this.witnessEntities instanceof Map) {
+      this.witnessEntities.clear();
+    }
   }
 
   /**

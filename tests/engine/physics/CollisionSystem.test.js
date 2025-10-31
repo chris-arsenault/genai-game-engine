@@ -22,42 +22,7 @@ class TransformComponent extends Transform {
   }
 }
 
-class ColliderComponent extends Collider {
-  constructor(options) {
-    super(options);
-    // Store shape type separately since ECS needs 'type' for component type
-    this.shapeType = this.type;
-    Object.defineProperty(this, 'type', {
-      value: 'Collider',
-      writable: false,
-      enumerable: true
-    });
-  }
-
-  // Override methods that use type
-  getBounds(transform) {
-    if (this.shapeType === 'AABB') {
-      const x = transform.x + this.offsetX;
-      const y = transform.y + this.offsetY;
-      return {
-        minX: x - this.width / 2,
-        minY: y - this.height / 2,
-        maxX: x + this.width / 2,
-        maxY: y + this.height / 2
-      };
-    } else if (this.shapeType === 'circle') {
-      const x = transform.x + this.offsetX;
-      const y = transform.y + this.offsetY;
-      return {
-        minX: x - this.radius,
-        minY: y - this.radius,
-        maxX: x + this.radius,
-        maxY: y + this.radius
-      };
-    }
-    return { minX: 0, minY: 0, maxX: 0, maxY: 0 };
-  }
-}
+class ColliderComponent extends Collider {}
 
 describe('CollisionSystem', () => {
   let collisionSystem;
@@ -242,6 +207,33 @@ describe('CollisionSystem', () => {
       collisionSystem.update(0.016, entities);
 
       expect(collisionEvents.length).toBe(1);
+    });
+
+    it('should skip collision detection when collider shape metadata is missing', () => {
+      const entity1 = entityManager.createEntity();
+      const entity2 = entityManager.createEntity();
+
+      componentRegistry.addComponent(entity1, 'Transform', new TransformComponent(0, 0));
+      componentRegistry.addComponent(entity1, 'Collider', new ColliderComponent({
+        type: 'AABB',
+        width: 20,
+        height: 20
+      }));
+
+      componentRegistry.addComponent(entity2, 'Transform', new TransformComponent(10, 0));
+      const collider = new ColliderComponent({
+        type: 'AABB',
+        width: 20,
+        height: 20
+      });
+      collider.shapeType = undefined; // simulate malformed collider metadata
+      componentRegistry.addComponent(entity2, 'Collider', collider);
+
+      const collisionEvents = [];
+      eventBus.on('collision', (data) => collisionEvents.push(data));
+
+      expect(() => collisionSystem.update(0.016, [entity1, entity2])).not.toThrow();
+      expect(collisionEvents.length).toBe(0);
     });
   });
 

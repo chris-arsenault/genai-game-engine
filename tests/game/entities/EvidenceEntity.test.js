@@ -2,8 +2,122 @@ import { EntityManager } from '../../../src/engine/ecs/EntityManager.js';
 import { ComponentRegistry } from '../../../src/engine/ecs/ComponentRegistry.js';
 import { ForensicEvidence } from '../../../src/game/components/ForensicEvidence.js';
 import { createEvidenceEntity } from '../../../src/game/entities/EvidenceEntity.js';
+import { setActionBindings, resetBindings } from '../../../src/game/state/controlBindingsStore.js';
 
 describe('EvidenceEntity', () => {
+  it('formats default interaction prompt with interact key when no custom prompt supplied', () => {
+    const entityManager = new EntityManager();
+    const componentRegistry = new ComponentRegistry(entityManager);
+
+    const entityId = createEvidenceEntity(entityManager, componentRegistry, {
+      id: 'ev_prompt_default',
+      x: 0,
+      y: 0,
+      title: 'Encrypted Vial',
+    });
+
+    const interactionZone = componentRegistry.getComponent(entityId, 'InteractionZone');
+    expect(interactionZone.prompt).toBe('Press E to collect Encrypted Vial');
+  });
+
+  it('uses dynamic interact binding when control bindings are remapped', () => {
+    const entityManager = new EntityManager();
+    const componentRegistry = new ComponentRegistry(entityManager);
+    setActionBindings('interact', ['KeyQ']);
+
+    const entityId = createEvidenceEntity(entityManager, componentRegistry, {
+      id: 'ev_prompt_dynamic',
+      x: 0,
+      y: 0,
+      title: 'Encrypted Vial',
+    });
+
+    const interactionZone = componentRegistry.getComponent(entityId, 'InteractionZone');
+    expect(interactionZone.prompt).toBe('Press Q to collect Encrypted Vial');
+
+    resetBindings();
+  });
+  it('rewrites custom prompt binding to current interact key', () => {
+    const entityManager = new EntityManager();
+    const componentRegistry = new ComponentRegistry(entityManager);
+
+    const entityId = createEvidenceEntity(entityManager, componentRegistry, {
+      id: 'ev_prompt_existing',
+      x: 0,
+      y: 0,
+      title: 'Encrypted Vial',
+      prompt: 'Press F to analyze evidence',
+    });
+
+    const interactionZone = componentRegistry.getComponent(entityId, 'InteractionZone');
+    expect(interactionZone.prompt).toBe('Press E to analyze evidence');
+  });
+
+  it('applies remapped interact binding to custom prompt', () => {
+    const entityManager = new EntityManager();
+    const componentRegistry = new ComponentRegistry(entityManager);
+    setActionBindings('interact', ['KeyY']);
+
+    const entityId = createEvidenceEntity(entityManager, componentRegistry, {
+      id: 'ev_prompt_existing_dynamic',
+      x: 0,
+      y: 0,
+      title: 'Encrypted Vial',
+      prompt: 'Press F to analyze evidence',
+    });
+
+    const interactionZone = componentRegistry.getComponent(entityId, 'InteractionZone');
+    expect(interactionZone.prompt).toBe('Press Y to analyze evidence');
+
+    resetBindings();
+  });
+
+  it('injects interact keybinding into custom prompt when missing', () => {
+    const entityManager = new EntityManager();
+    const componentRegistry = new ComponentRegistry(entityManager);
+
+    const entityId = createEvidenceEntity(entityManager, componentRegistry, {
+      id: 'ev_prompt_custom',
+      x: 0,
+      y: 0,
+      title: 'Neural Extractor',
+      prompt: 'Scan the neural extractor',
+    });
+
+    const interactionZone = componentRegistry.getComponent(entityId, 'InteractionZone');
+    expect(interactionZone.prompt).toBe('Press E to scan the neural extractor');
+  });
+
+  it('applies sprite overrides when provided', () => {
+    const entityManager = new EntityManager();
+    const componentRegistry = new ComponentRegistry(entityManager);
+
+    const entityId = createEvidenceEntity(entityManager, componentRegistry, {
+      id: 'ev_sprite_override',
+      x: 12,
+      y: 18,
+      title: 'Guidance Beacon',
+      sprite: {
+        width: 36,
+        height: 36,
+        layer: 'effects',
+        zIndex: 9,
+        color: '#FFD447',
+        alpha: 0.85,
+        visible: true,
+      },
+    });
+
+    const sprite = componentRegistry.getComponent(entityId, 'Sprite');
+    expect(sprite.width).toBe(36);
+    expect(sprite.height).toBe(36);
+    expect(sprite.layer).toBe('effects');
+    expect(sprite.zIndex).toBe(9);
+    expect(sprite.color).toBe('#FFD447');
+    expect(sprite.alpha).toBe(0.85);
+    expect(sprite.visible).toBe(true);
+  });
+
   it('attaches ForensicEvidence when forensic config provided', () => {
     const entityManager = new EntityManager();
     const componentRegistry = new ComponentRegistry(entityManager);

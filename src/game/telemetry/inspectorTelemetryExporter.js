@@ -69,6 +69,47 @@ function sanitizeAggregate(aggregate) {
   };
 }
 
+function sanitizeNonNegativeInteger(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.max(0, Math.floor(value));
+  }
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? Math.max(0, Math.floor(numeric)) : 0;
+}
+
+function sanitizeTimestampValue(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function sanitizeTimestampIso(value) {
+  const numeric = sanitizeTimestampValue(value);
+  return numeric !== null ? new Date(numeric).toISOString() : null;
+}
+
+function formatDurationLabel(ms) {
+  const value = sanitizeNonNegativeInteger(ms);
+  if (value <= 0) {
+    return '0s';
+  }
+  if (value < 1000) {
+    return `${value}ms`;
+  }
+  if (value < 60000) {
+    const seconds = value / 1000;
+    return seconds >= 10 ? `${Math.round(seconds)}s` : `${seconds.toFixed(1)}s`;
+  }
+  const minutes = Math.floor(value / 60000);
+  const seconds = Math.round((value % 60000) / 1000);
+  if (seconds === 0) {
+    return `${minutes}m`;
+  }
+  return `${minutes}m ${seconds}s`;
+}
+
 function sanitizeSample(sample) {
   if (!sample || typeof sample !== 'object') {
     return null;
@@ -97,6 +138,337 @@ function sanitizeStats(stats) {
     insertions: safe(stats.insertions),
     updates: safe(stats.updates),
     removals: safe(stats.removals),
+  };
+}
+
+function sanitizeControlBindings(controlBindings) {
+  if (!controlBindings || typeof controlBindings !== 'object') {
+    return {
+      source: 'unavailable',
+      totalEvents: 0,
+      durationMs: 0,
+      durationLabel: '0s',
+      firstEventAt: null,
+      lastEventAt: null,
+      actionsVisitedCount: 0,
+      actionsVisited: [],
+      actionsRemappedCount: 0,
+      actionsRemapped: [],
+      listModesVisited: [],
+      pageRange: null,
+      lastSelectedAction: null,
+      metrics: {
+        selectionMoves: 0,
+        selectionBlocked: 0,
+        listModeChanges: 0,
+        listModeUnchanged: 0,
+        pageNavigations: 0,
+        pageNavigationBlocked: 0,
+        pageSetChanges: 0,
+        pageSetBlocked: 0,
+        captureStarted: 0,
+        captureCancelled: 0,
+        bindingsApplied: 0,
+        bindingsReset: 0,
+        manualOverrideEvents: 0,
+      },
+      captureCancelReasons: {},
+    };
+  }
+
+  const metrics = controlBindings.metrics ?? {};
+  const captureCancelReasonsRaw =
+    metrics && typeof metrics.captureCancelReasons === 'object' && metrics.captureCancelReasons !== null
+      ? metrics.captureCancelReasons
+      : controlBindings.captureCancelReasons ?? {};
+  const captureCancelReasons = {};
+  if (captureCancelReasonsRaw && typeof captureCancelReasonsRaw === 'object') {
+    for (const [reason, count] of Object.entries(captureCancelReasonsRaw)) {
+      if (typeof reason !== 'string' || !reason.length) {
+        continue;
+      }
+      captureCancelReasons[reason] = sanitizeNonNegativeInteger(count);
+    }
+  }
+
+  const pageRange = controlBindings.pageRange ?? null;
+  let normalizedPageRange = null;
+  if (pageRange && typeof pageRange === 'object') {
+    const min = sanitizeNonNegativeInteger(pageRange.min);
+    const max = sanitizeNonNegativeInteger(pageRange.max);
+    if (min || max) {
+      normalizedPageRange = { min, max: Math.max(min, max) };
+    }
+  }
+
+  const coerceStringArray = (values) => {
+    if (!Array.isArray(values) || !values.length) {
+      return [];
+    }
+    return values
+      .map((entry) => (typeof entry === 'string' ? entry : String(entry)))
+      .filter((entry) => entry.length);
+  };
+
+  return {
+    source: controlBindings.source ?? 'observation-log',
+    totalEvents: sanitizeNonNegativeInteger(controlBindings.totalEvents),
+    durationMs: sanitizeNonNegativeInteger(controlBindings.durationMs),
+    durationLabel:
+      typeof controlBindings.durationLabel === 'string' && controlBindings.durationLabel.length
+        ? controlBindings.durationLabel
+        : `${sanitizeNonNegativeInteger(controlBindings.durationMs)}ms`,
+    firstEventAt:
+      typeof controlBindings.firstEventAt === 'number' && Number.isFinite(controlBindings.firstEventAt)
+        ? controlBindings.firstEventAt
+        : null,
+    lastEventAt:
+      typeof controlBindings.lastEventAt === 'number' && Number.isFinite(controlBindings.lastEventAt)
+        ? controlBindings.lastEventAt
+        : null,
+    actionsVisitedCount: sanitizeNonNegativeInteger(controlBindings.actionsVisitedCount),
+    actionsVisited: coerceStringArray(controlBindings.actionsVisited),
+    actionsRemappedCount: sanitizeNonNegativeInteger(controlBindings.actionsRemappedCount),
+    actionsRemapped: coerceStringArray(controlBindings.actionsRemapped),
+    listModesVisited: coerceStringArray(
+      controlBindings.listModesVisited ?? controlBindings.listModesSeen ?? []
+    ),
+    pageRange: normalizedPageRange,
+    lastSelectedAction:
+      typeof controlBindings.lastSelectedAction === 'string' && controlBindings.lastSelectedAction.length
+        ? controlBindings.lastSelectedAction
+        : null,
+    metrics: {
+      selectionMoves: sanitizeNonNegativeInteger(metrics.selectionMoves),
+      selectionBlocked: sanitizeNonNegativeInteger(metrics.selectionBlocked),
+      listModeChanges: sanitizeNonNegativeInteger(metrics.listModeChanges),
+      listModeUnchanged: sanitizeNonNegativeInteger(metrics.listModeUnchanged),
+      pageNavigations: sanitizeNonNegativeInteger(metrics.pageNavigations),
+      pageNavigationBlocked: sanitizeNonNegativeInteger(metrics.pageNavigationBlocked),
+      pageSetChanges: sanitizeNonNegativeInteger(metrics.pageSetChanges),
+      pageSetBlocked: sanitizeNonNegativeInteger(metrics.pageSetBlocked),
+      captureStarted: sanitizeNonNegativeInteger(metrics.captureStarted),
+      captureCancelled: sanitizeNonNegativeInteger(metrics.captureCancelled),
+      bindingsApplied: sanitizeNonNegativeInteger(metrics.bindingsApplied),
+      bindingsReset: sanitizeNonNegativeInteger(metrics.bindingsReset),
+      manualOverrideEvents: sanitizeNonNegativeInteger(metrics.manualOverrideEvents),
+    },
+    captureCancelReasons,
+    dwell: (() => {
+      const dwellRaw = controlBindings.dwell ?? {};
+      const dwellCount = sanitizeNonNegativeInteger(dwellRaw.count);
+      const dwellTotalMs = sanitizeNonNegativeInteger(dwellRaw.totalMs);
+      const dwellAverageMs = sanitizeNonNegativeInteger(
+        dwellRaw.averageMs != null
+          ? dwellRaw.averageMs
+          : dwellCount > 0
+            ? Math.round(dwellTotalMs / dwellCount)
+            : 0
+      );
+      const dwellMaxMs = sanitizeNonNegativeInteger(dwellRaw.maxMs);
+      const dwellMinMs = sanitizeNonNegativeInteger(dwellRaw.minMs);
+      const dwellLastMs = sanitizeNonNegativeInteger(dwellRaw.lastMs ?? dwellRaw.lastDurationMs);
+      return {
+        count: dwellCount,
+        totalMs: dwellTotalMs,
+        averageMs: dwellAverageMs,
+        averageLabel:
+          typeof dwellRaw.averageLabel === 'string' && dwellRaw.averageLabel.length
+            ? dwellRaw.averageLabel
+            : formatDurationLabel(dwellAverageMs),
+        maxMs: dwellMaxMs,
+        maxLabel:
+          typeof dwellRaw.maxLabel === 'string' && dwellRaw.maxLabel.length
+            ? dwellRaw.maxLabel
+            : formatDurationLabel(dwellMaxMs),
+        minMs: dwellMinMs,
+        minLabel:
+          typeof dwellRaw.minLabel === 'string' && dwellRaw.minLabel.length
+            ? dwellRaw.minLabel
+            : formatDurationLabel(dwellMinMs),
+        lastMs: dwellLastMs,
+        lastLabel:
+          typeof dwellRaw.lastLabel === 'string' && dwellRaw.lastLabel.length
+            ? dwellRaw.lastLabel
+            : formatDurationLabel(dwellLastMs),
+        lastAction:
+          typeof dwellRaw.lastAction === 'string' && dwellRaw.lastAction.length
+            ? dwellRaw.lastAction
+            : null,
+        longestAction:
+          typeof dwellRaw.longestAction === 'string' && dwellRaw.longestAction.length
+            ? dwellRaw.longestAction
+            : null,
+      };
+    })(),
+    ratios: (() => {
+      const ratiosRaw = controlBindings.ratios ?? {};
+      const sanitizeRatio = (entry) => {
+        const numerator = sanitizeNonNegativeInteger(entry?.numerator);
+        const denominator = sanitizeNonNegativeInteger(entry?.denominator);
+        let value = typeof entry?.value === 'number' && Number.isFinite(entry.value)
+          ? entry.value
+          : denominator > 0
+            ? numerator / denominator
+            : 0;
+        value = Math.max(0, Math.min(1, value));
+        const rounded = Math.round(value * 1000) / 1000;
+        const percentage =
+          typeof entry?.percentage === 'string' && entry.percentage.length
+            ? entry.percentage
+            : `${Math.round(value * 100)}%`;
+        return {
+          numerator,
+          denominator,
+          value: rounded,
+          percentage,
+        };
+      };
+      return {
+        selectionBlocked: sanitizeRatio(ratiosRaw.selectionBlocked ?? {}),
+        pageNavigationBlocked: sanitizeRatio(ratiosRaw.pageNavigationBlocked ?? {}),
+      };
+    })(),
+  };
+}
+
+function sanitizeDistrictSummary(districts) {
+  if (!districts || typeof districts !== 'object') {
+    return {
+      lastUpdatedAt: null,
+      lastUpdatedIso: null,
+      lastLockdownAt: null,
+      lastLockdownIso: null,
+      metrics: {
+        total: 0,
+        restricted: 0,
+        fastTravelDisabled: 0,
+        infiltrationLocked: 0,
+        infiltrationUnlocked: 0,
+        lockdownEvents: 0,
+      },
+      restrictedDistricts: [],
+    };
+  }
+
+  const metrics = districts.metrics ?? {};
+  const restrictedDistricts = Array.isArray(districts.restrictedDistricts)
+    ? districts.restrictedDistricts.map((record) => {
+        const restrictions = Array.isArray(record?.restrictions)
+          ? record.restrictions.map((entry) => {
+              const lastChangedAt = sanitizeTimestampValue(entry?.lastChangedAt);
+              return {
+                id: entry?.id ?? null,
+                type: entry?.type ?? 'generic',
+                description: entry?.description ?? '',
+                lastChangedAt,
+                lastChangedIso: sanitizeTimestampIso(entry?.lastChangedAt),
+              };
+            })
+          : [];
+
+        const lastRestrictionChangeAt = sanitizeTimestampValue(record?.lastRestrictionChangeAt);
+        const lastLockdownAt = sanitizeTimestampValue(record?.lastLockdownAt);
+
+        return {
+          id: record?.id ?? null,
+          name: record?.name ?? null,
+          tier: record?.tier ?? null,
+          fastTravelEnabled: record?.fastTravelEnabled !== false,
+          controllingFaction: record?.controllingFaction ?? null,
+          stabilityRating: record?.stability?.rating ?? null,
+          stabilityValue: Number.isFinite(record?.stability?.value)
+            ? Number(record.stability.value)
+            : null,
+          activeRestrictionCount: sanitizeNonNegativeInteger(
+            record?.activeRestrictionCount ?? restrictions.length
+          ),
+          infiltrationLocked: sanitizeNonNegativeInteger(record?.infiltrationLocked ?? 0),
+          infiltrationUnlocked: sanitizeNonNegativeInteger(record?.infiltrationUnlocked ?? 0),
+          lockdownsTriggered: sanitizeNonNegativeInteger(record?.lockdownsTriggered ?? 0),
+          lastRestrictionChangeAt,
+          lastRestrictionChangeIso: sanitizeTimestampIso(record?.lastRestrictionChangeAt),
+          lastLockdownAt,
+          lastLockdownIso: sanitizeTimestampIso(record?.lastLockdownAt),
+          restrictions,
+        };
+      })
+    : [];
+
+  return {
+    lastUpdatedAt: sanitizeTimestampValue(districts.lastUpdatedAt),
+    lastUpdatedIso: sanitizeTimestampIso(districts.lastUpdatedAt),
+    lastLockdownAt: sanitizeTimestampValue(districts.lastLockdownAt),
+    lastLockdownIso: sanitizeTimestampIso(districts.lastLockdownAt),
+    metrics: {
+      total: sanitizeNonNegativeInteger(metrics.total ?? 0),
+      restricted: sanitizeNonNegativeInteger(metrics.restricted ?? 0),
+      fastTravelDisabled: sanitizeNonNegativeInteger(metrics.fastTravelDisabled ?? 0),
+      infiltrationLocked: sanitizeNonNegativeInteger(metrics.infiltrationLocked ?? 0),
+      infiltrationUnlocked: sanitizeNonNegativeInteger(metrics.infiltrationUnlocked ?? 0),
+      lockdownEvents: sanitizeNonNegativeInteger(metrics.lockdownEvents ?? 0),
+    },
+    restrictedDistricts,
+  };
+}
+
+function sanitizeNpcEntry(entry) {
+  if (!entry || typeof entry !== 'object') {
+    return {
+      id: null,
+      name: null,
+      factionId: null,
+      factionName: null,
+      status: null,
+      reason: null,
+      updatedAt: null,
+      updatedIso: null,
+    };
+  }
+
+  const updatedAt = sanitizeTimestampValue(entry.updatedAt);
+  return {
+    id: entry.id ?? null,
+    name: entry.name ?? null,
+    factionId: entry.factionId ?? null,
+    factionName: resolveFactionName(entry.factionId, entry.factionName ?? null),
+    status: entry.status ?? null,
+    reason: entry.reason ?? null,
+    updatedAt,
+    updatedIso: sanitizeTimestampIso(updatedAt),
+  };
+}
+
+function sanitizeNpcSummary(npcs) {
+  if (!npcs || typeof npcs !== 'object') {
+    return {
+      lastUpdatedAt: null,
+      lastUpdatedIso: null,
+      metrics: {
+        total: 0,
+        alerts: 0,
+        suspicious: 0,
+        knowsPlayer: 0,
+        witnessedCrimes: 0,
+      },
+      alerts: [],
+      suspicious: [],
+    };
+  }
+
+  const metrics = npcs.metrics ?? {};
+  return {
+    lastUpdatedAt: sanitizeTimestampValue(npcs.lastUpdatedAt),
+    lastUpdatedIso: sanitizeTimestampIso(npcs.lastUpdatedAt),
+    metrics: {
+      total: sanitizeNonNegativeInteger(metrics.total ?? 0),
+      alerts: sanitizeNonNegativeInteger(metrics.alerts ?? 0),
+      suspicious: sanitizeNonNegativeInteger(metrics.suspicious ?? 0),
+      knowsPlayer: sanitizeNonNegativeInteger(metrics.knowsPlayer ?? 0),
+      witnessedCrimes: sanitizeNonNegativeInteger(metrics.witnessedCrimes ?? 0),
+    },
+    alerts: Array.isArray(npcs.alerts) ? npcs.alerts.map(sanitizeNpcEntry) : [],
+    suspicious: Array.isArray(npcs.suspicious) ? npcs.suspicious.map(sanitizeNpcEntry) : [],
   };
 }
 
@@ -194,6 +566,9 @@ function sanitizeSummary(summary) {
 
   const engine = summary?.engine ?? {};
   const spatialHash = sanitizeSpatialTelemetry(engine.spatialHash);
+  const controlBindings = sanitizeControlBindings(summary?.controlBindings);
+  const districts = sanitizeDistrictSummary(summary?.districts);
+  const npcs = sanitizeNpcSummary(summary?.npcs);
 
   return {
     generatedAt,
@@ -233,6 +608,9 @@ function sanitizeSummary(summary) {
     engine: {
       spatialHash,
     },
+    controlBindings,
+    districts,
+    npcs,
   };
 }
 
@@ -390,6 +768,9 @@ export function createInspectorExportArtifacts(summary, options = {}) {
       factions: sanitizedSummary.factions,
       tutorial: sanitizedSummary.tutorial,
       engine: sanitizedSummary.engine,
+      controlBindings: sanitizedSummary.controlBindings,
+      districts: sanitizedSummary.districts,
+      npcs: sanitizedSummary.npcs,
     };
     artifacts.push({
       type: 'json',

@@ -12,6 +12,7 @@ import { Collider } from '../components/Collider.js';
 import { InteractionZone } from '../components/InteractionZone.js';
 import { NPC } from '../components/NPC.js';
 import { NavigationAgent } from '../components/NavigationAgent.js';
+import { formatActionPrompt } from '../utils/controlBindingPrompts.js';
 
 function shouldLog() {
   if (typeof __DEV__ !== 'undefined') {
@@ -100,17 +101,18 @@ export function createNPCEntity(entityManager, componentRegistry, npcData) {
     isStatic: true,
     tags: ['npc', 'solid']
   });
-  collider.type = 'Collider';
   componentRegistry.addComponent(entityId, collider);
 
   // Add InteractionZone for dialogue (if applicable)
   if (hasDialogue && dialogueId) {
+    const promptText = formatActionPrompt('interact', `talk to ${name}`);
     const interactionZone = new InteractionZone({
       id: `dialogue_${id}`,
       type: 'dialogue',
       radius: 64,
       requiresInput: true,
-      prompt: `Press E to talk to ${name}`,
+      prompt: promptText,
+      promptAction: 'interact',
       active: true,
       oneShot: false,
       data: {

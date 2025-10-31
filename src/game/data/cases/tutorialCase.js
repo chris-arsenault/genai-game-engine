@@ -18,6 +18,23 @@ export const tutorialCase = {
     'Your former partner Marcus Reeve has been found hollow in his apartment. ' +
     'Investigate the crime scene and uncover who is extracting memories from victims.',
 
+  scene: {
+    location: 'Neon District - Apartment 4B',
+    mapId: 'tutorial_crime_scene',
+    ambientAudio: 'ambience/neon_drizzle',
+    lightingProfile: 'noir_indoor',
+    spawnPoints: {
+      player: { x: 180, y: 360 },
+      exit: { x: 64, y: 256 }
+    },
+    cameraBounds: {
+      minX: 0,
+      maxX: 640,
+      minY: 120,
+      maxY: 480
+    }
+  },
+
   // Case objectives
   objectives: [
     {
@@ -62,6 +79,30 @@ export const tutorialCase = {
     }
   ],
 
+  witnesses: [
+    {
+      id: 'officer_martinez',
+      name: 'Officer Martinez',
+      role: 'first_responder',
+      faction: 'police',
+      description:
+        'First responder who secured the scene. Provides insight into the extraction timeline ' +
+        'and hints about broader hollow victim patterns.',
+      position: { x: 460, y: 340 },
+      dialogueId: 'martinez_witness_interview',
+      unlocksClues: ['clue_005_systematic'],
+      prerequisites: {
+        requiredEvidence: ['ev_001_extractor'],
+        requiredObjective: 'examine_scene'
+      },
+      interaction: {
+        radius: 72,
+        prompt: 'Talk to Officer Martinez',
+        lockedPrompt: 'Collect the neural extractor before interviewing Martinez.'
+      }
+    }
+  ],
+
   // Evidence items found at crime scene
   evidence: [
     {
@@ -75,8 +116,16 @@ export const tutorialCase = {
       position: { x: 250, y: 300 }, // Scene position
       hidden: false,
       requires: [], // No special abilities needed
-      interactionPrompt: 'Scan the neural extractor',
-      derivedClues: ['clue_001_hollow']
+      interactionPrompt: 'Scan the neural extractor hotspot',
+      derivedClues: ['clue_001_hollow'],
+      sprite: {
+        width: 32,
+        height: 32,
+        layer: 'effects',
+        zIndex: 8,
+        color: '#FFD447',
+        alpha: 0.95
+      }
     },
     {
       id: 'ev_002_blood',
@@ -89,7 +138,7 @@ export const tutorialCase = {
       position: { x: 200, y: 320 },
       hidden: false,
       requires: [],
-      interactionPrompt: 'Analyze blood pattern',
+      interactionPrompt: 'Analyze the blood pattern',
       derivedClues: ['clue_005_systematic'],
       forensic: {
         forensicType: 'analysis',
@@ -98,6 +147,14 @@ export const tutorialCase = {
         difficulty: 1,
         analysisTime: 1500,
         hiddenClues: ['clue_002_professional']
+      },
+      sprite: {
+        width: 32,
+        height: 32,
+        layer: 'effects',
+        zIndex: 8,
+        color: '#FF9F4A',
+        alpha: 0.9
       }
     },
     {
@@ -111,8 +168,16 @@ export const tutorialCase = {
       position: { x: 220, y: 280 },
       hidden: false,
       requires: [],
-      interactionPrompt: 'Scan neural residue',
-      derivedClues: ['clue_001_hollow']
+      interactionPrompt: 'Scan the neural residue',
+      derivedClues: ['clue_001_hollow'],
+      sprite: {
+        width: 32,
+        height: 32,
+        layer: 'effects',
+        zIndex: 8,
+        color: '#6EDBFF',
+        alpha: 0.92
+      }
     },
     {
       id: 'ev_004_badge',
@@ -125,8 +190,16 @@ export const tutorialCase = {
       position: { x: 300, y: 350 },
       hidden: false,
       requires: [],
-      interactionPrompt: 'Examine the badge',
-      derivedClues: ['clue_004_personal']
+      interactionPrompt: "Examine Marcus's badge",
+      derivedClues: ['clue_004_personal'],
+      sprite: {
+        width: 30,
+        height: 30,
+        layer: 'effects',
+        zIndex: 8,
+        color: '#FFD0E8',
+        alpha: 0.95
+      }
     },
     {
       id: 'ev_005_memory_drive',
@@ -139,8 +212,16 @@ export const tutorialCase = {
       position: { x: 280, y: 250 },
       hidden: false,
       requires: [],
-      interactionPrompt: 'Decrypt memory fragment',
-      derivedClues: ['clue_003_neurosync', 'clue_004_personal']
+      interactionPrompt: 'Decrypt the memory fragment',
+      derivedClues: ['clue_003_neurosync', 'clue_004_personal'],
+      sprite: {
+        width: 32,
+        height: 32,
+        layer: 'effects',
+        zIndex: 8,
+        color: '#C3A3FF',
+        alpha: 0.94
+      }
     }
   ],
 
@@ -301,18 +382,24 @@ export const tutorialCase = {
       },
       {
         step: 2,
+        title: 'Interview Witness',
+        description: 'Speak with Officer Martinez to gather context about the hollowing.',
+        targetObjective: 'discover_clues'
+      },
+      {
+        step: 3,
         title: 'Review Clues',
         description: 'Evidence reveals clues. Check your case file to see what you\'ve learned',
         targetObjective: 'discover_clues'
       },
       {
-        step: 3,
+        step: 4,
         title: 'Connect the Dots',
         description: 'Press Tab to open the deduction board. Drag clues to connect them',
         targetObjective: 'solve_case'
       },
       {
-        step: 4,
+        step: 5,
         title: 'Validate Theory',
         description: 'Once connected, click Validate to test your theory',
         targetObjective: 'solve_case'

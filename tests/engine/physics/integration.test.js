@@ -35,40 +35,7 @@ class VelocityComponent extends Velocity {
   }
 }
 
-class ColliderComponent extends Collider {
-  constructor(options) {
-    super(options);
-    this.shapeType = this.type;
-    Object.defineProperty(this, 'type', {
-      value: 'Collider',
-      writable: false,
-      enumerable: true
-    });
-  }
-
-  getBounds(transform) {
-    if (this.shapeType === 'AABB') {
-      const x = transform.x + this.offsetX;
-      const y = transform.y + this.offsetY;
-      return {
-        minX: x - this.width / 2,
-        minY: y - this.height / 2,
-        maxX: x + this.width / 2,
-        maxY: y + this.height / 2
-      };
-    } else if (this.shapeType === 'circle') {
-      const x = transform.x + this.offsetX;
-      const y = transform.y + this.offsetY;
-      return {
-        minX: x - this.radius,
-        minY: y - this.radius,
-        maxX: x + this.radius,
-        maxY: y + this.radius
-      };
-    }
-    return { minX: 0, minY: 0, maxX: 0, maxY: 0 };
-  }
-}
+class ColliderComponent extends Collider {}
 
 describe('Physics Integration', () => {
   let movementSystem;

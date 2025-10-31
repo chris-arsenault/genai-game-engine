@@ -22,6 +22,9 @@ export const GameConfig = {
     detectiveVisionDuration: 5000, // milliseconds
     detectiveVisionCooldown: 10000, // milliseconds
     detectiveVisionEnergyCost: 1, // energy per second
+    detectiveVisionEnergyMax: 5, // total energy units (seconds of uptime)
+    detectiveVisionEnergyRegen: 0.75, // energy per second while inactive
+    detectiveVisionMinEnergyToActivate: 1.5, // minimum energy threshold to toggle on
 
     // Combat (future implementation)
     maxHealth: 100,
@@ -154,6 +157,12 @@ export const GameConfig = {
     sfxVolume: 0.9,
     ambienceVolume: 0.5,
     enableGameplayEmitters: true,
+    detectiveVision: {
+      activationVolume: 0.78,
+      loopVolume: 0.38,
+      deactivateVolume: 0.6,
+      insufficientVolume: 0.64,
+    },
     gameplayMoodBridge: {
       updateIntervalMs: 250,
       moodHintDurationMs: 6000,

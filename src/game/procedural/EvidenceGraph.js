@@ -363,6 +363,43 @@ export class EvidenceGraph {
   }
 
   /**
+   * Gets all evidence prerequisites (incoming edges) for an evidence ID.
+   *
+   * @param {string} evidenceId - Evidence node identifier
+   * @returns {Array<{from: string, metadata: object}>} Dependencies that must be satisfied
+   */
+  getDependenciesFor(evidenceId) {
+    if (!this.evidenceData.has(evidenceId)) {
+      return [];
+    }
+
+    const dependencies = [];
+
+    for (const [, edges] of this.graph.edges.entries()) {
+      for (const edge of edges) {
+        if (edge.to === evidenceId) {
+          dependencies.push({
+            from: edge.from,
+            metadata: { ...edge.data }
+          });
+        }
+      }
+    }
+
+    return dependencies;
+  }
+
+  /**
+   * Checks whether an evidence node has any prerequisites.
+   *
+   * @param {string} evidenceId - Evidence node identifier
+   * @returns {boolean} True if evidence has at least one dependency
+   */
+  hasDependencies(evidenceId) {
+    return this.getDependenciesFor(evidenceId).length > 0;
+  }
+
+  /**
    * Checks if graph has cycles using DFS.
    *
    * @private

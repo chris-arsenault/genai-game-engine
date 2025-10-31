@@ -6,6 +6,8 @@
  */
 import { emitOverlayVisibility } from './helpers/overlayEvents.js';
 import { overlayTheme, withOverlayTheme } from './theme/overlayTheme.js';
+import { hydratePromptWithBinding } from '../utils/controlBindingPrompts.js';
+import { subscribe as subscribeControlBindings } from '../state/controlBindingsStore.js';
 export class InteractionPromptOverlay {
   constructor(canvas, eventBus, camera, options = {}) {
     this.canvas = canvas;
@@ -37,6 +39,11 @@ export class InteractionPromptOverlay {
 
     this._unbindShow = null;
     this._unbindHide = null;
+    this._unsubscribeBindings = null;
+    this.bindingAction = null;
+    this.bindingFallback = 'interact';
+    this.basePrompt = '';
+    this._lastFxPromptSignature = null;
   }
 
   init() {
@@ -45,6 +52,11 @@ export class InteractionPromptOverlay {
     });
     this._unbindHide = this.eventBus.on('ui:hide_prompt', () => {
       this.hidePrompt();
+    });
+    this._unsubscribeBindings = subscribeControlBindings(() => {
+      if (this.visible && this.bindingAction) {
+        this._refreshPromptBinding();
+      }
     });
   }
 
@@ -55,10 +67,19 @@ export class InteractionPromptOverlay {
 
     const wasVisible = this.visible;
 
+    this.basePrompt = typeof data.text === 'string' ? data.text : '';
+    this.bindingAction = typeof data.bindingAction === 'string' && data.bindingAction.length
+      ? data.bindingAction
+      : null;
+    this.bindingFallback = typeof data.bindingFallback === 'string' && data.bindingFallback.length
+      ? data.bindingFallback
+      : 'interact';
+
     this.prompt = {
-      text: data.text,
+      text: this._resolvePromptText(),
       worldPosition: data.position ? { ...data.position } : null
     };
+    const signature = this._buildPromptSignature(this.prompt);
 
     this.visible = true;
     this.targetAlpha = 1;
@@ -66,9 +87,24 @@ export class InteractionPromptOverlay {
     if (!wasVisible) {
       emitOverlayVisibility(this.eventBus, 'interactionPrompt', true, {
         source: data?.source ?? 'showPrompt',
-        text: data.text,
+        text: this.prompt.text,
+      });
+      this._emitFxCue('interactionPromptReveal', {
+        source: data?.source ?? 'showPrompt',
+        textLength: this.prompt.text.length,
+        bindingAction: this.bindingAction ?? this.bindingFallback,
+        anchored: Boolean(this.prompt.worldPosition),
+      });
+    } else if (signature !== this._lastFxPromptSignature) {
+      this._emitFxCue('interactionPromptUpdate', {
+        source: data?.source ?? 'showPrompt',
+        textLength: this.prompt.text.length,
+        bindingAction: this.bindingAction ?? this.bindingFallback,
+        anchored: Boolean(this.prompt.worldPosition),
       });
     }
+
+    this._lastFxPromptSignature = signature;
   }
 
   hidePrompt() {
@@ -79,12 +115,20 @@ export class InteractionPromptOverlay {
     const wasVisible = this.visible;
     this.visible = false;
     this.targetAlpha = 0;
+    this.bindingAction = null;
+    this.bindingFallback = 'interact';
+    this.basePrompt = '';
 
     if (wasVisible) {
       emitOverlayVisibility(this.eventBus, 'interactionPrompt', false, {
         source: 'hidePrompt',
       });
+      this._emitFxCue('interactionPromptDismiss', {
+        source: 'hidePrompt',
+      });
     }
+
+    this._lastFxPromptSignature = null;
   }
 
   update(deltaTime) {
@@ -198,6 +242,26 @@ export class InteractionPromptOverlay {
       this._unbindHide();
       this._unbindHide = null;
     }
+    if (typeof this._unsubscribeBindings === 'function') {
+      this._unsubscribeBindings();
+      this._unsubscribeBindings = null;
+    }
+  }
+
+  _resolvePromptText() {
+    if (!this.bindingAction) {
+      return this.basePrompt;
+    }
+    return hydratePromptWithBinding(this.basePrompt, this.bindingAction, {
+      fallbackActionText: this.bindingFallback,
+    });
+  }
+
+  _refreshPromptBinding() {
+    if (!this.prompt) {
+      return;
+    }
+    this.prompt.text = this._resolvePromptText();
   }
 
   _wrapText(ctx, text, maxWidth) {
@@ -236,5 +300,27 @@ export class InteractionPromptOverlay {
     ctx.lineTo(x, y + r);
     ctx.quadraticCurveTo(x, y, x + r, y);
     ctx.closePath();
+  }
+
+  _buildPromptSignature(prompt) {
+    if (!prompt) {
+      return null;
+    }
+    const pos = prompt.worldPosition
+      ? `${Math.round(prompt.worldPosition.x)},${Math.round(prompt.worldPosition.y)}`
+      : 'hud';
+    return `${prompt.text || ''}#${pos}`;
+  }
+
+  _emitFxCue(effectId, context = {}) {
+    if (!this.eventBus || typeof this.eventBus.emit !== 'function' || !effectId) {
+      return;
+    }
+
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId,
+      source: 'InteractionPromptOverlay',
+      context,
+    });
   }
 }

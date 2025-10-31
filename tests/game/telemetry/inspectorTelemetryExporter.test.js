@@ -121,6 +121,120 @@ describe('inspectorTelemetryExporter', () => {
           payloadBytes: null,
         },
       },
+      controlBindings: {
+        source: 'observation-log',
+        totalEvents: 6,
+        durationMs: 5400,
+        durationLabel: '5.4s',
+        firstEventAt: Date.UTC(2025, 9, 30, 17, 0, 30),
+        lastEventAt: Date.UTC(2025, 9, 30, 17, 5, 0),
+        actionsVisitedCount: 4,
+        actionsVisited: ['interact', 'quest', 'inventory', 'pause'],
+        actionsRemappedCount: 2,
+        actionsRemapped: ['inventory', 'quest'],
+        listModesVisited: ['sections', 'conflicts', 'alphabetical'],
+        pageRange: { min: 0, max: 3 },
+        lastSelectedAction: 'inventory',
+        metrics: {
+          selectionMoves: 5,
+          selectionBlocked: 1,
+          listModeChanges: 2,
+          listModeUnchanged: 1,
+          pageNavigations: 2,
+          pageNavigationBlocked: 1,
+          pageSetChanges: 0,
+          pageSetBlocked: 0,
+          captureStarted: 1,
+          captureCancelled: 1,
+          bindingsApplied: 2,
+          bindingsReset: 0,
+          manualOverrideEvents: 0,
+          captureCancelReasons: {
+            cancelled_with_escape: 2,
+            changed_mind: 1,
+          },
+        },
+        dwell: {
+          count: 2,
+          totalMs: 3000,
+          averageMs: 1500,
+          maxMs: 2000,
+          minMs: 1000,
+          lastMs: 1000,
+          lastAction: 'interact',
+          longestAction: 'inventory',
+        },
+      ratios: {
+        selectionBlocked: { numerator: 1, denominator: 6 },
+        pageNavigationBlocked: { numerator: 1, denominator: 2 },
+      },
+      },
+      districts: {
+        lastUpdatedAt: Date.UTC(2025, 9, 30, 17, 3, 30),
+        lastLockdownAt: Date.UTC(2025, 9, 30, 17, 3, 45),
+        metrics: {
+          total: 5,
+          restricted: 2,
+          fastTravelDisabled: 1,
+          infiltrationLocked: 4,
+          infiltrationUnlocked: 6,
+          lockdownEvents: 3,
+        },
+        restrictedDistricts: [
+          {
+            id: 'neon_districts',
+            name: 'Neon Districts',
+            tier: 'foundation',
+            fastTravelEnabled: false,
+            controllingFaction: 'wraith_network',
+            stability: { rating: 'volatile', value: 32 },
+            activeRestrictionCount: 2,
+            lastRestrictionChangeAt: Date.UTC(2025, 9, 30, 17, 3, 40),
+            restrictions: [
+              {
+                id: 'lockdown_gate',
+                type: 'lockdown',
+                description: 'Security lockdown active',
+                lastChangedAt: Date.UTC(2025, 9, 30, 17, 3, 40),
+              },
+            ],
+            infiltrationLocked: 2,
+            infiltrationUnlocked: 1,
+            lockdownsTriggered: 2,
+            lastLockdownAt: Date.UTC(2025, 9, 30, 17, 3, 45),
+          },
+        ],
+      },
+      npcs: {
+        lastUpdatedAt: Date.UTC(2025, 9, 30, 17, 3, 50),
+        metrics: {
+          total: 6,
+          alerts: 2,
+          suspicious: 1,
+          knowsPlayer: 2,
+          witnessedCrimes: 3,
+        },
+        alerts: [
+          {
+            id: 'npc_echo',
+            name: 'Echo Operative',
+            factionId: 'wraith_network',
+            status: 'alert',
+            reason: 'security breach',
+            updatedAt: Date.UTC(2025, 9, 30, 17, 3, 55),
+          },
+        ],
+        suspicious: [
+          {
+            id: 'npc_scout',
+            name: 'Perimeter Scout',
+            factionId: 'cipher_collective',
+            status: 'suspicious',
+            reason: 'trespassing',
+            updatedAt: Date.UTC(2025, 9, 30, 17, 3, 52),
+          },
+        ],
+      },
     };
 
     const { artifacts, summary: sanitized } = createInspectorExportArtifacts(summary, {
@@ -157,6 +271,52 @@ describe('inspectorTelemetryExporter', () => {
         payloadBudgetExceededBy: 0,
       })
     );
+    expect(sanitized.controlBindings.totalEvents).toBe(6);
+    expect(sanitized.controlBindings.metrics.selectionMoves).toBe(5);
+    expect(sanitized.controlBindings.metrics.selectionBlocked).toBe(1);
+    expect(sanitized.controlBindings.captureCancelReasons.cancelled_with_escape).toBe(2);
+    expect(sanitized.controlBindings.dwell).toEqual(
+      expect.objectContaining({
+        count: 2,
+        averageMs: 1500,
+        averageLabel: '1.5s',
+        maxMs: 2000,
+        maxLabel: '2.0s',
+        lastMs: 1000,
+        lastLabel: '1.0s',
+        lastAction: 'interact',
+        longestAction: 'inventory',
+      })
+    );
+    expect(sanitized.controlBindings.ratios.selectionBlocked.numerator).toBe(1);
+    expect(sanitized.controlBindings.ratios.selectionBlocked.denominator).toBe(6);
+    expect(sanitized.controlBindings.ratios.selectionBlocked.value).toBeCloseTo(0.167, 3);
+    expect(sanitized.controlBindings.ratios.pageNavigationBlocked.value).toBe(0.5);
+    expect(sanitized.districts.metrics).toEqual(
+      expect.objectContaining({
+        total: 5,
+        restricted: 2,
+        fastTravelDisabled: 1,
+        infiltrationLocked: 4,
+        lockdownEvents: 3,
+      })
+    );
+    expect(sanitized.districts.restrictedDistricts[0]).toEqual(
+      expect.objectContaining({
+        id: 'neon_districts',
+        infiltrationLocked: 2,
+        lastLockdownIso: new Date(Date.UTC(2025, 9, 30, 17, 3, 45)).toISOString(),
+      })
+    );
+    expect(sanitized.npcs.metrics).toEqual(
+      expect.objectContaining({ alerts: 2, suspicious: 1, knowsPlayer: 2 })
+    );
+    expect(sanitized.npcs.alerts[0]).toEqual(
+      expect.objectContaining({
+        id: 'npc_echo',
+        updatedIso: new Date(Date.UTC(2025, 9, 30, 17, 3, 55)).toISOString(),
+      })
+    );
 
     expect(artifacts).toHaveLength(5);
 
@@ -172,6 +332,12 @@ describe('inspectorTelemetryExporter', () => {
       expect.objectContaining({ cellCount: 58, trackedEntities: 47 })
     );
     expect(parsed.engine.spatialHash.payloadBudgetStatus).toBe('within_budget');
+    expect(parsed.controlBindings.totalEvents).toBe(6);
+    expect(parsed.controlBindings.metrics.selectionMoves).toBe(5);
+    expect(parsed.controlBindings.dwell.averageMs).toBe(1500);
+    expect(parsed.controlBindings.ratios.selectionBlocked.percentage).toBe('17%');
+    expect(parsed.districts.metrics.lockdownEvents).toBe(3);
+    expect(parsed.npcs.metrics.alerts).toBe(2);
 
     const cascadeCsv = artifacts.find(
       (artifact) => artifact.type === 'csv' && artifact.section === 'cascade'
@@ -215,6 +381,7 @@ describe('inspectorTelemetryExporter', () => {
     expect(summary.tutorial.snapshots).toEqual([]);
     expect(summary.tutorial.transcript).toEqual([]);
     expect(summary.engine.spatialHash).toBeNull();
+    expect(summary.controlBindings.totalEvents).toBe(0);
     expect(artifacts.length).toBe(3);
 
     const jsonArtifact = artifacts.find((artifact) => artifact.type === 'json');

@@ -2,7 +2,23 @@
  * CaseFileUI Tests
  */
 
+jest.mock('../../../src/game/utils/controlBindingPrompts.js', () => ({
+  getBindingLabels: jest.fn((action) => {
+    switch (action) {
+      case 'caseFile':
+        return ['Tab'];
+      case 'deductionBoard':
+        return ['B'];
+      case 'inventory':
+        return ['I'];
+      default:
+        return [];
+    }
+  }),
+}));
+
 import { CaseFileUI } from '../../../src/game/ui/CaseFileUI.js';
+import { getBindingLabels } from '../../../src/game/utils/controlBindingPrompts.js';
 
 describe('CaseFileUI', () => {
   let caseFileUI;
@@ -39,7 +55,7 @@ describe('CaseFileUI', () => {
   });
 
   describe('Instrumentation', () => {
-    test('emits overlay visibility events with case metadata', () => {
+    test('emits overlay visibility events with case metadata and FX cues', () => {
       const emit = jest.fn();
       const eventBus = { emit };
       caseFileUI = new CaseFileUI(400, 600, { eventBus });
@@ -67,6 +83,13 @@ describe('CaseFileUI', () => {
       );
       expect(emit).toHaveBeenCalledWith('ui:overlay_opened', expect.objectContaining({ overlayId: 'caseFile' }));
       expect(emit).toHaveBeenCalledWith('case_file:opened', { caseId: 'case-1' });
+      expect(emit).toHaveBeenCalledWith(
+        'fx:overlay_cue',
+        expect.objectContaining({
+          effectId: 'caseFileOverlayReveal',
+          context: expect.objectContaining({ source: 'test' }),
+        })
+      );
 
       emit.mockClear();
 
@@ -83,6 +106,10 @@ describe('CaseFileUI', () => {
       );
       expect(emit).toHaveBeenCalledWith('ui:overlay_closed', expect.objectContaining({ overlayId: 'caseFile' }));
       expect(emit).toHaveBeenCalledWith('case_file:closed', { caseId: 'case-1' });
+      expect(emit).toHaveBeenCalledWith(
+        'fx:overlay_cue',
+        expect.objectContaining({ effectId: 'caseFileOverlayDismiss' })
+      );
     });
   });
 
@@ -187,6 +214,51 @@ describe('CaseFileUI', () => {
       });
 
       expect(spy).toHaveBeenCalled();
+    });
+
+    test('emits FX cues when new evidence, clues, or objectives arrive', () => {
+      const emit = jest.fn();
+      const eventBus = { emit };
+      caseFileUI = new CaseFileUI(400, 600, { eventBus });
+
+      caseFileUI.loadCase({
+        id: 'case-2',
+        title: 'FX Validation',
+        objectives: [{ id: 'o1', description: 'Find clue', completed: false }],
+        collectedEvidence: new Set(['e-1']),
+        discoveredClues: new Set([]),
+        evidenceIds: new Set(['e-1', 'e-2']),
+        requiredClues: new Set(['c-1']),
+      });
+
+      emit.mockClear();
+
+      caseFileUI.updateCase({
+        collectedEvidence: ['e-1', 'e-2'],
+        discoveredClues: ['c-1'],
+        objectives: [
+          { id: 'o1', description: 'Find clue', completed: true },
+          { id: 'o2', description: 'Interview witness', completed: false },
+        ],
+      });
+
+      const fxCalls = emit.mock.calls.filter(([eventName]) => eventName === 'fx:overlay_cue');
+      expect(fxCalls).toEqual(
+        expect.arrayContaining([
+          expect.arrayContaining([
+            'fx:overlay_cue',
+            expect.objectContaining({ effectId: 'caseEvidencePulse' }),
+          ]),
+          expect.arrayContaining([
+            'fx:overlay_cue',
+            expect.objectContaining({ effectId: 'caseCluePulse' }),
+          ]),
+          expect.arrayContaining([
+            'fx:overlay_cue',
+            expect.objectContaining({ effectId: 'caseObjectivePulse' }),
+          ]),
+        ])
+      );
     });
 
     test('should do nothing if no case loaded', () => {
@@ -366,6 +438,21 @@ describe('CaseFileUI', () => {
         call => call[0] === 'The Missing Memory'
       );
       expect(titleCall).toBeDefined();
+    });
+
+    test('renders binding hint text with dynamic labels', () => {
+      caseFileUI.render(mockCtx);
+
+      expect(getBindingLabels).toHaveBeenCalledWith(
+        'caseFile',
+        expect.objectContaining({ fallbackLabel: 'Tab' })
+      );
+
+      const hintCall = mockCtx.fillText.mock.calls.find(
+        call => typeof call[0] === 'string' && call[0].includes('Close:')
+      );
+      expect(hintCall).toBeDefined();
+      expect(hintCall[0]).toContain('Close: Tab');
     });
 
     test('should render section headers', () => {

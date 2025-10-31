@@ -4,7 +4,8 @@
  * Physics collision component for spatial queries and collision detection.
  * Used by physics system for collision resolution.
  *
- * @property {string} type - Collision shape type ('AABB', 'circle')
+ * @property {string} type - Component type identifier (always 'Collider')
+ * @property {string} shapeType - Collision shape type ('AABB', 'circle')
  * @property {number} width - Width for AABB colliders
  * @property {number} height - Height for AABB colliders
  * @property {number} radius - Radius for circle colliders
@@ -26,7 +27,9 @@ export class Collider {
     isStatic = false,
     tags = []
   } = {}) {
-    this.type = type;
+    const normalizedType = typeof type === 'string' ? type : 'AABB';
+    this.type = 'Collider';
+    this.shapeType = normalizedType;
     this.width = width;
     this.height = height;
     this.radius = radius;
@@ -43,7 +46,9 @@ export class Collider {
    * @returns {Object} Bounds {minX, minY, maxX, maxY}
    */
   getBounds(transform) {
-    if (this.type === 'AABB') {
+    const shapeType = (this.shapeType || 'AABB').toUpperCase();
+
+    if (shapeType === 'AABB') {
       const x = transform.x + this.offsetX;
       const y = transform.y + this.offsetY;
       return {
@@ -52,7 +57,7 @@ export class Collider {
         maxX: x + this.width / 2,
         maxY: y + this.height / 2
       };
-    } else if (this.type === 'circle') {
+    } else if (shapeType === 'CIRCLE') {
       const x = transform.x + this.offsetX;
       const y = transform.y + this.offsetY;
       return {

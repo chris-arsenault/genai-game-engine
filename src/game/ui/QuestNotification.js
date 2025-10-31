@@ -116,7 +116,14 @@ export class QuestNotification {
 
     // Start showing immediately if no current notification
     if (!this.currentNotification) {
-      this._showNext();
+      this._advanceQueue('initialDisplay');
+    } else {
+      this._emitFxCue('questNotificationQueued', {
+        reason: 'queuedWhileActive',
+        queueLength: this.notifications.length,
+        type,
+        title,
+      });
     }
   }
 
@@ -124,7 +131,16 @@ export class QuestNotification {
    * Show next notification in queue
    * @private
    */
-  _showNext() {
+  _advanceQueue(reason = 'queueAdvance') {
+    const hadActive = Boolean(this.currentNotification);
+    if (hadActive) {
+      this._emitFxCue('questNotificationDismiss', {
+        reason,
+        type: this.currentNotification.type,
+        title: this.currentNotification.title,
+      });
+    }
+
     if (this.notifications.length === 0) {
       this.currentNotification = null;
       this.alpha = 0;
@@ -134,6 +150,13 @@ export class QuestNotification {
     this.currentNotification = this.notifications.shift();
     this.currentTime = 0;
     this.alpha = 0;
+
+    this._emitFxCue('questNotificationDisplay', {
+      reason,
+      type: this.currentNotification.type,
+      title: this.currentNotification.title,
+      messageLength: this.currentNotification.message?.length ?? 0,
+    });
   }
 
   /**
@@ -160,7 +183,7 @@ export class QuestNotification {
     }
     // Done
     else {
-      this._showNext();
+      this._advanceQueue('autoAdvance');
     }
   }
 
@@ -245,19 +268,30 @@ export class QuestNotification {
    * Clear all notifications
    */
   clear() {
+    if (this.currentNotification) {
+      this._emitFxCue('questNotificationDismiss', {
+        reason: 'manualClear',
+        type: this.currentNotification.type,
+        title: this.currentNotification.title,
+      });
+    }
+    if (this.notifications.length || this.currentNotification) {
+      this._emitFxCue('questNotificationClear', {
+        reason: 'manual',
+        clearedActive: Boolean(this.currentNotification),
+        clearedQueued: this.notifications.length,
+      });
+    }
+
     this.notifications = [];
     this.currentNotification = null;
     this.alpha = 0;
+    this.currentTime = 0;
   }
 
   /**
    * Cleanup
    */
-  cleanup() {
-    this.clear();
-    console.log('[QuestNotification] Cleaned up');
-  }
-
   cleanup() {
     if (this._offHandlers.length) {
       this._offHandlers.forEach((off) => {
@@ -267,5 +301,19 @@ export class QuestNotification {
       });
       this._offHandlers.length = 0;
     }
+    this.clear();
+  }
+
+  _emitFxCue(effectId, context = {}) {
+    if (!this.eventBus || typeof this.eventBus.emit !== 'function' || !effectId) {
+      return;
+    }
+
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId,
+      source: 'QuestNotification',
+      origin: 'questNotificationOverlay',
+      context,
+    });
   }
 }

@@ -28,6 +28,7 @@ export class CrossroadsBranchLandingOverlay {
 
     this._unsubscribes = [];
     this.activeMessage = null;
+    this._lastPayload = null;
   }
 
   init() {
@@ -36,12 +37,22 @@ export class CrossroadsBranchLandingOverlay {
     }
 
     this._unsubscribes.push(
-      this.eventBus.on('crossroads:branch_landing_ready', (payload) => this._setMessage(payload))
+      this.eventBus.on('crossroads:branch_landing_ready', (payload) => {
+        const wasActive = Boolean(this.activeMessage);
+        this._setMessage(payload);
+        this._emitFxCue(
+          wasActive ? 'crossroadsBranchLandingUpdate' : 'crossroadsBranchLandingReveal',
+          {
+            ...payload,
+            reason: wasActive ? 'update' : 'ready',
+          }
+        );
+      })
     );
 
     this._unsubscribes.push(
-      this.eventBus.on('crossroads:branch_landing_clear', () => {
-        this.activeMessage = null;
+      this.eventBus.on('crossroads:branch_landing_clear', (payload) => {
+        this._clearActiveMessage('manual', payload);
       })
     );
   }
@@ -54,7 +65,7 @@ export class CrossroadsBranchLandingOverlay {
     this.activeMessage.elapsed += deltaTime;
     const remaining = this.displayTime - this.activeMessage.elapsed;
     if (remaining <= 0) {
-      this.activeMessage = null;
+      this._clearActiveMessage('expired');
     } else {
       this.activeMessage.alpha = this._computeAlpha();
     }
@@ -136,6 +147,12 @@ export class CrossroadsBranchLandingOverlay {
       elapsed: 0,
       alpha: 0,
     };
+    this._lastPayload = {
+      ...payload,
+      branchTitle,
+      summary,
+      instructions,
+    };
   }
 
   _computeAlpha() {
@@ -180,5 +197,48 @@ export class CrossroadsBranchLandingOverlay {
     lines.push(currentLine);
     return lines;
   }
-}
 
+  _clearActiveMessage(reason = 'clear', payload = {}) {
+    if (!this.activeMessage) {
+      return;
+    }
+
+    const context = {
+      reason,
+      branchId: this._lastPayload?.branchId ?? null,
+      branchTitle: this._lastPayload?.branchTitle ?? null,
+      nextBranchId: payload?.branchId ?? null,
+      clearReason: payload?.reason ?? null,
+    };
+
+    this.activeMessage = null;
+    this._emitFxCue('crossroadsBranchLandingDismiss', context);
+  }
+
+  _emitFxCue(effectId, payload = {}) {
+    if (!this.eventBus || typeof this.eventBus.emit !== 'function' || !effectId) {
+      return;
+    }
+
+    const branchId = payload?.branchId ?? this._lastPayload?.branchId ?? null;
+    const branchTitle = payload?.branchTitle ?? this._lastPayload?.branchTitle ?? null;
+    const summary = payload?.summary ?? this._lastPayload?.summary ?? '';
+    const instructions = payload?.instructions ?? this._lastPayload?.instructions ?? '';
+
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId,
+      source: 'CrossroadsBranchLandingOverlay',
+      origin: 'crossroadsBranchLanding',
+      branchId,
+      context: {
+        branchId,
+        branchTitle,
+        summaryLength: summary.length,
+        instructionsLength: instructions.length,
+        reason: payload?.reason ?? null,
+        clearReason: payload?.clearReason ?? null,
+        nextBranchId: payload?.nextBranchId ?? null,
+      },
+    });
+  }
+}

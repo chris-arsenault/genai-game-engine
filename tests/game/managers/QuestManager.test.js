@@ -230,6 +230,28 @@ describe('QuestManager', () => {
       const success = questManager.startQuest('test_quest');
       expect(success).toBe(false);
     });
+
+    test('emits fx overlay cues for quest milestones', () => {
+      const fxEvents = [];
+      eventBus.on('fx:overlay_cue', (payload) => {
+        fxEvents.push(payload);
+      });
+
+      questManager.startQuest('test_quest');
+
+      // Complete the evidence collection objective (count 3)
+      eventBus.emit('evidence:collected', {});
+      eventBus.emit('evidence:collected', {});
+      eventBus.emit('evidence:collected', {});
+
+      expect(fxEvents).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ effectId: 'questMilestonePulse', stage: 'started', questId: 'test_quest' }),
+          expect.objectContaining({ effectId: 'questMilestonePulse', stage: 'objective_completed', objectiveId: 'obj1' }),
+          expect.objectContaining({ effectId: 'questCompleteBurst', stage: 'completed', questId: 'test_quest' })
+        ])
+      );
+    });
   });
 
   describe('Entity destruction handling', () => {

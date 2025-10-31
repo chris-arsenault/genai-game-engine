@@ -100,6 +100,7 @@ export class TutorialOverlay {
 
     this.unsubscribe = null;
     this._offHandlers = [];
+    this._lastStepCueKey = null;
   }
 
   /**
@@ -315,25 +316,41 @@ export class TutorialOverlay {
     }
 
     // Subscribe to tutorial events
-    this._offHandlers.push(this.eventBus.on('tutorial:started', () => {
-      this.show();
+    this._offHandlers.push(this.eventBus.on('tutorial:started', (payload = {}) => {
+      this.show('tutorial:started', {
+        totalSteps: typeof payload.totalSteps === 'number' ? payload.totalSteps : null,
+        startedAt: payload.startedAt ?? null,
+      });
     }));
 
     this._offHandlers.push(this.eventBus.on('tutorial:step_started', (data) => {
-      this.showPrompt(data);
+      this.showPrompt(data, 'tutorial:step_started');
     }));
 
-    this._offHandlers.push(this.eventBus.on('tutorial:step_completed', () => {
+    this._offHandlers.push(this.eventBus.on('tutorial:step_completed', (data) => {
       // Brief fade before next step
       this.targetAlpha = 0.5;
+      this._emitFxCue('tutorialStepCompleted', {
+        ...data,
+        source: 'tutorial:step_completed',
+      });
+      this._lastStepCueKey = null;
     }));
 
-    this._offHandlers.push(this.eventBus.on('tutorial:completed', () => {
-      this.hide();
+    this._offHandlers.push(this.eventBus.on('tutorial:completed', (data) => {
+      this.hide('tutorial:completed', {
+        completedAt: data?.completedAt ?? null,
+        totalSteps: data?.totalSteps ?? null,
+        completedSteps: data?.completedSteps ?? null,
+      });
     }));
 
-    this._offHandlers.push(this.eventBus.on('tutorial:skipped', () => {
-      this.hide();
+    this._offHandlers.push(this.eventBus.on('tutorial:skipped', (data) => {
+      this.hide('tutorial:skipped', {
+        stepId: data?.stepId ?? null,
+        stepIndex: data?.stepIndex ?? null,
+        skippedAt: data?.skippedAt ?? null,
+      });
     }));
   }
 
@@ -358,30 +375,37 @@ export class TutorialOverlay {
     this.telemetry.timeline = rawSnapshots.slice(0, maxTimelineEntries);
 
     if (overlay.visible && overlay.prompt) {
-      this.show();
-      this.showPrompt(overlay.prompt);
+      this.show('world-state');
+      this.showPrompt(overlay.prompt, 'world-state');
     } else {
-      this.hide();
+      this.hide('world-state');
     }
   }
 
   /**
    * Show the overlay
    */
-  show(source = 'show') {
+  show(source = 'show', context = {}) {
     const wasVisible = this.visible;
     this.visible = true;
     this.targetAlpha = 1;
 
     if (!wasVisible) {
       emitOverlayVisibility(this.eventBus, 'tutorial', true, { source });
+      const defaultContext = {
+        source,
+        stepId: this.currentPrompt?.stepId ?? null,
+        stepIndex: this.currentPrompt?.stepIndex ?? null,
+        totalSteps: this.currentPrompt?.totalSteps ?? null,
+      };
+      this._emitFxCue('tutorialOverlayReveal', { ...defaultContext, ...context });
     }
   }
 
   /**
    * Hide the overlay
    */
-  hide(source = 'hide') {
+  hide(source = 'hide', context = {}) {
     if (!this.visible && this.targetAlpha === 0) {
       return;
     }
@@ -392,9 +416,14 @@ export class TutorialOverlay {
     this.currentPrompt = null;
     this.highlight = null;
     this.highlightEntities = [];
+    this._lastStepCueKey = null;
 
     if (wasVisible) {
       emitOverlayVisibility(this.eventBus, 'tutorial', false, { source });
+      this._emitFxCue('tutorialOverlayDismiss', {
+        source,
+        ...context,
+      });
     }
   }
 
@@ -402,7 +431,7 @@ export class TutorialOverlay {
    * Show tutorial prompt
    * @param {Object} promptData
    */
-  showPrompt(promptData) {
+  showPrompt(promptData, source = 'showPrompt') {
     this.currentPrompt = promptData;
     this.targetAlpha = 1;
     this.highlight = promptData.highlight ?? null;
@@ -411,6 +440,7 @@ export class TutorialOverlay {
     } else {
       this.highlightEntities = [];
     }
+    this._maybeEmitStepStartedCue(promptData, source);
   }
 
   /**
@@ -486,11 +516,13 @@ export class TutorialOverlay {
     const usableWidth = Math.min(style.maxWidth, this.canvas.width - metrics.overlayMargin * 2);
     const lines = this.wrapText(prompt.description, usableWidth - style.padding * 2);
     const textHeight = lines.length * this.style.text.lineHeight;
+    const controlHint = prompt.controlHint ?? null;
+    const controlHintHeight = this.getControlHintHeight(controlHint, style);
 
     // Calculate box dimensions
     const boxWidth = usableWidth;
     const titleBlockHeight = 30;
-    const boxHeight = style.padding * 2 + titleBlockHeight + textHeight;
+    const boxHeight = style.padding * 2 + titleBlockHeight + textHeight + controlHintHeight;
     let boxX = anchorX - boxWidth / 2;
     let boxY = anchorY;
 
@@ -534,6 +566,11 @@ export class TutorialOverlay {
       lineY += this.style.text.lineHeight;
     }
 
+    if (controlHintHeight > 0) {
+      const hintStartY = lineY + style.padding;
+      this.renderControlHint(controlHint, boxX, hintStartY, boxWidth, style);
+    }
+
     // Decorative accent under title when overlay is visible
     ctx.fillStyle = palette.outlineSoft;
     ctx.fillRect(
@@ -542,6 +579,114 @@ export class TutorialOverlay {
       Math.min(boxWidth - style.padding * 2, 88),
       2
     );
+  }
+
+  getControlHintHeight(controlHint, style) {
+    if (!controlHint || typeof controlHint !== 'object') {
+      return 0;
+    }
+    const hasLabel = typeof controlHint.label === 'string' && controlHint.label.trim().length > 0;
+    const hasKeys = Array.isArray(controlHint.keys) && controlHint.keys.length > 0;
+    const hasNote = typeof controlHint.note === 'string' && controlHint.note.trim().length > 0;
+
+    if (!hasLabel && !hasKeys && !hasNote) {
+      return 0;
+    }
+
+    const lineHeight = this.style.text.lineHeight;
+    const keyRowHeight = hasKeys ? 28 : 0;
+    const baseSpacing = style.padding;
+    const labelGap = hasLabel && (hasKeys || hasNote) ? 6 : 0;
+    const keyNoteGap = hasKeys && hasNote ? 6 : 0;
+
+    return baseSpacing
+      + (hasLabel ? lineHeight : 0)
+      + labelGap
+      + keyRowHeight
+      + keyNoteGap
+      + (hasNote ? lineHeight : 0);
+  }
+
+  renderControlHint(controlHint, boxX, startY, boxWidth, style) {
+    if (!controlHint) {
+      return;
+    }
+
+    const ctx = this.ctx;
+    const { palette } = overlayTheme;
+    const availableWidth = boxWidth - style.padding * 2;
+    const textFont = this.style.text.descriptionFont;
+    const textLineHeight = this.style.text.lineHeight;
+    const hasLabel = typeof controlHint.label === 'string' && controlHint.label.trim().length > 0;
+    const keys = Array.isArray(controlHint.keys) ? controlHint.keys.filter((value) => typeof value === 'string' && value.length > 0) : [];
+    const hasKeys = keys.length > 0;
+    const hasNote = typeof controlHint.note === 'string' && controlHint.note.trim().length > 0;
+
+    let currentY = startY;
+
+    const originalAlign = ctx.textAlign;
+    const originalBaseline = ctx.textBaseline;
+    const originalFont = ctx.font;
+
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.font = textFont;
+
+    if (hasLabel) {
+      ctx.fillStyle = this.style.text.descriptionColor;
+      ctx.fillText(controlHint.label.trim(), boxX + style.padding, currentY);
+      currentY += textLineHeight + (hasKeys || hasNote ? 6 : 0);
+    }
+
+    if (hasKeys) {
+      const keyHeight = 28;
+      const keyRadius = 6;
+      const horizontalSpacing = 10;
+      const keyMetrics = keys.map((label) => {
+        const width = Math.max(28, ctx.measureText(label).width + 18);
+        return { label, width };
+      });
+      const totalKeysWidth = keyMetrics.reduce((acc, metric) => acc + metric.width, 0);
+      const rowWidth = totalKeysWidth + horizontalSpacing * (keyMetrics.length - 1);
+      const rowStartX = boxX + style.padding + Math.max(0, (availableWidth - rowWidth) / 2);
+
+      let keyX = rowStartX;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = overlayTheme.typography.small;
+
+      for (const metric of keyMetrics) {
+        this.roundRect(ctx, keyX, currentY, metric.width, keyHeight, keyRadius);
+        ctx.fillStyle = palette.backgroundPrimary;
+        ctx.fill();
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = palette.outlineSoft;
+        this.roundRect(ctx, keyX, currentY, metric.width, keyHeight, keyRadius);
+        ctx.stroke();
+
+        ctx.fillStyle = palette.textPrimary;
+        ctx.fillText(metric.label, keyX + metric.width / 2, currentY + keyHeight / 2);
+        keyX += metric.width + horizontalSpacing;
+      }
+
+      currentY += keyHeight + (hasNote ? 6 : 0);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.font = textFont;
+    }
+
+    if (hasNote) {
+      ctx.fillStyle = palette.textSecondary;
+      const noteLines = this.wrapText(controlHint.note.trim(), availableWidth);
+      for (const line of noteLines) {
+        ctx.fillText(line, boxX + style.padding, currentY);
+        currentY += textLineHeight;
+      }
+    }
+
+    ctx.textAlign = originalAlign;
+    ctx.textBaseline = originalBaseline;
+    ctx.font = originalFont;
   }
 
   /**
@@ -650,6 +795,38 @@ export class TutorialOverlay {
     ctx.lineTo(x, y + radius);
     ctx.quadraticCurveTo(x, y, x + radius, y);
     ctx.closePath();
+  }
+
+  _emitFxCue(effectId, context = {}) {
+    if (!this.eventBus || typeof this.eventBus.emit !== 'function' || !effectId) {
+      return;
+    }
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId,
+      source: 'TutorialOverlay',
+      context,
+    });
+  }
+
+  _maybeEmitStepStartedCue(promptData, source) {
+    if (!promptData || typeof promptData !== 'object') {
+      return;
+    }
+    const stepId = promptData.stepId ?? null;
+    const stepIndex = typeof promptData.stepIndex === 'number' ? promptData.stepIndex : null;
+    const key = stepId != null ? `step:${stepId}` : (stepIndex != null ? `index:${stepIndex}` : null);
+    if (!key || key === this._lastStepCueKey) {
+      return;
+    }
+    this._lastStepCueKey = key;
+    this._emitFxCue('tutorialStepStarted', {
+      source,
+      stepId,
+      stepIndex,
+      totalSteps: typeof promptData.totalSteps === 'number' ? promptData.totalSteps : null,
+      title: promptData.title ?? null,
+      canSkip: Boolean(promptData.canSkip),
+    });
   }
 
   /**

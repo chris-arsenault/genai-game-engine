@@ -58,6 +58,7 @@ export class DialogueBox {
     this.nodeId = null;
     this.transcript = [];
     this.viewModel = null;
+    this._lastChoiceFxIndex = -1;
 
     // Input handling
     this.keyHandlers = new Map();
@@ -135,6 +136,7 @@ export class DialogueBox {
       if (this.selectedChoiceIndex >= this.choices.length) {
         this.selectedChoiceIndex = Math.max(0, this.choices.length - 1);
       }
+      this._emitChoiceFocusCue('store:update');
     }
   }
 
@@ -179,16 +181,24 @@ export class DialogueBox {
     // Arrow keys to navigate choices
     this.keyHandlers.set('ArrowUp', () => {
       if (this.visible && this.hasChoices && !this.isTyping) {
+        const previous = this.selectedChoiceIndex;
         this.selectedChoiceIndex = Math.max(0, this.selectedChoiceIndex - 1);
+        if (this.selectedChoiceIndex !== previous) {
+          this._emitChoiceFocusCue('input:ArrowUp');
+        }
       }
     });
 
     this.keyHandlers.set('ArrowDown', () => {
       if (this.visible && this.hasChoices && !this.isTyping) {
+        const previous = this.selectedChoiceIndex;
         this.selectedChoiceIndex = Math.min(
           this.choices.length - 1,
           this.selectedChoiceIndex + 1
         );
+        if (this.selectedChoiceIndex !== previous) {
+          this._emitChoiceFocusCue('input:ArrowDown');
+        }
       }
     });
 
@@ -245,6 +255,7 @@ export class DialogueBox {
     this.canAdvance = Boolean(data.canAdvance);
     this.hasChoices = Boolean(data.hasChoices || (this.choices.length > 0));
     this.selectedChoiceIndex = 0;
+    this._lastChoiceFxIndex = -1;
 
     // Start typewriter effect
     if (this.config.enableTypewriter) {
@@ -260,6 +271,15 @@ export class DialogueBox {
         nodeId: this.nodeId,
         dialogueId: this.dialogueId,
       });
+      this._emitFxCue('dialogueOverlayReveal', {
+        source: data?.source ?? 'show',
+        dialogueId: this.dialogueId,
+        nodeId: this.nodeId,
+      });
+    }
+
+    if (this.hasChoices && this.choices.length > 0) {
+      this._emitChoiceFocusCue('show');
     }
   }
 
@@ -268,6 +288,11 @@ export class DialogueBox {
    */
   hide(source = 'hide') {
     const wasVisible = this.visible;
+    const context = {
+      source,
+      dialogueId: this.dialogueId,
+      nodeId: this.nodeId,
+    };
     this.visible = false;
     this.isTyping = false;
     this.typewriterIndex = 0;
@@ -277,11 +302,13 @@ export class DialogueBox {
     this.npcId = null;
     this.dialogueId = null;
     this.nodeId = null;
+    this._lastChoiceFxIndex = -1;
 
     if (wasVisible) {
       emitOverlayVisibility(this.eventBus, 'dialogue', false, {
         source,
       });
+      this._emitFxCue('dialogueOverlayDismiss', context);
     }
   }
 
@@ -485,12 +512,48 @@ export class DialogueBox {
     return this.visible;
   }
 
+  _emitFxCue(effectId, context = {}) {
+    if (!this.eventBus || typeof this.eventBus.emit !== 'function') {
+      return;
+    }
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId,
+      source: 'DialogueBox',
+      context,
+    });
+  }
+
+  _emitChoiceFocusCue(reason) {
+    if (
+      !this.visible ||
+      !this.hasChoices ||
+      this.selectedChoiceIndex < 0 ||
+      this.selectedChoiceIndex >= this.choices.length
+    ) {
+      return;
+    }
+
+    if (this._lastChoiceFxIndex === this.selectedChoiceIndex) {
+      return;
+    }
+
+    this._lastChoiceFxIndex = this.selectedChoiceIndex;
+    const choice = this.choices[this.selectedChoiceIndex] || null;
+    this._emitFxCue('dialogueOverlayChoiceFocus', {
+      reason,
+      choiceId: choice?.id ?? null,
+      dialogueId: this.dialogueId,
+      nodeId: this.nodeId,
+    });
+  }
+
   /**
    * Cleanup
    */
   cleanup() {
     this.visible = false;
     this.keyHandlers.clear();
+    this._lastChoiceFxIndex = -1;
     if (typeof this.storeUnsubscribe === 'function') {
       this.storeUnsubscribe();
       this.storeUnsubscribe = null;

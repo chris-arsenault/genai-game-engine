@@ -9,6 +9,7 @@ import { Evidence } from '../../../src/game/components/Evidence.js';
 import { Transform } from '../../../src/game/components/Transform.js';
 import { InteractionZone } from '../../../src/game/components/InteractionZone.js';
 import { PlayerController } from '../../../src/game/components/PlayerController.js';
+import { Investigation } from '../../../src/game/components/Investigation.js';
 import { GameConfig } from '../../../src/game/config/GameConfig.js';
 
 describe('InvestigationSystem', () => {
@@ -55,6 +56,8 @@ describe('InvestigationSystem', () => {
 
     system = new InvestigationSystem(mockComponentRegistry, mockEventBus);
     system.init();
+
+    mockComponentRegistry._components.set('1:Investigation', new Investigation());
   });
 
   describe('Initialization', () => {
@@ -93,7 +96,8 @@ describe('InvestigationSystem', () => {
       mockComponentRegistry._components.set('2:Evidence', evidence);
 
       // Update system
-      system.scanForEvidence(playerTransform, [2]);
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.scanForEvidence(playerTransform, investigation, [2]);
 
       // Should emit detected event
       expect(mockEventBus.emit).toHaveBeenCalledWith('evidence:detected',
@@ -117,7 +121,8 @@ describe('InvestigationSystem', () => {
       mockComponentRegistry._components.set('2:Transform', evidenceTransform);
       mockComponentRegistry._components.set('2:Evidence', evidence);
 
-      system.scanForEvidence(playerTransform, [2]);
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.scanForEvidence(playerTransform, investigation, [2]);
 
       expect(mockEventBus.emit).not.toHaveBeenCalledWith('evidence:detected', expect.anything());
     });
@@ -134,7 +139,8 @@ describe('InvestigationSystem', () => {
       mockComponentRegistry._components.set('2:Transform', evidenceTransform);
       mockComponentRegistry._components.set('2:Evidence', evidence);
 
-      system.scanForEvidence(playerTransform, [2]);
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.scanForEvidence(playerTransform, investigation, [2]);
 
       expect(mockEventBus.emit).not.toHaveBeenCalledWith('evidence:detected', expect.anything());
     });
@@ -155,7 +161,8 @@ describe('InvestigationSystem', () => {
       system.unlockAbility('detective_vision');
       system.activateDetectiveVision();
 
-      system.scanForEvidence(playerTransform, [2]);
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.scanForEvidence(playerTransform, investigation, [2]);
 
       expect(mockEventBus.emit).toHaveBeenCalledWith('evidence:detected',
         expect.objectContaining({
@@ -176,9 +183,59 @@ describe('InvestigationSystem', () => {
       mockComponentRegistry._components.set('2:Transform', evidenceTransform);
       mockComponentRegistry._components.set('2:Evidence', evidence);
 
-      system.scanForEvidence(playerTransform, [2]);
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.scanForEvidence(playerTransform, investigation, [2]);
 
       expect(mockEventBus.emit).not.toHaveBeenCalledWith('evidence:detected', expect.anything());
+    });
+
+    it('should respect investigation component detection radius', () => {
+      const playerTransform = new Transform(0, 0);
+      const evidenceTransform = new Transform(70, 0);
+      const evidence = new Evidence({
+        id: 'evidence_2',
+        collected: false,
+        hidden: false
+      });
+
+      mockComponentRegistry._components.set('1:Transform', playerTransform);
+      mockComponentRegistry._components.set('2:Transform', evidenceTransform);
+      mockComponentRegistry._components.set('2:Evidence', evidence);
+
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      investigation.setDetectionRadius(50);
+
+      mockEventBus.emit.mockClear();
+      system.scanForEvidence(playerTransform, investigation, [2]);
+
+      expect(mockEventBus.emit).not.toHaveBeenCalledWith('evidence:detected', expect.anything());
+    });
+
+    it('should expand detection radius with higher ability level', () => {
+      const playerTransform = new Transform(0, 0);
+      const evidenceTransform = new Transform(58, 0);
+      const evidence = new Evidence({
+        id: 'evidence_3',
+        collected: false,
+        hidden: false
+      });
+
+      mockComponentRegistry._components.set('1:Transform', playerTransform);
+      mockComponentRegistry._components.set('2:Transform', evidenceTransform);
+      mockComponentRegistry._components.set('2:Evidence', evidence);
+
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      investigation.setDetectionRadius(50);
+      investigation.abilityLevel = 3; // 20% radius increase (effective 60)
+
+      mockEventBus.emit.mockClear();
+      system.scanForEvidence(playerTransform, investigation, [2]);
+
+      expect(mockEventBus.emit).toHaveBeenCalledWith('evidence:detected',
+        expect.objectContaining({
+          evidenceId: 'evidence_3'
+        })
+      );
     });
   });
 
@@ -196,7 +253,8 @@ describe('InvestigationSystem', () => {
 
       mockComponentRegistry._components.set('2:Evidence', evidence);
 
-      system.collectEvidence(2, 'evidence_1');
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.collectEvidence(2, 'evidence_1', investigation);
 
       expect(evidence.collected).toBe(true);
       expect(mockEventBus.emit).toHaveBeenCalledWith('evidence:collected',
@@ -219,10 +277,37 @@ describe('InvestigationSystem', () => {
 
       mockComponentRegistry._components.set('2:Evidence', evidence);
 
-      system.collectEvidence(2, 'evidence_1');
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.collectEvidence(2, 'evidence_1', investigation);
 
       expect(system.collectedEvidence.has('case_1')).toBe(true);
       expect(system.collectedEvidence.get('case_1').has('evidence_1')).toBe(true);
+    });
+
+    it('should persist case file entries on the investigation component', () => {
+      const evidence = new Evidence({
+        id: 'evidence_2',
+        caseId: 'case_alpha',
+        type: 'digital',
+        category: 'terminal_logs',
+        collected: false,
+        derivedClues: []
+      });
+
+      mockComponentRegistry._components.set('2:Evidence', evidence);
+
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.collectEvidence(2, 'evidence_2', investigation);
+
+      const caseEntries = investigation.getCaseEvidence('case_alpha');
+
+      expect(Array.isArray(caseEntries)).toBe(true);
+      expect(caseEntries).toHaveLength(1);
+      expect(caseEntries[0]).toEqual(expect.objectContaining({
+        evidenceId: 'evidence_2',
+        type: 'digital',
+        category: 'terminal_logs'
+      }));
     });
 
     it('should derive clues from collected evidence', () => {
@@ -235,7 +320,8 @@ describe('InvestigationSystem', () => {
 
       mockComponentRegistry._components.set('2:Evidence', evidence);
 
-      system.collectEvidence(2, 'evidence_1');
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.collectEvidence(2, 'evidence_1', investigation);
 
       expect(mockEventBus.emit).toHaveBeenCalledWith('clue:derived',
         expect.objectContaining({
@@ -263,7 +349,8 @@ describe('InvestigationSystem', () => {
 
       mockComponentRegistry._components.set('2:Evidence', evidence);
 
-      system.collectEvidence(2, 'evidence_1');
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.collectEvidence(2, 'evidence_1', investigation);
 
       expect(evidence.collected).toBe(false);
       expect(mockEventBus.emit).toHaveBeenCalledWith('evidence:collection_failed',
@@ -285,7 +372,8 @@ describe('InvestigationSystem', () => {
       mockComponentRegistry._components.set('2:Evidence', evidence);
 
       system.unlockAbility('forensic_kit');
-      system.collectEvidence(2, 'evidence_1');
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.collectEvidence(2, 'evidence_1', investigation);
 
       expect(evidence.collected).toBe(true);
     });
@@ -299,7 +387,8 @@ describe('InvestigationSystem', () => {
       mockComponentRegistry._components.set('2:Evidence', evidence);
 
       mockEventBus.emit.mockClear();
-      system.collectEvidence(2, 'evidence_1');
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.collectEvidence(2, 'evidence_1', investigation);
 
       expect(mockEventBus.emit).not.toHaveBeenCalled();
     });
@@ -327,12 +416,15 @@ describe('InvestigationSystem', () => {
 
       mockEventBus.emit.mockClear();
 
-      system.checkInteractionZones(1, playerTransform, [1, 2]);
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.checkInteractionZones(1, playerTransform, investigation, [1, 2]);
 
       expect(mockEventBus.emit).toHaveBeenCalledWith(
         'ui:show_prompt',
         expect.objectContaining({
-          text: 'Press E to talk'
+          text: 'Press E to talk',
+          bindingAction: 'interact',
+          bindingFallback: 'talk to dialogue_vendor',
         })
       );
     });
@@ -357,13 +449,14 @@ describe('InvestigationSystem', () => {
       mockComponentRegistry._components.set('2:InteractionZone', interactionZone);
 
       // Prime the system so the prompt is visible
-      system.checkInteractionZones(1, playerTransform, [1, 2]);
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.checkInteractionZones(1, playerTransform, investigation, [1, 2]);
       mockEventBus.emit.mockClear();
 
       // Move player out of range
       playerTransform.setPosition(400, 400);
 
-      system.checkInteractionZones(1, playerTransform, [1, 2]);
+      system.checkInteractionZones(1, playerTransform, investigation, [1, 2]);
 
       expect(mockEventBus.emit).toHaveBeenCalledWith('ui:hide_prompt');
     });
@@ -399,12 +492,13 @@ describe('InvestigationSystem', () => {
       mockEventBus.emit.mockClear();
 
       // First frame: prompt becomes visible
-      system.checkInteractionZones(1, playerTransform, [1, 2]);
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.checkInteractionZones(1, playerTransform, investigation, [1, 2]);
 
       playerController.input.interact = true;
       mockEventBus.emit.mockClear();
 
-      system.checkInteractionZones(1, playerTransform, [1, 2]);
+      system.checkInteractionZones(1, playerTransform, investigation, [1, 2]);
 
       expect(mockEventBus.emit).toHaveBeenCalledWith('ui:hide_prompt');
       expect(mockEventBus.emit).toHaveBeenCalledWith(
@@ -479,16 +573,85 @@ describe('InvestigationSystem', () => {
       system.unlockAbility('detective_vision');
       system.activateDetectiveVision();
 
-      // Wait for duration + cooldown
       const duration = GameConfig.player.detectiveVisionDuration / 1000;
       const cooldown = GameConfig.player.detectiveVisionCooldown / 1000;
-      system.updateDetectiveVision(duration + cooldown + 0.1);
+      system.updateDetectiveVision(duration + 0.1); // Drain energy and deactivate
+      system.updateDetectiveVision(cooldown + 0.1); // Regen energy and clear cooldown
 
       // Should be able to activate again
       mockEventBus.emit.mockClear();
       system.activateDetectiveVision();
 
       expect(system.detectiveVisionActive).toBe(true);
+    });
+
+    it('should drain energy while active and emit status updates', () => {
+      system.unlockAbility('detective_vision');
+      system.detectiveVisionEnergy = system.detectiveVisionEnergyMax;
+
+      mockEventBus.emit.mockClear();
+      system.activateDetectiveVision();
+      mockEventBus.emit.mockClear();
+
+      system.updateDetectiveVision(2); // Drain 2 energy units
+
+      expect(system.detectiveVisionEnergy).toBeCloseTo(
+        system.detectiveVisionEnergyMax - 2,
+        2
+      );
+
+      const statusEvents = mockEventBus.emit.mock.calls.filter(
+        ([event]) => event === 'detective_vision:status'
+      );
+      expect(statusEvents.length).toBeGreaterThan(0);
+      const lastStatus = statusEvents[statusEvents.length - 1][1];
+      expect(lastStatus.active).toBe(true);
+      expect(lastStatus.energy).toBeCloseTo(system.detectiveVisionEnergy, 2);
+    });
+
+    it('should block activation when energy below threshold', () => {
+      system.unlockAbility('detective_vision');
+      system.detectiveVisionEnergy = system.detectiveVisionMinEnergyToActivate - 0.25;
+
+      mockEventBus.emit.mockClear();
+      const activated = system.activateDetectiveVision();
+
+      expect(activated).toBe(false);
+      expect(system.detectiveVisionActive).toBe(false);
+      expect(mockEventBus.emit).toHaveBeenCalledWith(
+        'ability:insufficient_resource',
+        expect.objectContaining({
+          ability: 'detective_vision',
+          resource: 'energy',
+        })
+      );
+    });
+
+    it('should regenerate energy while inactive', () => {
+      system.unlockAbility('detective_vision');
+      system.detectiveVisionEnergy = system.detectiveVisionMinEnergyToActivate + 0.1;
+
+      system.activateDetectiveVision();
+      system.updateDetectiveVision(2); // Drain to zero and deactivate
+      expect(system.detectiveVisionActive).toBe(false);
+      expect(system.detectiveVisionEnergy).toBeCloseTo(0, 3);
+
+      mockEventBus.emit.mockClear();
+      system.updateDetectiveVision(3); // Regen energy for 3 seconds
+
+      const expectedEnergy = Math.min(
+        system.detectiveVisionEnergyMax,
+        GameConfig.player.detectiveVisionEnergyRegen * 3
+      );
+      expect(system.detectiveVisionEnergy).toBeCloseTo(expectedEnergy, 3);
+
+      const statusEvents = mockEventBus.emit.mock.calls.filter(
+        ([event]) => event === 'detective_vision:status'
+      );
+      expect(statusEvents.length).toBeGreaterThan(0);
+      const lastStatus = statusEvents[statusEvents.length - 1][1];
+      expect(lastStatus.active).toBe(false);
+      expect(lastStatus.energy).toBeCloseTo(system.detectiveVisionEnergy, 3);
     });
   });
 

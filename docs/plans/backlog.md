@@ -6,7 +6,7 @@
 ## Document Overview
 
 **Version**: 1.2
-**Last Updated**: 2025-11-16
+**Last Updated**: 2025-10-31
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
@@ -15,13 +15,224 @@
 
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
-| AR-050 | P0 | In Progress | Visual asset sourcing pipeline now covers Act 2 Crossroads selection conduit/pad, checkpoint glow/plaza, safehouse arc, boundary walls, and column beam overlays with CC0/CC-BY references captured in manifests; Session 112 calibrated tint/alpha parameters (~0.13 columns/conduits, ~0.75 boundaries), Session 113 added a lighting preview harness plus queued the AR-001–AR-005 generation batch, Session 114 boosted conduit/glow/column luminance so previewed segments meet thresholds, Session 115 delivered placeholder atlases for AR-001–AR-005, Session 116 layered RenderOps packet/placeholder audit automation, Session 117 shipped prioritized replacement plans, Session 118 produced a four-week bespoke art sprint schedule plus delivery staging CLI, and Session 121 automated week-one bespoke status ingestion with licensing approvals recorded in manifests/reports. | Monitor RenderOps feedback on the shared packet, drive Week 1 bespoke assignments per `reports/art/placeholder-replacement-schedule.md`, and update `assets/images/requests.json` as approvals land. |
+| BUG-201 | P0 | Completed | Collision system crashes on load when Collider metadata overwrites shape definitions (`shapeA`/`shapeB` null). Refactoring Collider component to preserve `shapeType` while keeping ECS registration stable; adding guards/tests. | Land collider refactor + guard rails, expand physics regression tests, and run targeted Jest suites (`CollisionSystem`, `physics/integration`, `integration-full`) before CI handoff. |
+| AR-050 | P0 | Pending | Visual asset sourcing pipeline now covers Act 2 Crossroads selection conduit/pad, checkpoint glow/plaza, safehouse arc, boundary walls, and column beam overlays with CC0/CC-BY references captured in manifests; Session 112 calibrated tint/alpha parameters (~0.13 columns/conduits, ~0.75 boundaries), Session 113 added a lighting preview harness plus queued the AR-001–AR-005 generation batch, Session 114 boosted conduit/glow/column luminance so previewed segments meet thresholds, Session 115 delivered placeholder atlases for AR-001–AR-005, Session 116 layered RenderOps packet/placeholder audit automation, Session 117 shipped prioritized replacement plans, Session 118 produced a four-week bespoke art sprint schedule plus delivery staging CLI, and Session 121 automated week-one bespoke status ingestion with licensing approvals recorded in manifests/reports. | Resume RenderOps ingestion once SaveManager/WorldState parity wraps; align neon signage sign-off with narrative before the next bespoke batch. |
 | TUT-201 | P0 | Completed | Tutorial case blocked at step 3 (`evidence_detection`) because legacy scene entities bypassed ECS detection events. | ECS-aligned tutorial scene entities shipped Session #51; re-run tutorial smoke tests after combat audio validation. |
 | AUDIO-351 | P0 | Completed | Validate live combat/disguise trigger routing through `AmbientSceneAudioController` using real combat loop events. | Adaptive audio routing now responds to gameplay emits; telemetry verified by Jest/Playwright suites and new infiltration benchmark. |
 | PERF-214 | P1 | Pending | Browser-level performance profiling for adaptive audio + overlay interactions to confirm <16 ms frame time budget. | Run Chromium/Firefox performance audits with combat/stealth transitions, log hotspots, and file perf follow-ups as needed. |
 | UX-173 | P1 | Pending | Improve debug audio overlay ergonomics (keyboard shortcuts, focus management). | Prototype keyboard navigation + focus traps, add Jest/Playwright coverage for accessibility interactions. |
 
 **Next Session Focus**: Share the neon glow approval summary with Narrative/RenderOps to capture sign-off on the neon district tileset, fold SaveManager telemetry budget events into CI/QA monitoring, and stage the next RenderOps lighting feedback pass.
+
+### Session #160 Backlog Updates
+
+#### M3-016: Save/Load System Implementation
+- Extended `AudioFeedbackController` so `fx:overlay_cue` traffic from the Save/Load overlay now plays reveal/focus/dismiss SFX (`src/game/audio/AudioFeedbackController.js`, `tests/game/audio/AudioFeedbackController.test.js`).
+- Added `SaveManager.runAutosaveBurst()` with regression coverage to support repeatable autosave churn checks (`src/game/managers/SaveManager.js`, `tests/game/managers/SaveManager.test.js`).
+- Authored Playwright scenario `tests/e2e/save-load-overlay-autosave.spec.js` to exercise the autosave stress burst inside the running build, verifying focus stability and the new audio cues.
+
+### Session #150 Backlog Updates
+
+#### M3-012: District Data Definitions
+- Authored district metadata modules for Neon Districts, Corporate Spires, Archive Undercity, and Zenith Sector with controlling faction, stability, access, and environmental descriptors (`src/game/data/districts/`).
+- Added registry exports plus validation tests (`tests/game/data/districts/districts.test.js`) ensuring faction references, security levels, and requirements remain consistent.
+- Verification: `npm test -- district`.
+
+#### M3-013: WorldStateManager Implementation
+- Extended WorldStateStore with a dedicated district slice capturing control changes, stability history, restrictions, and infiltration unlocks; wired new district:* events for runtime updates.
+- Snapshot/hydrate routines now persist district state alongside existing quest/story/faction slices, with coverage in `tests/game/state/districtSlice.test.js`.
+
+#### M3-022: District Access Evaluation Utilities
+- Added `DistrictAccessEvaluator` helpers to surface unmet knowledge, quest, faction, ability, equipment, and restriction blockers for each district (`src/game/progression/DistrictAccessEvaluator.js`).
+- Authored progression unit suite validating lock/unlock flows, restriction handling, and contextual overrides (`tests/game/progression/DistrictAccessEvaluator.test.js`).
+- Verification: `npm test -- district`.
+
+### Session #151 Backlog Updates
+
+#### M3-022: District Access Evaluation Utilities
+- Integrated the evaluator into the new `DistrictTravelOverlay` so the travel/navigation UX lists blockers, restrictions, and unlocked routes sourced from world state (`src/game/ui/DistrictTravelOverlay.js`, `src/game/ui/helpers/districtTravelViewModel.js`).
+- Added helper coverage under `tests/game/ui/helpers/districtTravelViewModel.test.js` to guard route/blocker summaries.
+- Verification: `npm test -- districtTravelViewModel`.
+
+### Session #155 Backlog Updates
+
+#### M3-016: Save/Load System Implementation
+- Normalized SaveManager slot identifiers, enforced manual slot capacity limits, and added slot metadata helpers with expanded Jest coverage (`src/game/managers/SaveManager.js`, `tests/game/managers/SaveManager.test.js`).
+- Introduced the Save/Load overlay with manual slot and load workflows, refreshed control bindings, and new regression tests validating the UI interactions (`src/game/ui/SaveLoadOverlay.js`, `src/game/Game.js`, `tests/game/ui/SaveLoadOverlay.test.js`).
+- Verification: `npm test -- --runTestsByPath tests/game/managers/SaveManager.test.js tests/game/ui/SaveLoadOverlay.test.js`.
+
+### Session #158 Backlog Updates
+
+#### M3-016: Save/Load System Implementation
+- Hardened SaveManager parity verification by summarizing story flag, quest, faction, tutorial, dialogue, and inventory domains so world snapshots align with legacy scrapers; added tutorial skip state harvesting and a new parity regression in `tests/game/managers/SaveManager.test.js`.
+- Delivered a Save/Load QA packaging workflow (`src/game/tools/SaveLoadQAPacketBuilder.js`, `scripts/telemetry/packageSaveLoadQa.js`, `npm run telemetry:package-save-load`) that bundles latency profiling plus payload summaries into timestamped packets under `reports/telemetry/save-load-qa/`.
+- Authored a sustained autosave stress test to validate repeated quest completion bursts retain slot focus and emit the expected `game:saved` cadence without failures (`tests/game/managers/SaveManager.test.js` autosave suite).
+- Verification: `npm test -- SaveManager`, `npm test -- SaveLoadQAPacketBuilder`, `npm run telemetry:package-save-load -- --iterations=2 --no-samples`.
+
+### Session #156 Backlog Updates
+
+#### M3-016: Save/Load System Implementation
+- Added `profileSaveLoadLatency` utilities (`src/game/managers/saveLoadProfiling.js`) plus `npm run telemetry:profile-save-load`, confirming manual slot loads average 0.46ms with representative world snapshots and stay well under the <2s target.
+- Stabilized SaveLoad overlay selection across autosave refreshes and expanded Jest coverage so manual slot focus persists when new saves reorder the list (`src/game/ui/SaveLoadOverlay.js`, `tests/game/ui/SaveLoadOverlay.test.js`).
+- Authored save payload summary tooling for QA/telemetry alignment (`src/game/managers/savePayloadSummary.js`, `npm run telemetry:save-payload-summary`) providing schema counts and equipped-slot breakdowns ahead of review.
+- Verification: `npm test`, `npm run telemetry:profile-save-load`, `npm run telemetry:save-payload-summary`.
+
+### Session #153 Backlog Updates
+
+#### M3-022: District Access Evaluation Utilities
+- Hooked `navigation:movement_blocked` events into `DistrictTravelOverlay` so traversal denials automatically reveal blockers and focus the relevant district entry (`src/game/ui/DistrictTravelOverlay.js`).
+- Authored focused automation (`tests/game/ui/DistrictTravelOverlay.events.test.js`, `tests/e2e/district-travel-traversal.spec.js`) to guard the new gating flow across Jest and Playwright.
+- Verification: `npm test -- --runTestsByPath tests/game/ui/DistrictTravelOverlay.events.test.js`, `npx playwright test tests/e2e/district-travel-traversal.spec.js`.
+
+#### M3-013: WorldStateManager Implementation
+- Extended SaveManager parity coverage so district and NPC slices flow through snapshot/hydration alongside legacy collectors (`tests/game/managers/SaveManager.test.js`).
+- Added cross-system validation ensuring traversal gating Playwright smoke exercises the expanded world-state snapshot during traversal denial scenarios.
+- Verification: `npm test -- --runTestsByPath tests/game/managers/SaveManager.test.js tests/game/ui/DistrictTravelOverlay.events.test.js`, `npx playwright test tests/e2e/district-travel-traversal.spec.js`.
+
+#### M3-013: WorldStateManager Implementation
+- Added `npcSlice` with reducers/selectors for recognition, suspicion, alert, and interview events plus snapshot/hydration support (`src/game/state/slices/npcSlice.js`).
+- Extended `WorldStateStore` event wiring and snapshot tests so NPC state is persisted and restored (`tests/game/state/worldStateStore.test.js`, `tests/game/state/npcSlice.test.js`).
+- Verification: `npm test -- npcSlice worldStateStore`.
+
+### Session #154 Backlog Updates
+
+#### M3-013: WorldStateManager Implementation
+- Enhanced `SaveManager.getInspectorSummary()` to surface district restriction and NPC alert telemetry from the WorldStateStore slices, feeding the inspector overlay/export stack with traversal gating data.
+- Added helper summaries and regression coverage in `tests/game/managers/SaveManager.test.js` so district/NPC parity checks remain guarded alongside legacy collectors.
+- Updated `SaveInspectorOverlay` to render restricted districts, fast-travel locks, and NPC alert highlights with refreshed metrics and Jest coverage (`tests/game/ui/SaveInspectorOverlay.test.js`).
+- Verification: `npm test -- --runTestsByPath tests/game/managers/SaveManager.test.js tests/game/ui/SaveInspectorOverlay.test.js`.
+
+#### M3-016: Save/Load System Implementation
+- Extended inspector export tooling to serialize the new district/NPC summaries, enriching JSON artifacts with lockdown counts and alert logs for QA review.
+- Documented next steps to complete slot-level Save/Load workflows now that inspector parity covers the expanded slices.
+- Verification: `npm test -- --runTestsByPath tests/game/telemetry/inspectorTelemetryExporter.test.js`.
+
+### Session #149 Backlog Updates
+
+#### UX-173: Debug Audio Overlay Ergonomics
+- Added a Shift+Alt+A shortcut that opens the audio panel, traps focus inside the controls, and exits back to the game canvas on Escape.
+- Wired keyboard navigation for tag chips and SFX catalog rows, including focus styling and Tab cycling safeguards.
+- Authored Playwright coverage (`tests/e2e/debug-overlay-audio-accessibility.spec.js`) to validate shortcut activation, arrow navigation, and escape behaviour alongside a full Jest run.
+
+### Session #148 Backlog Updates
+
+#### FX-244: Secondary Overlay FX Cue Audit
+- CrossroadsBranchLandingOverlay now emits `fx:overlay_cue` payloads for reveal, update, and dismiss transitions, threading branch identifiers plus clear/timeout metadata into the FX pipeline.
+- ObjectiveList broadcasts refresh, completion, and scroll cues (plumbed through CaseFileUI) so case progress changes feed downstream FX coordinator and particle mappings.
+- QuestNotification overlay emits display/queue/dismiss/clear cues and shares a unified cleanup path, with new Jest coverage verifying the emission lifecycle.
+- FxCueCoordinator durations/limits, FxOverlay render routing, and CompositeCueParticleBridge presets were expanded for the new cue identifiers, with `npm test` passing after the additions.
+
+### Session #140 Backlog Updates
+
+#### FX-201: Detective Vision Overlay FX Integration
+- Introduced `FxOverlay`, a canvas layer that listens for `fx:overlay_cue` events and renders teal activation pulses plus crimson edge fades when detective vision toggles.
+- Wired the overlay into `Game` initialization/update/render/cleanup so FX cues now play alongside HUD updates without impacting frame pacing.
+- Authored Jest coverage (`tests/game/ui/FxOverlay.test.js`) to confirm cue handling, render invocation, and listener cleanup.
+
+#### AUDIO-422: Detective Vision Mix Calibration
+- Added `audio.detectiveVision` defaults to `GameConfig`, setting calibrated activation, loop, and shutdown volumes for detective vision cues.
+- Refactored `AudioFeedbackController` to consume the config-driven mix, expose an `applyDetectiveVisionMix` hook, and retune active loops via `setVolume`/gain fallbacks when calibration shifts.
+- Extended Jest coverage to exercise the new calibration API and ensure live detective vision loops adopt updated volumes.
+
+### Session #141 Backlog Updates
+
+#### FX-235: Quest & Forensic Overlay Cues
+- Expanded `FxOverlay` with quest milestone pulses, quest completion bursts, and forensic scan/reveal renders so narrative and investigation beats surface across the HUD layer.
+- Emitted `fx:overlay_cue` from `QuestManager` (start/objective completion/quest completion) and `ForensicSystem` (availability/start/complete) with contextual metadata powering the new treatments.
+- Refreshed Jest coverage across `FxOverlay`, `QuestManager`, and `ForensicSystem` to lock in the cue emissions and renderer behaviour.
+
+### Session #143 Backlog Updates
+
+#### FX-237: Composite Cue Particle Bridge
+- Implemented `CompositeCueParticleBridge` to translate `fx:composite_cue` payloads into particle emitter descriptors with cooldowns, concurrency-aware intensity ramps, and standardized metadata.
+- Hooked the bridge into the `Game` lifecycle beside `FxCueCoordinator`, extended cue duration/limit tables, and added overlay mappings so new narrative cues flow through to particle consumers.
+- Added Jest coverage (`tests/game/fx/CompositeCueParticleBridge.test.js`) verifying mapping, cooldown enforcement, and lifecycle cleanup.
+
+#### FX-238: FxCue Performance Sampling
+- Authored `FxCueMetricsSampler` to capture coordinator throughput, maintain rolling averages/peaks, and emit warning payloads when the FX load approaches frame budget risk.
+- Registered the sampler inside `Game.update`, emitting `fx:metrics_sample`/`fx:metrics_warning` events for future HUD integration, and exercised the logic with dedicated Jest tests.
+
+#### FX-239: Narrative Overlay Secondary Cues
+- CaseFileUI now emits `fx:overlay_cue` events for overlay open/close and new evidence/clue/objective updates, aligning HUD beats with case progression (`src/game/ui/CaseFileUI.js`).
+- QuestLogUI broadcasts cues for visibility toggles, tab switches, and quest selection with FxOverlay support plus updated composite cue mappings to keep treatment consistent across HUD layers (`src/game/ui/QuestLogUI.js`, `src/game/ui/FxOverlay.js`).
+- Jest suites for both overlays confirm cue emission metadata to prevent regressions (`tests/game/ui/CaseFileUI.test.js`, `tests/game/ui/QuestLogUI.test.js`).
+
+### Session #142 Backlog Updates
+
+#### FX-236: Narrative FX Cue Coordination
+- `DialogueSystem` now emits `fx:overlay_cue` identifiers for dialogue start, choice, beat transitions, and completion so conversations surface HUD feedback with metadata shared to downstream consumers.
+- `CaseManager` broadcasts evidence/clue/objective/case completion cues (`caseEvidencePulse`, `caseCluePulse`, `caseObjectivePulse`, `caseSolvedBurst`), paired with updated Jest assertions to guarantee narrative milestones trigger FX.
+- Added `FxCueCoordinator` to gate `fx:overlay_cue` throughput, rebroadcast `fx:composite_cue` with concurrency metrics, and capped `FxOverlay` active effects while introducing dialogue/case renderers to prevent HUD overload.
+- Verification: `npm test -- --runTestsByPath tests/game/ui/FxOverlay.test.js tests/game/systems/DialogueSystem.test.js tests/game/managers/CaseManager.test.js tests/game/fx/FxCueCoordinator.test.js`.
+
+### Session #129 Backlog Updates
+
+#### Tutorial Onboarding UX
+- Closed backlog item “Unclear interaction during tutorial scene” by embedding control hints in `tutorialSteps` and rendering keycaps/notes through `TutorialOverlay` so onboarding explicitly calls out the relevant inputs.
+- Evidence prompts now auto-inject the interact keybinding and tutorial hotspots use brighter sprites, giving players visual confirmation of where the inputs apply.
+- World state telemetry and Jest coverage were refreshed to persist the new guidance metadata while keeping Store/overlay integrations aligned.
+
+### Session #130 Backlog Updates
+
+#### INPUT-310: Control Binding Store and Tutorial Sync
+- Introduced a centralized control binding store with subscribe/update/reset APIs so gameplay systems resolve input prompts from the active bindings instead of static constants.
+- Updated `InputState`, `TutorialSystem`, `tutorialSlice`, and evidence prompts to react to binding changes, emitting `tutorial:control_hint_updated` events for telemetry and UI refreshes.
+- Expanded Jest coverage across the new store, state slices, view model, and tutorial/evidence modules, plus added Playwright assertions verifying keycap rendering and hotspot brightness.
+- Next steps: surface a player-facing keybinding remap UI and broadcast binding updates to other overlays (interaction prompts, detective vision HUD, etc.).
+
+### Session #131 Backlog Updates
+
+#### QA-330: Stabilize Tutorial Overlay Playwright Bootstrap
+- Added a dedicated `tms:bootstrap-ready` event and data attributes in `src/main.js`, letting Playwright wait on a deterministic signal instead of timing out on `window.game`.
+- Hardened `waitForGameLoad` to check the new readiness markers, eliminating flaky tutorial overlay runs.
+- Verification: `npm test`, `npx playwright test tests/e2e/tutorial-overlay.spec.js`.
+
+#### INPUT-311: In-Game Keybinding Remap UI
+- Implemented `ControlBindingsOverlay`, a canvas modal that lists actions, handles remap/reset flows, and surfaces conflicts via the control binding store.
+- Wired the overlay into `Game` with a new `controlsMenu` action (`KeyK`), plus Jest coverage under `tests/game/ui/ControlBindingsOverlay.test.js` and extended E2E to exercise the remap flow.
+- Verification: `npm test`, `npx playwright test tests/e2e/tutorial-overlay.spec.js`.
+
+#### INPUT-312: Overlay Binding Sync Propagation
+- Refactored interaction prompt plumbing to hydrate key labels from the store; prompts now include `bindingAction` metadata and refresh when bindings change.
+- Subscribed forensic prompts and the InteractionPromptOverlay to binding updates so active HUD text and tutorial hints always reflect remapped keys.
+- Verification: `npm test`, `npx playwright test tests/e2e/tutorial-overlay.spec.js`.
+
+### Session #132 Backlog Updates
+
+#### INPUT-320: Control overlay navigation enhancements
+- Added list-mode cycling (category, alphabetical, conflicts-first) and page indicators to `ControlBindingsOverlay`, with keyboard shortcuts for view and pagination.
+- Detail panel now surfaces the active list mode/page, and footer hints document the new controls so players can quickly navigate large action catalogs.
+- Verification: `npm test`.
+
+#### UI-520: Case file & quest log binding cues
+- Case file and quest log overlays now render dynamic binding hints sourced from `controlBindingPrompts`, trimming content to avoid overflow while staying in sync with remapped keys.
+- Extended Jest coverage (`tests/game/ui/CaseFileUI.test.js`, `tests/game/ui/QuestLogUI.test.js`) to guard the binding lookups and ensure HUD copy updates alongside the store.
+- Verification: `npm test`.
+
+### Session #133 Backlog Updates
+
+#### UI-610: HUD binding hint parity pass
+- Inventory, reputation, and Save Inspector overlays now hydrate their header hints from `controlBindingPrompts`, preventing stale labels when players remap controls and trimming output to fit existing layouts.
+- Added focused Jest coverage (`tests/game/ui/InventoryOverlay.bindingHints.test.js`, `tests/game/ui/ReputationUI.test.js`, `tests/game/ui/SaveInspectorOverlay.test.js`) so parity guardrails stay in place.
+- Verification: `npm test` (full suite completed before harness timeout) and `npm test -- InventoryOverlay.bindingHints.test.js ReputationUI.test.js SaveInspectorOverlay.test.js`.
+
+#### UX-410: Overlay navigation shortcut feedback
+- Logged follow-up backlog item to run micro-playtests on the new ControlBindings overlay navigation patterns and capture qualitative feedback before extending further HUD polish.
+- Next steps: schedule focused sessions, prepare observation checklist, and roll findings into UI refinements.
+
+### Session #134 Backlog Updates
+
+#### UX-410: Overlay navigation shortcut feedback
+- ControlBindings overlay now emits navigation telemetry (`CONTROL_BINDINGS_NAV_EVENT`), with `ControlBindingsObservationLog` capturing qualitative signals and exposing summaries through `Game.exportControlBindingsObservationLog()`.
+- Authored `scripts/ux/exportControlBindingsObservations.js` plus Jest coverage to transform recorded logs into JSON/Markdown reports with heuristic recommendations for upcoming micro-playtests.
+- Next steps: run at least three targeted sessions using the new logger/exporter pipeline and document the qualitative findings for HUD follow-up.
+
+### Session #135 Backlog Updates
+
+#### UX-411 / UX-412 / UX-413: Control Bindings Observation Heuristics
+- SaveInspector overlay now renders control bindings session summaries (dwell stats, blocked ratios, last selection context) sourced from `ControlBindingsObservationLog` and Inspector summaries.
+- ControlBindings observation log records dwell durations and blocked navigation ratios; SaveManager/exporter payloads expose the new fields so tooling can analyse hesitation hotspots.
+- `scripts/ux/exportControlBindingsObservations.js` outputs navigation heuristics tables and enhanced recommendations, and Jest coverage spans the log, SaveManager, overlay, exporter, and CLI to guard the workflow.
 
 ### Session #124 Backlog Updates
 
@@ -898,6 +1109,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 
 #### M1-001: Project Infrastructure Setup
 - **Priority**: P0
+- **Status**: Completed (Infrastructure operational; Vite/Jest/ESLint pipeline established)
 - **Tags**: `engine`, `test`, `docs`
 - **Effort**: 2 hours
 - **Dependencies**: None
@@ -948,6 +1160,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 
 #### M1-003: ComponentRegistry Implementation
 - **Priority**: P0
+- **Status**: Completed (Component registry + tests landed; see Sessions 119+)
 - **Tags**: `engine`, `ecs`
 - **Effort**: 6 hours
 - **Dependencies**: M1-002
@@ -1175,6 +1388,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 
 #### M1-013: Collision Detection Algorithms
 - **Priority**: P0
+- **Status**: Completed (Collision detectors + regression suite in place)
 - **Tags**: `engine`, `physics`
 - **Effort**: 4 hours
 - **Dependencies**: M1-012
@@ -1197,6 +1411,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 
 #### M1-014: CollisionSystem Implementation
 - **Priority**: P1
+- **Status**: Completed (Spatial hash + collision event system active)
 - **Tags**: `engine`, `physics`, `ecs`
 - **Effort**: 6 hours
 - **Dependencies**: M1-004, M1-012, M1-013
@@ -1502,6 +1717,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Tags**: `gameplay`, `investigation`, `ecs`
 - **Effort**: 4 hours
 - **Dependencies**: M1-004
+- **Status**: Todo — resume once M3-013 save-state parity lands and investigation resourcing is scheduled
 - **Description**: Core investigation mechanics
 - **Files**:
   - `src/game/components/Investigation.js`
@@ -1527,9 +1743,11 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Dependencies**: M2-001, M1-011
 - **Description**: Special vision mode highlighting evidence
 - **Files**:
-  - `src/game/abilities/DetectiveVision.js`
-  - `src/game/systems/DetectiveVisionSystem.js`
-  - Visual overlay rendering
+  - `src/game/systems/InvestigationSystem.js`
+  - `src/game/ui/DetectiveVisionOverlay.js`
+  - `src/game/Game.js`
+  - `tests/game/systems/InvestigationSystem.test.js`
+  - `tests/game/ui/DetectiveVisionOverlay.test.js`
 - **Implementation Requirements**:
   - Toggle ability on/off
   - Visual highlighting of evidence entities
@@ -1541,6 +1759,9 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Visual effects clear and performant
   - Energy drain balanced
   - No performance degradation
+- **Status**: ✅ Completed – Session #139 captured performance telemetry and aligned detective vision audio/FX cues with the HUD overlay.
+
+_Progress 2025-11-09 (Session #139 audio/perf polish): Augmented performanceSnapshot telemetry to track detective vision update/render costs (<0.03 ms combined), executed and archived a fresh telemetry run, emitted FX overlay cues, and wired AudioFeedbackController activation/deactivation/insufficient-resource SFX with loop management and Jest coverage, closing the outstanding polish tasks._
 
 #### M2-003: Evidence Entity Factory
 - **Priority**: P1
@@ -1923,6 +2144,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Tags**: `gameplay`, `faction`, `narrative`
 - **Effort**: 4 hours
 - **Dependencies**: Narrative team (faction lore)
+- **Status**: Todo — pending narrative briefs and faction progression scheduling
 - **Description**: Define 5 faction data structures
 - **Files**:
   - `src/game/data/factions/neurosynch.js`
@@ -2074,6 +2296,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Tags**: `gameplay`, `faction`, `ecs`
 - **Effort**: 6 hours
 - **Dependencies**: M3-005
+- **Status**: Todo — waiting on scheduling after investigation/faction resourcing reshuffle
 - **Description**: Disguise mechanics
 - **Files**:
   - `src/game/systems/DisguiseSystem.js`
@@ -2176,6 +2399,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 
 #### M3-013: WorldStateManager Implementation
 - **Priority**: P0
+- **Status**: In Progress (NPC and district slices shipped; SaveManager parity tests outstanding)
 - **Tags**: `gameplay`, `faction`
 - **Effort**: 5 hours
 - **Dependencies**: M3-012
@@ -2470,7 +2694,7 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Detective coat, distinctive look
   - 4-direction or 8-direction movement
 - **File**: `assets/images/requests.json`
-- **Status**: Prompt brief packaged via `art:package-generation-prompts` (see `assets/images/generation-payloads/ar-001-005.json`); awaiting sprite generation + review.
+- **Status**: In Progress — prompt brief packaged via `art:package-generation-prompts`; awaiting RenderOps window to review generated sprite batch alongside bespoke art.
 
 ### High Priority Assets (P1 - Required for M3-M6)
 
@@ -2669,6 +2893,56 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
 - [ ] World state persists correctly
 - [ ] 60 FPS maintained
 
+### Session #144 Backlog Updates
+
+#### FX-240: Particle Emitter Runtime Integration
+- Authored `ParticleEmitterRuntime` to translate `fx:particle_emit` descriptors into pooled particle emitters and expose update/render hooks wired through the `Game` lifecycle.
+- Registered the runtime alongside `FxCueCoordinator` and `CompositeCueParticleBridge`, ensuring per-frame updates and canvas render passes integrate cleanly with existing HUD overlays.
+- Added Jest coverage in `tests/game/fx/ParticleEmitterRuntime.test.js` to verify descriptor handling, pooling reuse, and rendering guards.
+
+#### DEBUG-275: FX Metrics HUD Panel
+- Extended `index.html` with an FX metrics panel and warning banner, styling the grid for throughput/active/queued/peaks readouts.
+- Subscribed the developer HUD (`src/main.js`) to `fx:metrics_sample` / `fx:metrics_warning`, maintaining paused/live samples and highlighting warnings without breaking existing overlay behaviour.
+
+#### FX-241: Dialogue & Inventory Overlay Cues
+- Emitted `fx:overlay_cue` events from `DialogueBox` and `InventoryOverlay` for reveal/dismiss/item-focus transitions with guardrails against repeated emissions.
+- Updated `FxCueCoordinator`, `FxOverlay`, `CompositeCueParticleBridge`, and `ParticleEmitterRuntime` to recognise the new cue identifiers, including duration tables, per-effect limits, presets, and render treatments.
+- Added Jest coverage across dialogue, inventory, and bridge suites to lock in the new cue emissions and particle preset mappings.
+
+### Session #145 Backlog Updates
+
+#### FX-240: Particle Emitter Runtime Integration
+- Tuned emitter limits and spawn allocation to throttle high-intensity bursts, preventing global particle saturation without dropping frames (`src/game/fx/ParticleEmitterRuntime.js`).
+- Added targeted stress coverage to verify throttling behaviour and budget enforcement in `tests/game/fx/ParticleEmitterRuntime.test.js`.
+
+#### DEBUG-275: FX Metrics HUD Panel
+- Refined the FX metrics grid for responsive layouts and added Playwright coverage to validate live sample rendering, warning banners, and focus safety (`index.html`, `tests/e2e/debug-overlay-fx-metrics.spec.js`).
+
+#### FX-239: Narrative Overlay Secondary Cues
+- Extended cue emission to `SaveInspectorOverlay` and `ControlBindingsOverlay`, wiring new identifiers through the coordinator/bridge stack with supporting Jest coverage (`src/game/ui/SaveInspectorOverlay.js`, `src/game/ui/ControlBindingsOverlay.js`).
+
+### Session #146 Backlog Updates
+
+#### FX-242: Tutorial Overlay FX cues
+- TutorialOverlay now emits `fx:overlay_cue` payloads on reveal/dismiss and step transitions with duplicate guarding, ensuring onboarding beats feed the shared FX pipeline (`src/game/ui/TutorialOverlay.js`).
+- FxCueCoordinator, FxOverlay, and CompositeCueParticleBridge recognise the new tutorial identifiers with tuned durations, per-effect limits, and particle presets (`src/game/fx/FxCueCoordinator.js`, `src/game/ui/FxOverlay.js`, `src/game/fx/CompositeCueParticleBridge.js`).
+- Jest coverage spans TutorialOverlay, FxCueCoordinator, FxOverlay, and composite bridge suites to lock in the tutorial cue contract (`tests/game/ui/TutorialOverlay.test.js`, `tests/game/fx/FxCueCoordinator.test.js`, `tests/game/ui/FxOverlay.test.js`, `tests/game/fx/CompositeCueParticleBridge.test.js`).
+
+#### QA-331: Stabilize FX metrics Playwright scenario
+- Added `emitSyntheticSample` / `emitSyntheticWarning` helpers to `FxCueMetricsSampler` for deterministic automation hooks without mutating rolling averages (`src/game/fx/FxCueMetricsSampler.js`).
+- Refactored the FX metrics Playwright spec to drive HUD updates via the new sampler helpers, eliminating ad-hoc event bus emissions and reducing flake risk (`tests/e2e/debug-overlay-fx-metrics.spec.js`).
+- Expanded sampler unit tests to exercise the synthetic helpers and documented verification via `npm test` and `npx playwright test tests/e2e/debug-overlay-fx-metrics.spec.js` (`tests/game/fx/FxCueMetricsSampler.test.js`).
+
+
+### Session #147 Backlog Updates
+
+#### FX-243: Disguise & Prompt Overlay FX Hooks
+- DisguiseUI now emits FX cues for overlay reveal/dismiss, selection focus, and equip/unequip transitions with contextual metadata routed through the event bus (`src/game/ui/DisguiseUI.js`, `tests/game/ui/DisguiseUI.fx.test.js`).
+- InteractionPromptOverlay emits FX cues on reveal, text updates, and dismiss flows while signature tracking prevents duplicate pulses (`src/game/ui/InteractionPromptOverlay.js`, `tests/game/ui/InteractionPromptOverlay.fx.test.js`).
+- MovementIndicatorOverlay fires throttled movement pulses carrying direction and speed context into the FX pipeline, preventing spam during sustained motion (`src/game/ui/MovementIndicatorOverlay.js`, `tests/game/ui/MovementIndicatorOverlay.fx.test.js`).
+- FxCueCoordinator durations/limits, FxOverlay render mappings, and CompositeCueParticleBridge presets now include the new cue identifiers so downstream visuals stay aligned (`src/game/fx/FxCueCoordinator.js`, `src/game/ui/FxOverlay.js`, `src/game/fx/CompositeCueParticleBridge.js`, `tests/game/fx/FxCueCoordinator.test.js`, `tests/game/ui/FxOverlay.test.js`, `tests/game/fx/CompositeCueParticleBridge.test.js`).
+- Full Jest suite executed (`npm test`) confirming the new FX cue coverage paths hold alongside existing regression suites.
+
 ---
 
 ## Closing Notes
@@ -2685,7 +2959,7 @@ The goal is a compelling vertical slice demonstrating The Memory Syndicate's uni
 
 **Protected scope**: Investigation mechanics, faction system, Act 1 story, procedural generation. Everything else is negotiable if timeline pressures arise.
 
-**Next immediate action**: Begin M1-001 (Project Infrastructure Setup).
+**Next immediate action**: Focus on M3-013 SaveManager parity tests and hook DistrictTravelOverlay into traversal blockers.
 
 ---
 

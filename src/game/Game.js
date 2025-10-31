@@ -48,12 +48,21 @@ import { CaseFileUI } from './ui/CaseFileUI.js';
 import { DeductionBoard } from './ui/DeductionBoard.js';
 import { CrossroadsBranchLandingOverlay } from './ui/CrossroadsBranchLandingOverlay.js';
 import { InventoryOverlay } from './ui/InventoryOverlay.js';
+import { DetectiveVisionOverlay } from './ui/DetectiveVisionOverlay.js';
+import { ControlBindingsOverlay, CONTROL_BINDINGS_NAV_EVENT } from './ui/ControlBindingsOverlay.js';
+import { DistrictTravelOverlay } from './ui/DistrictTravelOverlay.js';
+import { FxOverlay } from './ui/FxOverlay.js';
+import { FxCueCoordinator } from './fx/FxCueCoordinator.js';
+import { CompositeCueParticleBridge } from './fx/CompositeCueParticleBridge.js';
+import { FxCueMetricsSampler } from './fx/FxCueMetricsSampler.js';
+import { ParticleEmitterRuntime } from './fx/ParticleEmitterRuntime.js';
 import { AudioFeedbackController } from './audio/AudioFeedbackController.js';
 import { SFXCatalogLoader } from './audio/SFXCatalogLoader.js';
 import { AdaptiveMoodEmitter } from './audio/AdaptiveMoodEmitter.js';
 import { SuspicionMoodMapper } from './audio/SuspicionMoodMapper.js';
 import { GameplayAdaptiveAudioBridge } from './audio/GameplayAdaptiveAudioBridge.js';
 import { SaveInspectorOverlay } from './ui/SaveInspectorOverlay.js';
+import { SaveLoadOverlay } from './ui/SaveLoadOverlay.js';
 import { CrossroadsPromptController } from './narrative/CrossroadsPromptController.js';
 import { CrossroadsBranchTransitionController } from './narrative/CrossroadsBranchTransitionController.js';
 import { NavigationMeshService } from './navigation/NavigationMeshService.js';
@@ -65,6 +74,7 @@ import { StoryFlagManager } from './managers/StoryFlagManager.js';
 import { CaseManager } from './managers/CaseManager.js';
 import { SaveManager } from './managers/SaveManager.js';
 import { QuestTriggerTelemetryBridge } from './telemetry/QuestTriggerTelemetryBridge.js';
+import { ControlBindingsObservationLog } from './telemetry/ControlBindingsObservationLog.js';
 
 // Quest data
 import { registerAct1Quests } from './data/quests/act1Quests.js';
@@ -94,6 +104,8 @@ import { loadAct2PersonalInvestigationScene } from './scenes/Act2PersonalInvesti
 // Configuration
 import { GameConfig } from './config/GameConfig.js';
 import { InputState } from './config/Controls.js';
+import { subscribe as subscribeControlBindings } from './state/controlBindingsStore.js';
+import { formatActionPrompt } from './utils/controlBindingPrompts.js';
 
 // Components
 import { Transform } from './components/Transform.js';
@@ -168,6 +180,7 @@ export class Game {
     this.adaptiveMoodEmitter = null;
     this.gameplayAdaptiveAudioBridge = null;
     this.questTriggerTelemetryBridge = null;
+    this.controlBindingsObservationLog = new ControlBindingsObservationLog();
 
     // Game state
     this.inputState = new InputState(engine.eventBus);
@@ -215,11 +228,20 @@ export class Game {
     this.questNotification = null;
     this.crossroadsBranchOverlay = null;
     this.inventoryOverlay = null;
+    this.detectiveVisionOverlay = null;
+    this.controlBindingsOverlay = null;
     this.interactionPromptOverlay = null;
+    this.fxOverlay = null;
+    this.particleEmitterRuntime = null;
+    this.fxCueCoordinator = null;
+    this.compositeCueParticleBridge = null;
+    this.fxCueMetricsSampler = null;
     this.movementIndicatorOverlay = null;
+    this.districtTravelOverlay = null;
     this.caseFileUI = null;
     this.deductionBoard = null;
     this.audioFeedback = null;
+    this.saveLoadOverlay = null;
     this.saveInspectorOverlay = null;
     this.crossroadsPromptController = null;
     this.crossroadsBranchTransitionController = null;
@@ -240,6 +262,7 @@ export class Game {
 
     // Event unsubscriber storage
     this._offGameEventHandlers = [];
+    this._unsubscribeControlBindings = null;
 
     // Engine frame hook cleanup
     this._detachFrameHooks = null;
@@ -293,6 +316,14 @@ export class Game {
 
     // Load initial scene (Act 1: The Hollow Case)
     await this.loadAct1Scene();
+
+    if (!this._unsubscribeControlBindings) {
+      this._unsubscribeControlBindings = subscribeControlBindings(() => {
+        if (this._activeForensicPrompt) {
+          this._renderActiveForensicPrompt();
+        }
+      });
+    }
 
     this.loaded = true;
 
@@ -369,6 +400,7 @@ export class Game {
       tutorialSystem: null, // Will be set after tutorial system is created
       worldStateStore: this.worldStateStore,
       tutorialTranscriptRecorder: this.tutorialTranscriptRecorder,
+      controlBindingsObservationProvider: () => this.getControlBindingsObservationSummary(),
     });
     this.saveManager.init();
     console.log('[Game] SaveManager initialized');
@@ -876,6 +908,32 @@ export class Game {
     );
     this.inventoryOverlay.init();
 
+    this.districtTravelOverlay = new DistrictTravelOverlay(
+      this.engine.canvas,
+      this.eventBus,
+      {
+        store: this.worldStateStore,
+      }
+    );
+    this.districtTravelOverlay.init();
+
+    // Create control bindings overlay
+    this.controlBindingsOverlay = new ControlBindingsOverlay(
+      this.engine.canvas,
+      this.eventBus,
+      {}
+    );
+    this.controlBindingsOverlay.init();
+
+    this.saveLoadOverlay = new SaveLoadOverlay(
+      this.engine.canvas,
+      this.eventBus,
+      {
+        saveManager: this.saveManager,
+      }
+    );
+    this.saveLoadOverlay.init();
+
     // Create interaction prompt overlay (HUD)
     this.interactionPromptOverlay = new InteractionPromptOverlay(
       this.engine.canvas,
@@ -892,6 +950,78 @@ export class Game {
       this.camera
     );
     this.movementIndicatorOverlay.init();
+
+    this.detectiveVisionOverlay = new DetectiveVisionOverlay(
+      this.engine.canvas,
+      this.eventBus,
+      this.camera,
+      this.componentRegistry,
+      {
+        highlightRefreshInterval: 0.35
+      }
+    );
+    this.detectiveVisionOverlay.init();
+
+    this.fxOverlay = new FxOverlay(
+      this.engine.canvas,
+      this.eventBus,
+      {}
+    );
+    this.fxOverlay.init();
+
+    if (this.fxCueCoordinator) {
+      this.fxCueCoordinator.detach();
+    }
+    this.fxCueCoordinator = new FxCueCoordinator(this.eventBus, {
+      maxConcurrentGlobal: 6,
+      perEffectLimit: {
+        default: 3,
+        dialogueStartPulse: 1,
+        dialogueCompleteBurst: 1,
+        caseSolvedBurst: 1,
+        dialogueOverlayReveal: 1,
+        inventoryOverlayReveal: 1,
+        inventoryOverlayDismiss: 1,
+      },
+    });
+    this.fxCueCoordinator.attach();
+
+    if (this.compositeCueParticleBridge) {
+      this.compositeCueParticleBridge.detach();
+    }
+    this.compositeCueParticleBridge = new CompositeCueParticleBridge(this.eventBus, {
+      getNow: () => this.engine?.clock?.now?.() ?? Date.now(),
+    });
+    this.compositeCueParticleBridge.attach();
+
+    if (this.particleEmitterRuntime) {
+      this.particleEmitterRuntime.detach();
+    }
+    this.particleEmitterRuntime = new ParticleEmitterRuntime(
+      this.engine.canvas,
+      this.eventBus,
+      {
+        maxEmitters: 20,
+        maxParticlesPerEmitter: 42,
+        globalMaxParticles: 420,
+      }
+    );
+    this.particleEmitterRuntime.attach();
+
+    if (this.fxCueMetricsSampler) {
+      this.fxCueMetricsSampler.stop();
+    }
+    this.fxCueMetricsSampler = new FxCueMetricsSampler(this.fxCueCoordinator, this.eventBus, {
+      getNow: () => {
+        if (this.engine?.clock && typeof this.engine.clock.getElapsedSeconds === 'function') {
+          return this.engine.clock.getElapsedSeconds();
+        }
+        return (typeof performance !== 'undefined' && performance.now)
+          ? performance.now() / 1000
+          : Date.now() / 1000;
+      },
+    });
+    this.fxCueMetricsSampler.start();
 
     // Create SaveManager inspector overlay (bottom-right)
     this.saveInspectorOverlay = new SaveInspectorOverlay(
@@ -1079,6 +1209,9 @@ export class Game {
     );
 
     this.playerEntityId = sceneData.playerId;
+    if (this.districtTravelOverlay && typeof this.districtTravelOverlay.setPlayerEntityId === 'function') {
+      this.districtTravelOverlay.setPlayerEntityId(this.playerEntityId);
+    }
     this.activeScene = {
       id: sceneData.sceneName || 'act1_hollow_case',
       entities: Array.isArray(sceneData.sceneEntities) ? [...sceneData.sceneEntities] : [],
@@ -1585,6 +1718,12 @@ export class Game {
       this._offGameEventHandlers.length = 0;
     }
 
+    if (this.controlBindingsObservationLog) {
+      this.controlBindingsObservationLog.reset();
+    } else {
+      this.controlBindingsObservationLog = new ControlBindingsObservationLog();
+    }
+
     const overlayLabels = {
       dialogue: 'Dialogue Box',
       disguise: 'Disguise UI',
@@ -1595,6 +1734,7 @@ export class Game {
       reputation: 'Reputation UI',
       tutorial: 'Tutorial Overlay',
       saveInspector: 'Save Inspector',
+      controlBindings: 'Control Bindings Overlay',
     };
 
     this._offGameEventHandlers.push(this.eventBus.on('ui:overlay_visibility_changed', (data) => {
@@ -1621,12 +1761,30 @@ export class Game {
       console.log(`[UI] Overlay ${stateLabel}: ${label}${suffix}`);
     }));
 
+    this._offGameEventHandlers.push(this.eventBus.on(CONTROL_BINDINGS_NAV_EVENT, (payload) => {
+      if (this.controlBindingsObservationLog) {
+        this.controlBindingsObservationLog.record(payload);
+      }
+    }));
+
     this._offGameEventHandlers.push(this.eventBus.on('input:caseFile:pressed', () => {
       if (!this.caseFileUI) {
         return;
       }
       this._loadActiveCaseIntoUI();
       this.caseFileUI.toggle('input:caseFile');
+    }));
+
+    this._offGameEventHandlers.push(this.eventBus.on('input:controlsMenu:pressed', () => {
+      if (this.controlBindingsOverlay) {
+        this.controlBindingsOverlay.toggle('input:controlsMenu');
+      }
+    }));
+
+    this._offGameEventHandlers.push(this.eventBus.on('input:detectiveVision:pressed', () => {
+      if (this.gameSystems?.investigation) {
+        this.gameSystems.investigation.toggleDetectiveVision();
+      }
     }));
 
     // Evidence events
@@ -1992,10 +2150,12 @@ export class Game {
       return;
     }
 
-    const text = this._buildForensicPromptText(this._activeForensicPrompt);
+    const promptInfo = this._buildForensicPromptText(this._activeForensicPrompt);
     const promptPayload = {
-      text,
-      source: 'forensic_prompt'
+      text: promptInfo.text,
+      source: 'forensic_prompt',
+      bindingAction: 'forensicAnalysis',
+      bindingFallback: promptInfo.fallbackActionText,
     };
 
     const worldPosition = this._getEvidenceWorldPosition(this._activeForensicPrompt.evidenceId);
@@ -2022,8 +2182,9 @@ export class Game {
       }
     }
 
+    const fallbackActionText = `run forensic analysis${forensicLabel}: ${evidenceTitle}`;
     const lines = [
-      `Press F to run forensic analysis${forensicLabel}: ${evidenceTitle}`
+      formatActionPrompt('forensicAnalysis', fallbackActionText)
     ];
 
     if (requirementText) {
@@ -2037,7 +2198,10 @@ export class Game {
       }
     }
 
-    return lines.join('\n');
+    return {
+      text: lines.join('\n'),
+      fallbackActionText,
+    };
   }
 
   _formatForensicRequirements(requirements) {
@@ -2358,14 +2522,38 @@ export class Game {
     if (this.inventoryOverlay) {
       this.inventoryOverlay.update(deltaTime);
     }
+    if (this.controlBindingsOverlay) {
+      this.controlBindingsOverlay.update(deltaTime);
+    }
     if (this.dialogueBox) {
       this.dialogueBox.update(deltaTime * 1000);
     }
     if (this.movementIndicatorOverlay) {
       this.movementIndicatorOverlay.update(deltaTime);
     }
+    if (this.districtTravelOverlay) {
+      this.districtTravelOverlay.update(deltaTime);
+    }
+    if (this.detectiveVisionOverlay) {
+      this.detectiveVisionOverlay.update(deltaTime);
+    }
+    if (this.fxCueCoordinator) {
+      this.fxCueCoordinator.update(deltaTime);
+    }
+    if (this.fxCueMetricsSampler) {
+      this.fxCueMetricsSampler.update(deltaTime);
+    }
+    if (this.particleEmitterRuntime) {
+      this.particleEmitterRuntime.update(deltaTime);
+    }
+    if (this.fxOverlay) {
+      this.fxOverlay.update(deltaTime);
+    }
     if (this.interactionPromptOverlay) {
       this.interactionPromptOverlay.update(deltaTime);
+    }
+    if (this.saveLoadOverlay) {
+      this.saveLoadOverlay.update(deltaTime);
     }
     if (this.saveInspectorOverlay) {
       this.saveInspectorOverlay.update(deltaTime);
@@ -2393,6 +2581,14 @@ export class Game {
 
     if (this.inventoryOverlay && this.inputState.wasJustPressed('inventory')) {
       this.inventoryOverlay.toggle('input:inventory');
+    }
+
+    if (this.districtTravelOverlay && this.inputState.wasJustPressed('travel')) {
+      this.districtTravelOverlay.toggle('input:travel');
+    }
+
+    if (this.saveLoadOverlay && this.inputState.wasJustPressed('saveLoad')) {
+      this.saveLoadOverlay.toggle('input:saveLoad');
     }
 
     if (this.saveInspectorOverlay && this.inputState.wasJustPressed('saveInspector')) {
@@ -2579,6 +2775,40 @@ export class Game {
       });
     }
 
+    if (this.districtTravelOverlay) {
+      const selected = typeof this.districtTravelOverlay.getSelectedEntry === 'function'
+        ? this.districtTravelOverlay.getSelectedEntry()
+        : null;
+      const statusKey = selected?.status?.status ?? 'locked';
+      const statusLabel = (() => {
+        switch (statusKey) {
+          case 'accessible':
+            return 'access granted';
+          case 'restricted':
+            return 'restricted';
+          case 'gated':
+            return 'requirements pending';
+          case 'locked':
+          default:
+            return 'access locked';
+        }
+      })();
+      overlays.push({
+        id: 'districtTravel',
+        label: 'District Travel',
+        visible: Boolean(this.districtTravelOverlay.visible),
+        summary: selected
+          ? `${selected.name} · ${statusLabel}`
+          : `${Array.isArray(this.districtTravelOverlay.entries) ? this.districtTravelOverlay.entries.length : 0} districts`,
+        metadata: {
+          selectedDistrictId: selected?.districtId ?? null,
+          trackedDistricts: Array.isArray(this.districtTravelOverlay.entries)
+            ? this.districtTravelOverlay.entries.length
+            : 0,
+        },
+      });
+    }
+
     if (this.interactionPromptOverlay) {
       overlays.push({
         id: 'interactionPrompt',
@@ -2586,6 +2816,30 @@ export class Game {
         visible: Boolean(this.interactionPromptOverlay.visible),
         summary: truncate(this.interactionPromptOverlay.prompt?.text, 60) || 'idle',
         metadata: {},
+      });
+    }
+
+    if (this.detectiveVisionOverlay) {
+      const status = typeof this.detectiveVisionOverlay.getStatus === 'function'
+        ? this.detectiveVisionOverlay.getStatus()
+        : null;
+      overlays.push({
+        id: 'detectiveVision',
+        label: 'Detective Vision',
+        visible: Boolean(status?.active),
+        summary: status
+          ? `energy=${Math.round((status.energyPercent ?? 0) * 100)}% cooldown=${Math.round((status.cooldownPercent ?? 0) * 100)}%`
+          : 'inactive',
+        metadata: status
+          ? {
+              active: status.active,
+              energy: status.energy,
+              energyMax: status.energyMax,
+              cooldown: status.cooldown,
+              cooldownMax: status.cooldownMax,
+              canActivate: status.canActivate,
+            }
+          : {},
       });
     }
 
@@ -2639,7 +2893,68 @@ export class Game {
       });
     }
 
+    if (this.controlBindingsOverlay) {
+      const visible = typeof this.controlBindingsOverlay.isVisible === 'function'
+        ? this.controlBindingsOverlay.isVisible()
+        : Boolean(this.controlBindingsOverlay.visible);
+      overlays.push({
+        id: 'controlBindings',
+        label: 'Control Bindings',
+        visible,
+        summary: visible
+          ? (this.controlBindingsOverlay.captureAction ? 'remapping input' : 'open')
+          : 'closed',
+        metadata: {
+          capturing: Boolean(this.controlBindingsOverlay.capturing),
+        },
+      });
+    }
+
     return overlays;
+  }
+
+  /**
+   * Retrieve a summary of recorded control bindings overlay observations.
+   * @returns {Object|null}
+   */
+  getControlBindingsObservationSummary() {
+    return this.controlBindingsObservationLog
+      ? this.controlBindingsObservationLog.getSummary()
+      : null;
+  }
+
+  /**
+   * Retrieve recorded control bindings overlay events.
+   * @returns {Array<Object>}
+   */
+  getControlBindingsObservationEvents() {
+    return this.controlBindingsObservationLog
+      ? this.controlBindingsObservationLog.getEvents()
+      : [];
+  }
+
+  /**
+   * Export control bindings overlay observation log for external tooling.
+   * @returns {Object}
+   */
+  exportControlBindingsObservationLog() {
+    return this.controlBindingsObservationLog
+      ? this.controlBindingsObservationLog.toSerializable()
+      : {
+          version: 1,
+          generatedAt: new Date().toISOString(),
+          summary: null,
+          events: [],
+        };
+  }
+
+  /**
+   * Reset recorded control bindings overlay observations.
+   */
+  resetControlBindingsObservationLog() {
+    if (this.controlBindingsObservationLog) {
+      this.controlBindingsObservationLog.reset();
+    }
   }
 
   _updateAdaptiveMusic(deltaTime = 0) {
@@ -2957,6 +3272,16 @@ export class Game {
   renderOverlays(ctx) {
     if (!this.loaded) return;
 
+    if (this.detectiveVisionOverlay) {
+      this.detectiveVisionOverlay.render(ctx);
+    }
+    if (this.particleEmitterRuntime) {
+      this.particleEmitterRuntime.render(ctx);
+    }
+    if (this.fxOverlay) {
+      this.fxOverlay.render(ctx);
+    }
+
     // Render reputation UI
     if (this.reputationUI) {
       this.reputationUI.render(ctx);
@@ -2982,6 +3307,10 @@ export class Game {
 
     if (this.inventoryOverlay) {
       this.inventoryOverlay.render(ctx);
+    }
+
+    if (this.districtTravelOverlay) {
+      this.districtTravelOverlay.render(ctx);
     }
 
     // Render quest log UI (on top if visible)
@@ -3014,9 +3343,18 @@ export class Game {
       this.saveInspectorOverlay.render();
     }
 
-    // Render tutorial overlay (kept highest priority)
+    if (this.saveLoadOverlay) {
+      this.saveLoadOverlay.render();
+    }
+
+    // Render tutorial overlay (kept highest priority for in-world guidance)
     if (this.tutorialOverlay) {
       this.tutorialOverlay.render(ctx);
+    }
+
+    // Modal control bindings overlay renders last to sit above other HUD layers
+    if (this.controlBindingsOverlay) {
+      this.controlBindingsOverlay.render(ctx);
     }
   }
 
@@ -3044,6 +3382,11 @@ export class Game {
     if (typeof this._detachFrameHooks === 'function') {
       this._detachFrameHooks();
       this._detachFrameHooks = null;
+    }
+
+    if (typeof this._unsubscribeControlBindings === 'function') {
+      this._unsubscribeControlBindings();
+      this._unsubscribeControlBindings = null;
     }
 
     this._clearForensicPromptState({ hidePrompt: true });
@@ -3076,17 +3419,48 @@ export class Game {
     if (this.inventoryOverlay && this.inventoryOverlay.cleanup) {
       this.inventoryOverlay.cleanup();
     }
+    if (this.districtTravelOverlay && this.districtTravelOverlay.cleanup) {
+      this.districtTravelOverlay.cleanup();
+    }
+    if (this.controlBindingsOverlay && this.controlBindingsOverlay.cleanup) {
+      this.controlBindingsOverlay.cleanup();
+    }
     if (this.interactionPromptOverlay && this.interactionPromptOverlay.cleanup) {
       this.interactionPromptOverlay.cleanup();
     }
     if (this.movementIndicatorOverlay && this.movementIndicatorOverlay.cleanup) {
       this.movementIndicatorOverlay.cleanup();
     }
+    if (this.detectiveVisionOverlay && this.detectiveVisionOverlay.cleanup) {
+      this.detectiveVisionOverlay.cleanup();
+    }
+    if (this.fxOverlay && this.fxOverlay.cleanup) {
+      this.fxOverlay.cleanup();
+    }
+    if (this.fxCueCoordinator) {
+      this.fxCueCoordinator.detach();
+      this.fxCueCoordinator = null;
+    }
+    if (this.compositeCueParticleBridge) {
+      this.compositeCueParticleBridge.detach();
+      this.compositeCueParticleBridge = null;
+    }
+    if (this.particleEmitterRuntime) {
+      this.particleEmitterRuntime.detach();
+      this.particleEmitterRuntime = null;
+    }
+    if (this.fxCueMetricsSampler) {
+      this.fxCueMetricsSampler.stop();
+      this.fxCueMetricsSampler = null;
+    }
     if (this.questNotification && this.questNotification.cleanup) {
       this.questNotification.cleanup();
     }
     if (this.crossroadsBranchOverlay && this.crossroadsBranchOverlay.cleanup) {
       this.crossroadsBranchOverlay.cleanup();
+    }
+    if (this.saveLoadOverlay && this.saveLoadOverlay.cleanup) {
+      this.saveLoadOverlay.cleanup();
     }
     if (this.saveInspectorOverlay && this.saveInspectorOverlay.cleanup) {
       this.saveInspectorOverlay.cleanup();

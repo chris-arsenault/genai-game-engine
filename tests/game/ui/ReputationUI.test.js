@@ -8,6 +8,24 @@ import { ReputationUI } from '../../../src/game/ui/ReputationUI.js';
 import { EventBus } from '../../../src/engine/events/EventBus.js';
 import { factionSlice } from '../../../src/game/state/slices/factionSlice.js';
 
+jest.mock('../../../src/game/utils/controlBindingPrompts.js', () => ({
+  getBindingLabels: jest.fn((action, options = {}) => {
+    switch (action) {
+      case 'faction':
+        return ['R'];
+      case 'caseFile':
+        return ['Tab'];
+      case 'inventory':
+        return ['I'];
+      default:
+        if (options.fallbackLabel) {
+          return [options.fallbackLabel];
+        }
+        return [];
+    }
+  }),
+}));
+
 describe('ReputationUI', () => {
   let reputationUI;
   let eventBus;
@@ -190,6 +208,20 @@ describe('ReputationUI', () => {
       reputationUI.updateStandings(standings);
 
       expect(reputationUI.standings).toEqual(standings);
+    });
+
+    test('renders binding hints using remapped labels', () => {
+      reputationUI.visible = true;
+      reputationUI.render(mockContext);
+
+      const hintCall = mockContext.fillText.mock.calls.find(
+        (call) => typeof call[0] === 'string' && call[0].includes('Close:')
+      );
+
+      expect(hintCall).toBeDefined();
+      expect(hintCall[0]).toContain('Close: R');
+      expect(hintCall[0]).toContain('Case File: Tab');
+      expect(hintCall[0]).toContain('Inventory: I');
     });
 
     test('should calculate max scroll for many factions', () => {

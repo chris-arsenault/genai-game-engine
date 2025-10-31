@@ -8,6 +8,7 @@
  */
 import { emitOverlayVisibility } from './helpers/overlayEvents.js';
 import { buildQuestListByStatus, buildQuestViewModel, summarizeQuestProgress } from './helpers/questViewModel.js';
+import { getBindingLabels } from '../utils/controlBindingPrompts.js';
 
 function humanizeIdentifier(value) {
   if (!value) {
@@ -96,6 +97,23 @@ export class QuestLogUI {
    */
   init() {
     console.log('[QuestLogUI] Initialized');
+  }
+
+  _emitFxCue(effectId, context = {}) {
+    if (!effectId || !this.eventBus || typeof this.eventBus.emit !== 'function') {
+      return;
+    }
+
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId,
+      source: 'QuestLogUI',
+      origin: 'questLogOverlay',
+      context: {
+        overlay: 'questLog',
+        tab: this.selectedTab,
+        ...context,
+      },
+    });
   }
 
   /**
@@ -226,6 +244,12 @@ export class QuestLogUI {
     emitOverlayVisibility(this.eventBus, 'questLog', this.visible, { source });
 
     if (this.visible) {
+      this._emitFxCue('questLogOverlayReveal', { source, tab: this.selectedTab });
+    } else {
+      this._emitFxCue('questLogOverlayDismiss', { source });
+    }
+
+    if (this.visible) {
       this._updateQuestList();
       // Auto-select first quest if none selected
       const quests = this._getQuestsForTab();
@@ -250,6 +274,7 @@ export class QuestLogUI {
     this.selectedQuest = null;
     this.scrollOffset = 0;
     this._updateQuestList();
+    this._emitFxCue('questLogTabPulse', { tab });
   }
 
   /**
@@ -263,8 +288,16 @@ export class QuestLogUI {
       return;
     }
 
+    const previousQuestId = this.selectedQuestId;
     this.selectedQuestId = quest.id;
     this.selectedQuest = buildQuestViewModel(this.worldStateStore, this.questManager, quest.id);
+
+    if (this.selectedQuestId && this.selectedQuestId !== previousQuestId) {
+      this._emitFxCue('questLogQuestSelected', {
+        questId: this.selectedQuestId,
+        status: this.selectedQuest?.status ?? quest.status ?? 'unknown',
+      });
+    }
   }
 
   /**
@@ -308,6 +341,9 @@ export class QuestLogUI {
     ctx.textBaseline = 'top';
     ctx.fillText('Quest Log', this.x + this.style.padding, this.y + this.style.padding);
 
+    // Draw binding hints
+    this._renderBindingHints(ctx);
+
     // Draw tabs
     this._renderTabs(ctx);
 
@@ -318,6 +354,46 @@ export class QuestLogUI {
     this._renderQuestDetails(ctx);
 
     ctx.restore();
+  }
+
+  _renderBindingHints(ctx) {
+    const hintFontSize = Math.max(12, this.style.fontSize - 1);
+    ctx.font = `${hintFontSize}px ${this.style.fontFamily}`;
+    ctx.fillStyle = this.style.subtleTextColor ?? this.style.dimmedColor;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+
+    const hintBaseline = this.y + this.style.padding;
+    const candidates = [
+      { label: 'Close', action: 'quest', fallback: 'Q' },
+      { label: 'Case File', action: 'caseFile', fallback: 'Tab' },
+      { label: 'Inventory', action: 'inventory', fallback: 'I' },
+    ];
+
+    const parts = candidates.map(({ label, action, fallback }) => {
+      const display = this._getBindingLabel(action, fallback);
+      return `${label}: ${display}`;
+    });
+
+    const maxWidth = this.width - this.style.padding * 2;
+    let text = parts.join('  ·  ');
+    while (parts.length > 1 && ctx.measureText(text).width > maxWidth) {
+      parts.pop();
+      text = parts.join('  ·  ');
+    }
+
+    ctx.fillText(text, this.x + this.width - this.style.padding, hintBaseline);
+  }
+
+  _getBindingLabel(action, fallback) {
+    const labels = getBindingLabels(action, { fallbackLabel: fallback });
+    if (Array.isArray(labels) && labels.length > 0) {
+      return labels.join(' / ');
+    }
+    if (typeof fallback === 'string' && fallback.length) {
+      return fallback;
+    }
+    return '—';
   }
 
   /**

@@ -11,6 +11,7 @@
 import { System } from '../../engine/ecs/System.js';
 import { GameConfig } from '../config/GameConfig.js';
 import { evidenceToInventoryItem } from '../state/inventory/inventoryEvents.js';
+import { hydratePromptWithBinding, formatActionPrompt } from '../utils/controlBindingPrompts.js';
 
 export class InvestigationSystem extends System {
   constructor(componentRegistry, eventBus) {
@@ -29,11 +30,19 @@ export class InvestigationSystem extends System {
     this.detectiveVisionActive = false;
     this.detectiveVisionTimer = 0;
     this.detectiveVisionCooldown = 0;
+    this.detectiveVisionEnergyMax = GameConfig.player.detectiveVisionEnergyMax ?? 5;
+    this.detectiveVisionEnergy = this.detectiveVisionEnergyMax;
+    this.detectiveVisionMinEnergyToActivate = GameConfig.player.detectiveVisionMinEnergyToActivate ?? 1;
+    this._detectiveVisionStatusThreshold = 0.05;
+    this._lastDetectiveVisionStatus = null;
 
     // Performance tracking
     this.evidenceCache = new Map(); // entityId -> Evidence component
     this.lastCacheUpdate = 0;
     this.promptVisible = false;
+
+    this.playerEntityId = null;
+    this.playerInvestigation = null;
 
     this._offAbilityUnlocked = null;
     this._offKnowledgeLearned = null;
@@ -44,13 +53,12 @@ export class InvestigationSystem extends System {
    */
   init() {
     // Default starting ability
-    this.playerAbilities.add('basic_observation');
+    this.registerAbility('basic_observation');
 
     // Listen for ability unlocks from external sources (e.g., quest rewards, scenes)
     this._offAbilityUnlocked = this.eventBus.on('ability:unlocked', (data = {}) => {
       // Add ability directly without re-emitting (to avoid recursion)
-      if (!this.playerAbilities.has(data.abilityId)) {
-        this.playerAbilities.add(data.abilityId);
+      if (this.registerAbility(data.abilityId)) {
         console.log(`[InvestigationSystem] Ability unlocked via event: ${data.abilityId}`);
       }
     });
@@ -68,6 +76,8 @@ export class InvestigationSystem extends System {
     });
 
     console.log('[InvestigationSystem] Initialized');
+
+    this._emitDetectiveVisionStatus({ reason: 'init' }, true);
   }
 
   /**
@@ -79,6 +89,9 @@ export class InvestigationSystem extends System {
     // Update detective vision timer
     this.updateDetectiveVision(deltaTime);
 
+    this.playerEntityId = null;
+    this.playerInvestigation = null;
+
     // Find player entity
     const player = entities.find((id) => {
       const tag =
@@ -89,15 +102,23 @@ export class InvestigationSystem extends System {
     });
 
     if (!player) return;
+    this.playerEntityId = player;
 
     const playerTransform = this.getComponent(player, 'Transform');
     if (!playerTransform) return;
 
+    const playerInvestigation = this.getComponent(player, 'Investigation');
+    if (playerInvestigation) {
+      this.playerInvestigation = playerInvestigation;
+      playerInvestigation.addAbility('basic_observation');
+      this._mergeAbilitiesWithComponent(playerInvestigation);
+    }
+
     // Scan for evidence in observation radius
-    this.scanForEvidence(playerTransform, entities);
+    this.scanForEvidence(playerTransform, playerInvestigation, entities);
 
     // Check for interaction zones
-    this.checkInteractionZones(player, playerTransform, entities);
+    this.checkInteractionZones(player, playerTransform, playerInvestigation, entities);
   }
 
   /**
@@ -105,15 +126,54 @@ export class InvestigationSystem extends System {
    * @param {number} deltaTime
    */
   updateDetectiveVision(deltaTime) {
+    let statusDirty = false;
+    let broadcastHandled = false;
+
     if (this.detectiveVisionActive) {
       this.detectiveVisionTimer -= deltaTime;
-      if (this.detectiveVisionTimer <= 0) {
-        this.deactivateDetectiveVision();
+
+      const energyCost = GameConfig.player.detectiveVisionEnergyCost ?? 0;
+      if (energyCost > 0) {
+        const nextEnergy = Math.max(0, this.detectiveVisionEnergy - energyCost * deltaTime);
+        if (Math.abs(nextEnergy - this.detectiveVisionEnergy) > 1e-6) {
+          this.detectiveVisionEnergy = nextEnergy;
+          statusDirty = true;
+        }
+
+        if (this.detectiveVisionEnergy <= 0) {
+          const deactivated = this.deactivateDetectiveVision({ reason: 'energy_depleted' });
+          broadcastHandled = broadcastHandled || deactivated;
+        }
+      }
+
+      if (!broadcastHandled && this.detectiveVisionActive && this.detectiveVisionTimer <= 0) {
+        const deactivated = this.deactivateDetectiveVision({ reason: 'duration_expired' });
+        broadcastHandled = broadcastHandled || deactivated;
+      }
+    } else {
+      const regenRate = GameConfig.player.detectiveVisionEnergyRegen ?? 0;
+      if (regenRate > 0 && this.detectiveVisionEnergy < this.detectiveVisionEnergyMax) {
+        const nextEnergy = Math.min(
+          this.detectiveVisionEnergyMax,
+          this.detectiveVisionEnergy + regenRate * deltaTime
+        );
+        if (Math.abs(nextEnergy - this.detectiveVisionEnergy) > 1e-6) {
+          this.detectiveVisionEnergy = nextEnergy;
+          statusDirty = true;
+        }
       }
     }
 
     if (this.detectiveVisionCooldown > 0) {
-      this.detectiveVisionCooldown -= deltaTime;
+      const nextCooldown = Math.max(0, this.detectiveVisionCooldown - deltaTime);
+      if (Math.abs(nextCooldown - this.detectiveVisionCooldown) > 1e-6) {
+        this.detectiveVisionCooldown = nextCooldown;
+        statusDirty = true;
+      }
+    }
+
+    if (!broadcastHandled && statusDirty) {
+      this._emitDetectiveVisionStatus({}, false);
     }
   }
 
@@ -122,11 +182,32 @@ export class InvestigationSystem extends System {
    * @param {Transform} playerTransform
    * @param {Array} entities
    */
-  scanForEvidence(playerTransform, entities) {
-    const radius = GameConfig.player.observationRadius;
-    const radiusSq = radius * radius;
+  scanForEvidence(playerTransform, playerInvestigation, entities) {
+    let investigationComponent = playerInvestigation;
+    let entityCollection = entities;
 
-    for (const entityId of entities) {
+    if (!entityCollection) {
+      const candidate = playerInvestigation;
+      if (candidate && typeof candidate[Symbol.iterator] === 'function' && typeof candidate.getDetectionRadius !== 'function') {
+        entityCollection = candidate;
+        investigationComponent = null;
+      }
+    }
+
+    if (!entityCollection) {
+      entityCollection = [];
+    }
+
+    const baseRadius =
+      (investigationComponent && typeof investigationComponent.getDetectionRadius === 'function'
+        ? investigationComponent.getDetectionRadius()
+        : investigationComponent?.observationRadius) ??
+      GameConfig.player.observationRadius;
+    const abilityLevel = Math.max(1, investigationComponent?.abilityLevel ?? 1);
+    const effectiveRadius = baseRadius * (1 + 0.1 * (abilityLevel - 1));
+    const radiusSq = effectiveRadius * effectiveRadius;
+
+    for (const entityId of entityCollection) {
       const evidence = this.getComponent(entityId, 'Evidence');
       if (!evidence || evidence.collected) continue;
 
@@ -160,7 +241,7 @@ export class InvestigationSystem extends System {
    * @param {Transform} playerTransform
    * @param {Array} entities - Array of entity IDs
    */
-  checkInteractionZones(playerId, playerTransform, entities) {
+  checkInteractionZones(playerId, playerTransform, playerInvestigation, entities) {
     const playerController = this.getComponent(playerId, 'PlayerController');
     if (!playerController) return;
 
@@ -185,12 +266,18 @@ export class InvestigationSystem extends System {
       // Handle interaction based on type
       if (zone.type === 'evidence') {
         if (interactPressed || !zone.requiresInput) {
-          this.collectEvidence(entityId, zone.data.evidenceId);
+          this.collectEvidence(entityId, zone.data.evidenceId, playerInvestigation);
         } else {
           if (!promptShown) {
+            const promptText = this._resolveZonePrompt(zone, zone.data?.evidenceId
+              ? `collect ${zone.data.evidenceId}`
+              : 'collect evidence');
             this.eventBus.emit('ui:show_prompt', {
-              text: zone.prompt,
-              position: { x: transform.x, y: transform.y }
+              text: promptText,
+              position: { x: transform.x, y: transform.y },
+              bindingAction: zone.promptAction ?? 'interact',
+              bindingFallback: zone.data?.evidenceId ? `collect ${zone.data.evidenceId}` : 'collect evidence',
+              source: 'investigation:evidence',
             });
             promptShown = true;
             this.promptVisible = true;
@@ -224,9 +311,14 @@ export class InvestigationSystem extends System {
           this.hideActivePrompt();
         } else {
           if (!promptShown) {
+            const npcName = zone.data?.npcId ?? zone.id ?? 'NPC';
+            const promptText = this._resolveZonePrompt(zone, `talk to ${npcName}`);
             this.eventBus.emit('ui:show_prompt', {
-              text: zone.prompt || 'Press E to talk',
-              position: { x: transform.x, y: transform.y }
+              text: promptText,
+              position: { x: transform.x, y: transform.y },
+              bindingAction: zone.promptAction ?? 'interact',
+              bindingFallback: `talk to ${npcName}`,
+              source: 'investigation:npc',
             });
             promptShown = true;
             this.promptVisible = true;
@@ -240,12 +332,26 @@ export class InvestigationSystem extends System {
     }
   }
 
+  _resolveZonePrompt(zone, fallbackActionText = 'interact') {
+    const promptText = typeof zone?.prompt === 'string' ? zone.prompt : '';
+    const action = zone?.promptAction ?? (zone?.requiresInput ? 'interact' : null);
+    if (action) {
+      return hydratePromptWithBinding(promptText, action, {
+        fallbackActionText,
+      });
+    }
+    if (promptText.length > 0) {
+      return promptText;
+    }
+    return formatActionPrompt('interact', fallbackActionText);
+  }
+
   /**
    * Collect evidence
    * @param {number} entityId - Evidence entity ID
    * @param {string} evidenceId - Evidence data ID
    */
-  collectEvidence(entityId, evidenceId) {
+  collectEvidence(entityId, evidenceId, playerInvestigation) {
     const evidence = this.getComponent(entityId, 'Evidence');
     if (!evidence || evidence.collected) return;
 
@@ -276,6 +382,15 @@ export class InvestigationSystem extends System {
       category: evidence.category,
       entityId
     });
+
+    if (playerInvestigation) {
+      playerInvestigation.recordEvidence({
+        caseId: evidence.caseId,
+        evidenceId,
+        type: evidence.type,
+        category: evidence.category
+      });
+    }
 
     const inventoryPayload = evidenceToInventoryItem(evidence, {
       source: 'investigation',
@@ -318,23 +433,58 @@ export class InvestigationSystem extends System {
    * Activate detective vision ability
    */
   activateDetectiveVision() {
-    if (this.detectiveVisionCooldown > 0) {
-      this.eventBus.emit('ability:cooldown', {
-        ability: 'detective_vision',
-        remaining: this.detectiveVisionCooldown
-      });
-      return;
+    if (this.detectiveVisionActive) {
+      return true;
     }
 
     if (!this.playerAbilities.has('detective_vision')) {
       this.eventBus.emit('ability:locked', {
         ability: 'detective_vision'
       });
-      return;
+      return false;
+    }
+
+    if (this.detectiveVisionCooldown > 0) {
+      this.eventBus.emit('ability:cooldown', {
+        ability: 'detective_vision',
+        remaining: this.detectiveVisionCooldown
+      });
+      this._emitDetectiveVisionStatus({ reason: 'cooldown_blocked' }, false);
+      return false;
+    }
+
+    if (this.detectiveVisionEnergy < this.detectiveVisionMinEnergyToActivate) {
+      this.eventBus.emit('ability:insufficient_resource', {
+        ability: 'detective_vision',
+        resource: 'energy',
+        available: this.detectiveVisionEnergy,
+        required: this.detectiveVisionMinEnergyToActivate
+      });
+      this._emitDetectiveVisionStatus({ reason: 'energy_blocked' }, false);
+      return false;
+    }
+
+    const durationSeconds = (GameConfig.player.detectiveVisionDuration ?? 5000) / 1000;
+    const energyCost = GameConfig.player.detectiveVisionEnergyCost ?? 0;
+    let effectiveDuration = durationSeconds;
+    if (energyCost > 0) {
+      effectiveDuration = Math.min(durationSeconds, this.detectiveVisionEnergy / energyCost);
+    }
+
+    if (effectiveDuration <= 0) {
+      this.eventBus.emit('ability:insufficient_resource', {
+        ability: 'detective_vision',
+        resource: 'energy',
+        available: this.detectiveVisionEnergy,
+        required: this.detectiveVisionMinEnergyToActivate
+      });
+      this._emitDetectiveVisionStatus({ reason: 'energy_blocked' }, false);
+      return false;
     }
 
     this.detectiveVisionActive = true;
-    this.detectiveVisionTimer = GameConfig.player.detectiveVisionDuration / 1000;
+    this.detectiveVisionTimer = effectiveDuration;
+    this.detectiveVisionCooldown = 0;
 
     this.eventBus.emit('ability:activated', {
       abilityId: 'detective_vision',
@@ -343,24 +493,162 @@ export class InvestigationSystem extends System {
     });
 
     this.eventBus.emit('detective_vision:activated', {
-      duration: this.detectiveVisionTimer
+      duration: this.detectiveVisionTimer,
+      energy: this.detectiveVisionEnergy,
+      energyMax: this.detectiveVisionEnergyMax
     });
 
     console.log('[InvestigationSystem] Detective vision activated');
+    this._emitDetectiveVisionStatus({ reason: 'activated' }, true);
+    return true;
   }
 
   /**
    * Deactivate detective vision
    */
-  deactivateDetectiveVision() {
+  deactivateDetectiveVision(options = {}) {
+    if (!this.detectiveVisionActive) {
+      return false;
+    }
+
     this.detectiveVisionActive = false;
     this.detectiveVisionCooldown = GameConfig.player.detectiveVisionCooldown / 1000;
 
     this.eventBus.emit('detective_vision:deactivated', {
-      cooldown: this.detectiveVisionCooldown
+      cooldown: this.detectiveVisionCooldown,
+      reason: options.reason ?? 'manual'
     });
 
     console.log('[InvestigationSystem] Detective vision deactivated');
+    this._emitDetectiveVisionStatus({ reason: options.reason ?? 'deactivated' }, true);
+    return true;
+  }
+
+  /**
+   * Toggle detective vision state based on current status.
+   * @returns {boolean} True if state changed.
+   */
+  toggleDetectiveVision() {
+    if (this.detectiveVisionActive) {
+      return this.deactivateDetectiveVision({ reason: 'manual_toggle' });
+    }
+    return this.activateDetectiveVision();
+  }
+
+  /**
+   * Check if detective vision can be activated right now.
+   * @returns {boolean}
+   */
+  canActivateDetectiveVision() {
+    if (!this.playerAbilities.has('detective_vision')) {
+      return false;
+    }
+    if (this.detectiveVisionCooldown > 0) {
+      return false;
+    }
+    return this.detectiveVisionEnergy >= this.detectiveVisionMinEnergyToActivate;
+  }
+
+  /**
+   * Broadcast detective vision status changes to the event bus.
+   * @param {object} [extra={}] - Additional payload data
+   * @param {boolean} force - When true, bypass threshold checks
+   */
+  _emitDetectiveVisionStatus(extra = {}, force = false) {
+    if (!this.eventBus) {
+      return;
+    }
+
+    const cooldownMax = (GameConfig.player.detectiveVisionCooldown ?? 0) / 1000;
+    const payload = {
+      active: this.detectiveVisionActive,
+      energy: Number(this.detectiveVisionEnergy.toFixed(3)),
+      energyMax: this.detectiveVisionEnergyMax,
+      cooldown: Number(Math.max(0, this.detectiveVisionCooldown).toFixed(3)),
+      cooldownMax,
+      cooldownRatio: cooldownMax > 0
+        ? Math.min(1, Math.max(0, this.detectiveVisionCooldown / cooldownMax))
+        : 0,
+      canActivate: this.canActivateDetectiveVision(),
+      timestamp: Date.now(),
+      ...extra
+    };
+
+    if (!force && this._lastDetectiveVisionStatus) {
+      const last = this._lastDetectiveVisionStatus;
+      const energyDelta = Math.abs(payload.energy - last.energy);
+      const cooldownDelta = Math.abs(payload.cooldown - last.cooldown);
+      const activeChanged = payload.active !== last.active;
+      const canActivateChanged = payload.canActivate !== last.canActivate;
+
+      if (
+        energyDelta < this._detectiveVisionStatusThreshold &&
+        cooldownDelta < this._detectiveVisionStatusThreshold &&
+        !activeChanged &&
+        !canActivateChanged
+      ) {
+        return;
+      }
+    }
+
+    this._lastDetectiveVisionStatus = {
+      energy: payload.energy,
+      cooldown: payload.cooldown,
+      active: payload.active,
+      canActivate: payload.canActivate
+    };
+
+    this.eventBus.emit('detective_vision:status', payload);
+  }
+
+  /**
+   * Register ability without emitting events (used internally and by event handler).
+   * @param {string} abilityId
+   * @returns {boolean} True if ability added
+   */
+  registerAbility(abilityId) {
+    if (typeof abilityId !== 'string' || abilityId.length === 0) {
+      return false;
+    }
+
+    if (this.playerAbilities.has(abilityId)) {
+      return false;
+    }
+
+    this.playerAbilities.add(abilityId);
+    this._syncAbilityToComponent(abilityId);
+    return true;
+  }
+
+  _mergeAbilitiesWithComponent(investigation) {
+    if (!investigation) {
+      return;
+    }
+
+    for (const ability of this.playerAbilities) {
+      investigation.addAbility(ability);
+    }
+
+    const abilitiesFromComponent = investigation.getAbilities?.() ?? [];
+    for (const ability of abilitiesFromComponent) {
+      this.playerAbilities.add(ability);
+    }
+  }
+
+  _syncAbilityToComponent(abilityId) {
+    if (!abilityId) {
+      return;
+    }
+
+    const investigation =
+      this.playerInvestigation ||
+      (this.playerEntityId != null
+        ? this.getComponent(this.playerEntityId, 'Investigation')
+        : null);
+
+    if (investigation) {
+      investigation.addAbility(abilityId);
+    }
   }
 
   /**
@@ -368,15 +656,19 @@ export class InvestigationSystem extends System {
    * @param {string} abilityId
    */
   unlockAbility(abilityId) {
-    if (this.playerAbilities.has(abilityId)) return;
-
-    this.playerAbilities.add(abilityId);
+    if (!this.registerAbility(abilityId)) {
+      return;
+    }
 
     this.eventBus.emit('ability:unlocked', {
       abilityId
     });
 
     console.log(`[InvestigationSystem] Ability unlocked: ${abilityId}`);
+
+    if (abilityId === 'detective_vision') {
+      this._emitDetectiveVisionStatus({ reason: 'ability_unlocked' }, true);
+    }
   }
 
   /**
@@ -443,6 +735,8 @@ export class InvestigationSystem extends System {
       this._offKnowledgeLearned();
       this._offKnowledgeLearned = null;
     }
+
+    this._lastDetectiveVisionStatus = null;
   }
 
   /**

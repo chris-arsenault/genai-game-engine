@@ -5,6 +5,13 @@
  * Maps keyboard keys to game actions.
  */
 
+import {
+  initializeControlBindings,
+  getBindingsSnapshot as getControlBindingsSnapshot,
+  subscribe as subscribeControlBindings,
+  getKeyToActionsSnapshot,
+} from '../state/controlBindingsStore.js';
+
 export const Controls = {
   // Movement (WASD)
   moveUp: ['KeyW', 'ArrowUp'],
@@ -17,11 +24,16 @@ export const Controls = {
   caseFile: ['Tab'], // Open case file
   deductionBoard: ['KeyB'], // Open deduction board
   inventory: ['KeyI'], // Open inventory
+  travel: ['KeyT'], // Open district travel overview
   pause: ['Escape'], // Pause menu
   faction: ['KeyR'], // Open reputation/faction UI
   disguise: ['KeyG'], // Open disguise UI (G for Gear/Garb)
   quest: ['KeyQ'], // Open quest log
+  saveLoad: ['KeyL'], // Open save/load management overlay
   saveInspector: ['KeyO'], // Toggle SaveManager inspector overlay
+
+  // Control bindings
+  controlsMenu: ['KeyK'], // Open control remap UI
 
   // Detective abilities
   detectiveVision: ['KeyV'], // Activate detective vision
@@ -39,6 +51,27 @@ export const Controls = {
   debugToggle: ['Backquote'], // Toggle debug overlay (`)
 };
 
+initializeControlBindings(Controls);
+
+function cloneBindings(bindings) {
+  const clone = {};
+  for (const [action, codes] of Object.entries(bindings || {})) {
+    clone[action] = Array.isArray(codes) ? [...codes] : [];
+  }
+  return clone;
+}
+
+function cloneKeyToActions(map) {
+  const clone = new Map();
+  if (!(map instanceof Map)) {
+    return clone;
+  }
+  for (const [key, actions] of map.entries()) {
+    clone.set(key, new Set(actions));
+  }
+  return clone;
+}
+
 /**
  * Input state manager
  * Tracks which keys are currently pressed
@@ -48,20 +81,53 @@ export class InputState {
     this.keys = new Map();
     this.actions = new Map();
     this.eventBus = eventBus;
-
-    // Track previous action states for edge detection
     this.previousActions = new Map();
     this.justPressedActions = new Map();
-
-    // Initialize action states
-    Object.keys(Controls).forEach(action => {
-      this.actions.set(action, false);
-      this.previousActions.set(action, false);
-      this.justPressedActions.set(action, false);
+    this.controlBindings = cloneBindings(getControlBindingsSnapshot());
+    this.keyToActions = cloneKeyToActions(getKeyToActionsSnapshot());
+    this.boundKeys = new Set(this.keyToActions.keys());
+    this.unsubscribeControlBindings = subscribeControlBindings(({ bindings, keyToActions }) => {
+      this.syncBindings(bindings, keyToActions);
     });
 
-    // Bind keyboard events
+    this.syncActionsFromBindings();
     this.bindEvents();
+  }
+
+  syncBindings(bindings, keyToActions) {
+    if (bindings && typeof bindings === 'object') {
+      this.controlBindings = cloneBindings(bindings);
+    }
+    if (keyToActions instanceof Map) {
+      this.keyToActions = cloneKeyToActions(keyToActions);
+      this.boundKeys = new Set(this.keyToActions.keys());
+    }
+    this.syncActionsFromBindings();
+  }
+
+  syncActionsFromBindings() {
+    const nextActions = Object.keys(this.controlBindings);
+    const existing = new Set(this.actions.keys());
+
+    for (const action of nextActions) {
+      if (!this.actions.has(action)) {
+        this.actions.set(action, false);
+      }
+      if (!this.previousActions.has(action)) {
+        this.previousActions.set(action, false);
+      }
+      if (!this.justPressedActions.has(action)) {
+        this.justPressedActions.set(action, false);
+      }
+    }
+
+    for (const action of existing) {
+      if (!this.controlBindings[action]) {
+        this.actions.delete(action);
+        this.previousActions.delete(action);
+        this.justPressedActions.delete(action);
+      }
+    }
   }
 
   /**
@@ -99,7 +165,7 @@ export class InputState {
    * Update action states based on key mappings
    */
   updateActions() {
-    for (const [action, keyCodes] of Object.entries(Controls)) {
+    for (const [action, keyCodes] of Object.entries(this.controlBindings)) {
       const wasPressed = this.actions.get(action);
       const isPressed = keyCodes.some(code => this.keys.get(code));
 
@@ -161,7 +227,7 @@ export class InputState {
    * @returns {boolean}
    */
   isGameKey(code) {
-    return Object.values(Controls).flat().includes(code);
+    return this.boundKeys.has(code);
   }
 
   /**
@@ -169,6 +235,7 @@ export class InputState {
    */
   reset() {
     this.keys.clear();
+    this.syncBindings(getControlBindingsSnapshot(), getKeyToActionsSnapshot());
     this.actions.forEach((_, action) => {
       this.actions.set(action, false);
       this.previousActions.set(action, false);
@@ -197,5 +264,12 @@ export class InputState {
     }
 
     return { x, y };
+  }
+
+  dispose() {
+    if (typeof this.unsubscribeControlBindings === 'function') {
+      this.unsubscribeControlBindings();
+      this.unsubscribeControlBindings = null;
+    }
   }
 }

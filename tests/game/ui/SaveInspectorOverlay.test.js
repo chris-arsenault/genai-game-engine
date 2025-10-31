@@ -3,6 +3,24 @@ import { EventBus } from '../../../src/engine/events/EventBus.js';
 import { factionSlice } from '../../../src/game/state/slices/factionSlice.js';
 import { tutorialSlice } from '../../../src/game/state/slices/tutorialSlice.js';
 
+jest.mock('../../../src/game/utils/controlBindingPrompts.js', () => ({
+  getBindingLabels: jest.fn((action, options = {}) => {
+    switch (action) {
+      case 'saveInspector':
+        return ['O'];
+      case 'controlsMenu':
+        return ['K'];
+      case 'quest':
+        return ['Q'];
+      default:
+        if (options.fallbackLabel) {
+          return [options.fallbackLabel];
+        }
+        return [];
+    }
+  }),
+}));
+
 describe('SaveInspectorOverlay', () => {
   function createMockCanvas() {
     const context = {
@@ -22,6 +40,7 @@ describe('SaveInspectorOverlay', () => {
       fill: jest.fn(),
       stroke: jest.fn(),
       fillText: jest.fn(),
+      measureText: jest.fn(() => ({ width: 140 })),
     };
 
     return {
@@ -85,6 +104,117 @@ describe('SaveInspectorOverlay', () => {
             },
           ],
         },
+        districts: {
+          lastUpdatedAt: now - 4000,
+          lastLockdownAt: now - 2000,
+          metrics: {
+            total: 3,
+            restricted: 1,
+            fastTravelDisabled: 1,
+            infiltrationLocked: 2,
+            infiltrationUnlocked: 3,
+            lockdownEvents: 1,
+          },
+          restrictedDistricts: [
+            {
+              id: 'neon_district',
+              name: 'Neon District',
+              tier: 'foundation',
+              fastTravelEnabled: false,
+              controllingFaction: 'wraith_network',
+              stability: { rating: 'volatile', value: 34, lastChangedAt: now - 4100 },
+              lastRestrictionChangeAt: now - 1500,
+              restrictions: [
+                {
+                  id: 'lockdown_gate',
+                  type: 'lockdown',
+                  description: 'Security lockdown active',
+                  lastChangedAt: now - 1500,
+                },
+              ],
+              infiltrationLocked: 2,
+              infiltrationUnlocked: 1,
+              lockdownsTriggered: 1,
+              lastLockdownAt: now - 2000,
+            },
+          ],
+        },
+        npcs: {
+          lastUpdatedAt: now - 3000,
+          metrics: {
+            total: 4,
+            alerts: 1,
+            suspicious: 1,
+            knowsPlayer: 1,
+            witnessedCrimes: 2,
+          },
+          alerts: [
+            {
+              id: 'npc_echo',
+              name: 'Echo Operative',
+              factionId: 'wraith_network',
+              status: 'alert',
+              reason: 'security breach',
+              updatedAt: now - 1000,
+            },
+          ],
+          suspicious: [
+            {
+              id: 'npc_scout',
+              name: 'Perimeter Scout',
+              factionId: 'cipher_collective',
+              status: 'suspicious',
+              reason: 'trespassing',
+              updatedAt: now - 800,
+            },
+          ],
+        },
+        controlBindings: {
+          source: 'observation-log',
+          totalEvents: 4,
+          durationMs: 3200,
+          durationLabel: '3.2s',
+          firstEventAt: now - 3200,
+          lastEventAt: now - 600,
+          actionsVisited: ['interact', 'quest'],
+          actionsVisitedCount: 2,
+          actionsRemapped: ['inventory'],
+          actionsRemappedCount: 1,
+          listModesVisited: ['sections', 'conflicts'],
+          pageRange: { min: 0, max: 2 },
+          lastSelectedAction: 'quest',
+          metrics: {
+            selectionMoves: 3,
+            selectionBlocked: 1,
+            listModeChanges: 1,
+            listModeUnchanged: 0,
+            pageNavigations: 1,
+            pageNavigationBlocked: 0,
+            pageSetChanges: 0,
+            pageSetBlocked: 0,
+            captureStarted: 1,
+            captureCancelled: 0,
+            bindingsApplied: 1,
+            bindingsReset: 0,
+            manualOverrideEvents: 0,
+          },
+          captureCancelReasons: { cancelled_with_escape: 1 },
+          dwell: {
+            count: 2,
+            totalMs: 2400,
+            maxMs: 1400,
+            lastMs: 1400,
+            lastAction: 'quest',
+            longestAction: 'quest',
+            averageLabel: '1.3s',
+            maxLabel: '1.4s',
+            lastLabel: '1.4s',
+          },
+          ratios: {
+            selectionBlocked: { numerator: 1, denominator: 4, value: 0.25, percentage: '25%' },
+            pageNavigationBlocked: { numerator: 1, denominator: 2, value: 0.5, percentage: '50%' },
+          },
+        },
       })),
     };
 
@@ -100,6 +230,46 @@ describe('SaveInspectorOverlay', () => {
     expect(overlay.summary.metrics.cascadeEvents).toBe(3);
     expect(overlay.summary.metrics.cascadeTargets).toBe(1);
     expect(overlay.summary.metrics.tutorialSnapshots).toBe(2);
+    expect(overlay.summary.metrics.controlBindingEvents).toBe(4);
+    expect(overlay.summary.metrics.restrictedDistricts).toBe(1);
+    expect(overlay.summary.metrics.fastTravelDisabled).toBe(1);
+    expect(overlay.summary.metrics.npcAlerts).toBe(1);
+    expect(overlay.summary.districts.restricted[0].name).toBe('Neon District');
+    expect(overlay.summary.districts.restricted[0].restrictions[0].description).toContain('Security lockdown');
+    expect(overlay.summary.npcs.alerts[0]).toEqual(
+      expect.objectContaining({ id: 'npc_echo', reason: 'security breach' })
+    );
+    expect(overlay.summary.npcs.suspicious[0]).toEqual(
+      expect.objectContaining({ id: 'npc_scout', reason: 'trespassing' })
+    );
+    expect(overlay.summary.controlBindings.totalEvents).toBe(4);
+    expect(overlay.summary.controlBindings.actionsVisitedCount).toBe(2);
+    expect(overlay.summary.controlBindings.listModesVisited).toEqual(['sections', 'conflicts']);
+    expect(overlay.summary.controlBindings.dwell.averageLabel).toBe('1.3s');
+    expect(overlay.summary.controlBindings.ratios.selectionBlocked.percentage).toBe('25%');
+  });
+
+  it('renders control binding hints for QA toggles', () => {
+    const canvas = createMockCanvas();
+    const eventBus = new EventBus();
+    const overlay = new SaveInspectorOverlay(canvas, eventBus, {});
+    overlay.visible = true;
+    overlay.render();
+
+    const hintCall = canvas._ctx.fillText.mock.calls.find(
+      (call) => typeof call[0] === 'string' && call[0].includes('Close:')
+    );
+
+    expect(hintCall).toBeDefined();
+    expect(hintCall[0]).toContain('Close: O');
+    expect(hintCall[0]).toContain('Bindings: K');
+    expect(hintCall[0]).toContain('Quest Log: Q');
+
+    const headingCall = canvas._ctx.fillText.mock.calls.find(
+      (call) => typeof call[0] === 'string' && call[0] === 'Control Bindings'
+    );
+    expect(headingCall).toBeDefined();
+
   });
 
   it('falls back to world state store selectors when SaveManager summary unavailable', () => {
@@ -174,6 +344,10 @@ describe('SaveInspectorOverlay', () => {
     expect(overlay.summary.metrics.cascadeEvents).toBe(4);
     expect(overlay.summary.metrics.tutorialSnapshots).toBe(2);
     expect(overlay.summary.tutorial.latest.relative).toMatch(/ago|just now/);
+    expect(overlay.summary.controlBindings.totalEvents).toBe(0);
+    expect(overlay.summary.metrics.controlBindingEvents).toBe(0);
+    expect(overlay.summary.controlBindings.dwell.count).toBe(0);
+    expect(overlay.summary.controlBindings.ratios.selectionBlocked.numerator).toBe(0);
   });
 
   it('emits overlay visibility events when toggled', () => {

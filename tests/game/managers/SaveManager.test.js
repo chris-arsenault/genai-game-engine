@@ -2,6 +2,8 @@ import { SaveManager } from '../../../src/game/managers/SaveManager.js';
 import { EventBus } from '../../../src/engine/events/EventBus.js';
 import { factionSlice } from '../../../src/game/state/slices/factionSlice.js';
 import { tutorialSlice } from '../../../src/game/state/slices/tutorialSlice.js';
+import { districtSlice } from '../../../src/game/state/slices/districtSlice.js';
+import { npcSlice } from '../../../src/game/state/slices/npcSlice.js';
 
 describe('SaveManager', () => {
   let saveManager;
@@ -353,6 +355,126 @@ describe('SaveManager', () => {
       managerWithStore.cleanup();
     });
 
+    test('persists and hydrates district and npc slices via world state store', () => {
+      const districtSnapshot = {
+        byId: {
+          neon_districts: {
+            id: 'neon_districts',
+            name: 'Neon Districts',
+            tier: 'foundation',
+            access: {
+              defaultUnlocked: true,
+              fastTravelEnabled: true,
+              requirements: {},
+              restrictions: [],
+              unlockedRoutes: [],
+              restrictionLog: [],
+            },
+            analytics: {
+              lastLockdownAt: 123456,
+            },
+          },
+        },
+        changeLog: [
+          {
+            type: 'registered',
+            districtId: 'neon_districts',
+            timestamp: 42,
+          },
+        ],
+        lastUpdatedAt: 123456,
+      };
+
+      const npcSnapshot = {
+        byId: {
+          npc_echo: {
+            id: 'npc_echo',
+            name: 'Echo Operative',
+            factionId: 'wraith_network',
+            status: 'alert',
+            knowsPlayer: true,
+            interactions: {
+              interviews: 1,
+              recognitions: 0,
+              witnessedCrimes: 0,
+            },
+            suspicion: {
+              active: false,
+              reason: null,
+              updatedAt: null,
+            },
+            alert: {
+              active: true,
+              reason: 'security_breach',
+              updatedAt: 987654,
+            },
+            lastInteractionAt: 987654,
+            history: [
+              {
+                type: 'alerted',
+                reason: 'security_breach',
+                timestamp: 987654,
+              },
+            ],
+            tags: ['resistance'],
+          },
+        },
+        changeLog: [
+          {
+            type: 'alerted',
+            npcId: 'npc_echo',
+            reason: 'security_breach',
+            timestamp: 987654,
+          },
+        ],
+        lastUpdatedAt: 987654,
+      };
+
+      const snapshot = {
+        storyFlags: {},
+        quests: {},
+        factions: {},
+        tutorial: {},
+        tutorialComplete: false,
+        dialogue: {},
+        inventory: { items: [], equipped: {} },
+        districts: districtSnapshot,
+        npcs: npcSnapshot,
+      };
+
+      const worldStateStore = {
+        snapshot: jest.fn(() => snapshot),
+        hydrate: jest.fn(),
+      };
+
+      const managerWithStore = new SaveManager(eventBus, {
+        ...mockManagers,
+        worldStateStore,
+      });
+      managerWithStore.init();
+
+      const result = managerWithStore.saveGame('district_npc_slot');
+      expect(result).toBe(true);
+
+      const saveKey = managerWithStore.config.storageKeyPrefix + 'district_npc_slot';
+      const saveData = JSON.parse(localStorageMock.store[saveKey]);
+
+      expect(saveData.gameData.districts).toEqual(districtSnapshot);
+      expect(saveData.gameData.npcs).toEqual(npcSnapshot);
+
+      worldStateStore.snapshot.mockClear();
+      managerWithStore.loadGame('district_npc_slot');
+
+      expect(worldStateStore.hydrate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          districts: districtSnapshot,
+          npcs: npcSnapshot,
+        })
+      );
+
+      managerWithStore.cleanup();
+    });
+
     test('logs parity warning when snapshot differs from legacy data', () => {
       const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -387,6 +509,40 @@ describe('SaveManager', () => {
         })
       );
 
+      warnSpy.mockRestore();
+    });
+
+    test('does not log parity warning when tutorial skip matches legacy state', () => {
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+      localStorageMock.setItem('tutorial_completed', 'true');
+      localStorageMock.setItem('tutorial_skipped', 'true');
+
+      const managerWithStore = new SaveManager(eventBus, {
+        ...mockManagers,
+        worldStateStore: {
+          snapshot: jest.fn(),
+        },
+      });
+      managerWithStore.init();
+
+      const baselineLegacy = managerWithStore.collectLegacyGameData();
+      managerWithStore.worldStateStore.snapshot.mockReturnValue({
+        ...baselineLegacy,
+        tutorial: baselineLegacy.tutorial ? { ...baselineLegacy.tutorial } : baselineLegacy.tutorial,
+        dialogue: baselineLegacy.dialogue ?? null,
+        inventory: baselineLegacy.inventory ? { ...baselineLegacy.inventory } : baselineLegacy.inventory,
+        factions: baselineLegacy.factions ? { ...baselineLegacy.factions } : baselineLegacy.factions,
+        quests: baselineLegacy.quests ? { ...baselineLegacy.quests } : baselineLegacy.quests,
+        storyFlags: baselineLegacy.storyFlags ? { ...baselineLegacy.storyFlags } : baselineLegacy.storyFlags,
+        tutorialComplete: baselineLegacy.tutorialComplete,
+      });
+
+      managerWithStore.saveGame('parity_aligned_slot');
+
+      expect(warnSpy).not.toHaveBeenCalled();
+
+      managerWithStore.cleanup();
       warnSpy.mockRestore();
     });
 
@@ -855,6 +1011,29 @@ describe('SaveManager', () => {
       expect(saveSpy).not.toHaveBeenCalled();
     });
 
+    test('handles sustained autosave bursts without failures', () => {
+      const emitSpy = jest.spyOn(eventBus, 'emit');
+      const iterations = 40;
+
+      for (let i = 0; i < iterations; i += 1) {
+        eventBus.emit('quest:completed', { questId: `stress_quest_${i}` });
+      }
+
+      const savedEvents = emitSpy.mock.calls.filter(([event]) => event === 'game:saved');
+      const failedEvents = emitSpy.mock.calls.filter(([event]) => event === 'game:save_failed');
+
+      expect(savedEvents).toHaveLength(iterations);
+      expect(failedEvents).toHaveLength(0);
+
+      const timestamps = savedEvents.map(([, payload]) => payload.timestamp);
+      for (let i = 1; i < timestamps.length; i += 1) {
+        expect(timestamps[i]).toBeGreaterThanOrEqual(timestamps[i - 1]);
+      }
+
+      const storageKey = `${saveManager.config.storageKeyPrefix}autosave`;
+      expect(localStorageMock.store[storageKey]).toBeDefined();
+    });
+
     test('should cleanup on game exit', () => {
       const saveSpy = jest.spyOn(saveManager, 'saveGame');
 
@@ -871,6 +1050,62 @@ describe('SaveManager', () => {
       saveManager.cleanup();
 
       expect(saveSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Autosave burst helper', () => {
+    beforeEach(() => {
+      saveManager.init();
+    });
+
+    test('runs multiple autosaves and emits telemetry summary', async () => {
+      const summaries = [];
+      eventBus.on('telemetry:autosave_burst_completed', (payload) => {
+        summaries.push(payload);
+      });
+
+      const summary = await saveManager.runAutosaveBurst({ iterations: 3, collectResults: true });
+
+      expect(summary).toMatchObject({ iterations: 3, failures: 0, slot: 'autosave' });
+      expect(summary.results).toHaveLength(3);
+      expect(summary.results.every((entry) => entry.success)).toBe(true);
+      expect(localStorageMock.setItem).toHaveBeenCalled();
+      expect(summaries).toHaveLength(1);
+      expect(summaries[0].iterations).toBe(3);
+    });
+
+    test('counts failures when storage throws during burst', async () => {
+      const originalSetItem = localStorageMock.setItem;
+      let writes = 0;
+      localStorageMock.setItem = jest.fn((key, value) => {
+        writes += 1;
+        if (writes === 1) {
+          throw new Error('storage-fail');
+        }
+        return originalSetItem.call(localStorageMock, key, value);
+      });
+
+      const summary = await saveManager.runAutosaveBurst({
+        iterations: 3,
+        collectResults: true,
+      });
+
+      expect(summary.failures).toBe(1);
+      expect(summary.results.filter((entry) => entry.success === false)).toHaveLength(1);
+
+      localStorageMock.setItem = originalSetItem;
+    });
+
+    test('invokes iteration hook without breaking execution when it throws', async () => {
+      const hook = jest.fn(() => {
+        throw new Error('iteration failure');
+      });
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+      await saveManager.runAutosaveBurst({ iterations: 2, onIteration: hook });
+
+      expect(hook).toHaveBeenCalledTimes(2);
+      warnSpy.mockRestore();
     });
   });
 
@@ -962,6 +1197,67 @@ describe('SaveManager', () => {
       );
 
       consoleSpy.mockRestore();
+    });
+
+    test('should enforce manual slot capacity by evicting oldest slot', () => {
+      saveManager.config.maxSaveSlots = 2;
+
+      const dateSpy = jest.spyOn(Date, 'now');
+      dateSpy
+        .mockReturnValueOnce(1000)
+        .mockReturnValueOnce(1000)
+        .mockReturnValueOnce(2000)
+        .mockReturnValueOnce(2000)
+        .mockReturnValueOnce(3000)
+        .mockReturnValueOnce(3000);
+
+      const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+
+      try {
+        expect(saveManager.saveGame('slot1')).toBe(true);
+        expect(saveManager.saveGame('slot2')).toBe(true);
+
+        localStorageMock.removeItem.mockClear();
+
+        expect(saveManager.saveGame('slot3')).toBe(true);
+
+        const slots = saveManager.getSaveSlots();
+        expect(slots.length).toBe(2);
+        expect(slots.some((entry) => entry.slot === 'slot1')).toBe(false);
+        expect(localStorageMock.removeItem).toHaveBeenCalledWith(
+          `${saveManager.config.storageKeyPrefix}slot1`
+        );
+      } finally {
+        dateSpy.mockRestore();
+        logSpy.mockRestore();
+      }
+    });
+
+    test('should normalize slot names and preserve labels', () => {
+      const result = saveManager.saveGame('  My Custom Slot  ');
+      expect(result).toBe(true);
+
+      const slots = saveManager.getSaveSlots();
+      expect(slots[0]).toMatchObject({
+        slot: 'my-custom-slot',
+        label: 'My Custom Slot',
+        slotType: 'manual',
+      });
+    });
+
+    test('should expose slot metadata lookup helpers', () => {
+      saveManager.saveGame('story_progress');
+
+      const metadata = saveManager.getSaveSlotMetadata('story_progress');
+      expect(metadata).toMatchObject({
+        slot: 'story_progress',
+        label: 'story_progress',
+        slotType: 'manual',
+        snapshotSource: 'legacy-managers',
+      });
+
+      expect(saveManager.slotExists('story_progress')).toBe(true);
+      expect(saveManager.slotExists('missing_slot')).toBe(false);
     });
   });
 
@@ -1229,6 +1525,80 @@ describe('SaveManager', () => {
       expect(summary.engine).toEqual({
         spatialHash: null,
       });
+      expect(summary.controlBindings).toEqual({
+        source: 'unavailable',
+        totalEvents: 0,
+        durationMs: 0,
+        durationLabel: '0s',
+        firstEventAt: null,
+        lastEventAt: null,
+        actionsVisited: [],
+        actionsVisitedCount: 0,
+        actionsRemapped: [],
+        actionsRemappedCount: 0,
+        listModesVisited: [],
+        pageRange: null,
+        lastSelectedAction: null,
+        metrics: {
+          selectionMoves: 0,
+          selectionBlocked: 0,
+          listModeChanges: 0,
+          listModeUnchanged: 0,
+          pageNavigations: 0,
+          pageNavigationBlocked: 0,
+          pageSetChanges: 0,
+          pageSetBlocked: 0,
+          captureStarted: 0,
+          captureCancelled: 0,
+          bindingsApplied: 0,
+          bindingsReset: 0,
+          manualOverrideEvents: 0,
+        },
+        captureCancelReasons: {},
+        dwell: {
+          count: 0,
+          totalMs: 0,
+          averageMs: 0,
+          averageLabel: '0s',
+          maxMs: 0,
+          maxLabel: '0s',
+          minMs: 0,
+          minLabel: '0s',
+          lastMs: 0,
+          lastLabel: '0s',
+          lastAction: null,
+          longestAction: null,
+        },
+        ratios: {
+          selectionBlocked: { numerator: 0, denominator: 0, value: 0, percentage: '0%' },
+          pageNavigationBlocked: { numerator: 0, denominator: 0, value: 0, percentage: '0%' },
+        },
+      });
+      expect(summary.districts).toEqual({
+        lastUpdatedAt: null,
+        lastLockdownAt: null,
+        restrictedDistricts: [],
+        metrics: {
+          total: 0,
+          restricted: 0,
+          fastTravelDisabled: 0,
+          infiltrationLocked: 0,
+          infiltrationUnlocked: 0,
+          lockdownEvents: 0,
+        },
+      });
+      expect(summary.npcs).toEqual({
+        lastUpdatedAt: null,
+        alerts: [],
+        suspicious: [],
+        metrics: {
+          total: 0,
+          alerts: 0,
+          suspicious: 0,
+          knowsPlayer: 0,
+          witnessedCrimes: 0,
+        },
+      });
       expect(summary.generatedAt).toEqual(expect.any(Number));
     });
 
@@ -1309,6 +1679,111 @@ describe('SaveManager', () => {
         ],
         payloadBytes: 1024,
       };
+      const controlBindingsSummary = {
+        source: 'observation-log',
+        totalEvents: 6,
+        durationMs: 4200,
+        durationLabel: '4.2s',
+        firstEventAt: 1010,
+        lastEventAt: 5210,
+        actionsVisited: ['interact', 'quest', 'inventory'],
+        actionsRemapped: ['inventory', 'quest'],
+        listModesVisited: ['sections', 'conflicts'],
+        pageRange: { min: 0, max: 3 },
+        lastSelectedAction: 'inventory',
+        metrics: {
+          selectionMoves: 5,
+          selectionBlocked: 1,
+          listModeChanges: 2,
+          listModeUnchanged: 0,
+          pageNavigations: 2,
+          pageNavigationBlocked: 1,
+          pageSetChanges: 0,
+          pageSetBlocked: 0,
+          captureStarted: 1,
+          captureCancelled: 1,
+          bindingsApplied: 2,
+          bindingsReset: 0,
+          manualOverrideEvents: 0,
+          captureCancelReasons: {
+            cancelled_with_escape: 1,
+            changed_mind: 1,
+          },
+        },
+        dwell: {
+          count: 2,
+          totalMs: 2500,
+          maxMs: 1800,
+          minMs: 1200,
+          lastMs: 1800,
+          lastAction: 'inventory',
+          longestAction: 'inventory',
+        },
+        ratios: {
+          selectionBlocked: { numerator: 1, denominator: 6 },
+          pageNavigationBlocked: { numerator: 1, denominator: 2 },
+        },
+      };
+      const districtRoot = {
+        byId: {},
+        changeLog: [],
+        lastUpdatedAt: 555,
+      };
+      const districtRecords = [
+        {
+          id: 'neon_districts',
+          name: 'Neon Districts',
+          tier: 'foundation',
+          controllingFaction: { current: 'wraith_network' },
+          stability: { rating: 'volatile', current: 32, lastChangedAt: 410 },
+          access: {
+            fastTravelEnabled: false,
+            restrictions: [
+              {
+                id: 'lockdown_gate',
+                type: 'lockdown',
+                description: 'Security lockdown active',
+                active: true,
+                lastChangedAt: 333,
+              },
+            ],
+            restrictionLog: [
+              { restrictionId: 'lockdown_gate', active: true, timestamp: 333 },
+            ],
+          },
+          infiltrationRoutes: [
+            { id: 'route_north', unlocked: false },
+            { id: 'route_south', unlocked: true },
+          ],
+          analytics: { lockdownsTriggered: 2, lastLockdownAt: 444 },
+        },
+      ];
+      const npcRoot = {
+        lastUpdatedAt: 777,
+      };
+      const npcSummaries = [
+        {
+          id: 'npc_echo',
+          name: 'Echo Operative',
+          factionId: 'wraith_network',
+          status: 'alert',
+          knowsPlayer: true,
+          lastInteractionAt: 552,
+          witnessedCrimes: 1,
+          alert: { active: true, reason: 'security_breach', updatedAt: 557 },
+          suspicion: { active: true, reason: 'trespassing', updatedAt: 556 },
+        },
+        {
+          id: 'npc_scout',
+          name: 'Perimeter Scout',
+          factionId: 'cipher_collective',
+          status: 'patrol',
+          knowsPlayer: false,
+          witnessedCrimes: 0,
+          alert: { active: false },
+          suspicion: { active: false },
+        },
+      ];
 
       const store = {
         select: jest.fn((selector) => {
@@ -1324,12 +1799,25 @@ describe('SaveManager', () => {
           if (selector === tutorialSlice.selectors.selectLatestPromptSnapshot) {
             return latestSnapshot;
           }
+          if (selector === districtSlice.selectors.selectRoot) {
+            return districtRoot;
+          }
+          if (selector === districtSlice.selectors.selectAllDistricts) {
+            return districtRecords;
+          }
+          if (selector === npcSlice.selectors.selectRoot) {
+            return npcRoot;
+          }
+          if (selector === npcSlice.selectors.selectNpcSummaries) {
+            return npcSummaries;
+          }
           return null;
         }),
       };
 
       mockManagers.worldStateStore = store;
       mockManagers.spatialMetricsProvider = jest.fn(() => spatialSnapshot);
+      mockManagers.controlBindingsObservationProvider = jest.fn(() => controlBindingsSummary);
       saveManager = new SaveManager(eventBus, mockManagers);
 
       const summary = saveManager.getInspectorSummary();
@@ -1343,8 +1831,96 @@ describe('SaveManager', () => {
       expect(summary.tutorial.latestSnapshot).toEqual(latestSnapshot);
       expect(summary.tutorial.transcript).toEqual([]);
       expect(summary.engine.spatialHash).toBe(spatialSnapshot);
-      expect(store.select).toHaveBeenCalledTimes(4);
+      expect(summary.controlBindings).toEqual({
+        source: 'observation-log',
+        totalEvents: 6,
+        durationMs: 4200,
+        durationLabel: '4.2s',
+        firstEventAt: 1010,
+        lastEventAt: 5210,
+        lastSelectedAction: 'inventory',
+        actionsVisited: ['interact', 'quest', 'inventory'],
+        actionsVisitedCount: 3,
+        actionsRemapped: ['inventory', 'quest'],
+        actionsRemappedCount: 2,
+        listModesVisited: ['sections', 'conflicts'],
+        pageRange: { min: 0, max: 3 },
+        metrics: {
+          selectionMoves: 5,
+          selectionBlocked: 1,
+          listModeChanges: 2,
+          listModeUnchanged: 0,
+          pageNavigations: 2,
+          pageNavigationBlocked: 1,
+          pageSetChanges: 0,
+          pageSetBlocked: 0,
+          captureStarted: 1,
+          captureCancelled: 1,
+          bindingsApplied: 2,
+          bindingsReset: 0,
+          manualOverrideEvents: 0,
+        },
+        captureCancelReasons: {
+          cancelled_with_escape: 1,
+          changed_mind: 1,
+        },
+        dwell: {
+          count: 2,
+          totalMs: 2500,
+          averageMs: 1250,
+          averageLabel: '1.3s',
+          maxMs: 1800,
+          maxLabel: '1.8s',
+          minMs: 1200,
+          minLabel: '1.2s',
+          lastMs: 1800,
+          lastLabel: '1.8s',
+          lastAction: 'inventory',
+          longestAction: 'inventory',
+        },
+        ratios: {
+          selectionBlocked: { numerator: 1, denominator: 6, value: 0.167, percentage: '17%' },
+          pageNavigationBlocked: { numerator: 1, denominator: 2, value: 0.5, percentage: '50%' },
+        },
+      });
+      expect(summary.districts.metrics).toEqual(
+        expect.objectContaining({
+          total: 1,
+          restricted: 1,
+          fastTravelDisabled: 1,
+          infiltrationLocked: 1,
+          infiltrationUnlocked: 1,
+          lockdownEvents: 2,
+        })
+      );
+      expect(summary.districts.restrictedDistricts[0]).toEqual(
+        expect.objectContaining({
+          id: 'neon_districts',
+          activeRestrictionCount: 1,
+          fastTravelEnabled: false,
+        })
+      );
+      expect(summary.districts.lastLockdownAt).toBe(444);
+      expect(summary.npcs.metrics).toEqual(
+        expect.objectContaining({
+          total: 2,
+          alerts: 1,
+          suspicious: 1,
+          knowsPlayer: 1,
+          witnessedCrimes: 1,
+        })
+      );
+      expect(summary.npcs.alerts[0]).toEqual(
+        expect.objectContaining({ id: 'npc_echo', reason: 'security_breach' })
+      );
+      expect(summary.npcs.suspicious[0]).toEqual(
+        expect.objectContaining({ id: 'npc_echo', reason: 'trespassing' })
+      );
+      expect(store.select).toHaveBeenCalledTimes(8);
       expect(mockManagers.spatialMetricsProvider).toHaveBeenCalledTimes(1);
+      expect(mockManagers.controlBindingsObservationProvider).toHaveBeenCalledTimes(1);
+
+      mockManagers.controlBindingsObservationProvider = null;
     });
 
     test('should include tutorial transcript when recorder provided', () => {
@@ -1713,6 +2289,21 @@ describe('SaveManager', () => {
       const tutorialComplete = saveManager.collectTutorialData();
 
       expect(tutorialComplete).toBe(false);
+    });
+
+    test('collectTutorialState should include skipped flag from storage', () => {
+      localStorageMock.setItem('tutorial_completed', 'true');
+      localStorageMock.setItem('tutorial_skipped', 'true');
+
+      const tutorialState = saveManager.collectTutorialState();
+
+      expect(tutorialState).toEqual({ completed: true, skipped: true });
+    });
+
+    test('collectTutorialState should default to false flags when storage missing', () => {
+      const tutorialState = saveManager.collectTutorialState();
+
+      expect(tutorialState).toEqual({ completed: false, skipped: false });
     });
   });
 

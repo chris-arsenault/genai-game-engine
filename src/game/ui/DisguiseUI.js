@@ -54,6 +54,8 @@ export class DisguiseUI {
     this.currentDisguise = null;
     this.suspicionLevel = 0;
 
+    this._lastFxSelectionSignature = null;
+
     // Setup event listeners
     this.setupEventListeners();
   }
@@ -80,7 +82,16 @@ export class DisguiseUI {
    * @param {Array} disguisesData - Array of disguise data
    */
   updateDisguises(disguisesData) {
-    this.disguises = disguisesData;
+    this.disguises = Array.isArray(disguisesData) ? disguisesData : [];
+    if (this.selectedIndex >= this.disguises.length) {
+      this.selectedIndex = this.disguises.length > 0 ? this.disguises.length - 1 : 0;
+    }
+
+    if (this.visible) {
+      this._emitSelectionFx('disguisesUpdated');
+    } else {
+      this._lastFxSelectionSignature = null;
+    }
   }
 
   /**
@@ -140,23 +151,38 @@ export class DisguiseUI {
 
     emitOverlayVisibility(this.eventBus, 'disguise', this.visible, { source });
 
+    if (this.visible) {
+      this._emitFxCue('disguiseOverlayReveal', {
+        source,
+        disguisesAvailable: this.disguises.length,
+        selectedIndex: this.disguises.length ? this.selectedIndex : -1,
+        equippedFactionId: this.currentDisguise?.factionId ?? null,
+      });
+      this._emitSelectionFx('overlayReveal');
+    } else {
+      this._emitFxCue('disguiseOverlayDismiss', { source });
+      this._lastFxSelectionSignature = null;
+    }
+
     return this.visible;
   }
 
   /**
    * Move selection up
    */
-  selectPrevious() {
+  selectPrevious(source = 'keyboardPrevious') {
     if (this.disguises.length === 0) return;
     this.selectedIndex = (this.selectedIndex - 1 + this.disguises.length) % this.disguises.length;
+    this._emitSelectionFx(source);
   }
 
   /**
    * Move selection down
    */
-  selectNext() {
+  selectNext(source = 'keyboardNext') {
     if (this.disguises.length === 0) return;
     this.selectedIndex = (this.selectedIndex + 1) % this.disguises.length;
+    this._emitSelectionFx(source);
   }
 
   /**
@@ -170,6 +196,13 @@ export class DisguiseUI {
         factionId: selected.factionId
       });
     }
+
+    this._emitFxCue('disguiseEquipIntent', {
+      factionId: selected?.factionId ?? null,
+      name: selected?.name ?? '',
+      effectiveness: selected?.effectiveness ?? 0,
+      source: 'equipSelected',
+    });
   }
 
   /**
@@ -179,6 +212,11 @@ export class DisguiseUI {
     if (this.eventBus) {
       this.eventBus.emit('player:unequip_disguise', {});
     }
+
+    this._emitFxCue('disguiseUnequipIntent', {
+      source: 'unequipCurrent',
+      factionId: this.currentDisguise?.factionId ?? null,
+    });
   }
 
   /**
@@ -413,10 +451,10 @@ export class DisguiseUI {
 
     switch (event.key) {
       case 'ArrowUp':
-        this.selectPrevious();
+        this.selectPrevious('keyboardArrowUp');
         break;
       case 'ArrowDown':
-        this.selectNext();
+        this.selectNext('keyboardArrowDown');
         break;
       case 'Enter':
         this.equipSelected();
@@ -426,5 +464,44 @@ export class DisguiseUI {
         this.unequipCurrent();
         break;
     }
+  }
+
+  _emitSelectionFx(source = 'selectionChange') {
+    if (!this.visible || !this.disguises.length) {
+      return;
+    }
+
+    const selection = this.disguises[this.selectedIndex];
+    if (!selection || !this.eventBus || typeof this.eventBus.emit !== 'function') {
+      return;
+    }
+
+    const signature = `${this.selectedIndex}:${selection?.factionId ?? selection?.name ?? 'unknown'}`;
+    if (source === 'selectionChange' && signature === this._lastFxSelectionSignature) {
+      return;
+    }
+
+    this._lastFxSelectionSignature = signature;
+
+    this._emitFxCue('disguiseSelectionFocus', {
+      source,
+      index: this.selectedIndex,
+      total: this.disguises.length,
+      factionId: selection?.factionId ?? null,
+      effectiveness: selection?.effectiveness ?? null,
+      warnings: Array.isArray(selection?.warnings) ? selection.warnings.length : 0,
+    });
+  }
+
+  _emitFxCue(effectId, context = {}) {
+    if (!this.eventBus || typeof this.eventBus.emit !== 'function' || !effectId) {
+      return;
+    }
+
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId,
+      source: 'DisguiseUI',
+      context,
+    });
   }
 }

@@ -113,7 +113,18 @@
       "status": "pending-sourcing",
       "prompt": "pixel art sprite sheet, 32x32 detective heroine named Kira, long coat with teal interior lining, cybernetic monocle, holstered scanner at hip, four directions (front, back, left, right), idle, walk, run animations with six frames each, neon noir palette with high contrast, consistent lighting, transparent background",
       "negativePrompt": "blurry, low detail, muted colors, anachronistic fashion, steampunk, fantasy armor, logo watermark, text overlay, hands, humanoid distortion, artifacting, low resolution, grainy",
-      "label": ""
+      "label": "Kira Sprite Sheet"
+    },
+    {
+      "requestId": "image-ar-003-kira-evasion-pack",
+      "arId": "AR-003",
+      "title": "Kira Dash & Slide Animations",
+      "usage": "Supplemental dash and slide move sprites for the playable heroine.",
+      "notes": "Extends autosave stress coverage with kinetic traversal frames for combat/stealth beats. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md",
+      "status": "pending-sourcing",
+      "prompt": "pixel art animation pack, 32x32 heroine Kira performing lateral dash and low knee slide, eight frames per action, trench coat flaring with teal interior, cybernetic monocle glint frames, neon noir palette, transparent background, consistent lighting",
+      "negativePrompt": "blurry, low detail, muted colors, anachronistic fashion, steampunk, fantasy armor, logo watermark, text overlay, hands, humanoid distortion, artifacting, low resolution, grainy",
+      "label": "Kira Evasion Pack"
     },
     {
       "requestId": "image-ar-004-npc-civilian-pack",

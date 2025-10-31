@@ -1,6 +1,11 @@
-<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="2.235902">
-<testsuite name="memory-parlor-infiltration.spec.js" timestamp="2025-10-30T13:55:30.858Z" hostname="" tests="1" failures="0" skipped="0" time="1.03" errors="0">
-<testcase name="Memory Parlor infiltration › requires scrambler activation to bypass firewall and complete infiltration" classname="memory-parlor-infiltration.spec.js" time="1.03">
+<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="2.4995909999999997">
+<testsuite name="debug-overlay-fx-metrics.spec.js" timestamp="2025-10-31T00:05:11.917Z" hostname="" tests="1" failures="0" skipped="0" time="1.502" errors="0">
+<testcase name="Debug overlay FX metrics panel › updates metrics view responsively without stealing focus" classname="debug-overlay-fx-metrics.spec.js" time="1.502">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|test-results/debug-overlay-fx-metrics-D-01bde-vely-without-stealing-focus/attachments/pw-updates-metrics-view-responsively-without-stealing-focus-summary-20251031T000515Z-json-73fd34e48179a4e4c9cef7f7a3804ec10535106b.json]]
+]]>
+</system-out>
 </testcase>
 </testsuite>
 </testsuites>

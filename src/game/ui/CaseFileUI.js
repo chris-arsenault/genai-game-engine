@@ -17,6 +17,7 @@
  */
 import { ObjectiveList } from './ObjectiveList.js';
 import { emitOverlayVisibility } from './helpers/overlayEvents.js';
+import { getBindingLabels } from '../utils/controlBindingPrompts.js';
 
 export class CaseFileUI {
   /**
@@ -45,7 +46,10 @@ export class CaseFileUI {
       this.x + 20,
       this.y + 140,
       this.width - 40,
-      { maxHeight: 120 }
+      {
+        maxHeight: 120,
+        eventBus: this.eventBus,
+      }
     );
 
     // Scroll state for evidence/clues
@@ -86,6 +90,66 @@ export class CaseFileUI {
     this.onClose = options.onClose || (() => {});
   }
 
+  _emitFxCue(effectId, context = {}) {
+    if (!effectId || !this.eventBus || typeof this.eventBus.emit !== 'function') {
+      return;
+    }
+
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId,
+      source: 'CaseFileUI',
+      origin: 'caseFileOverlay',
+      caseId: this.caseData?.id ?? null,
+      context: {
+        overlay: 'caseFile',
+        ...context,
+      },
+    });
+  }
+
+  /**
+   * Render inline binding hints with dynamic labels.
+   * @private
+   */
+  _renderBindingHints(ctx, baseY) {
+    const hintFontSize = Math.max(12, this.style.fontSize - 1);
+    ctx.font = `${hintFontSize}px ${this.style.fontFamily}`;
+    ctx.fillStyle = this.style.dimmedTextColor;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+
+    const candidates = [
+      { label: 'Close', action: 'caseFile', fallback: 'Tab' },
+      { label: 'Deduction', action: 'deductionBoard', fallback: 'B' },
+      { label: 'Inventory', action: 'inventory', fallback: 'I' },
+    ];
+
+    const parts = candidates.map(({ label, action, fallback }) => {
+      const bindingLabel = this._getBindingLabel(action, fallback);
+      return `${label}: ${bindingLabel}`;
+    });
+
+    const maxWidth = this.width - this.style.padding * 2;
+    let text = parts.join('  ·  ');
+    while (parts.length > 1 && ctx.measureText(text).width > maxWidth) {
+      parts.pop();
+      text = parts.join('  ·  ');
+    }
+
+    ctx.fillText(text, this.x + this.width - this.style.padding, baseY);
+  }
+
+  _getBindingLabel(action, fallback) {
+    const labels = getBindingLabels(action, { fallbackLabel: fallback });
+    if (Array.isArray(labels) && labels.length > 0) {
+      return labels.join(' / ');
+    }
+    if (typeof fallback === 'string' && fallback.length) {
+      return fallback;
+    }
+    return '—';
+  }
+
   /**
    * Load case data
    * @param {Object} caseData - Case file data from CaseManager
@@ -122,13 +186,67 @@ export class CaseFileUI {
    * @param {Object} updates - Partial case data updates
    */
   updateCase(updates) {
-    if (!this.caseData) return;
+    if (!this.caseData || !updates) return;
 
-    Object.assign(this.caseData, updates);
+    const prevEvidenceCount = Array.isArray(this.caseData.collectedEvidence)
+      ? this.caseData.collectedEvidence.length
+      : 0;
+    const prevClueCount = Array.isArray(this.caseData.discoveredClues)
+      ? this.caseData.discoveredClues.length
+      : 0;
+    const prevObjectives = Array.isArray(this.caseData.objectives)
+      ? this.caseData.objectives
+      : [];
+    const prevCompletedObjectives = prevObjectives.filter((objective) => objective?.completed).length;
+
+    const normalizedUpdates = { ...updates };
+    if (normalizedUpdates.collectedEvidence instanceof Set) {
+      normalizedUpdates.collectedEvidence = Array.from(normalizedUpdates.collectedEvidence);
+    } else if (Array.isArray(normalizedUpdates.collectedEvidence)) {
+      normalizedUpdates.collectedEvidence = [...normalizedUpdates.collectedEvidence];
+    }
+
+    if (normalizedUpdates.discoveredClues instanceof Set) {
+      normalizedUpdates.discoveredClues = Array.from(normalizedUpdates.discoveredClues);
+    } else if (Array.isArray(normalizedUpdates.discoveredClues)) {
+      normalizedUpdates.discoveredClues = [...normalizedUpdates.discoveredClues];
+    }
+
+    Object.assign(this.caseData, normalizedUpdates);
 
     // Update objectives if changed
-    if (updates.objectives) {
-      this.objectiveList.loadObjectives(updates.objectives);
+    if (normalizedUpdates.objectives) {
+      this.objectiveList.loadObjectives(normalizedUpdates.objectives);
+    }
+
+    const nextEvidenceCount = Array.isArray(this.caseData.collectedEvidence)
+      ? this.caseData.collectedEvidence.length
+      : 0;
+    if (nextEvidenceCount > prevEvidenceCount) {
+      this._emitFxCue('caseEvidencePulse', {
+        delta: nextEvidenceCount - prevEvidenceCount,
+        totalEvidence: nextEvidenceCount,
+      });
+    }
+
+    const nextClueCount = Array.isArray(this.caseData.discoveredClues)
+      ? this.caseData.discoveredClues.length
+      : 0;
+    if (nextClueCount > prevClueCount) {
+      this._emitFxCue('caseCluePulse', {
+        delta: nextClueCount - prevClueCount,
+        totalClues: nextClueCount,
+      });
+    }
+
+    if (normalizedUpdates.objectives) {
+      const nextCompleted = normalizedUpdates.objectives.filter((objective) => objective?.completed).length;
+      if (nextCompleted > prevCompletedObjectives) {
+        this._emitFxCue('caseObjectivePulse', {
+          delta: nextCompleted - prevCompletedObjectives,
+          totalCompleted: nextCompleted,
+        });
+      }
     }
   }
 
@@ -240,7 +358,10 @@ export class CaseFileUI {
     ctx.strokeRect(this.x, this.y, this.width, this.height);
 
     // Draw header
-    this._renderHeader(ctx);
+    const headerBottom = this._renderHeader(ctx);
+
+    // Draw binding hints
+    this._renderBindingHints(ctx, headerBottom + 12);
 
     // Draw objectives section
     this._renderObjectivesSection(ctx);
@@ -283,8 +404,10 @@ export class CaseFileUI {
 
       if (this.visible) {
         this.eventBus.emit('case_file:opened', { caseId });
+        this._emitFxCue('caseFileOverlayReveal', { source });
       } else {
         this.eventBus.emit('case_file:closed', { caseId });
+        this._emitFxCue('caseFileOverlayDismiss', { source });
       }
     }
 
@@ -297,6 +420,7 @@ export class CaseFileUI {
    */
   _renderHeader(ctx) {
     const headerY = this.y + this.style.padding;
+    let bottomY = headerY + this.style.titleFontSize;
 
     // Case title
     ctx.fillStyle = this.style.textColor;
@@ -310,13 +434,17 @@ export class CaseFileUI {
       ctx.fillStyle = this.style.dimmedTextColor;
       ctx.font = `${this.style.fontSize}px ${this.style.fontFamily}`;
       const lines = this._wrapText(ctx, this.caseData.description, this.width - this.style.padding * 2);
-      const descY = headerY + this.style.titleFontSize + 10;
+      const descY = bottomY + 10;
+      const drawn = lines.slice(0, 2);
 
-      // Only show first 2 lines
-      lines.slice(0, 2).forEach((line, i) => {
+      drawn.forEach((line, i) => {
         ctx.fillText(line, this.x + this.style.padding, descY + i * (this.style.fontSize + 4));
       });
+
+      bottomY = descY + drawn.length * (this.style.fontSize + 4);
     }
+
+    return bottomY;
   }
 
   /**

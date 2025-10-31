@@ -11,6 +11,7 @@ import { Transform } from '../components/Transform.js';
 import { Sprite } from '../components/Sprite.js';
 import { Collider } from '../components/Collider.js';
 import { InteractionZone } from '../components/InteractionZone.js';
+import { formatActionPrompt } from '../utils/controlBindingPrompts.js';
 
 function shouldLog() {
   if (typeof __DEV__ !== 'undefined') {
@@ -262,7 +263,6 @@ export class LevelSpawnSystem extends System {
           isStatic: true,
           tags: [objectData.type],
         });
-        collider.type = 'Collider';
         this.componentRegistry.addComponent(entityId, collider);
       }
 
@@ -274,6 +274,7 @@ export class LevelSpawnSystem extends System {
           radius: 48,
           requiresInput: true,
           prompt: this._getInteractionPrompt(objectData),
+          promptAction: 'interact',
           active: true,
           oneShot: false,
           data: {
@@ -379,22 +380,25 @@ export class LevelSpawnSystem extends System {
    * @returns {string} Interaction prompt
    */
   _getInteractionPrompt(objectData) {
+    if (!objectData || typeof objectData !== 'object') {
+      return formatActionPrompt('interact', 'interact');
+    }
+
     if (objectData.type === 'container') {
-      return objectData.locked
-        ? 'Press E to unlock container'
-        : 'Press E to open container';
+      const action = objectData.locked ? 'unlock container' : 'open container';
+      return formatActionPrompt('interact', action);
     }
 
     if (objectData.type === 'terminal') {
-      return 'Press E to access terminal';
+      return formatActionPrompt('interact', 'access terminal');
     }
 
     if (objectData.type === 'door') {
-      return objectData.locked
-        ? 'Press E to unlock door'
-        : 'Press E to open door';
+      const action = objectData.locked ? 'unlock door' : 'open door';
+      return formatActionPrompt('interact', action);
     }
 
-    return `Press E to interact with ${objectData.type}`;
+    const label = typeof objectData.type === 'string' ? objectData.type : 'object';
+    return formatActionPrompt('interact', `interact with ${label}`);
   }
 }
