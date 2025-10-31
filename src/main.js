@@ -101,6 +101,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   const debugAudioState = document.getElementById('debug-audio-state');
   const debugAudioHistory = document.getElementById('debug-audio-history');
   const debugAudioBridge = document.getElementById('debug-audio-bridge');
+  const debugAudioContainer = document.getElementById('debug-audio');
   const debugSfxList = document.getElementById('debug-sfx-list');
   const debugSfxFilterInput = document.getElementById('debug-sfx-filter');
   const debugSfxTagFilters = document.getElementById('debug-sfx-tag-filters');
@@ -118,6 +119,17 @@ window.addEventListener('DOMContentLoaded', async () => {
   const debugFxPeakActive = document.getElementById('debug-fx-peak-active');
   const debugFxPeakThroughput = document.getElementById('debug-fx-peak-throughput');
   const debugFxWarning = document.getElementById('debug-fx-warning');
+
+  const AUDIO_FOCUS_SELECTOR =
+    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+  const scheduleAnimationFrame =
+    typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function'
+      ? window.requestAnimationFrame.bind(window)
+      : (callback) => setTimeout(callback, 0);
+  let audioFocusTrapActive = false;
+  let audioFocusableElements = [];
+  let audioFocusRefreshScheduled = false;
+  let previousAudioFocusReturnTarget = null;
 
   const formatClock = (timestamp) => {
     if (!timestamp || Number.isNaN(timestamp)) {
@@ -163,6 +175,410 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
     return `${Math.round(milliseconds)}ms`;
   };
+
+  function isElementFocusable(element) {
+    if (!(element instanceof HTMLElement)) {
+      return false;
+    }
+    if (element.disabled) {
+      return false;
+    }
+    if (element.getAttribute('aria-hidden') === 'true') {
+      return false;
+    }
+    const tabIndex = element.getAttribute('tabindex');
+    if (tabIndex === '-1') {
+      return false;
+    }
+    if (typeof element.offsetParent === 'undefined') {
+      return true;
+    }
+    if (element.offsetParent === null && element !== document.activeElement) {
+      const rect = element.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    }
+    return true;
+  }
+
+  function collectAudioFocusables() {
+    const focusables = [];
+    const pushIfFocusable = (node) => {
+      if (node && isElementFocusable(node)) {
+        focusables.push(node);
+      }
+    };
+
+    pushIfFocusable(debugSfxFilterInput);
+
+    if (debugSfxTagFilters) {
+      const chips = debugSfxTagFilters.querySelectorAll('button');
+      chips.forEach(pushIfFocusable);
+    }
+
+    if (debugAudioBridge) {
+      const bridgeTargets = debugAudioBridge.querySelectorAll(AUDIO_FOCUS_SELECTOR);
+      bridgeTargets.forEach(pushIfFocusable);
+    }
+
+    if (debugSfxList) {
+      const buttons = debugSfxList.querySelectorAll('.debug-sfx-row button');
+      buttons.forEach(pushIfFocusable);
+    }
+
+    return focusables;
+  }
+
+  function refreshAudioFocusables({ immediate = false, ensureActive = false } = {}) {
+    const applyUpdate = () => {
+      audioFocusableElements = collectAudioFocusables();
+      if (ensureActive && audioFocusTrapActive) {
+        const active = document.activeElement;
+        if (!audioFocusableElements.includes(active)) {
+          const fallback = audioFocusableElements[0];
+          if (fallback && typeof fallback.focus === 'function') {
+            try {
+              fallback.focus({ preventScroll: true });
+            } catch (error) {
+              fallback.focus();
+            }
+          }
+        }
+      }
+    };
+
+    if (immediate) {
+      applyUpdate();
+      return;
+    }
+
+    if (audioFocusRefreshScheduled) {
+      return;
+    }
+
+    audioFocusRefreshScheduled = true;
+    scheduleAnimationFrame(() => {
+      audioFocusRefreshScheduled = false;
+      applyUpdate();
+    });
+  }
+
+  function rotateAudioFocus({ backwards = false } = {}) {
+    refreshAudioFocusables({ immediate: true });
+    if (!audioFocusableElements.length) {
+      return;
+    }
+    const active = document.activeElement;
+    let index = audioFocusableElements.indexOf(active);
+    if (index === -1) {
+      index = backwards ? audioFocusableElements.length - 1 : 0;
+    } else {
+      index = backwards ? index - 1 : index + 1;
+      if (index < 0) {
+        index = audioFocusableElements.length - 1;
+      } else if (index >= audioFocusableElements.length) {
+        index = 0;
+      }
+    }
+    const target = audioFocusableElements[index];
+    if (target && typeof target.focus === 'function') {
+      try {
+        target.focus({ preventScroll: true });
+      } catch (error) {
+        target.focus();
+      }
+    }
+  }
+
+  function focusFirstSfxButton() {
+    if (!debugSfxList) {
+      return false;
+    }
+    const button = debugSfxList.querySelector('.debug-sfx-row button');
+    if (button && typeof button.focus === 'function') {
+      button.focus();
+      return true;
+    }
+    return false;
+  }
+
+  function focusLastSfxButton() {
+    if (!debugSfxList) {
+      return false;
+    }
+    const buttons = debugSfxList.querySelectorAll('.debug-sfx-row button');
+    if (buttons.length > 0) {
+      const button = buttons[buttons.length - 1];
+      if (button && typeof button.focus === 'function') {
+        button.focus();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function focusAdjacentTagChip(current, offset) {
+    if (!debugSfxTagFilters || !current) {
+      return false;
+    }
+    const chips = Array.from(debugSfxTagFilters.querySelectorAll('button'));
+    if (!chips.length) {
+      return false;
+    }
+    const currentIndex = chips.indexOf(current);
+    if (currentIndex === -1) {
+      return false;
+    }
+    let nextIndex = currentIndex + offset;
+    if (nextIndex < 0) {
+      nextIndex = chips.length - 1;
+    } else if (nextIndex >= chips.length) {
+      nextIndex = 0;
+    }
+    const target = chips[nextIndex];
+    if (target && typeof target.focus === 'function') {
+      target.focus();
+      return true;
+    }
+    return false;
+  }
+
+  function focusTagChipEdge(position) {
+    if (!debugSfxTagFilters) {
+      return false;
+    }
+    const chips = Array.from(debugSfxTagFilters.querySelectorAll('button'));
+    if (!chips.length) {
+      return false;
+    }
+    const target = position === 'last' ? chips[chips.length - 1] : chips[0];
+    if (target && typeof target.focus === 'function') {
+      target.focus();
+      return true;
+    }
+    return false;
+  }
+
+  function focusSfxButtonByOffset(current, offset) {
+    if (!debugSfxList || !current) {
+      return false;
+    }
+    const buttons = Array.from(debugSfxList.querySelectorAll('.debug-sfx-row button'));
+    if (!buttons.length) {
+      return false;
+    }
+    let index = buttons.indexOf(current);
+    if (index === -1 && current.closest) {
+      const row = current.closest('.debug-sfx-row');
+      if (row) {
+        const rowButton = row.querySelector('button');
+        index = buttons.indexOf(rowButton);
+      }
+    }
+    if (index === -1) {
+      return false;
+    }
+    let nextIndex = index + offset;
+    if (nextIndex < 0) {
+      nextIndex = -1;
+    } else if (nextIndex >= buttons.length) {
+      nextIndex = buttons.length;
+    }
+    if (nextIndex === index) {
+      return false;
+    }
+    if (nextIndex < 0) {
+      return false;
+    }
+    if (nextIndex >= buttons.length) {
+      return false;
+    }
+    const target = buttons[nextIndex];
+    if (target && typeof target.focus === 'function') {
+      target.focus();
+      return true;
+    }
+    return false;
+  }
+
+  function focusSfxButtonEdge(position) {
+    if (!debugSfxList) {
+      return false;
+    }
+    const buttons = Array.from(debugSfxList.querySelectorAll('.debug-sfx-row button'));
+    if (!buttons.length) {
+      return false;
+    }
+    const target = position === 'last' ? buttons[buttons.length - 1] : buttons[0];
+    if (target && typeof target.focus === 'function') {
+      target.focus();
+      return true;
+    }
+    return false;
+  }
+
+  function activateAudioFocus({ source = 'shortcut' } = {}) {
+    if (!debugAudioContainer) {
+      return;
+    }
+    if (document.activeElement instanceof HTMLElement && document.activeElement !== document.body) {
+      previousAudioFocusReturnTarget = document.activeElement;
+    } else {
+      previousAudioFocusReturnTarget = canvas;
+    }
+
+    if (!debugEnabled) {
+      debugEnabled = true;
+    }
+    if (debugOverlay) {
+      debugOverlay.classList.add('visible');
+      debugOverlay.dataset.focusSection = 'audio';
+    }
+    audioFocusTrapActive = true;
+    debugAudioContainer.setAttribute('data-focus-active', 'true');
+    refreshAudioFocusables({ immediate: true });
+    const target = audioFocusableElements[0] || debugSfxFilterInput || debugAudioContainer;
+    if (target && typeof target.focus === 'function') {
+      try {
+        target.focus({ preventScroll: source === 'shortcut' });
+      } catch (error) {
+        target.focus();
+      }
+    }
+  }
+
+  function deactivateAudioFocus({ restoreFocus = true } = {}) {
+    if (!audioFocusTrapActive) {
+      return;
+    }
+    audioFocusTrapActive = false;
+    if (debugAudioContainer) {
+      debugAudioContainer.removeAttribute('data-focus-active');
+    }
+    if (debugOverlay && debugOverlay.dataset.focusSection === 'audio') {
+      delete debugOverlay.dataset.focusSection;
+    }
+    refreshAudioFocusables({ immediate: true });
+    if (restoreFocus) {
+      const target =
+        (previousAudioFocusReturnTarget && document.contains(previousAudioFocusReturnTarget)
+          ? previousAudioFocusReturnTarget
+          : canvas);
+      if (target && typeof target.focus === 'function') {
+        try {
+          target.focus({ preventScroll: true });
+        } catch (error) {
+          target.focus();
+        }
+      }
+    }
+    previousAudioFocusReturnTarget = null;
+  }
+
+  function handleAudioFocusKeydown(event) {
+    if (!audioFocusTrapActive) {
+      return false;
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      deactivateAudioFocus({ restoreFocus: true });
+      return true;
+    }
+
+    if (event.key === 'Tab') {
+      event.preventDefault();
+      rotateAudioFocus({ backwards: event.shiftKey });
+      return true;
+    }
+
+    const activeElement = document.activeElement;
+    if (!(activeElement instanceof HTMLElement)) {
+      return false;
+    }
+
+    const activeInTagFilters =
+      debugSfxTagFilters && debugSfxTagFilters.contains(activeElement) && activeElement.tagName === 'BUTTON';
+    const activeInSfxRow = !!activeElement.closest('.debug-sfx-row');
+
+    if ((event.key === 'ArrowRight' || event.key === 'ArrowLeft') && activeInTagFilters) {
+      const offset = event.key === 'ArrowRight' ? 1 : -1;
+      if (focusAdjacentTagChip(activeElement, offset)) {
+        event.preventDefault();
+        return true;
+      }
+    }
+
+    if (event.key === 'ArrowDown') {
+      if (activeElement === debugSfxFilterInput) {
+        if (focusFirstSfxButton()) {
+          event.preventDefault();
+          return true;
+        }
+      } else if (activeInTagFilters) {
+        if (focusFirstSfxButton()) {
+          event.preventDefault();
+          return true;
+        }
+      } else if (activeInSfxRow) {
+        if (focusSfxButtonByOffset(activeElement, 1)) {
+          event.preventDefault();
+          return true;
+        }
+      }
+    }
+
+    if (event.key === 'ArrowUp' && activeInSfxRow) {
+      const moved = focusSfxButtonByOffset(activeElement, -1);
+      if (moved) {
+        event.preventDefault();
+        return true;
+      }
+      if (debugSfxTagFilters) {
+        const chips = debugSfxTagFilters.querySelectorAll('button');
+        const fallback = chips.length ? chips[chips.length - 1] : null;
+        if (fallback && typeof fallback.focus === 'function') {
+          fallback.focus();
+          event.preventDefault();
+          return true;
+        }
+      }
+      if (debugSfxFilterInput && typeof debugSfxFilterInput.focus === 'function') {
+        debugSfxFilterInput.focus();
+        event.preventDefault();
+        return true;
+      }
+    }
+
+    if (event.key === 'Home') {
+      if (activeInSfxRow) {
+        if (focusSfxButtonEdge('first')) {
+          event.preventDefault();
+          return true;
+        }
+      } else if (activeInTagFilters) {
+        if (focusTagChipEdge('first')) {
+          event.preventDefault();
+          return true;
+        }
+      }
+    }
+
+    if (event.key === 'End') {
+      if (activeInSfxRow) {
+        if (focusSfxButtonEdge('last')) {
+          event.preventDefault();
+          return true;
+        }
+      } else if (activeInTagFilters) {
+        if (focusTagChipEdge('last')) {
+          event.preventDefault();
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
 
   const resolveFxTimestampMs = (sample) => {
     if (!sample || sample.timestamp == null) {
@@ -473,6 +889,8 @@ window.addEventListener('DOMContentLoaded', async () => {
       });
       debugSfxTagFilters.appendChild(chip);
     }
+
+    refreshAudioFocusables({ ensureActive: audioFocusTrapActive });
   }
 
   if (debugSfxFilterInput) {
@@ -499,13 +917,31 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   window.addEventListener('keydown', (e) => {
+    if ((e.key === 'A' || e.key === 'a') && e.altKey && e.shiftKey && !e.ctrlKey) {
+      e.preventDefault();
+      if (audioFocusTrapActive) {
+        deactivateAudioFocus({ restoreFocus: true });
+      } else {
+        activateAudioFocus({ source: 'shortcut' });
+      }
+      return;
+    }
+
+    if (handleAudioFocusKeydown(e)) {
+      return;
+    }
+
     if (e.key === 'F3') {
       e.preventDefault();
       debugEnabled = !debugEnabled;
       debugTranscriptNeedsScroll = true;
+      if (!debugEnabled) {
+        deactivateAudioFocus({ restoreFocus: false });
+      }
       if (debugOverlay) {
         debugOverlay.classList.toggle('visible', debugEnabled);
       }
+      return;
     }
 
     if (e.key === 'F4') {
@@ -1315,6 +1751,7 @@ window.addEventListener('DOMContentLoaded', async () => {
             button.type = 'button';
             button.textContent = '▶';
             button.title = `Preview ${entry.id}`;
+            button.dataset.sfxId = entry.id;
             button.addEventListener('click', () => {
               try {
                 window.game?.previewSfx?.(entry.id);
@@ -1351,6 +1788,8 @@ window.addEventListener('DOMContentLoaded', async () => {
             debugSfxList.appendChild(row);
           }
         }
+
+        refreshAudioFocusables({ ensureActive: audioFocusTrapActive });
       }
     }
 

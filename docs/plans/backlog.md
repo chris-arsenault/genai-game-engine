@@ -24,6 +24,13 @@
 
 **Next Session Focus**: Share the neon glow approval summary with Narrative/RenderOps to capture sign-off on the neon district tileset, fold SaveManager telemetry budget events into CI/QA monitoring, and stage the next RenderOps lighting feedback pass.
 
+### Session #149 Backlog Updates
+
+#### UX-173: Debug Audio Overlay Ergonomics
+- Added a Shift+Alt+A shortcut that opens the audio panel, traps focus inside the controls, and exits back to the game canvas on Escape.
+- Wired keyboard navigation for tag chips and SFX catalog rows, including focus styling and Tab cycling safeguards.
+- Authored Playwright coverage (`tests/e2e/debug-overlay-audio-accessibility.spec.js`) to validate shortcut activation, arrow navigation, and escape behaviour alongside a full Jest run.
+
 ### Session #148 Backlog Updates
 
 #### FX-244: Secondary Overlay FX Cue Audit

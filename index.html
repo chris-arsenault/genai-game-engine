@@ -38,6 +38,11 @@
       background: #1a1a2e;
     }
 
+    #game-canvas:focus {
+      outline: 2px solid rgba(102, 255, 255, 0.6);
+      outline-offset: 2px;
+    }
+
     #loading-screen {
       position: absolute;
       top: 0;
@@ -421,6 +426,11 @@
       background: rgba(102, 255, 204, 0.6);
     }
 
+    .debug-sfx-tag-chip:focus {
+      outline: 2px solid rgba(102, 255, 204, 0.8);
+      outline-offset: 1px;
+    }
+
     .debug-sfx-list {
       display: flex;
       flex-direction: column;
@@ -438,6 +448,11 @@
       padding: 4px;
     }
 
+    .debug-sfx-row:focus-within {
+      border-color: rgba(102, 255, 255, 0.6);
+      box-shadow: 0 0 0 1px rgba(102, 255, 255, 0.25);
+    }
+
     .debug-sfx-row button {
       background: rgba(102, 255, 255, 0.2);
       border: 1px solid rgba(102, 255, 255, 0.5);
@@ -446,6 +461,11 @@
       padding: 2px 6px;
       border-radius: 4px;
       cursor: pointer;
+    }
+
+    .debug-sfx-row button:focus {
+      outline: 2px solid rgba(102, 255, 255, 0.85);
+      outline-offset: 1px;
     }
 
     .debug-sfx-row button:hover {
@@ -469,6 +489,11 @@
     .debug-sfx-empty {
       font-size: 11px;
       color: rgba(255, 255, 255, 0.6);
+    }
+
+    #debug-audio[data-focus-active="true"] {
+      outline: 1px solid rgba(102, 255, 255, 0.6);
+      box-shadow: 0 0 8px rgba(102, 255, 255, 0.25);
     }
 
     #debug-dialogue {
@@ -591,7 +616,7 @@
 </head>
 <body>
   <div id="game-container">
-    <canvas id="game-canvas" width="1280" height="720"></canvas>
+    <canvas id="game-canvas" width="1280" height="720" tabindex="0" aria-label="Game canvas"></canvas>
 
     <div id="loading-screen">
       <div class="loading-text">Loading The Memory Syndicate...</div>
@@ -713,6 +738,7 @@
       </div>
       <div id="debug-audio">
         <div class="debug-title">Audio</div>
+        <div class="debug-meta">Shortcut: Shift+Alt+A · Esc exits audio focus</div>
         <div class="debug-audio-section">
           <div class="debug-subtitle">Adaptive State</div>
           <div id="debug-audio-state" class="debug-audio-meta">State: n/a</div>
