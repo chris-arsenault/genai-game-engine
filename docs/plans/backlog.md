@@ -54,6 +54,14 @@
 - Introduced the Save/Load overlay with manual slot and load workflows, refreshed control bindings, and new regression tests validating the UI interactions (`src/game/ui/SaveLoadOverlay.js`, `src/game/Game.js`, `tests/game/ui/SaveLoadOverlay.test.js`).
 - Verification: `npm test -- --runTestsByPath tests/game/managers/SaveManager.test.js tests/game/ui/SaveLoadOverlay.test.js`.
 
+### Session #158 Backlog Updates
+
+#### M3-016: Save/Load System Implementation
+- Hardened SaveManager parity verification by summarizing story flag, quest, faction, tutorial, dialogue, and inventory domains so world snapshots align with legacy scrapers; added tutorial skip state harvesting and a new parity regression in `tests/game/managers/SaveManager.test.js`.
+- Delivered a Save/Load QA packaging workflow (`src/game/tools/SaveLoadQAPacketBuilder.js`, `scripts/telemetry/packageSaveLoadQa.js`, `npm run telemetry:package-save-load`) that bundles latency profiling plus payload summaries into timestamped packets under `reports/telemetry/save-load-qa/`.
+- Authored a sustained autosave stress test to validate repeated quest completion bursts retain slot focus and emit the expected `game:saved` cadence without failures (`tests/game/managers/SaveManager.test.js` autosave suite).
+- Verification: `npm test -- SaveManager`, `npm test -- SaveLoadQAPacketBuilder`, `npm run telemetry:package-save-load -- --iterations=2 --no-samples`.
+
 ### Session #156 Backlog Updates
 
 #### M3-016: Save/Load System Implementation

@@ -32,6 +32,7 @@
     "telemetry:stage-reminder": "node scripts/telemetry/stageParityReminder.js",
     "telemetry:profile-save-load": "node scripts/telemetry/profileSaveLoadLatency.js",
     "telemetry:save-payload-summary": "node scripts/telemetry/exportSavePayloadSummary.js",
+    "telemetry:package-save-load": "node scripts/telemetry/packageSaveLoadQa.js",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:e2e": "./run_playwright.sh test",

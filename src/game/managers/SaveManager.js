@@ -1141,8 +1141,20 @@ export class SaveManager {
     const storyFlags = this.collectStoryFlags();
     const quests = this.collectQuestData();
     const factions = this.collectFactionData();
-    const tutorialComplete = this.collectTutorialData();
+    const tutorialState = this.collectTutorialState();
     const tutorialProgress = this.tutorialSystem?.getProgress?.() ?? null;
+    const completedStepsCount = normalizeCompletedSteps(tutorialProgress?.completedSteps);
+    const totalSteps = Number.isFinite(tutorialProgress?.totalSteps)
+      ? Math.max(0, Math.trunc(tutorialProgress.totalSteps))
+      : 0;
+    const derivedCompletion = totalSteps > 0 && completedStepsCount >= totalSteps;
+    const tutorialComplete =
+      tutorialState.completed || Boolean(this.tutorialSystem?.isComplete?.()) || derivedCompletion;
+    const tutorialSkipped = tutorialState.skipped || Boolean(this.tutorialSystem?.skipped);
+    const currentStepIndex = Number.isFinite(tutorialProgress?.currentStepIndex)
+      ? Math.trunc(tutorialProgress.currentStepIndex)
+      : -1;
+
     const inventory = inventorySnapshot
       ? {
           items: Array.isArray(inventorySnapshot.items)
@@ -1165,20 +1177,14 @@ export class SaveManager {
       inventory,
       tutorial: {
         completed: Boolean(tutorialComplete),
-        completedSteps: [],
-        skipped: false,
+        completedSteps: completedStepsCount,
+        skipped: Boolean(tutorialSkipped),
         totalSteps: tutorialProgress?.totalSteps ?? 0,
         currentStep: tutorialProgress?.currentStep ?? null,
-        currentStepIndex: tutorialProgress?.currentStepIndex ?? -1,
+        currentStepIndex,
         lastActionAt: null,
       },
-      dialogue: {
-        active: null,
-        historyByNpc: {},
-        completedByNpc: {},
-        transcriptEnabled: false,
-        historyLimit: 0,
-      },
+      dialogue: null,
     };
   }
 
@@ -1218,10 +1224,25 @@ export class SaveManager {
    * @returns {boolean}
    */
   collectTutorialData() {
+    return this.collectTutorialState().completed;
+  }
+
+  /**
+   * Collect tutorial state from storage (completion + skip flags).
+   * @returns {{completed: boolean, skipped: boolean}}
+   */
+  collectTutorialState() {
     if (!this.storage) {
-      return false;
+      return {
+        completed: false,
+        skipped: false,
+      };
     }
-    return this.storage.getItem('tutorial_completed') === 'true';
+
+    return {
+      completed: this.storage.getItem('tutorial_completed') === 'true',
+      skipped: this.storage.getItem('tutorial_skipped') === 'true',
+    };
   }
 
   // ==================== Data Restoration Methods ====================
@@ -1292,9 +1313,9 @@ export class SaveManager {
 
     try {
       const comparableSnapshot = {
-        storyFlags: snapshot.storyFlags,
-        quests: snapshot.quests,
-        factions: snapshot.factions,
+        storyFlags: summarizeStoryFlags(snapshot.storyFlags),
+        quests: summarizeQuestState(snapshot.quests),
+        factions: summarizeFactionState(snapshot.factions),
         tutorialComplete: snapshot.tutorialComplete,
         tutorial: summarizeTutorialState(snapshot.tutorial),
         dialogue: summarizeDialogueState(snapshot.dialogue),
@@ -1302,9 +1323,9 @@ export class SaveManager {
       };
 
       const comparableLegacy = {
-        storyFlags: legacyData.storyFlags,
-        quests: legacyData.quests,
-        factions: legacyData.factions,
+        storyFlags: summarizeStoryFlags(legacyData.storyFlags),
+        quests: summarizeQuestState(legacyData.quests),
+        factions: summarizeFactionState(legacyData.factions),
         tutorialComplete: legacyData.tutorialComplete,
         tutorial: summarizeTutorialState(legacyData.tutorial),
         dialogue: summarizeDialogueState(legacyData.dialogue),
@@ -1401,16 +1422,137 @@ export class SaveManager {
   }
 }
 
+function summarizeStoryFlags(storyFlags) {
+  if (!storyFlags || typeof storyFlags !== 'object') {
+    return {};
+  }
+
+  const source =
+    storyFlags.flags && typeof storyFlags.flags === 'object'
+      ? storyFlags.flags
+      : storyFlags;
+
+  const normalized = {};
+  for (const [flagId, entry] of Object.entries(source)) {
+    if (!entry || typeof entry !== 'object') {
+      normalized[flagId] = entry ?? null;
+      continue;
+    }
+    if (Object.prototype.hasOwnProperty.call(entry, 'value')) {
+      normalized[flagId] = entry.value;
+    } else {
+      normalized[flagId] = entry;
+    }
+  }
+  return normalized;
+}
+
+function summarizeQuestState(questState) {
+  const normalizeIds = (input) => {
+    if (!input) return [];
+    if (Array.isArray(input)) {
+      return [...new Set(input.map(String))].sort();
+    }
+    if (typeof input === 'object') {
+      return Object.keys(input)
+        .map(String)
+        .sort();
+    }
+    return [];
+  };
+
+  if (!questState || typeof questState !== 'object') {
+    return {
+      active: [],
+      completed: [],
+      failed: [],
+    };
+  }
+
+  const activeIds = new Set();
+  const completedIds = new Set();
+  const failedIds = new Set();
+
+  for (const id of normalizeIds(questState.activeIds)) {
+    activeIds.add(id);
+  }
+  for (const id of normalizeIds(questState.completedIds)) {
+    completedIds.add(id);
+  }
+  for (const id of normalizeIds(questState.failedIds)) {
+    failedIds.add(id);
+  }
+
+  if (Array.isArray(questState.activeQuests)) {
+    for (const id of questState.activeQuests) {
+      activeIds.add(String(id));
+    }
+  }
+  if (Array.isArray(questState.completedQuests)) {
+    for (const id of questState.completedQuests) {
+      completedIds.add(String(id));
+    }
+  }
+  if (Array.isArray(questState.failedQuests)) {
+    for (const id of questState.failedQuests) {
+      failedIds.add(String(id));
+    }
+  }
+
+  return {
+    active: Array.from(activeIds).sort(),
+    completed: Array.from(completedIds).sort(),
+    failed: Array.from(failedIds).sort(),
+  };
+}
+
+function summarizeFactionState(factionState) {
+  if (!factionState || typeof factionState !== 'object') {
+    return {};
+  }
+
+  const normalized = {};
+
+  if (factionState.byId && typeof factionState.byId === 'object') {
+    for (const [factionId, record] of Object.entries(factionState.byId)) {
+      if (!record || typeof record !== 'object') continue;
+      normalized[factionId] = {
+        fame: Number.isFinite(record.fame) ? record.fame : 0,
+        infamy: Number.isFinite(record.infamy) ? record.infamy : 0,
+      };
+    }
+    return normalized;
+  }
+
+  if (factionState.reputation && typeof factionState.reputation === 'object') {
+    for (const [factionId, record] of Object.entries(factionState.reputation)) {
+      if (!record || typeof record !== 'object') continue;
+      normalized[factionId] = {
+        fame: Number.isFinite(record.fame) ? record.fame : 0,
+        infamy: Number.isFinite(record.infamy) ? record.infamy : 0,
+      };
+    }
+  }
+
+  return normalized;
+}
+
+function normalizeCompletedSteps(value) {
+  if (Array.isArray(value)) {
+    return value.length;
+  }
+  if (Number.isFinite(value)) {
+    return Math.max(0, Math.trunc(value));
+  }
+  return 0;
+}
+
 function summarizeTutorialState(tutorial) {
   if (!tutorial) {
     return null;
   }
 
-  const completedSteps = Array.isArray(tutorial.completedSteps)
-    ? tutorial.completedSteps.length
-    : typeof tutorial.completedSteps === 'number'
-    ? tutorial.completedSteps
-    : 0;
+  const completedSteps = normalizeCompletedSteps(tutorial.completedSteps);
 
   return {
     completed: Boolean(tutorial.completed),
@@ -1697,10 +1839,46 @@ function buildNpcInspectorSummary(rootState, npcSummaries) {
 }
 
 function deepEqual(a, b) {
-  try {
-    return JSON.stringify(a) === JSON.stringify(b);
-  } catch (error) {
-    console.warn('[SaveManager] deepEqual comparison failed', error);
+  if (a === b) {
+    return true;
+  }
+
+  if (typeof a !== typeof b) {
     return false;
   }
+
+  if (a === null || b === null) {
+    return a === b;
+  }
+
+  if (Array.isArray(a)) {
+    if (!Array.isArray(b) || a.length !== b.length) {
+      return false;
+    }
+    for (let index = 0; index < a.length; index += 1) {
+      if (!deepEqual(a[index], b[index])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  if (typeof a === 'object') {
+    const aKeys = Object.keys(a).sort();
+    const bKeys = Object.keys(b).sort();
+    if (aKeys.length !== bKeys.length) {
+      return false;
+    }
+    for (let i = 0; i < aKeys.length; i += 1) {
+      if (aKeys[i] !== bKeys[i]) {
+        return false;
+      }
+      if (!deepEqual(a[aKeys[i]], b[bKeys[i]])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  return Object.is(a, b);
 }

@@ -1,0 +1,73 @@
+{
+  "slot": "payload-summary",
+  "version": 1,
+  "timestamp": 1761883646032,
+  "playtime": 0,
+  "meta": {
+    "snapshotSource": "worldStateStore",
+    "slotLabel": "payload-summary"
+  },
+  "sections": {
+    "storyFlags": {
+      "keys": [
+        "investigation_started",
+        "tutorial_completed"
+      ],
+      "count": 2
+    },
+    "quests": {
+      "keys": [
+        "activeIds",
+        "completedIds",
+        "failedIds",
+        "byId",
+        "npcAvailability",
+        "npcAvailabilityHistory"
+      ],
+      "activeCount": 0,
+      "completedCount": 0
+    },
+    "factions": {
+      "factionCount": 0,
+      "factionIds": [],
+      "timestamp": null
+    },
+    "tutorial": {
+      "completed": true,
+      "totalSteps": 12,
+      "currentStep": null
+    },
+    "inventory": {
+      "itemCount": 2,
+      "equippedSlots": [
+        "primaryWeapon",
+        "tool"
+      ],
+      "lastUpdatedAt": 1761883646032,
+      "sampleItemKeys": [
+        "id",
+        "quantity",
+        "rarity"
+      ]
+    },
+    "dialogue": {
+      "transcriptEnabled": false,
+      "historyBuckets": [],
+      "completedBuckets": []
+    },
+    "district": {
+      "count": 2,
+      "keys": [
+        "neon_crossroads",
+        "undercity_sewage"
+      ]
+    },
+    "npc": {
+      "count": 2,
+      "keys": [
+        "npc_echo",
+        "npc_brackish"
+      ]
+    }
+  }
+}

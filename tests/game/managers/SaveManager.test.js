@@ -512,6 +512,40 @@ describe('SaveManager', () => {
       warnSpy.mockRestore();
     });
 
+    test('does not log parity warning when tutorial skip matches legacy state', () => {
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+      localStorageMock.setItem('tutorial_completed', 'true');
+      localStorageMock.setItem('tutorial_skipped', 'true');
+
+      const managerWithStore = new SaveManager(eventBus, {
+        ...mockManagers,
+        worldStateStore: {
+          snapshot: jest.fn(),
+        },
+      });
+      managerWithStore.init();
+
+      const baselineLegacy = managerWithStore.collectLegacyGameData();
+      managerWithStore.worldStateStore.snapshot.mockReturnValue({
+        ...baselineLegacy,
+        tutorial: baselineLegacy.tutorial ? { ...baselineLegacy.tutorial } : baselineLegacy.tutorial,
+        dialogue: baselineLegacy.dialogue ?? null,
+        inventory: baselineLegacy.inventory ? { ...baselineLegacy.inventory } : baselineLegacy.inventory,
+        factions: baselineLegacy.factions ? { ...baselineLegacy.factions } : baselineLegacy.factions,
+        quests: baselineLegacy.quests ? { ...baselineLegacy.quests } : baselineLegacy.quests,
+        storyFlags: baselineLegacy.storyFlags ? { ...baselineLegacy.storyFlags } : baselineLegacy.storyFlags,
+        tutorialComplete: baselineLegacy.tutorialComplete,
+      });
+
+      managerWithStore.saveGame('parity_aligned_slot');
+
+      expect(warnSpy).not.toHaveBeenCalled();
+
+      managerWithStore.cleanup();
+      warnSpy.mockRestore();
+    });
+
     test('should emit game:saved event on success', () => {
       const emitSpy = jest.spyOn(eventBus, 'emit');
 
@@ -975,6 +1009,29 @@ describe('SaveManager', () => {
       saveManager.updateAutosave();
 
       expect(saveSpy).not.toHaveBeenCalled();
+    });
+
+    test('handles sustained autosave bursts without failures', () => {
+      const emitSpy = jest.spyOn(eventBus, 'emit');
+      const iterations = 40;
+
+      for (let i = 0; i < iterations; i += 1) {
+        eventBus.emit('quest:completed', { questId: `stress_quest_${i}` });
+      }
+
+      const savedEvents = emitSpy.mock.calls.filter(([event]) => event === 'game:saved');
+      const failedEvents = emitSpy.mock.calls.filter(([event]) => event === 'game:save_failed');
+
+      expect(savedEvents).toHaveLength(iterations);
+      expect(failedEvents).toHaveLength(0);
+
+      const timestamps = savedEvents.map(([, payload]) => payload.timestamp);
+      for (let i = 1; i < timestamps.length; i += 1) {
+        expect(timestamps[i]).toBeGreaterThanOrEqual(timestamps[i - 1]);
+      }
+
+      const storageKey = `${saveManager.config.storageKeyPrefix}autosave`;
+      expect(localStorageMock.store[storageKey]).toBeDefined();
     });
 
     test('should cleanup on game exit', () => {
@@ -2176,6 +2233,21 @@ describe('SaveManager', () => {
       const tutorialComplete = saveManager.collectTutorialData();
 
       expect(tutorialComplete).toBe(false);
+    });
+
+    test('collectTutorialState should include skipped flag from storage', () => {
+      localStorageMock.setItem('tutorial_completed', 'true');
+      localStorageMock.setItem('tutorial_skipped', 'true');
+
+      const tutorialState = saveManager.collectTutorialState();
+
+      expect(tutorialState).toEqual({ completed: true, skipped: true });
+    });
+
+    test('collectTutorialState should default to false flags when storage missing', () => {
+      const tutorialState = saveManager.collectTutorialState();
+
+      expect(tutorialState).toEqual({ completed: false, skipped: false });
     });
   });
 

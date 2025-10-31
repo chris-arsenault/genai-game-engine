@@ -1,0 +1,43 @@
+{
+  "packetId": "02f106e6-ce33-47d2-9145-45f211d53d8f",
+  "label": "save-load",
+  "createdAt": "2025-10-31T04:07:26.033Z",
+  "files": {
+    "latencyReport": "save-load-latency.json",
+    "payloadSummary": "save-payload-summary.json",
+    "metadata": "metadata.json",
+    "readme": "README.md"
+  },
+  "instructions": [
+    "Share the included latency report and payload summary with QA for schema validation.",
+    "Capture QA feedback and update the save/load backlog items if schema adjustments are requested."
+  ],
+  "profile": {
+    "iterations": 2,
+    "thresholdMs": 2000,
+    "sampleCount": 2,
+    "averages": {
+      "saveMs": 1,
+      "loadMs": 0
+    },
+    "maxima": {
+      "saveMs": 1,
+      "loadMs": 1
+    },
+    "underThreshold": true
+  },
+  "payload": {
+    "slot": "payload-summary",
+    "version": 1,
+    "timestamp": 1761883646032,
+    "sectionCounts": {
+      "storyFlags": 2,
+      "questsActive": 0,
+      "questsCompleted": 0,
+      "factions": 0,
+      "inventoryItems": 2,
+      "districtRecords": 2,
+      "npcRecords": 2
+    }
+  }
+}
