@@ -32,7 +32,8 @@ describe('InvestigationSystem', () => {
         id,
         hasTag: (tag) => id === 1 && tag === 'player'
       })),
-      hasEntity: jest.fn(() => true)
+      hasEntity: jest.fn(() => true),
+      getEntitiesByTag: jest.fn((tag) => (tag === 'player' ? [1] : []))
     };
 
     // Mock ComponentRegistry
@@ -58,6 +59,122 @@ describe('InvestigationSystem', () => {
     system.init();
 
     mockComponentRegistry._components.set('1:Investigation', new Investigation());
+  });
+
+  describe('Serialization', () => {
+    it('should serialize collected evidence metadata and case files', () => {
+      const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(123456789);
+
+      const playerTransform = new Transform(0, 0);
+      mockComponentRegistry._components.set('1:Transform', playerTransform);
+
+      const evidence = new Evidence({
+        id: 'evidence_serial',
+        caseId: 'case_serial',
+        type: 'digital',
+        category: 'access_logs',
+        derivedClues: []
+      });
+      mockComponentRegistry._components.set('2:Evidence', evidence);
+
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+      system.collectEvidence(2, 'evidence_serial', investigation);
+
+      const serialized = system.serialize();
+
+      expect(serialized.abilities).toContain('basic_observation');
+      expect(serialized.collectedEvidence.case_serial).toEqual(['evidence_serial']);
+
+      const caseEntries = serialized.investigationComponent.caseFiles.case_serial;
+      expect(Array.isArray(caseEntries)).toBe(true);
+      expect(caseEntries[0]).toMatchObject({
+        evidenceId: 'evidence_serial',
+        type: 'digital',
+        category: 'access_logs',
+        collectedAt: 123456789
+      });
+
+      nowSpy.mockRestore();
+    });
+
+    it('should restore state via deserialize', () => {
+      mockEventBus.emit.mockClear();
+
+      const serialized = {
+        abilities: ['detective_vision'],
+        knowledge: ['memory_trace_alpha'],
+        casesSolved: ['case_resolved'],
+        collectedEvidence: {
+          case_resolved: ['evidence_alpha']
+        },
+        discoveredClues: {
+          clue_alpha: true
+        },
+        activeCase: 'case_resolved',
+        detectiveVision: {
+          active: true,
+          energy: 2.5,
+          energyMax: 7,
+          cooldown: 1.25,
+          timer: 0.5
+        },
+        investigationComponent: {
+          observationRadius: 140,
+          abilityLevel: 3,
+          abilities: ['basic_observation', 'detective_vision'],
+          caseFiles: {
+            case_resolved: [
+              {
+                evidenceId: 'evidence_alpha',
+                type: 'forensic',
+                category: 'residue',
+                collectedAt: 999999
+              }
+            ]
+          }
+        }
+      };
+
+      system.deserialize(serialized);
+
+      const investigation = mockComponentRegistry._components.get('1:Investigation');
+
+      expect(system.playerAbilities.has('detective_vision')).toBe(true);
+      expect(system.playerKnowledge.has('memory_trace_alpha')).toBe(true);
+      expect(system.playerCasesSolved.has('case_resolved')).toBe(true);
+      expect(system.collectedEvidence.get('case_resolved').has('evidence_alpha')).toBe(true);
+      expect(system.discoveredClues.has('clue_alpha')).toBe(true);
+      expect(system.activeCase).toBe('case_resolved');
+
+      expect(system.detectiveVisionActive).toBe(true);
+      expect(system.detectiveVisionEnergy).toBe(2.5);
+      expect(system.detectiveVisionEnergyMax).toBe(7);
+      expect(system.detectiveVisionCooldown).toBe(1.25);
+      expect(system.detectiveVisionTimer).toBe(0.5);
+
+      expect(investigation.getDetectionRadius()).toBe(140);
+      expect(investigation.abilityLevel).toBe(3);
+      expect(investigation.getAbilities()).toEqual(
+        expect.arrayContaining(['basic_observation', 'detective_vision'])
+      );
+
+      const caseEntries = investigation.getCaseEvidence('case_resolved');
+      expect(caseEntries).toHaveLength(1);
+      expect(caseEntries[0]).toMatchObject({
+        evidenceId: 'evidence_alpha',
+        type: 'forensic',
+        category: 'residue',
+        collectedAt: 999999
+      });
+
+      expect(mockEventBus.emit).toHaveBeenCalledWith(
+        'detective_vision:status',
+        expect.objectContaining({
+          active: true,
+          reason: 'deserialize'
+        })
+      );
+    });
   });
 
   describe('Initialization', () => {

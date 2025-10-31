@@ -720,6 +720,260 @@ export class InvestigationSystem extends System {
   }
 
   /**
+   * Retrieve the player Investigation component if available.
+   * @returns {import('../components/Investigation.js').Investigation|null}
+   * @private
+   */
+  _getInvestigationComponent() {
+    if (this.playerInvestigation) {
+      return this.playerInvestigation;
+    }
+
+    if (
+      this.playerEntityId != null &&
+      this.componentRegistry?.entityManager?.hasEntity?.(this.playerEntityId)
+    ) {
+      const existing = this.getComponent(this.playerEntityId, 'Investigation');
+      if (existing) {
+        this.playerInvestigation = existing;
+        return existing;
+      }
+    }
+
+    const entityManager = this.componentRegistry?.entityManager;
+    if (!entityManager || typeof entityManager.getEntitiesByTag !== 'function') {
+      return null;
+    }
+
+    const playerIds = entityManager.getEntitiesByTag('player');
+    for (const id of playerIds) {
+      const investigation = this.getComponent(id, 'Investigation');
+      if (investigation) {
+        this.playerEntityId = id;
+        this.playerInvestigation = investigation;
+        return investigation;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Serialize investigation gameplay state for save files.
+   * @returns {Object}
+   */
+  serialize() {
+    const collectedEvidence = {};
+    for (const [caseId, evidenceSet] of this.collectedEvidence.entries()) {
+      collectedEvidence[caseId] = Array.from(evidenceSet);
+    }
+
+    const clueFlags = {};
+    for (const [clueId, flag] of this.discoveredClues.entries()) {
+      clueFlags[clueId] = Boolean(flag);
+    }
+
+    const investigationComponent = this._getInvestigationComponent();
+
+    return {
+      abilities: Array.from(this.playerAbilities),
+      knowledge: Array.from(this.playerKnowledge),
+      casesSolved: Array.from(this.playerCasesSolved),
+      collectedEvidence,
+      discoveredClues: clueFlags,
+      activeCase: this.activeCase,
+      detectiveVision: {
+        active: this.detectiveVisionActive,
+        energy: this.detectiveVisionEnergy,
+        energyMax: this.detectiveVisionEnergyMax,
+        cooldown: this.detectiveVisionCooldown,
+        timer: this.detectiveVisionTimer
+      },
+      investigationComponent: investigationComponent?.serialize
+        ? investigationComponent.serialize()
+        : null
+    };
+  }
+
+  /**
+   * Restore investigation gameplay state from serialized data.
+   * @param {Object} data
+   */
+  deserialize(data = {}) {
+    if (!data || typeof data !== 'object') {
+      return;
+    }
+
+    const {
+      abilities = [],
+      knowledge = [],
+      casesSolved = [],
+      collectedEvidence = {},
+      discoveredClues = {},
+      activeCase = null,
+      detectiveVision = {},
+      investigationComponent: componentData = null
+    } = data;
+
+    this.playerAbilities = new Set(
+      Array.isArray(abilities)
+        ? abilities.filter((ability) => typeof ability === 'string' && ability.length > 0)
+        : []
+    );
+
+    if (componentData?.abilities && Array.isArray(componentData.abilities)) {
+      componentData.abilities
+        .filter((ability) => typeof ability === 'string' && ability.length > 0)
+        .forEach((ability) => this.playerAbilities.add(ability));
+    }
+
+    if (!this.playerAbilities.has('basic_observation')) {
+      this.playerAbilities.add('basic_observation');
+    }
+
+    this.playerKnowledge = new Set(
+      Array.isArray(knowledge)
+        ? knowledge.filter((knowledgeId) => typeof knowledgeId === 'string' && knowledgeId.length > 0)
+        : []
+    );
+
+    this.playerCasesSolved = new Set(
+      Array.isArray(casesSolved)
+        ? casesSolved.filter((caseId) => typeof caseId === 'string' && caseId.length > 0)
+        : []
+    );
+
+    this.collectedEvidence.clear();
+    if (collectedEvidence && typeof collectedEvidence === 'object') {
+      Object.entries(collectedEvidence).forEach(([caseId, evidenceIds]) => {
+        if (!caseId || !Array.isArray(evidenceIds)) {
+          return;
+        }
+        const sanitized = evidenceIds.filter(
+          (id) => typeof id === 'string' && id.length > 0
+        );
+        this.collectedEvidence.set(caseId, new Set(sanitized));
+      });
+    }
+
+    this.discoveredClues.clear();
+    if (Array.isArray(discoveredClues)) {
+      // Handle legacy array format
+      discoveredClues
+        .filter((clueId) => typeof clueId === 'string' && clueId.length > 0)
+        .forEach((clueId) => this.discoveredClues.set(clueId, true));
+    } else if (discoveredClues && typeof discoveredClues === 'object') {
+      Object.entries(discoveredClues).forEach(([clueId, flag]) => {
+        if (typeof clueId === 'string' && clueId.length > 0 && flag) {
+          this.discoveredClues.set(clueId, Boolean(flag));
+        }
+      });
+    }
+
+    this.activeCase = typeof activeCase === 'string' && activeCase.length > 0 ? activeCase : null;
+
+    if (detectiveVision && typeof detectiveVision === 'object') {
+      if (Number.isFinite(detectiveVision.energyMax) && detectiveVision.energyMax >= 0) {
+        this.detectiveVisionEnergyMax = detectiveVision.energyMax;
+      }
+      if (Number.isFinite(detectiveVision.energy) && detectiveVision.energy >= 0) {
+        this.detectiveVisionEnergy = Math.min(
+          this.detectiveVisionEnergyMax,
+          detectiveVision.energy
+        );
+      } else {
+        this.detectiveVisionEnergy = this.detectiveVisionEnergyMax;
+      }
+
+      if (Number.isFinite(detectiveVision.cooldown) && detectiveVision.cooldown >= 0) {
+        this.detectiveVisionCooldown = detectiveVision.cooldown;
+      } else {
+        this.detectiveVisionCooldown = 0;
+      }
+
+      if (Number.isFinite(detectiveVision.timer) && detectiveVision.timer >= 0) {
+        this.detectiveVisionTimer = detectiveVision.timer;
+      } else {
+        this.detectiveVisionTimer = 0;
+      }
+
+      this.detectiveVisionActive = Boolean(detectiveVision.active);
+    } else {
+      this.detectiveVisionActive = false;
+      this.detectiveVisionCooldown = 0;
+      this.detectiveVisionTimer = 0;
+      this.detectiveVisionEnergy = this.detectiveVisionEnergyMax;
+    }
+
+    const investigation = this._getInvestigationComponent();
+    if (investigation) {
+      if (typeof investigation.replaceAbilities === 'function') {
+        investigation.replaceAbilities(this.playerAbilities);
+      } else {
+        investigation.abilities = new Set(this.playerAbilities);
+      }
+
+      if (componentData && typeof componentData === 'object') {
+        if (Number.isFinite(componentData.observationRadius)) {
+          investigation.setDetectionRadius(componentData.observationRadius);
+        }
+        if (Number.isFinite(componentData.abilityLevel) && componentData.abilityLevel >= 1) {
+          investigation.abilityLevel = componentData.abilityLevel;
+        }
+
+        if (typeof investigation.loadCaseFiles === 'function') {
+          investigation.loadCaseFiles(componentData.caseFiles);
+        } else if (componentData.caseFiles && typeof componentData.caseFiles === 'object') {
+          investigation.caseFiles = new Map();
+          Object.entries(componentData.caseFiles).forEach(([caseId, entries]) => {
+            if (caseId && Array.isArray(entries)) {
+              investigation.caseFiles.set(
+                caseId,
+                entries.map((entry) => ({ ...entry }))
+              );
+            }
+          });
+        }
+      }
+
+      // Ensure component abilities are kept in sync
+      const componentAbilities = investigation.getAbilities?.() ?? [];
+      for (const ability of componentAbilities) {
+        if (typeof ability === 'string' && ability.length > 0) {
+          this.playerAbilities.add(ability);
+        }
+      }
+    }
+
+    // Align collected evidence map with case file entries if necessary
+    const caseFilesSource =
+      componentData?.caseFiles && typeof componentData.caseFiles === 'object'
+        ? componentData.caseFiles
+        : null;
+    if (caseFilesSource) {
+      Object.entries(caseFilesSource).forEach(([caseId, entries]) => {
+        if (!caseId || !Array.isArray(entries)) {
+          return;
+        }
+        if (!this.collectedEvidence.has(caseId)) {
+          this.collectedEvidence.set(caseId, new Set());
+        }
+        const evidenceSet = this.collectedEvidence.get(caseId);
+        entries.forEach((entry) => {
+          if (entry && typeof entry.evidenceId === 'string' && entry.evidenceId.length > 0) {
+            evidenceSet.add(entry.evidenceId);
+          }
+        });
+      });
+    }
+
+    // Reset prompt/UI state and broadcast updated detective vision status
+    this.promptVisible = false;
+    this._lastDetectiveVisionStatus = null;
+    this._emitDetectiveVisionStatus({ reason: 'deserialize' }, true);
+  }
+
+  /**
    * Cleanup system
    */
   cleanup() {
