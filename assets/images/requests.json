@@ -239,14 +239,14 @@
     "id": "image-ar-003-kira-evasion-pack",
     "arId": "AR-003",
     "title": "Kira Dash & Slide Animations",
-    "creator": "Concept Pending",
-    "source": "Bespoke Animation Sprint – Pending Commission",
-    "license": "Internal Commission – Full Rights (Character Animation)",
-    "status": "bespoke-pending",
+    "creator": "Codex Autonomous Agent (GPT-Image-1)",
+    "source": "assets/generated/images/ar-003/image-ar-003-kira-evasion-pack.png",
+    "license": "Internal generation (OpenAI gpt-image-1)",
+    "status": "ai-generated",
     "usage": "Supplemental dash and slide animations for Kira to support high-intensity autosave encounters.",
     "notes": [
       "Prompt drafted during Session 159 to cover lateral dash and low slide move sets; see docs/assets/generation-prompts-ar-001-005.md and generation payload staging.",
-      "Routing to bespoke art; OpenAI generation blocked pending org verification."
+      "Re-routed to OpenAI image generation in Session 166; output stored under assets/generated/images/ar-003/ with transparent spritesheet layout for dash and slide frames."
     ],
     "placeholderGeneratedAt": null,
     "statusHistory": [
@@ -260,10 +260,17 @@
         "recordedAt": "2025-10-31T06:57:27.412Z",
         "context": "Routing to bespoke art; OpenAI generation blocked pending org verification.",
         "route": "bespoke"
+      },
+      {
+        "status": "ai-generated",
+        "recordedAt": "2025-10-31T12:40:14Z",
+        "context": "Generated via OpenAI gpt-image-1 to unblock dash/slide animation sourcing.",
+        "route": "ai"
       }
     ],
-    "updatedAt": "2025-10-31T06:57:27.412Z",
-    "route": "bespoke"
+    "generatedAt": "2025-10-31T12:40:14Z",
+    "updatedAt": "2025-10-31T12:40:14Z",
+    "route": "ai"
   },
   {
     "id": "image-ar-004-npc-civilian-pack",

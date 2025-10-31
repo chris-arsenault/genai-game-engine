@@ -25,6 +25,20 @@
 
 **Next Session Focus**: Drive the neon district approval loop entirely through the RenderOps automation scripts (`scripts/art/packageRenderOpsLighting.js`, `scripts/art/trackBespokeDeliverables.js`), extend SaveManager telemetry hooks so CI captures every budget regression automatically, and queue the next lighting feedback pass via generated packets—no manual reviews or sign-off meetings.
 
+### Session #166 Backlog Updates
+
+#### M3-016: Save/Load System Implementation
+- Re-routed `image-ar-003-kira-evasion-pack` through GPT-Image-1 automation, updating `assets/images/requests.json` to `ai-generated` and storing the transparent dash/slide sprite sheet at `assets/generated/images/ar-003/image-ar-003-kira-evasion-pack.png`. Manifests/docs now note the automation provenance and next integration step.
+- Next: wire the generated dash/slide frames into the player animation set and refresh autosave overlay captures once hooked.
+
+#### AR-008: Adaptive Music Tracks (M7)
+- Added AdaptiveMusicLayerController regression coverage (`tests/engine/audio/AdaptiveMusicLayerController.test.js`) that validates ambient/tension/combat volume weights derived from `GameConfig.audio.memoryParlorAmbient`, protecting future mix tweaks for downtown stems.
+- Verification: `npm test -- AdaptiveMusicLayerController`.
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- Imported RenderOps feedback for packet `caa6051f-f7ac-4eae-906f-a46053aaeffc`, marking safehouse floor and branch walkway segments approved, and updated the telemetry queue entry (`reports/telemetry/renderops-approvals/...`) to `completed` with `feedbackLogPath` linking to `reports/art/renderops-feedback.json`.
+- Verification: `node scripts/art/importRenderOpsFeedback.js --input reports/art/renderops-feedback/act2-crossroads-2025-10-31-review.json`.
+
 ### Session #161 Backlog Updates
 
 #### M3-016: Save/Load System Implementation

@@ -32,7 +32,7 @@ while true; do
   echo $sessionNum > .session
 
   shouldPause=$(cat .pause || echo 1)
-  if (( sessionNum % 2 == 0 )); then
+  if (( shouldPause % 2 == 0 )); then
     exit
   fi
   # Delay before next cycle (adjust as needed)

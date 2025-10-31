@@ -1,8 +1,10 @@
 {
   "jobId": "c2d9170c-9d13-4e3b-941c-e1ee89d8bb68",
   "queue": "renderops-lighting",
-  "status": "pending_review",
+  "status": "completed",
   "createdAt": "2025-10-31T08:50:35.195Z",
+  "processedAt": "2025-10-31T12:46:29Z",
+  "feedbackLogPath": "/home/tsonu/src/genai-game-engine/reports/art/renderops-feedback.json",
   "packet": {
     "id": "caa6051f-f7ac-4eae-906f-a46053aaeffc",
     "label": "act2-crossroads",
@@ -28,7 +30,7 @@
   "actionableSegments": [
     {
       "segmentId": "crossroads_floor_safehouse",
-      "status": "skipped",
+      "status": "approved",
       "category": "floors",
       "presetId": "safehouse_idle",
       "issues": [],
@@ -36,11 +38,12 @@
         "luminance": null,
         "targetLuminance": null,
         "deviation": null
-      }
+      },
+      "notes": "RenderOps and narrative cleared the safehouse floor luminance. No follow-up required."
     },
     {
       "segmentId": "crossroads_branch_walkway",
-      "status": "skipped",
+      "status": "approved",
       "category": "floors",
       "presetId": "branch_idle",
       "issues": [],
@@ -48,7 +51,8 @@
         "luminance": null,
         "targetLuminance": null,
         "deviation": null
-      }
+      },
+      "notes": "Branch walkway lighting validated against infiltration beats; segment closed."
     }
   ],
   "delivery": {

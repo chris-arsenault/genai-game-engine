@@ -38,6 +38,10 @@
 - Updated `assets/images/requests.json` statuses for the new sheets to `ai-generated`, capturing generation metadata and licensing notes.
 - Flagged `image-ar-007-screen-effects-pack` as the remaining pending-sourcing deliverable for the AR-007 bundle; future work should focus on that overlay set and runtime validation of the new particles.
 
+## Session 166 Updates
+- Re-routed `image-ar-003-kira-evasion-pack` through `mcp__generate-image__generate_image`, saving the transparent dash/slide sprite sheet to `assets/generated/images/ar-003/image-ar-003-kira-evasion-pack.png` and updating manifests to `ai-generated` with GPT-Image-1 provenance so autosave stress encounters can consume the new frames immediately.
+- Cleared RenderOps approval queue job `c2d9170c-9d13-4e3b-941c-e1ee89d8bb68` by importing narrative-approved feedback (`reports/art/renderops-feedback.json`) and updating `reports/telemetry/renderops-approvals/...` to mark safehouse floor and branch walkway segments as `approved`.
+
 ## Session 107 Updates
 - `image-ar-050-crossroads-selection-conduit` now points to Tanozzo’s **High Energy** plasma arc photography (CC BY 2.0, Flickr). The radial beams provide a strong base for recoloring into the Crossroads conduit glow.
 - `image-ar-050-crossroads-checkpoint-glow` references MTAPhotos’ **Reopening of 167 St on the B, D lines** (CC BY 2.0, Flickr), giving us layered strip-light geometry to adapt into the guarded rail shimmer.

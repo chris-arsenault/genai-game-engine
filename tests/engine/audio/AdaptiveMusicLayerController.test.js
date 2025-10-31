@@ -1,4 +1,5 @@
 import { AdaptiveMusicLayerController } from '../../../src/engine/audio/AdaptiveMusicLayerController.js';
+import { GameConfig } from '../../../src/game/config/GameConfig.js';
 
 function createMockAudioContext() {
   const createdGains = [];
@@ -156,5 +157,86 @@ describe('AdaptiveMusicLayerController', () => {
     expect(ambientLayer.disconnect).toHaveBeenCalled();
     expect(tensionLayer.stop).toHaveBeenCalled();
     expect(tensionGain.disconnect).toHaveBeenCalled();
+  });
+
+  it('matches memory parlor adaptive mix weights for ambient/tension/combat states', async () => {
+    controller.dispose();
+
+    const { memoryParlorAmbient } = GameConfig.audio;
+    controller = new AdaptiveMusicLayerController(audioManager, {
+      layers: [
+        {
+          id: 'ambient_base',
+          trackId: memoryParlorAmbient.trackId,
+          baseVolume: memoryParlorAmbient.baseVolume,
+          trackUrl: memoryParlorAmbient.trackUrl,
+        },
+        {
+          id: 'tension_layer',
+          trackId: memoryParlorAmbient.tensionTrackId,
+          baseVolume: memoryParlorAmbient.tensionBaseVolume,
+          trackUrl: memoryParlorAmbient.tensionTrackUrl,
+        },
+        {
+          id: 'combat_layer',
+          trackId: memoryParlorAmbient.combatTrackId,
+          baseVolume: memoryParlorAmbient.combatBaseVolume,
+          trackUrl: memoryParlorAmbient.combatTrackUrl,
+        },
+      ],
+      states: memoryParlorAmbient.states,
+      fadeDuration: 1.1,
+    });
+
+    const initialized = await controller.init();
+    expect(initialized).toBe(true);
+
+    const [ambientGain, tensionGain, combatGain] = context.__createdGains
+      .slice(-3)
+      .map((gain) => gain.gain);
+
+    const expectMix = (stateName, expectedVolumes) => {
+      [ambientGain, tensionGain, combatGain].forEach((gain) => {
+        gain.linearRampToValueAtTime.mockClear();
+      });
+
+      controller.setState(stateName, { fadeDuration: 1.1, force: true });
+
+      const checkGain = (gain, expected) => {
+        const calls = gain.linearRampToValueAtTime.mock.calls;
+        expect(calls.length).toBeGreaterThan(0);
+        const [target, when] = calls[calls.length - 1];
+        expect(target).toBeCloseTo(expected, 5);
+        expect(when).toBeCloseTo(context.currentTime + 1.1, 5);
+      };
+
+      checkGain(ambientGain, expectedVolumes.ambient);
+      checkGain(tensionGain, expectedVolumes.tension);
+      checkGain(combatGain, expectedVolumes.combat);
+    };
+
+    expectMix('stealth', {
+      ambient: memoryParlorAmbient.baseVolume * memoryParlorAmbient.states.stealth.ambient_base,
+      tension: memoryParlorAmbient.tensionBaseVolume * memoryParlorAmbient.states.stealth.tension_layer,
+      combat: memoryParlorAmbient.combatBaseVolume * memoryParlorAmbient.states.stealth.combat_layer,
+    });
+
+    expectMix('alert', {
+      ambient: memoryParlorAmbient.baseVolume * memoryParlorAmbient.states.alert.ambient_base,
+      tension: memoryParlorAmbient.tensionBaseVolume * memoryParlorAmbient.states.alert.tension_layer,
+      combat: memoryParlorAmbient.combatBaseVolume * memoryParlorAmbient.states.alert.combat_layer,
+    });
+
+    expectMix('combat', {
+      ambient: memoryParlorAmbient.baseVolume * memoryParlorAmbient.states.combat.ambient_base,
+      tension: memoryParlorAmbient.tensionBaseVolume * memoryParlorAmbient.states.combat.tension_layer,
+      combat: memoryParlorAmbient.combatBaseVolume * memoryParlorAmbient.states.combat.combat_layer,
+    });
+
+    expectMix('ambient', {
+      ambient: memoryParlorAmbient.baseVolume * memoryParlorAmbient.states.ambient.ambient_base,
+      tension: memoryParlorAmbient.tensionBaseVolume * memoryParlorAmbient.states.ambient.tension_layer,
+      combat: memoryParlorAmbient.combatBaseVolume * memoryParlorAmbient.states.ambient.combat_layer,
+    });
   });
 });
