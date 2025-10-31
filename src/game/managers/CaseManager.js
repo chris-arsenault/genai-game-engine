@@ -545,6 +545,140 @@ export class CaseManager {
   }
 
   /**
+   * Serialize case progress for persistence.
+   * @returns {Object}
+   */
+  serialize() {
+    const cases = {};
+    for (const [caseId, caseFile] of this.cases.entries()) {
+      cases[caseId] = {
+        status: caseFile.status,
+        collectedEvidence: Array.from(caseFile.collectedEvidence),
+        discoveredClues: Array.from(caseFile.discoveredClues),
+        objectives: caseFile.objectives.map((objective) => ({
+          id: objective?.id ?? null,
+          type: objective?.type ?? null,
+          completed: Boolean(objective?.completed),
+        })),
+        accuracy: Number.isFinite(caseFile.accuracy) ? caseFile.accuracy : 0,
+        solveTime: Number.isFinite(caseFile.solveTime) ? caseFile.solveTime : null,
+        playerTheory:
+          caseFile.playerTheory && typeof caseFile.playerTheory === 'object'
+            ? {
+                nodes: Array.isArray(caseFile.playerTheory.nodes)
+                  ? caseFile.playerTheory.nodes
+                      .filter((node) => node && typeof node === 'object')
+                      .map((node) => ({ ...node }))
+                  : [],
+                connections: Array.isArray(caseFile.playerTheory.connections)
+                  ? caseFile.playerTheory.connections
+                      .filter((conn) => conn && typeof conn === 'object')
+                      .map((conn) => ({ ...conn }))
+                  : [],
+              }
+            : { nodes: [], connections: [] },
+      };
+    }
+
+    return {
+      activeCaseId: this.activeCase ?? null,
+      cases,
+    };
+  }
+
+  /**
+   * Restore case progress from serialized data.
+   * @param {Object} snapshot
+   * @returns {boolean}
+   */
+  deserialize(snapshot = {}) {
+    if (!snapshot || typeof snapshot !== 'object') {
+      return false;
+    }
+
+    const serializedCases =
+      snapshot.cases && typeof snapshot.cases === 'object' ? snapshot.cases : {};
+    for (const [caseId, caseData] of Object.entries(serializedCases)) {
+      if (!caseData || typeof caseData !== 'object') {
+        continue;
+      }
+      const caseFile = this.cases.get(caseId);
+      if (!caseFile) {
+        continue;
+      }
+
+      const status = caseData.status;
+      if (status === 'solved' || status === 'failed') {
+        caseFile.status = status;
+      } else {
+        caseFile.status = 'active';
+      }
+
+      const collectedEvidence = Array.isArray(caseData.collectedEvidence)
+        ? caseData.collectedEvidence.filter(
+            (evidenceId) => typeof evidenceId === 'string' && evidenceId.length > 0
+          )
+        : [];
+      caseFile.collectedEvidence = new Set(collectedEvidence);
+
+      const discoveredClues = Array.isArray(caseData.discoveredClues)
+        ? caseData.discoveredClues.filter(
+            (clueId) => typeof clueId === 'string' && clueId.length > 0
+          )
+        : [];
+      caseFile.discoveredClues = new Set(discoveredClues);
+
+      if (Array.isArray(caseData.objectives)) {
+        for (let index = 0; index < caseFile.objectives.length; index += 1) {
+          const incoming = caseData.objectives[index];
+          if (!incoming || typeof incoming !== 'object') {
+            continue;
+          }
+          if (!caseFile.objectives[index]) {
+            continue;
+          }
+          caseFile.objectives[index].completed = Boolean(incoming.completed);
+        }
+      }
+
+      if (Number.isFinite(caseData.accuracy)) {
+        caseFile.accuracy = caseData.accuracy;
+      }
+
+      if (Number.isFinite(caseData.solveTime)) {
+        caseFile.solveTime = caseData.solveTime;
+      }
+
+      if (caseData.playerTheory && typeof caseData.playerTheory === 'object') {
+        const nodes = Array.isArray(caseData.playerTheory.nodes)
+          ? caseData.playerTheory.nodes
+              .filter((node) => node && typeof node === 'object')
+              .map((node) => ({ ...node }))
+          : [];
+        const connections = Array.isArray(caseData.playerTheory.connections)
+          ? caseData.playerTheory.connections
+              .filter((conn) => conn && typeof conn === 'object')
+              .map((conn) => ({ ...conn }))
+          : [];
+        caseFile.playerTheory = { nodes, connections };
+      }
+    }
+
+    if (typeof snapshot.activeCaseId === 'string' && this.cases.has(snapshot.activeCaseId)) {
+      this.activeCase = snapshot.activeCaseId;
+    } else if (snapshot.activeCaseId === null) {
+      this.activeCase = null;
+    }
+
+    this.eventBus.emit('case:hydrated', {
+      activeCaseId: this.activeCase,
+      totalCases: this.cases.size,
+    });
+
+    return true;
+  }
+
+  /**
    * Get case file
    * @param {string} caseId - Case ID
    * @returns {Object|null} Case file

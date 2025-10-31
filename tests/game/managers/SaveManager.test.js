@@ -58,6 +58,42 @@ describe('SaveManager', () => {
         isComplete: jest.fn(() => false),
         completeTutorial: jest.fn(),
       },
+      caseManager: {
+        serialize: jest.fn(() => ({
+          activeCaseId: 'case_001',
+          cases: {
+            case_001: {
+              status: 'active',
+              collectedEvidence: ['ev_a'],
+              discoveredClues: ['clue_a'],
+              objectives: [{ completed: true }],
+              accuracy: 0.5,
+              solveTime: null,
+              playerTheory: { nodes: [], connections: [] },
+            },
+          },
+        })),
+        deserialize: jest.fn(),
+      },
+      investigationSystem: {
+        serialize: jest.fn(() => ({
+          abilities: ['basic_observation', 'detective_vision'],
+          knowledge: ['kira_background'],
+          casesSolved: [],
+          collectedEvidence: { case_001: ['ev_a'] },
+          discoveredClues: { clue_a: true },
+          activeCase: 'case_001',
+          detectiveVision: {
+            active: true,
+            energy: 2,
+            energyMax: 5,
+            cooldown: 1,
+            timer: 3,
+          },
+          investigationComponent: null,
+        })),
+        deserialize: jest.fn(),
+      },
       worldStateStore: null,
       storage: localStorageMock,
       spatialMetricsProvider: null,
@@ -203,6 +239,33 @@ describe('SaveManager', () => {
       const saveData = JSON.parse(localStorageMock.store[saveKey]);
 
       expect(saveData.version).toBe(1);
+    });
+
+    test('should include investigation and case snapshots in save data', () => {
+      const result = saveManager.saveGame('test_slot');
+      expect(result).toBe(true);
+
+      const saveKey = saveManager.config.storageKeyPrefix + 'test_slot';
+      const saveData = JSON.parse(localStorageMock.store[saveKey]);
+
+      expect(mockManagers.investigationSystem.serialize).toHaveBeenCalled();
+      expect(mockManagers.caseManager.serialize).toHaveBeenCalled();
+      expect(saveData.gameData.investigation).toEqual(
+        expect.objectContaining({
+          abilities: expect.arrayContaining(['basic_observation', 'detective_vision']),
+          activeCase: 'case_001',
+        })
+      );
+      expect(saveData.gameData.cases).toEqual(
+        expect.objectContaining({
+          activeCaseId: 'case_001',
+          cases: expect.objectContaining({
+            case_001: expect.objectContaining({
+              collectedEvidence: expect.arrayContaining(['ev_a']),
+            }),
+          }),
+        })
+      );
     });
 
     test('should include timestamp in save data', () => {
@@ -697,6 +760,8 @@ describe('SaveManager', () => {
           reputation: {},
         },
         tutorialSystem: {},
+        caseManager: { deserialize: jest.fn() },
+        investigationSystem: { deserialize: jest.fn() },
       };
 
       const newSaveManager = new SaveManager(eventBus, {
@@ -708,6 +773,8 @@ describe('SaveManager', () => {
 
       expect(newManagers.storyFlagManager.deserialize).toHaveBeenCalled();
       expect(newManagers.questManager.deserialize).toHaveBeenCalled();
+      expect(newManagers.caseManager.deserialize).toHaveBeenCalled();
+      expect(newManagers.investigationSystem.deserialize).toHaveBeenCalled();
     });
 
     test('should verify save version before loading', () => {

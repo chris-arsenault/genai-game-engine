@@ -402,6 +402,8 @@ export class Game {
       questManager: this.questManager,
       factionManager: this.factionManager,
       tutorialSystem: null, // Will be set after tutorial system is created
+      caseManager: this.caseManager,
+      investigationSystem: null,
       worldStateStore: this.worldStateStore,
       tutorialTranscriptRecorder: this.tutorialTranscriptRecorder,
       controlBindingsObservationProvider: () => this.getControlBindingsObservationSummary(),
@@ -420,6 +422,10 @@ export class Game {
       this.componentRegistry,
       this.eventBus
     );
+    if (this.saveManager) {
+      this.saveManager.investigationSystem = this.gameSystems.investigation;
+      this.saveManager.caseManager = this.caseManager;
+    }
     // Create forensic system (processes analysis queues after investigation)
     this.gameSystems.forensic = new ForensicSystem(
       this.componentRegistry,
@@ -1835,7 +1841,8 @@ export class Game {
       'case:activated',
       'case:objective_completed',
       'case:objectives_complete',
-      'case:solved'
+      'case:solved',
+      'case:hydrated'
     ];
     for (const eventName of caseEventsForRefresh) {
       this._offGameEventHandlers.push(this.eventBus.on(eventName, () => {

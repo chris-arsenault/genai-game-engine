@@ -34,6 +34,8 @@ export class SaveManager {
     this.factionManager = managers.factionManager;
     this.tutorialSystem = managers.tutorialSystem;
     this.worldStateStore = managers.worldStateStore ?? null;
+    this.caseManager = managers.caseManager ?? null;
+    this.investigationSystem = managers.investigationSystem ?? null;
     this.storage =
       managers.storage ??
       (typeof globalThis !== 'undefined' && globalThis.localStorage
@@ -187,6 +189,9 @@ export class SaveManager {
         gameData.tutorialComplete = legacyGameData.tutorialComplete ?? false;
       }
 
+      gameData.investigation = this._collectInvestigationState();
+      gameData.cases = this._collectCaseState();
+
       // Create save object
       const slotLabel =
         typeof slot === 'string' && slot.trim().length ? slot.trim() : resolvedSlot;
@@ -270,9 +275,13 @@ export class SaveManager {
       this.restoreFactionData(saveData.gameData.factions);
       this.restoreTutorialData(saveData.gameData.tutorial ?? saveData.gameData.tutorialComplete);
 
+      this._restoreCaseState(saveData.gameData.cases);
+
       if (this.worldStateStore) {
         this.worldStateStore.hydrate(saveData.gameData);
       }
+
+      this._restoreInvestigationState(saveData.gameData.investigation);
 
       // Update game start time to account for saved playtime
       this.gameStartTime = Date.now() - saveData.playtime;
@@ -1246,6 +1255,8 @@ export class SaveManager {
         currentStepIndex,
         lastActionAt: null,
       },
+      cases: this._collectCaseState(),
+      investigation: this._collectInvestigationState(),
       dialogue: null,
     };
   }
@@ -1310,6 +1321,48 @@ export class SaveManager {
       timestamp: Date.now(),
       recentMemberRemovals: recentRemovals,
     };
+  }
+
+  /**
+   * Collect investigation system snapshot if available.
+   * @returns {Object|null}
+   */
+  _collectInvestigationState() {
+    const system = this.investigationSystem;
+    if (!system || typeof system.serialize !== 'function') {
+      return null;
+    }
+    try {
+      const snapshot = system.serialize();
+      if (!snapshot || typeof snapshot !== 'object') {
+        return null;
+      }
+      return JSON.parse(JSON.stringify(snapshot));
+    } catch (error) {
+      console.warn('[SaveManager] Failed to serialize investigation system', error);
+      return null;
+    }
+  }
+
+  /**
+   * Collect case manager snapshot if available.
+   * @returns {Object|null}
+   */
+  _collectCaseState() {
+    const manager = this.caseManager;
+    if (!manager || typeof manager.serialize !== 'function') {
+      return null;
+    }
+    try {
+      const snapshot = manager.serialize();
+      if (!snapshot || typeof snapshot !== 'object') {
+        return null;
+      }
+      return JSON.parse(JSON.stringify(snapshot));
+    } catch (error) {
+      console.warn('[SaveManager] Failed to serialize case manager state', error);
+      return null;
+    }
   }
 
   /**
@@ -1400,6 +1453,36 @@ export class SaveManager {
       this.storage.setItem('tutorial_skipped', 'true');
     } else {
       this.storage.removeItem?.('tutorial_skipped');
+    }
+  }
+
+  /**
+   * Restore investigation system state if available.
+   * @param {Object|null} snapshot
+   */
+  _restoreInvestigationState(snapshot) {
+    if (!snapshot || !this.investigationSystem || typeof this.investigationSystem.deserialize !== 'function') {
+      return;
+    }
+    try {
+      this.investigationSystem.deserialize(snapshot);
+    } catch (error) {
+      console.warn('[SaveManager] Failed to restore investigation state', error);
+    }
+  }
+
+  /**
+   * Restore case manager state if available.
+   * @param {Object|null} snapshot
+   */
+  _restoreCaseState(snapshot) {
+    if (!snapshot || !this.caseManager || typeof this.caseManager.deserialize !== 'function') {
+      return;
+    }
+    try {
+      this.caseManager.deserialize(snapshot);
+    } catch (error) {
+      console.warn('[SaveManager] Failed to restore case manager state', error);
     }
   }
 

@@ -1879,8 +1879,8 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Tags**: `gameplay`, `investigation`, `ecs`
 - **Effort**: 4 hours
 - **Dependencies**: M1-004
-- **Status**: Ready for Review — investigation state serialization complete; runtime save/load verification queued
-- **Latest Progress**: 2025-11-02 session implemented InvestigationSystem serialize/deserialize flow, extended Investigation component loaders, and added Jest coverage (`npm test -- InvestigationSystem`) to confirm evidence metadata persists across saves.
+- **Status**: Done — investigation + case state persist through SaveManager with automated runtime coverage
+- **Latest Progress**: 2025-11-03 session integrated SaveManager case/investigation serialization and authored Playwright coverage (`tests/e2e/investigation-save-load.spec.js`) confirming evidence, abilities, and detective vision state survive save/load cycles.
 - **Description**: Core investigation mechanics
 - **Files**:
   - `src/game/components/Investigation.js`
