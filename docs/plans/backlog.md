@@ -839,7 +839,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Tags**: `gameplay`, `input`, `ui`
 - **Effort**: 3 hours
 - **Dependencies**: CORE-301
-- **Status**: In Progress — Canvas overlay palette unified across HUD layers and inventory overlay integrated; audio feedback polish review remains.
+- **Status**: In Progress — Canvas overlay palette unified across HUD layers and inventory overlay integrated; audio feedback polish review remains. Next steps focus on auditing movement audio cues, re-running HUD/prompt tests once polish lands, and documenting camera smoothing parameters for CORE-303 handoff.
 - **Description**: Provide immediate feedback for player input (camera centering, movement easing, interaction prompts) so WASD/E produce visible results.
 - **Acceptance Criteria**:
   - Camera centers on the player at start and follows smoothly during movement.
@@ -2769,7 +2769,7 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Downtown combat layer (2 min loop)
   - Layers must sync at loop points
 - **File**: `assets/music/requests.json`
-- **Status**: Memory Parlor ambient loop integrated (FreePD "Goodnightmare") and routed through AmbientSceneAudioController.
+- **Status**: Memory Parlor ambient loop integrated (FreePD "Goodnightmare") and routed through AmbientSceneAudioController; next steps are to source tension/combat layers, capture licensing metadata, and schedule adaptive mix validation once tracks are staged.
 
 #### AR-009: Environmental SFX (M7)
 - **Type**: Audio

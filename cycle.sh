@@ -13,7 +13,7 @@ while true; do
 
   # Run Codex autonomous development
   COMMAND="review AGENTS.md, fetch handoff from game-mcp-server, and use result to plan and execute an autonomous development cycle"
-  if (( sessionNum % 10 == 5 )); then
+  if (( sessionNum % 10 == 3 )); then
     COMMAND="review AGENTS.md, fetch handoff from game-mcp-server, and complete an autonomous development cycle. For this cycle do not complete TODOS or development work. focus only on clean up and backlog management. review existing state of stories and the project and close stories if possible. clean up unnecessary artifacts. for this cycle do not create any new content"
   fi
   if (( sessionNum % 10 == 2 )); then
