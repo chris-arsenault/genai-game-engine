@@ -41,7 +41,17 @@ describe('SaveManager', () => {
         deserialize: jest.fn(),
       },
       factionManager: {
-        reputation: { test_faction: 50 },
+        reputation: { test_faction: { fame: 50, infamy: 5 } },
+        serialize: jest.fn(() => ({
+          version: 1,
+          timestamp: 1234567890,
+          reputation: {
+            test_faction: { fame: 50, infamy: 5 },
+          },
+          recentMemberRemovals: [],
+        })),
+        deserialize: jest.fn(() => true),
+        getRecentMemberRemovals: jest.fn(() => []),
       },
       tutorialSystem: {
         getProgress: jest.fn(() => ({ totalSteps: 3 })),
@@ -2320,9 +2330,11 @@ describe('SaveManager', () => {
 
       expect(factions).toEqual({
         version: 1,
-        reputation: { test_faction: 50 },
-        timestamp: expect.any(Number),
+        reputation: { test_faction: { fame: 50, infamy: 5 } },
+        recentMemberRemovals: [],
+        timestamp: 1234567890,
       });
+      expect(mockManagers.factionManager.serialize).toHaveBeenCalled();
     });
 
     test('should return empty object if no factionManager', () => {
@@ -2331,6 +2343,26 @@ describe('SaveManager', () => {
       const factions = saveManager.collectFactionData();
 
       expect(factions).toEqual({});
+    });
+
+    test('should fall back to direct reputation snapshot when serialize is unavailable', () => {
+      const fallbackManager = {
+        reputation: {
+          fallback_faction: { fame: 25, infamy: 12 },
+        },
+        getRecentMemberRemovals: jest.fn(() => [
+          { factionId: 'fallback_faction', removedAt: 42 },
+        ]),
+      };
+      saveManager.factionManager = fallbackManager;
+
+      const factions = saveManager.collectFactionData();
+
+      expect(factions.version).toBe(1);
+      expect(factions.reputation).toEqual({ fallback_faction: { fame: 25, infamy: 12 } });
+      expect(factions.recentMemberRemovals).toEqual([
+        { factionId: 'fallback_faction', removedAt: 42 },
+      ]);
     });
 
     test('should collect tutorial data from localStorage', () => {
@@ -2399,16 +2431,27 @@ describe('SaveManager', () => {
 
     test('should restore faction data', () => {
       const testData = {
-        reputation: { faction1: 100, faction2: -50 },
+        reputation: { faction1: { fame: 100, infamy: 5 } },
       };
 
       saveManager.restoreFactionData(testData);
 
-      expect(mockManagers.factionManager.reputation).toEqual(testData.reputation);
+      expect(mockManagers.factionManager.deserialize).toHaveBeenCalledWith(testData);
     });
 
     test('should handle null faction data', () => {
       expect(() => saveManager.restoreFactionData(null)).not.toThrow();
+    });
+
+    test('should fall back to direct assignment when deserialize is unavailable', () => {
+      const testData = {
+        reputation: { faction1: { fame: 80, infamy: 10 } },
+      };
+      mockManagers.factionManager.deserialize = undefined;
+
+      saveManager.restoreFactionData(testData);
+
+      expect(mockManagers.factionManager.reputation).toEqual(testData.reputation);
     });
 
     test('should restore tutorial completion status', () => {

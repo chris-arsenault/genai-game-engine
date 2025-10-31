@@ -511,10 +511,20 @@ describe('FactionManager', () => {
       factionManager.modifyReputation('wraith_network', -20, 15, 'Test');
 
       const serialized = factionManager.saveState();
+      const payload = JSON.parse(serialized);
 
       expect(localStorageMock.setItem).toHaveBeenCalledWith('faction_state', serialized);
-      expect(serialized).toContain('vanguard_prime');
-      expect(serialized).toContain('wraith_network');
+      expect(payload).toMatchObject({
+        version: 1,
+        reputation: expect.any(Object),
+        recentMemberRemovals: [],
+      });
+      expect(payload.reputation.vanguard_prime).toEqual(
+        factionManager.getReputation('vanguard_prime')
+      );
+      expect(payload.reputation.wraith_network).toEqual(
+        factionManager.getReputation('wraith_network')
+      );
     });
 
     it('should include version in saved state', () => {
@@ -541,6 +551,16 @@ describe('FactionManager', () => {
           vanguard_prime: { fame: 75, infamy: 5 },
           wraith_network: { fame: 10, infamy: 80 },
         },
+        recentMemberRemovals: [
+          {
+            factionId: 'wraith_network',
+            factionName: 'Wraith Network',
+            entityId: 12,
+            npcId: 'wraith_agent',
+            removedAt: 1700000000000,
+            tag: 'npc',
+          },
+        ],
         timestamp: Date.now(),
       };
 
@@ -553,6 +573,16 @@ describe('FactionManager', () => {
       expect(factionManager.reputation.vanguard_prime.infamy).toBe(5);
       expect(factionManager.reputation.wraith_network.fame).toBe(10);
       expect(factionManager.reputation.wraith_network.infamy).toBe(80);
+      expect(factionManager.getRecentMemberRemovals()).toEqual([
+        {
+          factionId: 'wraith_network',
+          factionName: 'Wraith Network',
+          entityId: 12,
+          npcId: 'wraith_agent',
+          removedAt: 1700000000000,
+          tag: 'npc',
+        },
+      ]);
     });
 
     it('should handle missing save data gracefully', () => {
@@ -605,11 +635,53 @@ describe('FactionManager', () => {
       factionManager.saveState();
 
       // Create new manager and load
-      const newManager = new FactionManager(mockEventBus);
+      const newManager = new FactionManager(mockEventBus, { storage: localStorageMock });
       newManager.loadState();
 
       expect(newManager.getReputation('vanguard_prime')).toEqual(originalVanguard);
       expect(newManager.getReputation('cipher_collective')).toEqual(originalCipher);
+    });
+
+    it('serialize should clone internal state', () => {
+      factionManager.modifyReputation('vanguard_prime', 10, 5, 'Test');
+
+      const snapshot = factionManager.serialize();
+      snapshot.reputation.vanguard_prime.fame = 999;
+
+      expect(factionManager.getReputation('vanguard_prime').fame).not.toBe(999);
+    });
+
+    it('deserialize should clamp values and retain unknown factions', () => {
+      const snapshot = {
+        version: 1,
+        reputation: {
+          vanguard_prime: { fame: 250, infamy: -50 },
+          new_faction: { fame: 33, infamy: 11 },
+        },
+        recentMemberRemovals: [{ factionId: 'new_faction', removedAt: 123 }],
+      };
+
+      const result = factionManager.deserialize(snapshot);
+
+      expect(result).toBe(true);
+      expect(factionManager.reputation.vanguard_prime).toEqual({ fame: 100, infamy: 0 });
+      expect(factionManager.reputation.new_faction).toEqual({ fame: 33, infamy: 11 });
+      expect(factionManager.getRecentMemberRemovals()).toEqual([
+        {
+          factionId: 'new_faction',
+          factionName: null,
+          entityId: null,
+          npcId: null,
+          tag: null,
+          removedAt: 123,
+        },
+      ]);
+    });
+
+    it('deserialize should return false for invalid payload', () => {
+      expect(factionManager.deserialize(null)).toBe(false);
+      expect(factionManager.deserialize({ version: 2, reputation: {} })).toBe(false);
+      expect(factionManager.deserialize({ version: 1 })).toBe(false);
     });
   });
 

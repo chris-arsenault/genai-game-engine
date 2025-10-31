@@ -1274,10 +1274,41 @@ export class SaveManager {
    */
   collectFactionData() {
     if (!this.factionManager) return {};
+
+    if (typeof this.factionManager.serialize === 'function') {
+      const snapshot = this.factionManager.serialize();
+      return {
+        version: snapshot?.version ?? 1,
+        timestamp: snapshot?.timestamp ?? Date.now(),
+        reputation: snapshot?.reputation ?? {},
+        recentMemberRemovals: Array.isArray(snapshot?.recentMemberRemovals)
+          ? snapshot.recentMemberRemovals.map((entry) => ({ ...entry }))
+          : [],
+      };
+    }
+
+    const sourceReputation = this.factionManager.reputation || {};
+    const clonedReputation = {};
+    for (const [factionId, record] of Object.entries(sourceReputation)) {
+      clonedReputation[factionId] = {
+        fame: record?.fame ?? 0,
+        infamy: record?.infamy ?? 0,
+      };
+    }
+
+    const removalSnapshot =
+      typeof this.factionManager.getRecentMemberRemovals === 'function'
+        ? this.factionManager.getRecentMemberRemovals()
+        : [];
+    const recentRemovals = Array.isArray(removalSnapshot)
+      ? removalSnapshot.map((entry) => ({ ...entry }))
+      : [];
+
     return {
       version: 1,
-      reputation: this.factionManager.reputation,
+      reputation: clonedReputation,
       timestamp: Date.now(),
+      recentMemberRemovals: recentRemovals,
     };
   }
 
@@ -1333,6 +1364,13 @@ export class SaveManager {
    */
   restoreFactionData(data) {
     if (!this.factionManager || !data) return;
+    if (typeof this.factionManager.deserialize === 'function') {
+      if (this.factionManager.deserialize(data)) {
+        console.log('[SaveManager] Faction reputation restored');
+      }
+      return;
+    }
+
     if (data.reputation) {
       this.factionManager.reputation = data.reputation;
       console.log('[SaveManager] Faction reputation restored');

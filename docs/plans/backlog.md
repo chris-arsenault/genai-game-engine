@@ -2284,6 +2284,7 @@ _Progress 2025-11-09 (Session #139 audio/perf polish): Augmented performanceSnap
 - **Tags**: `gameplay`, `faction`
 - **Effort**: 5 hours
 - **Dependencies**: M3-001
+- **Status**: Completed — Session 181 refactored persistence to expose serialize/deserialize APIs, wired SaveManager autosaves to the new hooks, and expanded Jest coverage (`npm test`).
 - **Description**: Faction reputation management
 - **Files**:
   - `src/game/managers/FactionManager.js`
