@@ -573,18 +573,20 @@ function createEvidenceMarkers(entityManager, componentRegistry, paletteSummary)
     componentRegistry.addComponent(entityId, 'Transform', transform);
 
     const sprite = new Sprite({
-      width: 18,
-      height: 24,
+      image: 'assets/generated/images/ar-002/image-ar-002-generic-marker.png',
+      width: 32,
+      height: 32,
       layer: 'environment',
       zIndex: 5,
-      color: '#ffd166',
-      alpha: 0.85,
+      color: '#FFFFFF',
+      alpha: 0.95,
       visible: true
     });
     componentRegistry.addComponent(entityId, 'Sprite', sprite);
 
     if (paletteSummary && Array.isArray(paletteSummary.evidenceMarkers)) {
       paletteSummary.evidenceMarkers.push({
+        image: sprite.image,
         color: sprite.color,
         alpha: sprite.alpha,
         layer: sprite.layer,

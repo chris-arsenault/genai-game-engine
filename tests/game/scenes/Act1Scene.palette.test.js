@@ -32,7 +32,11 @@ describe('Act1Scene palette metadata', () => {
     ]);
 
     expect(paletteSummary.evidenceMarkers).toHaveLength(4);
-    expect(paletteSummary.evidenceMarkers.every((entry) => entry.color === '#ffd166')).toBe(true);
+    paletteSummary.evidenceMarkers.forEach((entry) => {
+      expect(entry.image).toBe('assets/generated/images/ar-002/image-ar-002-generic-marker.png');
+      expect(entry.width).toBe(32);
+      expect(entry.height).toBe(32);
+    });
 
     expect(paletteSummary.ambientProps).toHaveLength(4);
     const ambientIds = paletteSummary.ambientProps.map((entry) => entry.id).sort();

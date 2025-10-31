@@ -21,7 +21,7 @@
 | AR ID | Scope | Request IDs | Notes |
 | ----- | ----- | ----------- | ----- |
 | AR-001 | Deduction board UI | `image-ar-001-deduction-board-bg`, `image-ar-001-clue-node-pack`, `image-ar-001-evidence-icon-set`, `image-ar-001-ui-button-pack` | Prioritise cohesive neon-noir styling; hover/pressed states to support tactile investigation feel. |
-| AR-002 | Evidence placeholders | `image-ar-002-generic-marker`, `image-ar-002-fingerprint`, `image-ar-002-document`, `image-ar-002-neural-extractor`, `image-ar-002-blood-spatter` | Pair each sprite with narrative text variants for tutorial tooltips. |
+| AR-002 | Evidence sprites | `image-ar-002-generic-marker`, `image-ar-002-fingerprint`, `image-ar-002-document`, `image-ar-002-neural-extractor`, `image-ar-002-blood-spatter` | Session 186 AI-generated the full evidence sprite set; wire into tutorial tooltips and runtime evidence palette logs. |
 | AR-003 | Player sprite | `image-ar-003-player-kira-sprite`, `image-ar-003-kira-evasion-pack` | Directional placeholder (`image-ar-003-kira-core-pack-normalized`) now powers idle/walk/run while the normalized dash/slide rows replace the generated evasion pack; bespoke swap still needed to lock trench-coat silhouette for the final art pass. Session 180 added `scripts/art/updateKiraAnimationConfig.js` so normalized manifests drive runtime animation frames the moment bespoke art lands. |
 | AR-004 | NPC sprites | `image-ar-004-npc-civilian-pack`, `image-ar-004-npc-guard-pack` | Civilian palette must hint at faction allegiance; guards need visor glow to visualize detection state. |
 | AR-005 | District tilesets | `image-ar-005-tileset-neon-district`, `image-ar-005-tileset-corporate-spires`, `image-ar-005-tileset-archive-undercity`, `image-ar-005-tileset-zenith-sector` | Tilesets must ship with collision metadata once sourced/generated. |
@@ -130,7 +130,7 @@
   - `image-ar-001-deduction-board-bg` → `bespoke-approved` (Helena Voss, Internal Commission – Full Rights). Final PSD mirrored at `assets/bespoke/week1/image-ar-001-deduction-board-bg.png`.
   - `image-ar-001-evidence-icon-set` → `bespoke-approved` (Helena Voss, Internal Commission – UI Iconography Pack) with monochrome + color exports.
   - `image-ar-001-clue-node-pack` → `bespoke-approved` (glow loop revision delivered 2025-11-16; Art Lead M. Cortez sign-off, full UI rights).
-  - `image-ar-002-generic-marker` → `bespoke-pending` (awaiting vendor thumbnails; ETA 2025-11-16).
+- `image-ar-002-generic-marker` → `ai-generated` (Session 186 OpenAI run; bespoke brief parked unless narrative requests bespoke variant).
   - `image-ar-005-tileset-neon-district` → `bespoke-in-review` (Axiom Studio reflection polish received 2025-11-15; signage glow under narrative review, Internal Commission – Environment Tiles).
 - Approved entries now record commission licenses, reviewers, and approval timestamps; see new `statusHistory`, `bespokeApprovedOn`, and `bespokeNotes` fields in the manifest for compliance/audit trails.
 - Added `assets/bespoke/week1/README.md` to log vendor hand-offs and repository-visible exports while original source files remain in the studio vault.
@@ -168,6 +168,11 @@
 - Reran `python scripts/art/normalize_kira_evasion_pack.py` with bespoke art preferred as the core source, regenerating `image-ar-003-kira-core-pack-normalized.png` and updating the manifest with provenance metadata for AR-003/M3-016 ingestion.
 - Refreshed the auto-generated animation config via `node scripts/art/updateKiraAnimationConfig.js`, keeping gameplay-facing `kiraAnimationConfig.js` synchronized with the latest dash/slide normalization manifest.
 - Captured a new locomotion reference set (`npm run art:capture-locomotion`) so autosave overlays and traversal QA review the bespoke idle/walk/run frames; outputs and manifest timestamps now reference the bespoke-normalized atlas.
+
+## Session 186 Updates
+- Generated the full AR-002 evidence sprite suite via `mcp__generate-image__generate_image`, storing transparent 32×32 renders under `assets/generated/images/ar-002/`.
+- Promoted `image-ar-002-*` manifest entries to `ai-generated`, logging provenance and updated file paths in `assets/images/requests.json`.
+- Updated evidence runtime defaults so `EvidenceEntity` auto-selects the new sprites (fingerprints, blood spatter, neural extractor, dossier) and refreshed Act 1 scene markers to draw the holographic marker art.
 
 ## Next Actions
 1. Distribute the latest RenderOps packet (`npm run art:package-renderops` then `npm run art:stage-renderops`) and attach the staged ZIP (`deliveries/renderops/.../*.zip`) plus `*-delivery.json` manifest when sharing with RenderOps; log feedback on actionable segments and regenerate after art tweaks.
