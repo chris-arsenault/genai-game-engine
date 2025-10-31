@@ -5,8 +5,8 @@
 
 ## Document Overview
 
-**Version**: 1.3
-**Last Updated**: 2025-10-31 (Session 173 backlog alignment)
+**Version**: 1.4
+**Last Updated**: 2025-11-01 (Session 183 backlog cleanup)
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
@@ -36,6 +36,12 @@
 
 - Realigned `docs/plans/backlog.md` with MCP backlog statuses: PERF-214 and UX-173 marked as completed with follow-up monitoring notes.
 - No new content or asset generation performed; scope limited to documentation/backlog hygiene.
+
+### Session #183 Backlog Cleanup
+
+- Closed M3-013 (WorldStateManager) and AR-007 (particle effects) after validating that automated coverage satisfies all acceptance criteria.
+- Flagged AR-008 adaptive music, QUEST-610 trigger migration, and UX-410 overlay feedback as **Blocked**, awaiting upstream assets or policy guidance to replace manual review loops.
+- Trimmed active WIP to AR-003, AR-050, and M3-016 to keep the MCP backlog within the enforced Work-In-Progress ceiling.
 
 ### Session #174 Backlog Updates
 
@@ -300,15 +306,17 @@
 - Verification: `npm test` (full suite completed before harness timeout) and `npm test -- InventoryOverlay.bindingHints.test.js ReputationUI.test.js SaveInspectorOverlay.test.js`.
 
 #### UX-410: Overlay navigation shortcut feedback
+- **Status**: Blocked — awaiting an automated telemetry review path; manual micro-playtests are disallowed under the current QA mandate.
 - Logged follow-up backlog item to run micro-playtests on the new ControlBindings overlay navigation patterns and capture qualitative feedback before extending further HUD polish.
 - Next steps: schedule focused sessions, prepare observation checklist, and roll findings into UI refinements.
 
 ### Session #134 Backlog Updates
 
 #### UX-410: Overlay navigation shortcut feedback
+- **Status**: Blocked — instrumentation is ready, but qualitative sessions are on hold until leadership supplies an automation-friendly evaluation plan.
 - ControlBindings overlay now emits navigation telemetry (`CONTROL_BINDINGS_NAV_EVENT`), with `ControlBindingsObservationLog` capturing qualitative signals and exposing summaries through `Game.exportControlBindingsObservationLog()`.
 - Authored `scripts/ux/exportControlBindingsObservations.js` plus Jest coverage to transform recorded logs into JSON/Markdown reports with heuristic recommendations for upcoming micro-playtests.
-- Next steps: run at least three targeted sessions using the new logger/exporter pipeline and document the qualitative findings for HUD follow-up.
+- Next steps: run at least three targeted sessions using the new logger/exporter pipeline and document the qualitative findings once policy allows.
 
 ### Session #135 Backlog Updates
 
@@ -573,7 +581,7 @@ Faction/disguise/quest overlays and dialogue prompts were invisible during brows
 - **Tags**: `engine`, `ecs`, `narrative`, `refactor`
 - **Effort**: 4-6 hours
 - **Dependencies**: Session #16 research report (`docs/research/engine/game-state-management-comparison.md`)
-- **Status**: In Progress — Phase 0 WorldStateStore scaffolding delivered (Session #17); UI migration covered by PO-003
+- **Status**: ✅ Completed — Observability scaffolding, export automation, and telemetry tooling are live; future CI enhancements remain paused under the telemetry moratorium.
 - **Reported**: 2025-10-28 (Autonomous Session #16)
 
 **Problem**:
@@ -871,7 +879,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Priority**: P1
 - **Tags**: `quest`, `narrative`, `trigger`
 - **Effort**: 3 hours
-- **Status**: In progress — Crossroads transitions load all three branch interiors; automated readiness/diff/parity passes are active with RenderOps lighting validation pending and analytics ingestion blocked until `telemetry-artifacts/quest-telemetry-dashboard.json` returns.
+- **Status**: Blocked — awaiting RenderOps lighting validation and analytics acknowledgement before resuming parity runs and reviewer approvals.
 - **Summary**: Attach Act 2 Crossroads hub volumes (checkpoint, Zara briefing table, thread selection console) to TriggerMigrationToolkit so branching choices feed QuestSystem, telemetry, and designer tooling consistently with Act 1.
 - **Progress (Session #86)**: Seeded Act 2 Crossroads trigger definitions in `QuestTriggerRegistry`, added regression coverage (`tests/game/quests/Act2TriggerDefinitions.test.js`), generated authoring notes (`docs/guides/act2-trigger-authoring.md`), and ensured outstanding migration reports surface the Act 2 work.
 - **Progress (Session #87)**: Authored `src/game/scenes/Act2CrossroadsScene.js` to attach registry-backed triggers, added Jest coverage (`tests/game/scenes/Act2CrossroadsScene.triggers.test.js`) verifying branching metadata, and refreshed designer notes with migration status.
@@ -2522,7 +2530,7 @@ _Progress 2025-11-09 (Session #139 audio/perf polish): Augmented performanceSnap
 
 #### M3-013: WorldStateManager Implementation
 - **Priority**: P0
-- **Status**: In Progress (NPC and district slices shipped; SaveManager parity tests outstanding)
+- **Status**: ✅ Completed (WorldStateStore slices, SaveManager parity, and autosave export automation are live; telemetry dashboard expansion deferred per directive)
 - **Tags**: `gameplay`, `faction`
 - **Effort**: 5 hours
 - **Dependencies**: M3-012
@@ -2817,7 +2825,7 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Detective coat, distinctive look
   - 4-direction or 8-direction movement
 - **File**: `assets/images/requests.json`
-- **Status**: In Progress — dash/slide pack is live via the new AnimatedSprite/PlayerAnimation systems (Session 167) with Jest coverage, while the bespoke idle/walk/run sheet remains pending RenderOps review before full sprite swap.
+- **Status**: In Progress — bespoke idle/walk/run sheet delivered; rerun normalization/config scripts and traversal QA before swapping into runtime.
 
 ### High Priority Assets (P1 - Required for M3-M6)
 
@@ -2872,7 +2880,7 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Memory fragment particles (8x8, ethereal)
   - Screen effects (flash, scanlines)
 - **File**: `assets/images/requests.json`
-- **Status**: Rain, neon glow, memory fragment, and screen-effect overlay sprites generated via GPT-Image-1 (Sessions 162 & 172) are now integrated into `ParticleEmitterRuntime` with automated 60 FPS stress harnesses (Session 175); Playwright coverage capturing detective/forensic cues remains.
+- **Status**: ✅ Completed — rain/neon/memory/screen-effect sprite sheets are integrated into ParticleEmitterRuntime with Jest and Playwright automation locking cadence and performance.
 
 #### AR-008: Adaptive Music Tracks (M7)
 - **Type**: Audio
@@ -2885,7 +2893,7 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Downtown combat layer (2 min loop)
   - Layers must sync at loop points
 - **File**: `assets/music/requests.json`
-- **Status**: Memory Parlor ambient loop integrated (FreePD "Goodnightmare") and routed through AmbientSceneAudioController; downtown tension/combat stems now autogenerated via `scripts/audio/generateAr008AdaptiveStems.js`, wired into `GameConfig.audio.act2CrossroadsAmbient`, and covered by AdaptiveMusic regression tests (Session 167). Pending: in-scene tuning once the base downtown ambient layer lands.
+- **Status**: Blocked — downtown ambient base stem still pending; tension/combat layers and regression coverage are ready to validate once the ambient loop is sourced.
 
 #### AR-009: Environmental SFX (M7)
 - **Type**: Audio
