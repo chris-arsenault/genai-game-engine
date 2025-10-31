@@ -11,15 +11,25 @@
 import { getFaction, getFactionAllies, getFactionEnemies, getFactionIds } from '../data/factions/index.js';
 
 export class FactionManager {
-  constructor(eventBus) {
+  constructor(eventBus, options = {}) {
     this.eventBus = eventBus;
     this.events = eventBus; // Legacy alias maintained for compatibility
 
     // Reputation storage: { factionId: { fame: 0-100, infamy: 0-100 } }
     this.reputation = {};
 
-    // Initialize all factions at neutral
-    this.initializeReputation();
+    const storageOption = options.storage;
+    const resolvedStorage =
+      storageOption !== undefined
+        ? storageOption
+        : typeof globalThis !== 'undefined' && globalThis.localStorage
+          ? globalThis.localStorage
+          : null;
+
+    this.storage = typeof resolvedStorage?.setItem === 'function' ? resolvedStorage : null;
+    const defaultKey = 'faction_state';
+    const keyCandidate = typeof options.storageKey === 'string' ? options.storageKey.trim() : '';
+    this.storageKey = keyCandidate.length ? keyCandidate : defaultKey;
 
     // Configuration
     this.config = {
@@ -27,6 +37,9 @@ export class FactionManager {
       maxReputation: 100,
       minReputation: 0,
     };
+
+    // Initialize all factions at their baseline reputation
+    this.initializeReputation();
 
     this.recentMemberRemovals = [];
   }
@@ -36,11 +49,18 @@ export class FactionManager {
    */
   initializeReputation() {
     const factionIds = getFactionIds();
+    const min = this.config?.minReputation ?? 0;
+    const max = this.config?.maxReputation ?? 100;
 
     for (const factionId of factionIds) {
+      const faction = getFaction(factionId);
+      const initial = faction?.initialReputation ?? {};
+      const baseFame = Number.isFinite(initial.fame) ? initial.fame : 20;
+      const baseInfamy = Number.isFinite(initial.infamy) ? initial.infamy : 20;
+
       this.reputation[factionId] = {
-        fame: 20, // Start neutral
-        infamy: 20,
+        fame: this.clamp(baseFame, min, max),
+        infamy: this.clamp(baseInfamy, min, max),
       };
     }
   }
@@ -299,18 +319,77 @@ export class FactionManager {
   }
 
   /**
+   * Serialize faction state for persistence consumers.
+   * @returns {{version:number,timestamp:number,reputation:Object, recentMemberRemovals:Array}}
+   */
+  serialize() {
+    return {
+      version: 1,
+      timestamp: Date.now(),
+      reputation: this.#cloneReputation(),
+      recentMemberRemovals: this.getRecentMemberRemovals(),
+    };
+  }
+
+  /**
+   * Restore faction state from a serialized snapshot.
+   * @param {object} snapshot
+   * @returns {boolean}
+   */
+  deserialize(snapshot) {
+    if (!snapshot || typeof snapshot !== 'object') {
+      return false;
+    }
+
+    const version = snapshot.version ?? 1;
+    if (version !== 1) {
+      console.warn('[FactionManager] Incompatible save version');
+      return false;
+    }
+
+    const incomingReputation = snapshot.reputation;
+    if (!incomingReputation || typeof incomingReputation !== 'object') {
+      console.warn('[FactionManager] Invalid reputation snapshot');
+      return false;
+    }
+
+    const factionIds = new Set(getFactionIds());
+    const min = this.config?.minReputation ?? 0;
+    const max = this.config?.maxReputation ?? 100;
+    const restored = {};
+
+    for (const [factionId, rep] of Object.entries(incomingReputation)) {
+      const fameValue = this.#coerceNumber(rep?.fame);
+      const infamyValue = this.#coerceNumber(rep?.infamy);
+      restored[factionId] = {
+        fame: this.clamp(Number.isFinite(fameValue) ? fameValue : min, min, max),
+        infamy: this.clamp(Number.isFinite(infamyValue) ? infamyValue : min, min, max),
+      };
+      factionIds.delete(factionId);
+    }
+
+    for (const factionId of factionIds) {
+      const existing = this.reputation[factionId];
+      restored[factionId] = {
+        fame: existing?.fame ?? min,
+        infamy: existing?.infamy ?? min,
+      };
+    }
+
+    this.reputation = restored;
+    this.recentMemberRemovals = this.#sanitizeRemovalHistory(snapshot.recentMemberRemovals);
+    return true;
+  }
+
+  /**
    * Save faction state to localStorage
    * @returns {string} Serialized state
    */
   saveState() {
-    const state = {
-      version: 1,
-      reputation: this.reputation,
-      timestamp: Date.now(),
-    };
-
-    const serialized = JSON.stringify(state);
-    localStorage.setItem('faction_state', serialized);
+    const serialized = JSON.stringify(this.serialize());
+    if (this.storage) {
+      this.storage.setItem(this.storageKey, serialized);
+    }
     return serialized;
   }
 
@@ -319,20 +398,19 @@ export class FactionManager {
    * @returns {boolean} Success
    */
   loadState() {
-    const serialized = localStorage.getItem('faction_state');
+    if (!this.storage || typeof this.storage.getItem !== 'function') {
+      return false;
+    }
+
+    const serialized = this.storage.getItem(this.storageKey);
     if (!serialized) return false;
 
     try {
       const state = JSON.parse(serialized);
 
-      // Version check
-      if (state.version !== 1) {
-        console.warn('[FactionManager] Incompatible save version');
+      if (!this.deserialize(state)) {
         return false;
       }
-
-      // Restore reputation
-      this.reputation = state.reputation;
 
       console.log('[FactionManager] State loaded from localStorage');
       return true;
@@ -347,7 +425,9 @@ export class FactionManager {
    */
   resetReputation() {
     this.initializeReputation();
-    localStorage.removeItem('faction_state');
+    if (this.storage && typeof this.storage.removeItem === 'function') {
+      this.storage.removeItem(this.storageKey);
+    }
     console.log('[FactionManager] Reputation reset to neutral');
 
     this.eventBus.emit('faction:reputation_reset', {});
@@ -378,6 +458,63 @@ export class FactionManager {
 
   getRecentMemberRemovals() {
     return this.recentMemberRemovals.map((entry) => ({ ...entry }));
+  }
+
+  #cloneReputation() {
+    const clone = {};
+    for (const [factionId, rep] of Object.entries(this.reputation)) {
+      clone[factionId] = {
+        fame: rep?.fame ?? 0,
+        infamy: rep?.infamy ?? 0,
+      };
+    }
+    return clone;
+  }
+
+  #sanitizeRemovalHistory(history) {
+    if (!Array.isArray(history) || history.length === 0) {
+      return [];
+    }
+
+    const normalized = [];
+    for (const entry of history) {
+      const clone = this.#cloneRemovalEntry(entry);
+      if (clone) {
+        normalized.push(clone);
+      }
+    }
+
+    if (normalized.length > 10) {
+      return normalized.slice(normalized.length - 10);
+    }
+
+    return normalized;
+  }
+
+  #cloneRemovalEntry(entry) {
+    if (!entry || typeof entry !== 'object') {
+      return null;
+    }
+
+    return {
+      factionId: entry.factionId ?? null,
+      factionName: entry.factionName ?? null,
+      entityId: entry.entityId ?? null,
+      npcId: entry.npcId ?? null,
+      tag: entry.tag ?? null,
+      removedAt: entry.removedAt ?? null,
+    };
+  }
+
+  #coerceNumber(value) {
+    if (typeof value === 'number') {
+      return value;
+    }
+    if (typeof value === 'string' && value.trim().length) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : NaN;
+    }
+    return NaN;
   }
 
   #resolveRemovalSummary(entityId, metadata, snapshot) {

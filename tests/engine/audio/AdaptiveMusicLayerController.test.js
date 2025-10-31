@@ -1,4 +1,5 @@
 import { AdaptiveMusicLayerController } from '../../../src/engine/audio/AdaptiveMusicLayerController.js';
+import { GameConfig } from '../../../src/game/config/GameConfig.js';
 
 function createMockAudioContext() {
   const createdGains = [];
@@ -156,5 +157,171 @@ describe('AdaptiveMusicLayerController', () => {
     expect(ambientLayer.disconnect).toHaveBeenCalled();
     expect(tensionLayer.stop).toHaveBeenCalled();
     expect(tensionGain.disconnect).toHaveBeenCalled();
+  });
+
+  it('matches memory parlor adaptive mix weights for ambient/tension/combat states', async () => {
+    controller.dispose();
+
+    const { memoryParlorAmbient } = GameConfig.audio;
+    controller = new AdaptiveMusicLayerController(audioManager, {
+      layers: [
+        {
+          id: 'ambient_base',
+          trackId: memoryParlorAmbient.trackId,
+          baseVolume: memoryParlorAmbient.baseVolume,
+          trackUrl: memoryParlorAmbient.trackUrl,
+        },
+        {
+          id: 'tension_layer',
+          trackId: memoryParlorAmbient.tensionTrackId,
+          baseVolume: memoryParlorAmbient.tensionBaseVolume,
+          trackUrl: memoryParlorAmbient.tensionTrackUrl,
+        },
+        {
+          id: 'combat_layer',
+          trackId: memoryParlorAmbient.combatTrackId,
+          baseVolume: memoryParlorAmbient.combatBaseVolume,
+          trackUrl: memoryParlorAmbient.combatTrackUrl,
+        },
+      ],
+      states: memoryParlorAmbient.states,
+      fadeDuration: 1.1,
+    });
+
+    const initialized = await controller.init();
+    expect(initialized).toBe(true);
+
+    const [ambientGain, tensionGain, combatGain] = context.__createdGains
+      .slice(-3)
+      .map((gain) => gain.gain);
+
+    const expectMix = (stateName, expectedVolumes) => {
+      [ambientGain, tensionGain, combatGain].forEach((gain) => {
+        gain.linearRampToValueAtTime.mockClear();
+      });
+
+      controller.setState(stateName, { fadeDuration: 1.1, force: true });
+
+      const checkGain = (gain, expected) => {
+        const calls = gain.linearRampToValueAtTime.mock.calls;
+        expect(calls.length).toBeGreaterThan(0);
+        const [target, when] = calls[calls.length - 1];
+        expect(target).toBeCloseTo(expected, 5);
+        expect(when).toBeCloseTo(context.currentTime + 1.1, 5);
+      };
+
+      checkGain(ambientGain, expectedVolumes.ambient);
+      checkGain(tensionGain, expectedVolumes.tension);
+      checkGain(combatGain, expectedVolumes.combat);
+    };
+
+    expectMix('stealth', {
+      ambient: memoryParlorAmbient.baseVolume * memoryParlorAmbient.states.stealth.ambient_base,
+      tension: memoryParlorAmbient.tensionBaseVolume * memoryParlorAmbient.states.stealth.tension_layer,
+      combat: memoryParlorAmbient.combatBaseVolume * memoryParlorAmbient.states.stealth.combat_layer,
+    });
+
+    expectMix('alert', {
+      ambient: memoryParlorAmbient.baseVolume * memoryParlorAmbient.states.alert.ambient_base,
+      tension: memoryParlorAmbient.tensionBaseVolume * memoryParlorAmbient.states.alert.tension_layer,
+      combat: memoryParlorAmbient.combatBaseVolume * memoryParlorAmbient.states.alert.combat_layer,
+    });
+
+    expectMix('combat', {
+      ambient: memoryParlorAmbient.baseVolume * memoryParlorAmbient.states.combat.ambient_base,
+      tension: memoryParlorAmbient.tensionBaseVolume * memoryParlorAmbient.states.combat.tension_layer,
+      combat: memoryParlorAmbient.combatBaseVolume * memoryParlorAmbient.states.combat.combat_layer,
+    });
+
+    expectMix('ambient', {
+      ambient: memoryParlorAmbient.baseVolume * memoryParlorAmbient.states.ambient.ambient_base,
+      tension: memoryParlorAmbient.tensionBaseVolume * memoryParlorAmbient.states.ambient.tension_layer,
+      combat: memoryParlorAmbient.combatBaseVolume * memoryParlorAmbient.states.ambient.combat_layer,
+    });
+  });
+
+  it('matches act2 crossroads adaptive mix weights with downtown stems', async () => {
+    controller.dispose();
+
+    const crossroads = GameConfig.audio.act2CrossroadsAmbient;
+    controller = new AdaptiveMusicLayerController(audioManager, {
+      layers: [
+        {
+          id: 'ambient_base',
+          trackId: crossroads.trackId,
+          baseVolume: crossroads.baseVolume,
+          trackUrl: crossroads.trackUrl,
+        },
+        {
+          id: 'tension_layer',
+          trackId: crossroads.tensionTrackId,
+          baseVolume: crossroads.tensionBaseVolume,
+          trackUrl: crossroads.tensionTrackUrl,
+        },
+        {
+          id: 'combat_layer',
+          trackId: crossroads.combatTrackId,
+          baseVolume: crossroads.combatBaseVolume,
+          trackUrl: crossroads.combatTrackUrl,
+        },
+      ],
+      states: crossroads.states,
+      fadeDuration: crossroads.fadeDuration,
+    });
+
+    const initialized = await controller.init();
+    expect(initialized).toBe(true);
+
+    const [ambientGain, tensionGain, combatGain] = context.__createdGains
+      .slice(-3)
+      .map((gain) => gain.gain);
+
+    const expectCrossroadsMix = (stateName, expectedVolumes) => {
+      [ambientGain, tensionGain, combatGain].forEach((gain) => gain.linearRampToValueAtTime.mockClear());
+
+      controller.setState(stateName, { fadeDuration: crossroads.fadeDuration, force: true });
+
+      const checkGain = (gain, expected) => {
+        const calls = gain.linearRampToValueAtTime.mock.calls;
+        expect(calls.length).toBeGreaterThan(0);
+        const [target, when] = calls[calls.length - 1];
+        expect(target).toBeCloseTo(expected, 5);
+        expect(when).toBeCloseTo(context.currentTime + crossroads.fadeDuration, 5);
+      };
+
+      checkGain(ambientGain, expectedVolumes.ambient);
+      checkGain(tensionGain, expectedVolumes.tension);
+      checkGain(combatGain, expectedVolumes.combat);
+    };
+
+    expectCrossroadsMix('decision', {
+      ambient: 0.456,
+      tension: 0.306,
+      combat: 0,
+    });
+
+    expectCrossroadsMix('tension', {
+      ambient: 0.348,
+      tension: 0.697,
+      combat: 0.1746,
+    });
+
+    expectCrossroadsMix('alert', {
+      ambient: 0.288,
+      tension: 0.663,
+      combat: 0.4462,
+    });
+
+    expectCrossroadsMix('ambient', {
+      ambient: 0.552,
+      tension: 0,
+      combat: 0,
+    });
+
+    expectCrossroadsMix('combat', {
+      ambient: 0.228,
+      tension: 0.51,
+      combat: 0.97,
+    });
   });
 });

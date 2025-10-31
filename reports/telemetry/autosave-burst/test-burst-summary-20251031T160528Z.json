@@ -1,0 +1,114 @@
+{
+  "generatedAt": 1761926728087,
+  "generatedIso": "2025-10-31T16:05:28.087Z",
+  "source": "worldStateStore",
+  "factions": {
+    "lastCascadeEvent": null,
+    "cascadeTargets": [],
+    "recentMemberRemovals": [],
+    "metrics": {
+      "cascadeTargetCount": 0,
+      "activeCascadeTargets": 0,
+      "recentMemberRemovalCount": 0
+    }
+  },
+  "tutorial": {
+    "latestSnapshot": null,
+    "snapshots": [],
+    "transcript": [],
+    "metrics": {
+      "snapshotCount": 0,
+      "transcriptCount": 0
+    }
+  },
+  "engine": {
+    "spatialHash": null
+  },
+  "controlBindings": {
+    "source": "unavailable",
+    "totalEvents": 0,
+    "durationMs": 0,
+    "durationLabel": "0s",
+    "firstEventAt": null,
+    "lastEventAt": null,
+    "actionsVisitedCount": 0,
+    "actionsVisited": [],
+    "actionsRemappedCount": 0,
+    "actionsRemapped": [],
+    "listModesVisited": [],
+    "pageRange": null,
+    "lastSelectedAction": null,
+    "metrics": {
+      "selectionMoves": 0,
+      "selectionBlocked": 0,
+      "listModeChanges": 0,
+      "listModeUnchanged": 0,
+      "pageNavigations": 0,
+      "pageNavigationBlocked": 0,
+      "pageSetChanges": 0,
+      "pageSetBlocked": 0,
+      "captureStarted": 0,
+      "captureCancelled": 0,
+      "bindingsApplied": 0,
+      "bindingsReset": 0,
+      "manualOverrideEvents": 0
+    },
+    "captureCancelReasons": {},
+    "dwell": {
+      "count": 0,
+      "totalMs": 0,
+      "averageMs": 0,
+      "averageLabel": "0s",
+      "maxMs": 0,
+      "maxLabel": "0s",
+      "minMs": 0,
+      "minLabel": "0s",
+      "lastMs": 0,
+      "lastLabel": "0s",
+      "lastAction": null,
+      "longestAction": null
+    },
+    "ratios": {
+      "selectionBlocked": {
+        "numerator": 0,
+        "denominator": 0,
+        "value": 0,
+        "percentage": "0%"
+      },
+      "pageNavigationBlocked": {
+        "numerator": 0,
+        "denominator": 0,
+        "value": 0,
+        "percentage": "0%"
+      }
+    }
+  },
+  "districts": {
+    "lastUpdatedAt": 0,
+    "lastUpdatedIso": "1970-01-01T00:00:00.000Z",
+    "lastLockdownAt": 0,
+    "lastLockdownIso": "1970-01-01T00:00:00.000Z",
+    "metrics": {
+      "total": 4,
+      "restricted": 0,
+      "fastTravelDisabled": 3,
+      "infiltrationLocked": 9,
+      "infiltrationUnlocked": 0,
+      "lockdownEvents": 0
+    },
+    "restrictedDistricts": []
+  },
+  "npcs": {
+    "lastUpdatedAt": 0,
+    "lastUpdatedIso": "1970-01-01T00:00:00.000Z",
+    "metrics": {
+      "total": 0,
+      "alerts": 0,
+      "suspicious": 0,
+      "knowsPlayer": 0,
+      "witnessedCrimes": 0
+    },
+    "alerts": [],
+    "suspicious": []
+  }
+}

@@ -13,6 +13,14 @@ import { Collider } from '../components/Collider.js';
 import { ForensicEvidence } from '../components/ForensicEvidence.js';
 import { formatActionPrompt, hydratePromptWithBinding } from '../utils/controlBindingPrompts.js';
 
+const EVIDENCE_SPRITE_PATHS = {
+  genericMarker: 'assets/generated/images/ar-002/image-ar-002-generic-marker.png',
+  fingerprint: 'assets/generated/images/ar-002/image-ar-002-fingerprint.png',
+  document: 'assets/generated/images/ar-002/image-ar-002-document.png',
+  neuralExtractor: 'assets/generated/images/ar-002/image-ar-002-neural-extractor.png',
+  bloodSpatter: 'assets/generated/images/ar-002/image-ar-002-blood-spatter.png',
+};
+
 function shouldLog() {
   if (typeof __DEV__ !== 'undefined') {
     return Boolean(__DEV__);
@@ -64,13 +72,14 @@ export function createEvidenceEntity(entityManager, componentRegistry, evidenceD
 
   // Add Sprite component
   const spriteOverrides = spriteConfig && typeof spriteConfig === 'object' ? spriteConfig : {};
+  const resolvedSpriteImage = spriteOverrides.image ?? resolveEvidenceSpriteImage(evidenceData);
   const sprite = new Sprite({
-    image: spriteOverrides.image ?? null,
-    width: spriteOverrides.width ?? 24,
-    height: spriteOverrides.height ?? 24,
+    image: resolvedSpriteImage,
+    width: spriteOverrides.width ?? (resolvedSpriteImage ? 32 : 24),
+    height: spriteOverrides.height ?? (resolvedSpriteImage ? 32 : 24),
     layer: spriteOverrides.layer ?? 'entities',
     zIndex: spriteOverrides.zIndex ?? 5,
-    color: spriteOverrides.color ?? getEvidenceColor(type),
+    color: spriteOverrides.color ?? (resolvedSpriteImage ? '#FFFFFF' : getEvidenceColor(type)),
     visible: spriteOverrides.visible ?? !hidden, // Hidden evidence not visible until detective vision
     alpha: spriteOverrides.alpha ?? (hidden ? 0.3 : 1.0)
   });
@@ -152,6 +161,51 @@ function getEvidenceColor(type) {
     forensic: '#00FF00' // Green
   };
   return colors[type] || '#FFFFFF';
+}
+
+function resolveEvidenceSpriteImage(evidenceData = {}) {
+  const {
+    id = '',
+    title = '',
+    type = '',
+    category = '',
+  } = evidenceData;
+
+  const haystack = `${id} ${title} ${type} ${category}`.toLowerCase();
+  const lowerType = typeof type === 'string' ? type.toLowerCase() : '';
+  const lowerCategory = typeof category === 'string' ? category.toLowerCase() : '';
+
+  if (haystack.includes('fingerprint')) {
+    return EVIDENCE_SPRITE_PATHS.fingerprint;
+  }
+
+  if (haystack.includes('blood') || haystack.includes('spatter')) {
+    return EVIDENCE_SPRITE_PATHS.bloodSpatter;
+  }
+
+  if (haystack.includes('extractor')) {
+    return EVIDENCE_SPRITE_PATHS.neuralExtractor;
+  }
+
+  if (
+    haystack.includes('document') ||
+    haystack.includes('dossier') ||
+    haystack.includes('file') ||
+    haystack.includes('badge') ||
+    haystack.includes('report')
+  ) {
+    return EVIDENCE_SPRITE_PATHS.document;
+  }
+
+  if (haystack.includes('marker')) {
+    return EVIDENCE_SPRITE_PATHS.genericMarker;
+  }
+
+  if (lowerType === 'forensic' || lowerCategory === 'generic') {
+    return EVIDENCE_SPRITE_PATHS.genericMarker;
+  }
+
+  return null;
 }
 
 function buildInteractionPrompt(customPrompt, title) {

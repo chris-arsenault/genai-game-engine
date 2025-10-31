@@ -1,5 +1,36 @@
 {
-  "updatedAt": null,
-  "entries": [],
-  "totalsByStatus": {}
+  "updatedAt": "2025-10-31T12:46:01.450Z",
+  "entries": [
+    {
+      "packetId": "caa6051f-f7ac-4eae-906f-a46053aaeffc",
+      "label": "act2-crossroads",
+      "receivedAt": "2025-10-31T12:32:00Z",
+      "reviewer": "RenderOps Automated Review",
+      "items": [
+        {
+          "segmentId": "crossroads_floor_safehouse",
+          "status": "approved",
+          "severity": "none",
+          "notes": "Narrative sign-off recorded; safehouse floor luminance balanced. No further tweaks required.",
+          "requestedBy": "narrative-team",
+          "attachments": [],
+          "reference": null,
+          "updatedAt": null
+        },
+        {
+          "segmentId": "crossroads_branch_walkway",
+          "status": "approved",
+          "severity": "none",
+          "notes": "Walkway lighting verified against branch infiltration beats. Ready for packet closeout.",
+          "requestedBy": "narrative-team",
+          "attachments": [],
+          "reference": null,
+          "updatedAt": null
+        }
+      ]
+    }
+  ],
+  "totalsByStatus": {
+    "approved": 2
+  }
 }

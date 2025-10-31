@@ -295,6 +295,72 @@ const DEFAULT_PRESETS = Object.freeze({
     lifespanMs: [260, 440],
     spread: [24, 110],
   },
+  'detective-vision-rainfall': {
+    anchor: { x: 0.5, y: 0.5 },
+    color: 'rgba(180, 220, 255, 0.85)',
+    speed: [140, 240],
+    size: [54, 96],
+    lifespanMs: [420, 760],
+    spread: [160, 420],
+    baseAlpha: 0.95,
+    spriteSheetId: 'ar007-rain',
+    spriteScale: [0.34, 0.7],
+  },
+  'detective-vision-neon-bloom': {
+    anchor: { x: 0.5, y: 0.5 },
+    color: 'rgba(200, 255, 230, 0.9)',
+    speed: [64, 122],
+    size: [46, 88],
+    lifespanMs: [360, 640],
+    spread: [110, 280],
+    baseAlpha: 0.88,
+    spriteSheetId: 'ar007-neon',
+    spriteScale: [0.28, 0.62],
+  },
+  'detective-vision-memory-fragment': {
+    anchor: { x: 0.5, y: 0.45 },
+    color: 'rgba(255, 255, 210, 0.92)',
+    speed: [42, 108],
+    size: [42, 84],
+    lifespanMs: [520, 840],
+    spread: [140, 360],
+    baseAlpha: 0.94,
+    spriteSheetId: 'ar007-memory',
+    spriteScale: [0.32, 0.68],
+  },
+});
+
+const DEFAULT_SPRITE_SHEETS = Object.freeze({
+  'ar007-rain': {
+    imagePath: 'assets/generated/ar-007/image-ar-007-particles-rain.png',
+    frameWidth: 128,
+    frameHeight: 128,
+    frameCount: 64,
+    frameRate: 18,
+    scale: [0.34, 0.72],
+    randomStartFrame: true,
+    loop: true,
+  },
+  'ar007-neon': {
+    imagePath: 'assets/generated/ar-007/image-ar-007-particles-neon-glow.png',
+    frameWidth: 128,
+    frameHeight: 128,
+    frameCount: 64,
+    frameRate: 20,
+    scale: [0.28, 0.64],
+    randomStartFrame: true,
+    loop: true,
+  },
+  'ar007-memory': {
+    imagePath: 'assets/generated/ar-007/image-ar-007-particles-memory-fragment.png',
+    frameWidth: 128,
+    frameHeight: 128,
+    frameCount: 64,
+    frameRate: 16,
+    scale: [0.32, 0.7],
+    randomStartFrame: true,
+    loop: true,
+  },
 });
 
 function clamp(value, min, max) {
@@ -321,22 +387,43 @@ export class ParticleEmitterRuntime {
       ? canvas.getContext('2d')
       : null;
 
+    const {
+      presets: presetOverrides,
+      spriteSheets: spriteSheetOverrides,
+      spriteSheetLoader,
+      ...restOptions
+    } = options;
+
+    const combinedPresets = {
+      ...DEFAULT_PRESETS,
+      ...(presetOverrides || {}),
+    };
+
+    const combinedSpriteSheets = {
+      ...DEFAULT_SPRITE_SHEETS,
+      ...(spriteSheetOverrides || {}),
+    };
+
     this.options = {
       eventName: 'fx:particle_emit',
       maxEmitters: 14,
       maxParticlesPerEmitter: 32,
       globalMaxParticles: 320,
-      presets: DEFAULT_PRESETS,
+      presets: combinedPresets,
+      spriteSheets: combinedSpriteSheets,
+      spriteSheetLoader:
+        typeof spriteSheetLoader === 'function' ? spriteSheetLoader : null,
       getNow: () => (typeof performance !== 'undefined' && performance.now)
         ? performance.now()
         : Date.now(),
-      ...options,
+      ...restOptions,
     };
 
     this.emitters = [];
     this._emitterPool = [];
     this._particlePool = [];
     this._activeParticleCount = 0;
+    this._spriteSheetCache = new Map();
     this._unsubscribe = null;
     this._throttledSpawns = 0;
     this._suppressedEmitters = 0;
@@ -388,6 +475,9 @@ export class ParticleEmitterRuntime {
         particle.x += particle.vx * deltaTime;
         particle.y += particle.vy * deltaTime;
         particle.rotation += particle.rotationSpeed * deltaTime;
+        if (particle.sprite && particle.sprite.frameCount > 1) {
+          this._advanceSpriteFrame(particle, deltaTime);
+        }
       }
     }
   }
@@ -411,18 +501,48 @@ export class ParticleEmitterRuntime {
         }
 
         ctx.globalAlpha = alpha;
-        ctx.fillStyle = particle.color;
-        ctx.beginPath();
-        ctx.ellipse(
-          particle.x,
-          particle.y,
-          particle.size,
-          particle.size * particle.aspect,
-          particle.rotation,
-          0,
-          Math.PI * 2
-        );
-        ctx.fill();
+        if (
+          particle.sprite &&
+          particle.sprite.image &&
+          typeof ctx.drawImage === 'function'
+        ) {
+          const sheet = particle.sprite;
+          const frameCount = Math.max(1, sheet.frameCount);
+          const frameIndex = Math.max(0, Math.floor(particle.frameIndex) % frameCount);
+          const framesPerRow = Math.max(1, sheet.framesPerRow);
+          const sx = (frameIndex % framesPerRow) * sheet.frameWidth;
+          const sy = Math.floor(frameIndex / framesPerRow) * sheet.frameHeight;
+          const dw = particle.width || sheet.frameWidth;
+          const dh = particle.height || sheet.frameHeight;
+          const pivotX = Number.isFinite(particle.pivotX) ? particle.pivotX : 0.5;
+          const pivotY = Number.isFinite(particle.pivotY) ? particle.pivotY : 0.5;
+          const dx = particle.x - dw * pivotX;
+          const dy = particle.y - dh * pivotY;
+          ctx.drawImage(
+            sheet.image,
+            sx,
+            sy,
+            sheet.frameWidth,
+            sheet.frameHeight,
+            dx,
+            dy,
+            dw,
+            dh
+          );
+        } else {
+          ctx.fillStyle = particle.color;
+          ctx.beginPath();
+          ctx.ellipse(
+            particle.x,
+            particle.y,
+            particle.size,
+            particle.size * particle.aspect,
+            particle.rotation,
+            0,
+            Math.PI * 2
+          );
+          ctx.fill();
+        }
       }
     }
     ctx.restore();
@@ -581,6 +701,234 @@ export class ParticleEmitterRuntime {
     };
   }
 
+  _getSpriteSheetForPreset(preset) {
+    if (!preset) {
+      return null;
+    }
+
+    const inlineDescriptor = (preset.spriteSheet && typeof preset.spriteSheet === 'object')
+      ? { ...preset.spriteSheet }
+      : null;
+
+    let referenced = null;
+    if (preset.spriteSheetId && this.options.spriteSheets) {
+      const lookup = this.options.spriteSheets[preset.spriteSheetId];
+      if (lookup) {
+        referenced = { id: preset.spriteSheetId, ...lookup };
+      }
+    }
+
+    const descriptor = {
+      ...(referenced || {}),
+      ...(inlineDescriptor || {}),
+    };
+
+    if (!descriptor.image && !descriptor.imagePath) {
+      return null;
+    }
+
+    descriptor.id = descriptor.id || referenced?.id || preset.spriteSheetId || descriptor.imagePath;
+    return this._ensureSpriteSheet(descriptor);
+  }
+
+  _ensureSpriteSheet(descriptor) {
+    const cacheKey = descriptor.id || descriptor.imagePath;
+    if (!cacheKey) {
+      return null;
+    }
+
+    let entry = this._spriteSheetCache.get(cacheKey);
+    if (!entry) {
+      entry = {
+        descriptor,
+        image: descriptor.image || null,
+        loaded: Boolean(descriptor.image),
+        loading: false,
+        error: null,
+        meta: null,
+      };
+      this._spriteSheetCache.set(cacheKey, entry);
+    } else {
+      entry.descriptor = { ...entry.descriptor, ...descriptor };
+      if (descriptor.image && !entry.loaded) {
+        entry.image = descriptor.image;
+        entry.loaded = true;
+      }
+    }
+
+    if (!entry.loaded && !entry.loading && !entry.error) {
+      if (descriptor.imagePath) {
+        const loader = descriptor.loader || this.options.spriteSheetLoader;
+        if (typeof loader === 'function') {
+          try {
+            const result = loader(descriptor.imagePath);
+            if (result && typeof result.then === 'function') {
+              entry.loading = true;
+              result
+                .then((image) => {
+                  entry.image = image || null;
+                  entry.loaded = Boolean(image);
+                  entry.loading = false;
+                  if (entry.loaded && image) {
+                    entry.meta = this._buildSpriteSheetMeta(image, entry.descriptor);
+                  }
+                })
+                .catch((error) => {
+                  entry.error = error;
+                  entry.loading = false;
+                });
+            } else if (result) {
+              entry.image = result;
+              entry.loaded = true;
+            }
+          } catch (error) {
+            entry.error = error;
+          }
+        } else if (typeof Image === 'function') {
+          entry.loading = true;
+          const img = new Image();
+          img.onload = () => {
+            entry.image = img;
+            entry.loaded = true;
+            entry.loading = false;
+            entry.meta = this._buildSpriteSheetMeta(img, entry.descriptor);
+          };
+          img.onerror = () => {
+            entry.error = new Error(`Failed to load sprite sheet: ${descriptor.imagePath}`);
+            entry.loading = false;
+          };
+          img.src = descriptor.imagePath;
+        }
+      }
+    }
+
+    if (!entry.meta && entry.loaded && entry.image) {
+      entry.meta = this._buildSpriteSheetMeta(entry.image, entry.descriptor);
+    }
+
+    return entry.meta || null;
+  }
+
+  _buildSpriteSheetMeta(image, descriptor = {}) {
+    const imageWidth = Number(image?.width) || Number(descriptor.imageWidth) || descriptor.frameWidth || 0;
+    const imageHeight = Number(image?.height) || Number(descriptor.imageHeight) || descriptor.frameHeight || 0;
+
+    const frameWidth = Math.max(
+      1,
+      Math.floor(Number.isFinite(descriptor.frameWidth) ? descriptor.frameWidth : imageWidth || 1)
+    );
+    const frameHeight = Math.max(
+      1,
+      Math.floor(Number.isFinite(descriptor.frameHeight) ? descriptor.frameHeight : imageHeight || 1)
+    );
+
+    const framesPerRow = Math.max(1, Math.floor((imageWidth || frameWidth) / frameWidth));
+    const framesPerColumn = Math.max(1, Math.floor((imageHeight || frameHeight) / frameHeight));
+    const maxFrames = framesPerRow * framesPerColumn;
+
+    let frameCount = Number.isFinite(descriptor.frameCount) ? Math.floor(descriptor.frameCount) : maxFrames;
+    if (!Number.isFinite(frameCount) || frameCount <= 0) {
+      frameCount = maxFrames;
+    }
+    frameCount = Math.max(1, Math.min(frameCount, maxFrames));
+
+    let frameDuration = Number.isFinite(descriptor.frameDuration) && descriptor.frameDuration > 0
+      ? descriptor.frameDuration
+      : null;
+    if (!frameDuration) {
+      const rate = Number.isFinite(descriptor.frameRate) && descriptor.frameRate > 0
+        ? descriptor.frameRate
+        : null;
+      frameDuration = rate ? 1 / rate : 1 / 12;
+    }
+
+    const scaleRange = this._resolveSpriteScale(descriptor.scale);
+    const alphaRange = this._resolveAlphaRange(descriptor.alpha ?? descriptor.alphaRange);
+
+    return {
+      id: descriptor.id || descriptor.imagePath || `sprite-${Date.now()}`,
+      image,
+      frameWidth,
+      frameHeight,
+      frameCount,
+      framesPerRow,
+      framesPerColumn,
+      frameDuration,
+      loop: descriptor.loop !== false,
+      randomStartFrame: descriptor.randomStartFrame !== false,
+      scaleRange,
+      alphaRange,
+      pivotX: clamp(Number(descriptor.pivot?.x ?? 0.5), 0, 1),
+      pivotY: clamp(Number(descriptor.pivot?.y ?? 0.5), 0, 1),
+    };
+  }
+
+  _resolveSpriteScale(range) {
+    if (Array.isArray(range) && range.length >= 2) {
+      const min = Number(range[0]);
+      const max = Number(range[1]);
+      const resolvedMin = Number.isFinite(min) ? Math.max(0.05, min) : 0.6;
+      const resolvedMax = Number.isFinite(max) ? Math.max(resolvedMin, max) : Math.max(resolvedMin, 1);
+      return [resolvedMin, resolvedMax];
+    }
+
+    if (Number.isFinite(range)) {
+      const value = Math.max(0.05, range);
+      return [value, value];
+    }
+
+    return [0.6, 1];
+  }
+
+  _resolveAlphaRange(range) {
+    if (Array.isArray(range) && range.length >= 2) {
+      const min = clamp(Number(range[0]), 0.05, 1);
+      const max = clamp(Number(range[1]), min, 1);
+      return [min, max];
+    }
+
+    if (Number.isFinite(range)) {
+      const value = clamp(range, 0.05, 1);
+      return [value, value];
+    }
+
+    return null;
+  }
+
+  _advanceSpriteFrame(particle, deltaTime) {
+    const sheet = particle.sprite;
+    if (!sheet || sheet.frameCount <= 1) {
+      return;
+    }
+
+    const duration = Number.isFinite(particle.frameDuration) && particle.frameDuration > 0
+      ? particle.frameDuration
+      : sheet.frameDuration;
+    if (!Number.isFinite(duration) || duration <= 0) {
+      return;
+    }
+
+    particle.frameTime += deltaTime;
+    if (particle.frameTime < duration) {
+      return;
+    }
+
+    const framesToAdvance = Math.floor(particle.frameTime / duration);
+    if (framesToAdvance <= 0) {
+      return;
+    }
+
+    const proposedFrame = particle.frameIndex + framesToAdvance;
+    if (!particle.loopSprite && proposedFrame >= sheet.frameCount) {
+      particle.frameIndex = sheet.frameCount - 1;
+      particle.frameTime = 0;
+      return;
+    }
+
+    particle.frameIndex = proposedFrame % sheet.frameCount;
+    particle.frameTime -= framesToAdvance * duration;
+  }
+
   _spawnParticles(emitter, descriptor, preset, allocation) {
     const toSpawn = Math.max(0, Math.round(allocation?.toSpawn ?? 0));
     if (toSpawn <= 0) {
@@ -602,6 +950,13 @@ export class ParticleEmitterRuntime {
     const lifeMin = Number.isFinite(rawLifespan[0]) ? rawLifespan[0] : 240;
     const lifeMax = Number.isFinite(rawLifespan[1]) ? rawLifespan[1] : Math.max(lifeMin * 1.4, 420);
     const baseAlpha = clamp(preset.baseAlpha ?? 1, 0.05, 1);
+    const spriteSheet = this._getSpriteSheetForPreset(preset);
+    const spriteScaleRange = this._resolveSpriteScale(
+      preset?.spriteScale ?? spriteSheet?.scaleRange
+    );
+    const spriteAlphaRange = this._resolveAlphaRange(
+      preset?.spriteAlpha ?? spriteSheet?.alphaRange
+    );
 
     for (let i = 0; i < toSpawn; i += 1) {
       const particle = this._acquireParticle();
@@ -618,8 +973,44 @@ export class ParticleEmitterRuntime {
       particle.aspect = 0.6 + Math.random() * 0.4;
       particle.rotation = Math.random() * Math.PI * 2;
       particle.rotationSpeed = (Math.random() - 0.5) * 1.5;
-      particle.baseAlpha = baseAlpha;
+      particle.baseAlpha = spriteAlphaRange
+        ? clamp(randomRange(spriteAlphaRange[0], spriteAlphaRange[1]), 0.05, 1)
+        : baseAlpha;
       particle.color = preset.color || 'rgba(160, 220, 255, 0.85)';
+      particle.sprite = spriteSheet || null;
+      if (spriteSheet && spriteSheet.image && spriteSheet.frameCount > 0) {
+        const spriteScale = clamp(
+          randomRange(spriteScaleRange[0], spriteScaleRange[1]) * emitter.intensity,
+          0.05,
+          4
+        );
+        particle.spriteScale = spriteScale;
+        particle.frameIndex = spriteSheet.randomStartFrame
+          ? Math.floor(Math.random() * spriteSheet.frameCount) % spriteSheet.frameCount
+          : 0;
+        particle.frameDuration = spriteSheet.frameDuration;
+        particle.frameTime = spriteSheet.randomStartFrame
+          ? Math.random() * (spriteSheet.frameDuration || 0.016)
+          : 0;
+        particle.loopSprite = spriteSheet.loop !== false;
+        particle.pivotX = spriteSheet.pivotX;
+        particle.pivotY = spriteSheet.pivotY;
+        particle.width = spriteSheet.frameWidth * spriteScale;
+        particle.height = spriteSheet.frameHeight * spriteScale;
+        particle.rotation = 0;
+        particle.rotationSpeed = 0;
+      } else {
+        particle.spriteScale = 1;
+        particle.frameIndex = 0;
+        particle.frameDuration = 0.1;
+        particle.frameTime = 0;
+        particle.loopSprite = true;
+        particle.pivotX = 0.5;
+        particle.pivotY = 0.5;
+        particle.width = particle.size;
+        particle.height = particle.size * particle.aspect;
+        particle.sprite = null;
+      }
       emitter.particles.push(particle);
       this._activeParticleCount += 1;
 
@@ -643,6 +1034,16 @@ export class ParticleEmitterRuntime {
       rotationSpeed: 0,
       baseAlpha: 1,
       color: 'rgba(255,255,255,0.8)',
+      width: 4,
+      height: 4,
+      sprite: null,
+      spriteScale: 1,
+      frameIndex: 0,
+      frameTime: 0,
+      frameDuration: 0.1,
+      loopSprite: true,
+      pivotX: 0.5,
+      pivotY: 0.5,
     };
   }
 

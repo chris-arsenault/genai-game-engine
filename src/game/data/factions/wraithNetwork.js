@@ -27,6 +27,12 @@ export const wraithNetwork = {
     allied: { fame: 90, infamy: 5 }, // Inner circle, Great Reveal access
   },
 
+  // Initial reputation baseline (cells distrust former law enforcement ties)
+  initialReputation: {
+    fame: 12,
+    infamy: 26,
+  },
+
   // Territory control
   territories: ['undercroft'], // Lower depths
   headquarters: 'the_sump', // No central leadership, but primary hub

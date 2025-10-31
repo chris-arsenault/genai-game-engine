@@ -1,0 +1,28 @@
+{
+  "jobs": {
+    "c2d9170c-9d13-4e3b-941c-e1ee89d8bb68": {
+      "source": "/home/tsonu/src/genai-game-engine/reports/telemetry/renderops-approvals/act2-crossroads/2025-10-31T08:50:35.195Z-c2d9170c-9d13-4e3b-941c-e1ee89d8bb68.json",
+      "processedAt": "2025-10-31T12:46:29Z",
+      "lastCheckedAt": "2025-10-31T21:13:46.133Z",
+      "status": "completed"
+    },
+    "index": {
+      "source": "/home/tsonu/src/genai-game-engine/reports/telemetry/renderops-approvals/index.json",
+      "processedAt": null,
+      "lastCheckedAt": "2025-10-31T21:13:46.134Z",
+      "status": null
+    },
+    "f426b509-8894-4e32-8af6-3ac278a3bdb8": {
+      "source": "/home/tsonu/src/genai-game-engine/reports/telemetry/renderops-approvals/act2-crossroads/2025-10-31T16:03:38.036Z-f426b509-8894-4e32-8af6-3ac278a3bdb8.json",
+      "processedAt": "2025-10-31T20:57:39Z",
+      "lastCheckedAt": "2025-10-31T21:13:46.134Z",
+      "status": "superseded"
+    },
+    "c488a1c4-4834-4a83-9b33-57510d68c396": {
+      "source": "/home/tsonu/src/genai-game-engine/reports/telemetry/renderops-approvals/act2-crossroads/2025-10-31T20:26:00.543Z-c488a1c4-4834-4a83-9b33-57510d68c396.json",
+      "processedAt": "2025-10-31T20:57:39Z",
+      "lastCheckedAt": "2025-10-31T21:13:46.134Z",
+      "status": "completed"
+    }
+  }
+}

@@ -49,10 +49,12 @@ describe('FxOverlay', () => {
       })),
       moveTo: jest.fn(),
       lineTo: jest.fn(),
+      drawImage: jest.fn(),
       lineWidth: 0,
       globalAlpha: 1,
       fillStyle: '',
       strokeStyle: '',
+      globalCompositeOperation: 'source-over',
     };
   }
 
@@ -67,11 +69,11 @@ describe('FxOverlay', () => {
       duration: 0.2,
     });
 
-    expect(overlay.effects).toHaveLength(1);
-    expect(overlay.effects[0].id).toBe('detectiveVisionActivation');
+    expect(overlay.effects.some((effect) => effect.id === 'detectiveVisionActivation')).toBe(true);
+    expect(overlay.effects.some((effect) => effect.id === 'screen-glitch')).toBe(true);
 
     overlay.update(0.1);
-    expect(overlay.effects).toHaveLength(1);
+    expect(overlay.effects.some((effect) => effect.id === 'detectiveVisionActivation')).toBe(true);
 
     const ctx = createMockContext();
     overlay.render(ctx);
@@ -273,5 +275,32 @@ describe('FxOverlay', () => {
 
     handler({ effectId: 'questNotificationDismiss', duration: 0.3 });
     expect(overlay.effects[0].id).toBe('caseCluePulse');
+  });
+
+  it('renders AR-007 screen overlays when asset sheet is provided', () => {
+    const mockImage = {
+      width: 1920,
+      height: 3240,
+      complete: true,
+    };
+
+    const overlay = new FxOverlay(canvas, eventBus, {
+      screenEffects: {
+        image: mockImage,
+        frameCount: 3,
+      },
+    });
+    overlay.init();
+
+    const handler = getLastHandler('fx:overlay_cue');
+    handler({ effectId: 'forensicRevealFlash', duration: 0.4 });
+
+    expect(overlay.effects[0].id).toBe('forensicRevealFlash');
+    expect(overlay.effects[1].id).toBe('screen-flash');
+
+    const ctx = createMockContext();
+    overlay.render(ctx);
+    expect(ctx.drawImage).toHaveBeenCalled();
+    expect(ctx.globalCompositeOperation).toBe('source-over');
   });
 });

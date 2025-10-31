@@ -1,0 +1,89 @@
+{
+  "jobId": "f7cbb49b-287a-4c67-86ca-d15099f1bd9a",
+  "queue": "save-load",
+  "status": "passed",
+  "createdAt": "2025-10-31T08:55:34.174Z",
+  "distribution": {
+    "id": "save-load-distribution-2025-10-31T04-42-21-907Z",
+    "packetId": "2914b652-c536-4baf-8915-60f6e5a2bfc6",
+    "packetLabel": "save-load",
+    "manifestPath": "/home/tsonu/src/genai-game-engine/deliveries/qa/save-load/save-load/save-load-distribution-2025-10-31T04-42-21-907Z/distribution-manifest.json",
+    "distributionDir": "/home/tsonu/src/genai-game-engine/deliveries/qa/save-load/save-load/save-load-distribution-2025-10-31T04-42-21-907Z",
+    "files": {
+      "readme": "README.md",
+      "shareSummary": "share-summary.md",
+      "latencyReport": "save-load-latency.json",
+      "payloadSummary": "save-payload-summary.json",
+      "metadata": "metadata.json",
+      "archive": "save-load-2025-10-31T04-42-21-907Z.zip"
+    }
+  },
+  "latency": {
+    "status": "passed",
+    "metrics": {
+      "iterations": 2,
+      "thresholdMs": 2000,
+      "averageLoadMs": 0,
+      "maxLoadMs": 1,
+      "loadUnderThreshold": true,
+      "averageSaveMs": 1,
+      "maxSaveMs": 1
+    },
+    "baseline": {
+      "maxLoadMs": 500,
+      "averageLoadMs": 200,
+      "maxSaveMs": 500,
+      "averageSaveMs": 200
+    },
+    "issues": []
+  },
+  "schema": {
+    "status": "passed",
+    "summary": {
+      "counts": {
+        "storyFlags": 2,
+        "inventoryItems": 2,
+        "districtRecords": 2,
+        "npcRecords": 2
+      },
+      "storyFlagKeys": [
+        "investigation_started",
+        "tutorial_completed"
+      ],
+      "equippedSlots": [
+        "primaryWeapon",
+        "tool"
+      ],
+      "tutorialCompleted": true
+    },
+    "baseline": {
+      "sections": {
+        "storyFlags": {
+          "minCount": 2,
+          "requiredKeys": [
+            "investigation_started",
+            "tutorial_completed"
+          ]
+        },
+        "inventory": {
+          "minCount": 2,
+          "requiredEquippedSlots": [
+            "primaryWeapon",
+            "tool"
+          ]
+        },
+        "district": {
+          "minCount": 2
+        },
+        "npc": {
+          "minCount": 2
+        },
+        "tutorial": {
+          "mustBeCompleted": true
+        }
+      }
+    },
+    "issues": []
+  },
+  "issues": []
+}

@@ -1,0 +1,17 @@
+{
+  "distributionId": "save-load-distribution-2025-10-31T04-42-21-907Z",
+  "packetId": "2914b652-c536-4baf-8915-60f6e5a2bfc6",
+  "packetLabel": "save-load",
+  "packetDir": "/home/tsonu/src/genai-game-engine/reports/telemetry/save-load-qa/save-load-2025-10-31T04-42-21-907Z",
+  "preparedAt": "2025-10-31T08:55:34.170Z",
+  "createdAt": "2025-10-31T04:42:21.907Z",
+  "recipients": [],
+  "files": {
+    "readme": "README.md",
+    "shareSummary": "share-summary.md",
+    "latencyReport": "save-load-latency.json",
+    "payloadSummary": "save-payload-summary.json",
+    "metadata": "metadata.json",
+    "archive": "save-load-2025-10-31T04-42-21-907Z.zip"
+  }
+}

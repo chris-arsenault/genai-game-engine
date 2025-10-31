@@ -7,12 +7,14 @@
 
 import { Transform } from '../components/Transform.js';
 import { Sprite } from '../components/Sprite.js';
+import { AnimatedSprite } from '../components/AnimatedSprite.js';
 import { PlayerController } from '../components/PlayerController.js';
 import { Collider } from '../components/Collider.js';
 import { FactionMember } from '../components/FactionMember.js';
 import { Disguise } from '../components/Disguise.js';
 import { GameConfig } from '../config/GameConfig.js';
 import { NavigationAgent } from '../components/NavigationAgent.js';
+import { kiraAnimationConfig, buildKiraAnimationDefinitions } from '../data/animations/kiraAnimationConfig.js';
 
 /**
  * Create player entity
@@ -31,17 +33,28 @@ export function createPlayerEntity(entityManager, componentRegistry, x = 0, y = 
   const transform = new Transform(x, y, 0, 1, 1);
   componentRegistry.addComponent(entityId, 'Transform', transform);
 
-  // Add Sprite component (placeholder visual)
+  // Add Sprite component (animation-driven visual)
   const sprite = new Sprite({
-    image: null, // Will be replaced with actual player sprite
+    image: null,
     width: 32,
-    height: 48,
+    height: 32,
     layer: 'entities',
     zIndex: 10,
-    color: '#00CCFF', // Detective blue placeholder
+    color: '#00CCFF',
     visible: true
   });
   componentRegistry.addComponent(entityId, 'Sprite', sprite);
+
+  const animatedSprite = new AnimatedSprite({
+    image: null,
+    imageUrl: kiraAnimationConfig.imageUrl,
+    frameWidth: kiraAnimationConfig.frameWidth,
+    frameHeight: kiraAnimationConfig.frameHeight,
+    defaultAnimation: kiraAnimationConfig.defaultAnimation,
+    animations: buildKiraAnimationDefinitions(),
+  });
+
+  componentRegistry.addComponent(entityId, 'AnimatedSprite', animatedSprite);
 
   // Add PlayerController component
   const controller = new PlayerController({

@@ -81,6 +81,78 @@ export class Investigation {
   }
 
   /**
+   * Replace ability set from serialized data.
+   * Ensures abilities remain a Set and sanitizes input.
+   * @param {Iterable<string>} abilities
+   */
+  replaceAbilities(abilities) {
+    this.abilities = new Set();
+    if (!abilities) {
+      return;
+    }
+
+    for (const ability of abilities) {
+      if (typeof ability === 'string' && ability.length > 0) {
+        this.abilities.add(ability);
+      }
+    }
+  }
+
+  /**
+   * Overwrite case file entries from serialized data.
+   * @param {Object<string, Array<Object>>} caseFileData
+   */
+  loadCaseFiles(caseFileData = {}) {
+    this.caseFiles.clear();
+    if (!caseFileData || typeof caseFileData !== 'object') {
+      return;
+    }
+
+    Object.entries(caseFileData).forEach(([caseId, entries]) => {
+      if (!caseId || !Array.isArray(entries)) {
+        return;
+      }
+
+      const normalizedEntries = entries
+        .filter((entry) => entry && typeof entry === 'object')
+        .map((entry) => ({
+          evidenceId: entry.evidenceId ?? '',
+          type: entry.type ?? 'unknown',
+          category: entry.category ?? 'unknown',
+          collectedAt: entry.collectedAt ?? Date.now()
+        }));
+
+      this.caseFiles.set(caseId, normalizedEntries);
+    });
+  }
+
+  /**
+   * Serialize the component into a plain object.
+   * @returns {Object}
+   */
+  serialize() {
+    const caseFiles = {};
+    for (const [caseId, entries] of this.caseFiles.entries()) {
+      caseFiles[caseId] = entries.map((entry) => ({ ...entry }));
+    }
+
+    return {
+      observationRadius: this.observationRadius,
+      abilityLevel: this.abilityLevel,
+      abilities: this.getAbilities(),
+      caseFiles
+    };
+  }
+
+  /**
+   * Alias for JSON.stringify support.
+   * @returns {Object}
+   */
+  toJSON() {
+    return this.serialize();
+  }
+
+  /**
    * Record evidence collection into case files.
    * @param {Object} params
    * @param {string} params.caseId

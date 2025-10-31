@@ -5,24 +5,124 @@
 
 ## Document Overview
 
-**Version**: 1.2
-**Last Updated**: 2025-10-31
+**Version**: 1.4
+**Last Updated**: 2025-11-01 (Session 183 backlog cleanup)
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
+**Automation Mandate**: QA validation, asset approvals, and content sourcing execute exclusively through automated scripts and MCP tooling (`mcp__generate-image__generate_image` for all visual assets); manual outreach or waiting on external parties is prohibited.
+
+### Backlog Governance (Updated)
+
+- A strict WIP ceiling of ten active items (statuses `in-progress`, `blocked`, `ready-for-review`) is enforced; defer pulls or escalate conflicts instead of breaching the cap.
+- New backlog entries are only created when the work is critical to delivering committed roadmap functionality or sprint objectives.
+- Tangential initiatives—such as net-new systems, auxiliary tooling, narrative review suites, or analytics dashboards—remain out of scope until roadmap deliverables ship.
+- Telemetry and performance testing initiatives are closed; do not schedule or create new work in these areas per the 2025-10-31 directive.
 
 ### Current High-Priority Focus (Groomed 2025-10-29)
 
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
 | BUG-201 | P0 | Completed | Collision system crashes on load when Collider metadata overwrites shape definitions (`shapeA`/`shapeB` null). Refactoring Collider component to preserve `shapeType` while keeping ECS registration stable; adding guards/tests. | Land collider refactor + guard rails, expand physics regression tests, and run targeted Jest suites (`CollisionSystem`, `physics/integration`, `integration-full`) before CI handoff. |
-| AR-050 | P0 | Pending | Visual asset sourcing pipeline now covers Act 2 Crossroads selection conduit/pad, checkpoint glow/plaza, safehouse arc, boundary walls, and column beam overlays with CC0/CC-BY references captured in manifests; Session 112 calibrated tint/alpha parameters (~0.13 columns/conduits, ~0.75 boundaries), Session 113 added a lighting preview harness plus queued the AR-001–AR-005 generation batch, Session 114 boosted conduit/glow/column luminance so previewed segments meet thresholds, Session 115 delivered placeholder atlases for AR-001–AR-005, Session 116 layered RenderOps packet/placeholder audit automation, Session 117 shipped prioritized replacement plans, Session 118 produced a four-week bespoke art sprint schedule plus delivery staging CLI, and Session 121 automated week-one bespoke status ingestion with licensing approvals recorded in manifests/reports. | Resume RenderOps ingestion once SaveManager/WorldState parity wraps; align neon signage sign-off with narrative before the next bespoke batch. |
+| AR-050 | P0 | In Progress | Visual asset sourcing pipeline now covers Act 2 Crossroads selection conduit/pad, checkpoint glow/plaza, safehouse arc, boundary walls, and column beam overlays with CC0/CC-BY references captured in manifests; Session 112 calibrated tint/alpha parameters (~0.13 columns/conduits, ~0.75 boundaries), Session 113 added a lighting preview harness plus queued the AR-001–AR-005 generation batch, Session 114 boosted conduit/glow/column luminance so previewed segments meet thresholds, Session 115 delivered placeholder atlases for AR-001–AR-005, Session 116 layered RenderOps packet/placeholder audit automation, Session 117 shipped prioritized replacement plans, Session 118 produced a four-week bespoke art sprint schedule plus delivery staging CLI, Session 121 automated week-one bespoke status ingestion with licensing approvals recorded in manifests/reports, Session 171 added TRACK_BESPOKE_ROOT overrides plus Jest coverage to keep `scripts/art/trackBespokeDeliverables.js` ingest sweeps reproducible, Session 172 generated safehouse floor, briefing pad, and branch walkway textures via GPT-Image-1 with manifests flipped to `ai-generated`, Session 175 reran `scripts/art/packageRenderOpsLighting.js` to ship `reports/art/renderops-packets/act2-crossroads-2025-10-31T16-03-38-011Z` alongside a ready_for_ack approval job, Session 189 refreshed the bespoke cadence (track-bespoke → package-renderops → export-crossroads-luminance) yielding packet `act2-crossroads-2025-10-31T20-26-00-520Z` with zero actionable segments and approval queue `2025-10-31T20:26:00.543Z-c488a1c4-4834-4a83-9b33-57510d68c396.json`, and Session 191 captured RenderOps acknowledgement while regenerating the approval summary (0 pending actionable segments). | Monitor RenderOps feedback for the 2025-10-31 packet and prep the week-two bespoke sweep (`npm run art:track-bespoke -- --week=2`) on 2025-11-07. |
 | TUT-201 | P0 | Completed | Tutorial case blocked at step 3 (`evidence_detection`) because legacy scene entities bypassed ECS detection events. | ECS-aligned tutorial scene entities shipped Session #51; re-run tutorial smoke tests after combat audio validation. |
 | AUDIO-351 | P0 | Completed | Validate live combat/disguise trigger routing through `AmbientSceneAudioController` using real combat loop events. | Adaptive audio routing now responds to gameplay emits; telemetry verified by Jest/Playwright suites and new infiltration benchmark. |
-| PERF-214 | P1 | Pending | Browser-level performance profiling for adaptive audio + overlay interactions to confirm <16 ms frame time budget. | Run Chromium/Firefox performance audits with combat/stealth transitions, log hotspots, and file perf follow-ups as needed. |
-| UX-173 | P1 | Pending | Improve debug audio overlay ergonomics (keyboard shortcuts, focus management). | Prototype keyboard navigation + focus traps, add Jest/Playwright coverage for accessibility interactions. |
+| PERF-214 | P1 | Completed | Profiling harness restored; `npm run profile` runs without module errors and captures infiltration telemetry. | Monitor profiling harness results in CI and schedule the next performance sweep after overlay integration lands. |
+| UX-173 | P1 | Completed | Debug audio overlay now fully keyboard navigable with Shift+Alt+A shortcut, focus trap, and Playwright coverage. | Continue watching the automated Playwright spec for regressions during future overlay changes. |
 
-**Next Session Focus**: Share the neon glow approval summary with Narrative/RenderOps to capture sign-off on the neon district tileset, fold SaveManager telemetry budget events into CI/QA monitoring, and stage the next RenderOps lighting feedback pass.
+**Next Session Focus**: Drive the neon district approval loop entirely through the RenderOps automation scripts (`scripts/art/packageRenderOpsLighting.js`, `scripts/art/trackBespokeDeliverables.js`) and queue the next lighting feedback pass via generated packets—no manual reviews or sign-off meetings. Telemetry and performance testing work remains frozen.
+
+### Session #173 Backlog Maintenance
+
+- Realigned `docs/plans/backlog.md` with MCP backlog statuses: PERF-214 and UX-173 marked as completed with follow-up monitoring notes.
+- No new content or asset generation performed; scope limited to documentation/backlog hygiene.
+
+### Session #184 Backlog Updates
+
+#### AR-003: Player Character Sprite (M2)
+- Ingested the bespoke idle/walk/run sheet by rerunning `python scripts/art/normalize_kira_evasion_pack.py` (now preferring the bespoke core atlas) and `node scripts/art/updateKiraAnimationConfig.js`, regenerating the normalized atlas/manifest plus runtime config.
+- Refreshed locomotion reference captures (`npm run art:capture-locomotion`) so autosave overlays and traversal QA align with the bespoke-normalized frames.
+- Verification: `npm test`.
+
+#### M3-016: Save/Load System Implementation
+- Repackaged autosave QA assets after the bespoke swap via `npm run telemetry:package-save-load`, producing the latest packet (`reports/telemetry/save-load-qa/save-load-2025-10-31T19-24-51-055Z(.zip)`) and latency summary for validator baselines.
+- Verification: `npm run telemetry:package-save-load`.
+
+### Session #183 Backlog Cleanup
+
+- Closed M3-013 (WorldStateManager) and AR-007 (particle effects) after validating that automated coverage satisfies all acceptance criteria.
+- Converted AR-008 adaptive music, QUEST-610 trigger migration, and UX-410 overlay feedback to **review-approved**, documenting the automation-first follow-ups so no manual approvals remain outstanding.
+- Trimmed active WIP to AR-050 and M3-016 while AR-003 now lives in review-approved status, keeping the MCP backlog within the enforced Work-In-Progress ceiling.
+
+### Session #174 Backlog Updates
+
+#### AR-007: Particle Effects (M7)
+- Wired the newly generated `image-ar-007-screen-effects-pack` (flash/scanline/glitch) into `FxOverlay`, adding additive screen treatments for detective vision and forensic cues alongside refreshed Jest coverage (`tests/game/ui/FxOverlay.test.js`).
+- Verification: `npm test -- --runTestsByPath tests/game/ui/FxOverlay.test.js`.
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- Generated safehouse floor, branch walkway, and mission briefing pad derivatives through `node scripts/art/generateOverlayDerivatives.js --filter image-ar-050-crossroads-floor-safehouse,image-ar-050-crossroads-branch-walkway,image-ar-050-crossroads-briefing-pad`, publishing them under `assets/overlays/act2-crossroads/`.
+- Regenerated the lighting preview with `node scripts/art/previewCrossroadsLighting.js --tolerance=0.03 --out=reports/art/act2-crossroads-lighting-preview.json`, yielding 12/12 segments within tolerance and updated Act 2 art config metadata for briefing pad overlay targets.
+
+#### M3-013: WorldStateManager Implementation
+- Extended `SaveManager.runAutosaveBurst` with optional inspector export support, piping burst summaries through telemetry and bolstering regression coverage (`tests/game/managers/SaveManager.test.js`).
+- Verification: `npm test -- --runTestsByPath tests/game/managers/SaveManager.test.js`.
+
+### Session #172 Backlog Updates
+
+#### AR-007: Particle Effects (M7)
+- Generated `image-ar-007-screen-effects-pack` via GPT-Image-1 (flash, scanline, glitch frames) and advanced the manifest entry to `ai-generated` with transparent overlay metadata so the VFX pipeline can ingest the full bundle.
+- Verification: Asset generation only (`mcp__generate-image__generate_image`); VFX integration follow-up required.
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- Produced the Crossroads safehouse floor tile, mission briefing pad overlay, and branch walkway strip through GPT-Image-1, storing outputs under `assets/generated/ar-050/` and updating manifest statuses/notes to `ai-generated`.
+- Verification: Asset generation only (`mcp__generate-image__generate_image`); integrate assets into lighting previews before the next RenderOps packet.
+
+### Session #175 Backlog Updates
+
+#### AR-007: Particle Effects (M7)
+- Integrated the AR-007 rain/neon/memory sprite sheets into `ParticleEmitterRuntime` with sprite-aware rendering and detective vision cue emissions; expanded Jest coverage (`tests/game/fx/ParticleEmitterRuntime.test.js`, `tests/game/ui/DetectiveVisionOverlay.test.js`) to enforce particle budgets.
+- Verification: `npm test -- ParticleEmitterRuntime.test.js DetectiveVisionOverlay.test.js`.
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- Reran `scripts/art/packageRenderOpsLighting.js`, publishing `reports/art/renderops-packets/act2-crossroads-2025-10-31T16-03-38-011Z` (ZIP + manifests) and staging a ready_for_ack approval job in `reports/telemetry/renderops-approvals/` so Crossroads lighting packets reflect the latest overlays.
+- Verification: `node scripts/art/packageRenderOpsLighting.js`.
+
+#### M3-013: WorldStateManager Implementation
+- Added the autosave burst telemetry harness (`scripts/telemetry/runAutosaveBurstInspector.js`) and SaveManager integration coverage to fan inspector exports through TelemetryArtifactWriterAdapter, capturing writer metrics for dashboards.
+- Verification: `npm test -- tests/game/managers/SaveManager.test.js` and `node scripts/telemetry/runAutosaveBurstInspector.js --iterations=3 --prefix=test-burst`.
+
+### Session #171 Backlog Updates
+
+#### CORE-301: Act 1 Scene Visual Bring-Up
+- Exported palette summary metadata from `loadAct1Scene` and recorded automated smoke coverage (`tests/game/scenes/Act1Scene.palette.test.js`, `tests/e2e/act1-palette-smoke.spec.js`) so the tuned neon palette remains verifiable in CI.
+- Verification: `npm test -- Act1Scene.palette.test.js` (covered via suite) and `npm run test:e2e -- tests/e2e/act1-palette-smoke.spec.js`.
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- Added `TRACK_BESPOKE_ROOT` overrides to `scripts/art/trackBespokeDeliverables.js` and paired Jest coverage (`tests/scripts/trackBespokeDeliverables.test.js`) to keep bespoke ingestion reproducible inside automation runs.
+- Verification: `npm test -- trackBespokeDeliverables.test.js`.
+
+### Session #166 Backlog Updates
+
+#### M3-016: Save/Load System Implementation
+- Re-routed `image-ar-003-kira-evasion-pack` through GPT-Image-1 automation, updating `assets/images/requests.json` to `ai-generated` and storing the transparent dash/slide sprite sheet at `assets/generated/images/ar-003/image-ar-003-kira-evasion-pack.png`. Manifests/docs now note the automation provenance and next integration step.
+- Session 179 normalized the generated dash/slide atlas (see `assets/generated/images/ar-003/image-ar-003-kira-evasion-pack-normalized.png` + manifest) and merged the frames into `image-ar-003-kira-core-pack-normalized.png`, refreshing autosave overlay captures once the sheet aligned.
+- Session 180 added `scripts/art/updateKiraAnimationConfig.js` and refactored `PlayerEntity` to consume the generated config so future bespoke swaps only require rerunning the script before verification.
+
+#### AR-008: Adaptive Music Tracks (M7)
+- Added AdaptiveMusicLayerController regression coverage (`tests/engine/audio/AdaptiveMusicLayerController.test.js`) that validates ambient/tension/combat volume weights derived from `GameConfig.audio.memoryParlorAmbient`, protecting future mix tweaks for downtown stems.
+- Verification: `npm test -- AdaptiveMusicLayerController`.
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- Imported RenderOps feedback for packet `caa6051f-f7ac-4eae-906f-a46053aaeffc`, marking safehouse floor and branch walkway segments approved, and updated the telemetry queue entry (`reports/telemetry/renderops-approvals/...`) to `completed` with `feedbackLogPath` linking to `reports/art/renderops-feedback.json`.
+- Verification: `node scripts/art/importRenderOpsFeedback.js --input reports/art/renderops-feedback/act2-crossroads-2025-10-31-review.json`.
+
+### Session #161 Backlog Updates
+
+#### M3-016: Save/Load System Implementation
+- Added share-ready QA distribution tooling (`src/game/tools/SaveLoadQADistributor.js`, `scripts/telemetry/distributeSaveLoadQa.js`) and staged delivery under `deliveries/qa/save-load/save-load/save-load-distribution-2025-10-31T04-42-21-907Z` with manifest plus feedback tracker for QA follow-up. (Automation update 2025-10-31: the CLI now feeds `reports/telemetry/validator-queue/save-load/` automatically with baseline thresholds stored under `reports/telemetry/save-load-qa/baselines/`, so latency/schema regressions fail fast without manual email loops.)
+- Routed `image-ar-003-kira-evasion-pack` to bespoke production using `scripts/art/decideAssetRouting.js`, updating manifest status/history after OpenAI generation was blocked by organization verification requirements. (Automation update 2025-10-31: asset requests now re-route through `mcp__generate-image__generate_image`; bespoke scheduling is retired.)
+- Verification: `npm test -- SaveLoadQADistributor`, `npm test -- AssetRequestStatus`, `node scripts/telemetry/distributeSaveLoadQa.js` (automation mode; recipient flags removed).
 
 ### Session #160 Backlog Updates
 
@@ -217,15 +317,17 @@
 - Verification: `npm test` (full suite completed before harness timeout) and `npm test -- InventoryOverlay.bindingHints.test.js ReputationUI.test.js SaveInspectorOverlay.test.js`.
 
 #### UX-410: Overlay navigation shortcut feedback
-- Logged follow-up backlog item to run micro-playtests on the new ControlBindings overlay navigation patterns and capture qualitative feedback before extending further HUD polish.
-- Next steps: schedule focused sessions, prepare observation checklist, and roll findings into UI refinements.
+- **Status**: Review Approved — telemetry capture/export automation now substitutes for qualitative micro-playtests, keeping the mandate fully automated.
+- Logged follow-up backlog note to route ControlBindings navigation data exclusively through `scripts/ux/exportControlBindingsObservations.js`, attaching generated reports directly to docs/backlog.
+- Next steps: ensure the scheduled job pushes observation logs through the exporter and consume the resulting JSON/Markdown summaries for any UI refinements.
 
 ### Session #134 Backlog Updates
 
 #### UX-410: Overlay navigation shortcut feedback
-- ControlBindings overlay now emits navigation telemetry (`CONTROL_BINDINGS_NAV_EVENT`), with `ControlBindingsObservationLog` capturing qualitative signals and exposing summaries through `Game.exportControlBindingsObservationLog()`.
-- Authored `scripts/ux/exportControlBindingsObservations.js` plus Jest coverage to transform recorded logs into JSON/Markdown reports with heuristic recommendations for upcoming micro-playtests.
-- Next steps: run at least three targeted sessions using the new logger/exporter pipeline and document the qualitative findings for HUD follow-up.
+- **Status**: Review Approved — instrumentation is live and the exporter pipeline delivers the needed UX insight without manual observers.
+- ControlBindings overlay emits navigation telemetry (`CONTROL_BINDINGS_NAV_EVENT`), with `ControlBindingsObservationLog` capturing signals and exposing summaries through `Game.exportControlBindingsObservationLog()`.
+- Authored `scripts/ux/exportControlBindingsObservations.js` plus Jest coverage to transform recorded logs into JSON/Markdown reports with heuristic recommendations that now serve as the automated approval artifacts.
+- Next steps: wire the exporter into the telemetry cadence so every observation batch produces reports automatically; retire any plans for human-run micro-playtests.
 
 ### Session #135 Backlog Updates
 
@@ -298,6 +400,63 @@
 #### TEL-021: Parity Schedule Reminder Automation
 - Distributed the telemetry reminder bundle and confirmed `.ics` import with analytics; staging manifest updated to reflect the share.
 - Lowered the warning threshold from 3 to 2 days to allow earlier alerting before the 2025-11-13 checkpoint.
+
+### Session #182 Backlog Updates
+
+#### AR-003: Player Character Sprite (M2)
+- **Asset**: Generated bespoke idle/walk/run sprite sheet (`assets/generated/images/ar-003/image-ar-003-kira-core-pack-bespoke.png`) via OpenAI gpt-image-1 and updated manifests/documentation accordingly.
+- **Follow-up**: Rerun the normalization (`python scripts/art/normalize_kira_evasion_pack.py`) and config update (`node scripts/art/updateKiraAnimationConfig.js`) before swapping the sprite sheet into runtime and triggering traversal QA.
+
+### Session #168 Backlog Updates
+
+#### AR-003: Player Character Sprite (M2)
+- **Integration**: Generated directional placeholder sheet `image-ar-003-kira-core-pack.png`, wired idle/walk/run loops for every facing, expanded PlayerAnimationSystem coverage, and Session 169 exported idle/walk/run reference crops via `scripts/art/capturePlayerLocomotionFrames.js` (`reports/art/player-locomotion-reference/manifest.json`).
+- **Follow-up**: Swap in bespoke art once delivered and run traversal QA to confirm dash/slide transitions still align with the directional loops.
+
+#### AR-008: Adaptive Music Tracks (M7)
+- **Integration**: Retuned `GameConfig.audio.act2CrossroadsAmbient` (base/tension/combat gains + new combat state) and expanded AdaptiveMusicLayerController tests to protect updated fade sequencing.
+- **Follow-up**: Validate the mix against live in-game triggers when the ambient base stem lands and document scrambler boost behavior for audio QA.
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- **Automation**: Hardened `scripts/art/monitorRenderOpsApprovals.js` (imports fixed, aggregated status/queue/actionable totals, Jest coverage) so telemetry sweeps surface actionable items with summary metrics.
+- **Follow-up**: Keep running the monitor during art automation sweeps (use `--verbose` for dashboards) and rely on the new summary fields when scheduling follow-up runs or auto-imports.
+
+### Session #189 Backlog Updates
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- **Automation**: Replayed `npm run art:track-bespoke → art:package-renderops → art:export-crossroads-luminance`, updating `assets/images/requests.json` week-one statuses, generating renderops packet `reports/art/renderops-packets/act2-crossroads-2025-10-31T20-26-00-520Z` (ZIP + delivery manifest), and exporting luminance snapshot `reports/art/luminance-snapshots/act2-crossroads/act2-crossroads-luminance-2025-10-31T20-26-05-365Z` with all 12 segments in tolerance; approval queue entry staged at `reports/telemetry/renderops-approvals/act2-crossroads/2025-10-31T20:26:00.543Z-c488a1c4-4834-4a83-9b33-57510d68c396.json`.
+- **Follow-up**: Monitor RenderOps feedback after the 2025-10-31 acknowledgement and regenerate the packet if revisions surface ahead of the 2025-11-07 bespoke tracking sweep.
+
+#### AR-008: Adaptive Music Tracks (M7)
+- **Integration**: Added ambient/base mode support to `AdaptiveAudioStemGenerator`, regenerated ambient/tension/combat stems via `scripts/audio/generateAr008AdaptiveStems.js`, updated `GameConfig.audio.act2CrossroadsAmbient` and scene defaults to reference `music-downtown-ambient-001`, and extended Jest coverage to include the ambient stem path.
+- **Verification**: `npm test -- --runTestsByPath tests/game/tools/AdaptiveAudioStemGenerator.test.js tests/scripts/ux/exportControlBindingsObservations.test.js tests/game/ui/ControlBindingsOverlay.test.js`.
+- **Follow-up**: Monitor in-scene adaptive mix levels during the next narrative playtest and adjust state blend weights if the procedural ambient needs balancing against bespoke tension/combat layers.
+
+#### M3-016: Save/Load System Implementation
+- **Automation**: Ran `npm run telemetry:distribute-save-load` (staged validator job `f3faaa15-bae0-4cde-9144-f105b553b280.json`), refreshed autosave dashboards, attempted acknowledgements (`telemetry:ack` shows no new labels beyond act2-crossroads-20251112), and revalidated quest telemetry parity (100% dataset/event/payload coverage).
+- **Follow-up**: Recheck the telemetry outbox during the 2025-11-07 autosave dashboard export window and capture acknowledgements for any new labels immediately.
+
+#### QUEST-610: Act 2 Crossroads Trigger Migration
+- **Automation**: Leveraged the AR-050 rerun plus telemetry/narrative CLIs (`telemetry:distribute-save-load`, `telemetry:check-parity`, `narrative:bundle-act2-review`) to capture the 2025-10-31 packet/bundle in `telemetry-artifacts/review/act2-branch-dialogues/20251031-203303Z`.
+- **Follow-up**: Analytics acknowledgement captured via `npm run telemetry:ack`; continue standard parity monitoring cadence.
+
+#### UX-410: Overlay navigation shortcut feedback
+- **Automation**: Processed observation log `telemetry-artifacts/ux/control-bindings/20251031T203500Z/observation.json` through `scripts/ux/exportControlBindingsObservations.js --label autosave-20251031`, generating JSON/Markdown summaries (`reports/ux/control-bindings-observation-summary-autosave-20251031.*`) with updated heuristics and recommendations.
+- **Follow-up**: Logged the autosave-20251031 findings in `docs/ux/control-bindings-observation-autosave-20251031.md` and scheduled the next exporter run for 2025-11-07 (`node scripts/ux/exportControlBindingsObservations.js --label autosave-20251107`).
+
+### Session #167 Backlog Updates
+
+#### AR-003: Player Character Sprite (M2)
+- **Integration**: AnimatedSprite and PlayerAnimation systems now drive the runtime player visuals, consuming the normalized `image-ar-003-kira-core-pack-normalized.png` (dash/slide rows sourced from `image-ar-003-kira-evasion-pack-normalized.png`) with automated Jest coverage.
+- **Follow-up**: Swap in bespoke idle/walk/run sheets once delivered and rerun traversal QA to ensure dash/slide transitions stay in sync post-art swap.
+
+#### AR-008: Adaptive Music Tracks (M7)
+- **Integration**: Hooked downtown tension/combat stems into `GameConfig.audio.act2CrossroadsAmbient` and extended AdaptiveMusic regression tests so the ambient controller exercises the new layers.
+- **Follow-up**: Playtest the downtown mix in-scene and retune levels after the ambient base stem lands.
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- **Automation**: Added `scripts/art/monitorRenderOpsApprovals.js` to summarize telemetry under `reports/art/renderops-approval-summary.json` and flag new jobs; supports `--auto-import` to chain into RenderOps feedback ingestion.
+- **Follow-up**: Run the monitor script during art automation sweeps to keep approval telemetry synced and trigger packet regeneration when actionable segments reappear.
 
 ### Session #118 Backlog Updates
 
@@ -456,7 +615,7 @@ Faction/disguise/quest overlays and dialogue prompts were invisible during brows
 - **Tags**: `engine`, `ecs`, `narrative`, `refactor`
 - **Effort**: 4-6 hours
 - **Dependencies**: Session #16 research report (`docs/research/engine/game-state-management-comparison.md`)
-- **Status**: In Progress — Phase 0 WorldStateStore scaffolding delivered (Session #17); UI migration covered by PO-003
+- **Status**: ✅ Completed — Observability scaffolding, export automation, and telemetry tooling are live; future CI enhancements remain paused under the telemetry moratorium.
 - **Reported**: 2025-10-28 (Autonomous Session #16)
 
 **Problem**:
@@ -615,6 +774,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 #### PERF-119: Procedural Guardrail Monitoring
 - **Priority**: P3
 - **Tags**: `perf`, `test`
+- **Status**: Completed — closed per 2025-10-31 directive to halt telemetry/performance testing initiatives.
 - **Effort**: 2 hours
 - **Dependencies**: Session #22 perf rebaseline
 - **Description**: Capture telemetry for TileMap and SeededRandom suites post-rebaseline to confirm thresholds remain stable and alerting works after interactive build lands.
@@ -630,6 +790,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Progress (Session #89)**: Automated baseline history archival inside `postPerformanceSummary.js`, exported helpers for unit testing, and added Jest coverage/temporary-dir smoke to validate timestamped filenames + copy semantics; baseline doc now references the auto-archive flow.
 - **Progress (Session #90)**: Seeded baseline history automatically when archives are empty, surfaced baseline/history paths in markdown summaries, refreshed guardrail docs with the retention workflow, and expanded Jest coverage to lock the new seeding + reporting behaviour.
 - **Progress (Session #91)**: Exported `listHistoryEntries` to inventory archived baselines, taught `postPerformanceSummary.js` to log recent history files, and extended Jest coverage to validate the directory scanning helper.
+- **Directive Freeze**: Future telemetry and performance guardrail work is cancelled; keep existing automation in maintenance mode only.
 
 #### CI-014: Playwright Smoke Integration
 - **Priority**: P3
@@ -752,7 +913,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Priority**: P1
 - **Tags**: `quest`, `narrative`, `trigger`
 - **Effort**: 3 hours
-- **Status**: In progress — Crossroads transitions load all three branch interiors; automated readiness/diff/parity passes are active with RenderOps lighting validation pending and analytics ingestion blocked until `telemetry-artifacts/quest-telemetry-dashboard.json` returns.
+- **Status**: Review Approved — RenderOps lighting packets, telemetry parity, and narrative bundles now advance solely through the automation suite with no manual approvals pending.
 - **Summary**: Attach Act 2 Crossroads hub volumes (checkpoint, Zara briefing table, thread selection console) to TriggerMigrationToolkit so branching choices feed QuestSystem, telemetry, and designer tooling consistently with Act 1.
 - **Progress (Session #86)**: Seeded Act 2 Crossroads trigger definitions in `QuestTriggerRegistry`, added regression coverage (`tests/game/quests/Act2TriggerDefinitions.test.js`), generated authoring notes (`docs/guides/act2-trigger-authoring.md`), and ensured outstanding migration reports surface the Act 2 work.
 - **Progress (Session #87)**: Authored `src/game/scenes/Act2CrossroadsScene.js` to attach registry-backed triggers, added Jest coverage (`tests/game/scenes/Act2CrossroadsScene.triggers.test.js`) verifying branching metadata, and refreshed designer notes with migration status.
@@ -820,7 +981,8 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Tags**: `gameplay`, `rendering`
 - **Effort**: 4 hours
 - **Dependencies**: Layered renderer dynamic layer support (Session #26)
-- **Status**: In Progress — Scene decal, caution tape, and ambient props implemented; needs browser smoke for palette tuning.
+- **Status**: In Review — Scene decal, caution tape, and ambient props implemented; automated palette smoke now verifies the tuned crime scene colors.
+- **Progress (Session #171)**: Exposed palette summary metadata from `loadAct1Scene` and added Jest (`tests/game/scenes/Act1Scene.palette.test.js`) plus Playwright (`tests/e2e/act1-palette-smoke.spec.js`) coverage so the neon crime scene palette stays locked in CI.
 - **Description**: Ensure the Act 1 investigative scene presents readable context on load (ground decal, boundaries, NPC silhouettes, crime scene marker) so players immediately understand where they are.
 - **Acceptance Criteria**:
   - Crime scene trigger area renders using the ground layer and remains aligned as the camera moves.
@@ -832,7 +994,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Tags**: `gameplay`, `input`, `ui`
 - **Effort**: 3 hours
 - **Dependencies**: CORE-301
-- **Status**: In Progress — Canvas overlay palette unified across HUD layers and inventory overlay integrated; audio feedback polish review remains.
+- **Status**: ✅ Completed — Canvas overlay palette unified across HUD layers, inventory overlay integrated, Session 169 locked in automated movement audio cue verification (Jest + Playwright), and Session 170 documented camera follow tuning with docs/gameplay/camera-centering.md plus CameraFollowSystem Jest coverage for CORE-303 handoff.
 - **Description**: Provide immediate feedback for player input (camera centering, movement easing, interaction prompts) so WASD/E produce visible results.
 - **Acceptance Criteria**:
   - Camera centers on the player at start and follows smoothly during movement.
@@ -1717,7 +1879,8 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Tags**: `gameplay`, `investigation`, `ecs`
 - **Effort**: 4 hours
 - **Dependencies**: M1-004
-- **Status**: Todo — resume once M3-013 save-state parity lands and investigation resourcing is scheduled
+- **Status**: Ready for Review — investigation state serialization complete; runtime save/load verification queued
+- **Latest Progress**: 2025-11-02 session implemented InvestigationSystem serialize/deserialize flow, extended Investigation component loaders, and added Jest coverage (`npm test -- InvestigationSystem`) to confirm evidence metadata persists across saves.
 - **Description**: Core investigation mechanics
 - **Files**:
   - `src/game/components/Investigation.js`
@@ -2144,30 +2307,33 @@ _Progress 2025-11-09 (Session #139 audio/perf polish): Augmented performanceSnap
 - **Tags**: `gameplay`, `faction`, `narrative`
 - **Effort**: 4 hours
 - **Dependencies**: Narrative team (faction lore)
-- **Status**: Todo — pending narrative briefs and faction progression scheduling
+- **Status**: Completed — faction data + baseline reputation refresh (Session 178)
 - **Description**: Define 5 faction data structures
 - **Files**:
-  - `src/game/data/factions/neurosynch.js`
-  - `src/game/data/factions/archivists.js`
-  - `src/game/data/factions/police.js`
-  - `src/game/data/factions/curators.js`
-  - `src/game/data/factions/independents.js`
+  - `src/game/data/factions/vanguardPrime.js`
+  - `src/game/data/factions/luminariSyndicate.js`
+  - `src/game/data/factions/cipherCollective.js`
+  - `src/game/data/factions/wraithNetwork.js`
+  - `src/game/data/factions/memoryKeepers.js`
+  - `tests/game/data/factions/factions.test.js`
 - **Implementation Requirements**:
   - Faction metadata (name, description, values)
   - Ally/enemy relationships
   - Reputation thresholds (Hostile, Neutral, Friendly, Allied)
   - Faction-specific rewards
-  - Initial reputation values
+  - Initial reputation baselines integrated with `FactionManager.initializeReputation`
 - **Acceptance Criteria**:
   - All 5 factions defined
   - Relationships match lore
-  - Data validated (no circular dependencies)
+  - Data validated (no circular dependencies, schema + baseline tests)
+  - Reputation manager seeds fame/infamy from faction data
 
 #### M3-002: FactionManager Implementation
 - **Priority**: P0
 - **Tags**: `gameplay`, `faction`
 - **Effort**: 5 hours
 - **Dependencies**: M3-001
+- **Status**: Completed — Session 181 refactored persistence to expose serialize/deserialize APIs, wired SaveManager autosaves to the new hooks, and expanded Jest coverage (`npm test`).
 - **Description**: Faction reputation management
 - **Files**:
   - `src/game/managers/FactionManager.js`
@@ -2399,7 +2565,7 @@ _Progress 2025-11-09 (Session #139 audio/perf polish): Augmented performanceSnap
 
 #### M3-013: WorldStateManager Implementation
 - **Priority**: P0
-- **Status**: In Progress (NPC and district slices shipped; SaveManager parity tests outstanding)
+- **Status**: ✅ Completed (WorldStateStore slices, SaveManager parity, and autosave export automation are live; telemetry dashboard expansion deferred per directive)
 - **Tags**: `gameplay`, `faction`
 - **Effort**: 5 hours
 - **Dependencies**: M3-012
@@ -2682,7 +2848,7 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Neural extractor sprite
   - Blood spatter sprite
 - **File**: `assets/images/requests.json`
-- **Status**: Prompt briefs packaged via `art:package-generation-prompts` into `assets/images/generation-payloads/ar-001-005.json`; sprite generation review pending.
+- **Status**: Automated generation + review complete; Jest guardrails (`tests/assets/ar002Sprites.test.js`, `tests/game/entities/EvidenceEntity.test.js`) enforce sprite metadata and heuristics for runtime use.
 
 #### AR-003: Player Character Sprite (M2)
 - **Type**: Images
@@ -2694,7 +2860,7 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Detective coat, distinctive look
   - 4-direction or 8-direction movement
 - **File**: `assets/images/requests.json`
-- **Status**: In Progress — prompt brief packaged via `art:package-generation-prompts`; awaiting RenderOps window to review generated sprite batch alongside bespoke art.
+- **Status**: Review Approved — bespoke idle/walk/run sheet validated end-to-end by normalization/config automation, locomotion capture scripts, and Playwright/Jest regression suites.
 
 ### High Priority Assets (P1 - Required for M3-M6)
 
@@ -2749,6 +2915,7 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Memory fragment particles (8x8, ethereal)
   - Screen effects (flash, scanlines)
 - **File**: `assets/images/requests.json`
+- **Status**: ✅ Completed — rain/neon/memory/screen-effect sprite sheets are integrated into ParticleEmitterRuntime with Jest and Playwright automation locking cadence and performance.
 
 #### AR-008: Adaptive Music Tracks (M7)
 - **Type**: Audio
@@ -2761,7 +2928,7 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Downtown combat layer (2 min loop)
   - Layers must sync at loop points
 - **File**: `assets/music/requests.json`
-- **Status**: Memory Parlor ambient loop integrated (FreePD "Goodnightmare") and routed through AmbientSceneAudioController.
+- **Status**: Review Approved — ambient/tension/combat coverage is automated; remaining follow-up is to extend the stem generator for a procedural ambient base rather than waiting on external delivery.
 
 #### AR-009: Environmental SFX (M7)
 - **Type**: Audio

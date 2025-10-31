@@ -1,0 +1,196 @@
+{
+  "generatedAt": "2025-10-31T20:33:42.762Z",
+  "inputFile": "/home/tsonu/src/genai-game-engine/telemetry-artifacts/ux/control-bindings/20251031T203500Z/observation.json",
+  "summary": {
+    "totalEvents": 7,
+    "firstEventAt": 1761942900000,
+    "lastEventAt": 1761942904800,
+    "durationMs": 4800,
+    "durationLabel": "4s 800ms",
+    "metrics": {
+      "selectionMoves": 2,
+      "selectionBlocked": 1,
+      "listModeChanges": 1,
+      "listModeUnchanged": 0,
+      "pageNavigations": 1,
+      "pageNavigationBlocked": 1,
+      "pageSetChanges": 0,
+      "pageSetBlocked": 0,
+      "captureStarted": 0,
+      "captureCancelled": 0,
+      "bindingsApplied": 1,
+      "bindingsReset": 0,
+      "manualOverrideEvents": 0,
+      "captureCancelReasons": {}
+    },
+    "actionsVisited": [
+      "moveUp",
+      "interact",
+      "inventory"
+    ],
+    "actionsRemapped": [
+      "inventory"
+    ],
+    "listModesVisited": [
+      "sections",
+      "alphabetical"
+    ],
+    "pageRange": {
+      "min": 0,
+      "max": 1
+    },
+    "lastSelectedAction": "inventory",
+    "dwell": {
+      "count": 1,
+      "totalMs": 1600,
+      "averageMs": 1600,
+      "averageLabel": "1s 600ms",
+      "maxMs": 1600,
+      "maxLabel": "1s 600ms",
+      "minMs": 1600,
+      "minLabel": "1s 600ms",
+      "lastMs": 1600,
+      "lastLabel": "1s 600ms",
+      "lastAction": "moveDown",
+      "longestAction": "moveDown"
+    },
+    "ratios": {
+      "selectionBlocked": {
+        "numerator": 1,
+        "denominator": 3,
+        "value": 0.333,
+        "percentage": "33%"
+      },
+      "pageNavigationBlocked": {
+        "numerator": 1,
+        "denominator": 2,
+        "value": 0.5,
+        "percentage": "50%"
+      }
+    }
+  },
+  "recommendations": [
+    "Paging attempts were blocked 50% (1/2) of the time—consider clearer boundaries or wrap-around paging to prevent dead ends."
+  ],
+  "sample": [
+    {
+      "event": "selection_move",
+      "overlayId": "controlBindings",
+      "timestamp": 1761942900000,
+      "visible": true,
+      "capturing": false,
+      "manualOverride": false,
+      "listMode": "sections",
+      "listModeLabel": "By Category",
+      "pageIndex": 0,
+      "pageCount": 3,
+      "selectedAction": "moveUp",
+      "previousIndex": 0,
+      "nextIndex": 1,
+      "previousAction": "moveUp",
+      "nextAction": "moveDown",
+      "changed": true
+    },
+    {
+      "event": "selection_move",
+      "overlayId": "controlBindings",
+      "timestamp": 1761942901600,
+      "visible": true,
+      "capturing": false,
+      "manualOverride": false,
+      "listMode": "sections",
+      "listModeLabel": "By Category",
+      "pageIndex": 0,
+      "pageCount": 3,
+      "selectedAction": "interact",
+      "previousIndex": 1,
+      "nextIndex": 2,
+      "previousAction": "moveDown",
+      "nextAction": "interact",
+      "changed": true
+    },
+    {
+      "event": "selection_move",
+      "overlayId": "controlBindings",
+      "timestamp": 1761942903300,
+      "visible": true,
+      "capturing": false,
+      "manualOverride": false,
+      "listMode": "sections",
+      "listModeLabel": "By Category",
+      "pageIndex": 0,
+      "pageCount": 3,
+      "selectedAction": "interact",
+      "previousIndex": 2,
+      "nextIndex": 2,
+      "previousAction": "interact",
+      "nextAction": "interact",
+      "changed": false
+    },
+    {
+      "event": "list_mode_change",
+      "overlayId": "controlBindings",
+      "timestamp": 1761942903400,
+      "visible": true,
+      "capturing": false,
+      "manualOverride": false,
+      "listMode": "alphabetical",
+      "listModeLabel": "Alphabetical",
+      "pageIndex": 0,
+      "pageCount": 3,
+      "selectedAction": "interact",
+      "changed": true
+    },
+    {
+      "event": "page_navigate",
+      "overlayId": "controlBindings",
+      "timestamp": 1761942903600,
+      "visible": true,
+      "capturing": false,
+      "manualOverride": false,
+      "listMode": "alphabetical",
+      "listModeLabel": "Alphabetical",
+      "pageIndex": 1,
+      "pageCount": 3,
+      "selectedAction": "inventory",
+      "direction": 1,
+      "changed": true
+    },
+    {
+      "event": "page_navigate",
+      "overlayId": "controlBindings",
+      "timestamp": 1761942904100,
+      "visible": true,
+      "capturing": false,
+      "manualOverride": false,
+      "listMode": "alphabetical",
+      "listModeLabel": "Alphabetical",
+      "pageIndex": 1,
+      "pageCount": 3,
+      "selectedAction": "inventory",
+      "direction": 1,
+      "changed": false
+    },
+    {
+      "event": "binding_applied",
+      "overlayId": "controlBindings",
+      "timestamp": 1761942904800,
+      "visible": true,
+      "capturing": false,
+      "manualOverride": false,
+      "listMode": "alphabetical",
+      "listModeLabel": "Alphabetical",
+      "pageIndex": 1,
+      "pageCount": 3,
+      "selectedAction": "inventory",
+      "changed": true,
+      "action": "inventory",
+      "codes": [
+        "KeyI"
+      ],
+      "metadata": {
+        "code": "KeyI"
+      }
+    }
+  ]
+}

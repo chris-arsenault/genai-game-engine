@@ -4,6 +4,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { buildRenderOpsPacket } from '../../src/game/tools/RenderOpsPacketBuilder.js';
+import { enqueueRenderOpsApprovalJob } from '../../src/game/tools/RenderOpsApprovalQueue.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,6 +29,10 @@ const DEFAULT_NEON_APPROVAL_MD = path.resolve(
   __dirname,
   '../../reports/art/neon-glow-approval-status.md'
 );
+const DEFAULT_APPROVAL_QUEUE_ROOT = path.resolve(
+  __dirname,
+  '../../reports/telemetry/renderops-approvals'
+);
 
 async function main() {
   const args = process.argv.slice(2);
@@ -37,6 +42,7 @@ async function main() {
     outputRoot: DEFAULT_OUTPUT_ROOT,
     label: 'act2-crossroads',
     attachments: [],
+    approvalQueueRoot: DEFAULT_APPROVAL_QUEUE_ROOT,
   };
 
   for (const arg of args) {
@@ -54,6 +60,11 @@ async function main() {
     } else if (arg === '--help' || arg === '-h') {
       printHelp();
       return;
+    } else if (arg.startsWith('--approval-queue-root=')) {
+      options.approvalQueueRoot = path.resolve(
+        process.cwd(),
+        arg.slice('--approval-queue-root='.length)
+      );
     }
   }
 
@@ -83,7 +94,9 @@ async function main() {
       metadata,
       archivePath,
       shareManifestPath,
+      shareManifest,
       deliveryManifestPath,
+      deliveryManifest,
     } = await buildRenderOpsPacket(options);
     process.stdout.write(
       `[packageRenderOpsLighting] Packet generated at ${packetDir}\n`
@@ -104,6 +117,32 @@ async function main() {
     if (deliveryManifestPath) {
       process.stdout.write(
         `[packageRenderOpsLighting] Delivery manifest written to ${deliveryManifestPath}\n`
+      );
+    }
+
+    const { jobPath, job } = await enqueueRenderOpsApprovalJob({
+      packetDir,
+      metadata,
+      shareManifest,
+      deliveryManifest,
+      queueRoot: options.approvalQueueRoot,
+      shareManifestPath,
+      deliveryManifestPath,
+    });
+
+    process.stdout.write(
+      `[packageRenderOpsLighting] Approval job staged at ${jobPath} (${job.status})\n`
+    );
+    if (job.actionableSegments.length > 0) {
+      const segmentList = job.actionableSegments
+        .map((segment) => `    - ${segment.segmentId} [${segment.status}]`)
+        .join('\n');
+      process.stdout.write(
+        `[packageRenderOpsLighting] Pending approvals:\n${segmentList}\n`
+      );
+    } else {
+      process.stdout.write(
+        '[packageRenderOpsLighting] No actionable segments pending RenderOps approval\n'
       );
     }
   } catch (error) {
@@ -128,6 +167,7 @@ function printHelp() {
       '  --out-dir=<path>   Output directory root for generated packets.',
       '  --label=<value>    Label to include in the packet directory name.',
       '  --attachment=<path> Attach an additional file to the packet.',
+      '  --approval-queue-root=<path> Directory for telemetry approval queue outputs.',
       '  -h, --help         Show this help message.',
       '',
     ].join('\n')

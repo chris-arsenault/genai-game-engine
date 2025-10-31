@@ -115,6 +115,18 @@ export const GameConfig = {
     }
   },
 
+  /**
+   * Camera tuning parameters consumed by CameraFollowSystem and engine Camera.
+   *
+   * - followSpeed: Normalized interpolation factor applied every frame. Lower values (0.05-0.2)
+   *   yield smoother motion because the camera only closes a fraction of the gap each update.
+   * - lookAheadDistance: Pixels to lead the player in the direction of current velocity, keeping
+   *   traversal destinations inside the viewport before the player arrives.
+   * - deadzone: Radius (in pixels) where minor player adjustments do not move the camera, preventing
+   *   jitter when interacting with small objects.
+   * - shakeDecay/minShakeThreshold: Tune post-impact shake falloff so investigative UI remains readable.
+   *   Shake stops once intensity drops below the configured minimum threshold.
+   */
   camera: {
     // Follow behavior
     followSpeed: 0.1, // lerp factor (0.0-1.0), lower = smoother
@@ -213,45 +225,50 @@ export const GameConfig = {
     },
 
     act2CrossroadsAmbient: {
-      trackId: 'music-act2-crossroads-ambient-001',
-      trackUrl: '/music/act2/crossroads-ambient.ogg',
-      baseVolume: 0.58,
+      trackId: 'music-downtown-ambient-001',
+      trackUrl: '/generated/audio/ar-008/ar-008-downtown-ambient.wav',
+      baseVolume: 0.6,
       scramblerBoost: 0.18,
-      fadeDuration: 1.4,
+      fadeDuration: 1.6,
       scramblerFadeDuration: 0.6,
       loopStart: 0,
       loopEnd: null,
-      tensionTrackId: 'music-act2-crossroads-strings-001',
-      tensionTrackUrl: '/music/act2/crossroads-strings.ogg',
-      tensionBaseVolume: 0.72,
+      tensionTrackId: 'music-downtown-tension-001',
+      tensionTrackUrl: '/generated/audio/ar-008/ar-008-downtown-tension.wav',
+      tensionBaseVolume: 0.85,
       tensionLoopStart: 0,
       tensionLoopEnd: null,
-      combatTrackId: 'music-act2-crossroads-percussion-001',
-      combatTrackUrl: '/music/act2/crossroads-percussion.ogg',
-      combatBaseVolume: 0.85,
+      combatTrackId: 'music-downtown-combat-001',
+      combatTrackUrl: '/generated/audio/ar-008/ar-008-downtown-combat.wav',
+      combatBaseVolume: 0.97,
       combatLoopStart: 0,
       combatLoopEnd: null,
       defaultAdaptiveState: 'ambient',
       states: {
         ambient: {
-          ambient_base: 0.88,
+          ambient_base: 0.92,
           tension_layer: 0,
           combat_layer: 0,
         },
         decision: {
-          ambient_base: 0.72,
-          tension_layer: 0.35,
+          ambient_base: 0.76,
+          tension_layer: 0.36,
           combat_layer: 0,
         },
         tension: {
-          ambient_base: 0.62,
-          tension_layer: 0.78,
+          ambient_base: 0.58,
+          tension_layer: 0.82,
           combat_layer: 0.18,
         },
         alert: {
-          ambient_base: 0.55,
-          tension_layer: 0.7,
-          combat_layer: 0.25,
+          ambient_base: 0.48,
+          tension_layer: 0.78,
+          combat_layer: 0.46,
+        },
+        combat: {
+          ambient_base: 0.38,
+          tension_layer: 0.6,
+          combat_layer: 1,
         },
       },
     },

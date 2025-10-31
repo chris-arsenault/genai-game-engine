@@ -20,6 +20,14 @@ export class FxOverlay {
     this._unbindFx = null;
     this.maxConcurrentEffects = Math.max(1, Number(options.maxConcurrentEffects) || 10);
 
+    const defaultScreenEffectMap = {
+      forensicRevealFlash: 'flash',
+      forensicPulse: 'scanline',
+      detectiveVisionActivation: 'glitch',
+    };
+    const screenOptions = options.screenEffects || {};
+    const screenFrames = screenOptions.frames || {};
+
     const { palette } = overlayTheme;
 
     this.theme = {
@@ -61,6 +69,51 @@ export class FxOverlay {
       caseSolvedInner: options.caseSolvedInner || 'rgba(255, 255, 220, 0.9)',
       caseSolvedOuter: options.caseSolvedOuter || 'rgba(255, 205, 130, 0.15)',
     };
+
+    this.screenEffects = {
+      enabled: screenOptions.enabled !== false,
+      imagePath: screenOptions.imagePath
+        || 'assets/generated/ar-007/image-ar-007-screen-effects-pack.png',
+      frameCount: Math.max(1, Number(screenOptions.frameCount) || 3),
+      orientation: screenOptions.orientation === 'horizontal' ? 'horizontal' : 'vertical',
+      frames: {
+        flash: {
+          index: 0,
+          duration: 0.45,
+          baseAlpha: 0.85,
+          falloffPower: 1.35,
+          ...screenFrames.flash,
+        },
+        scanline: {
+          index: 1,
+          duration: 0.6,
+          baseAlpha: 0.6,
+          falloffPower: 1.5,
+          ...screenFrames.scanline,
+        },
+        glitch: {
+          index: 2,
+          duration: 0.48,
+          baseAlpha: 0.65,
+          falloffPower: 1.4,
+          jitter: 0.014,
+          ...screenFrames.glitch,
+        },
+      },
+      effectMap: {
+        ...defaultScreenEffectMap,
+        ...(screenOptions.effectMap || {}),
+      },
+      loader: screenOptions.assetLoader || null,
+      image: screenOptions.image || null,
+      imageLoaded: Boolean(screenOptions.image),
+      loading: false,
+      frameRects: new Map(),
+    };
+
+    if (this.screenEffects.imageLoaded && this.screenEffects.image) {
+      this._computeScreenEffectFrameRects();
+    }
   }
 
   init() {
@@ -109,6 +162,10 @@ export class FxOverlay {
     if (!payload || !payload.effectId) {
       return;
     }
+
+    const screenVariant = this.screenEffects?.effectMap
+      ? this.screenEffects.effectMap[payload.effectId]
+      : null;
 
     switch (payload.effectId) {
       case 'caseFileOverlayReveal':
@@ -261,6 +318,8 @@ export class FxOverlay {
       default:
         break;
     }
+
+    this._spawnScreenEffect(screenVariant, payload);
   }
 
   _enqueueEffect(effect) {
@@ -395,6 +454,42 @@ export class FxOverlay {
       elapsed: 0,
       duration,
       render: this._renderCaseSolved.bind(this),
+    });
+  }
+
+  _spawnScreenEffect(variant, payload = {}) {
+    if (!variant || !this.screenEffects?.enabled) {
+      return;
+    }
+
+    const config = this.screenEffects.frames?.[variant];
+    if (!config) {
+      return;
+    }
+
+    this._ensureScreenEffectImage();
+
+    const effectId = `screen-${variant}`;
+    for (let i = this.effects.length - 1; i >= 0; i -= 1) {
+      if (this.effects[i]?.id === effectId) {
+        this.effects.splice(i, 1);
+      }
+    }
+
+    const requestedDuration = Number(payload.duration);
+    const duration = Math.max(
+      0.2,
+      Number.isFinite(requestedDuration) && requestedDuration > 0
+        ? requestedDuration
+        : Number(config.duration) || Number(this.theme.questPulseDuration) || 0.5
+    );
+
+    this._enqueueEffect({
+      id: effectId,
+      variant,
+      elapsed: 0,
+      duration,
+      render: this._renderScreenEffect.bind(this),
     });
   }
 
@@ -576,6 +671,53 @@ export class FxOverlay {
     ctx.restore();
   }
 
+  _renderScreenEffect(ctx, effect, canvas) {
+    if (!this.screenEffects?.enabled || !this.screenEffects.imageLoaded) {
+      return;
+    }
+
+    const frameRect = this.screenEffects.frameRects.get(effect.variant);
+    if (!frameRect) {
+      return;
+    }
+
+    const frameConfig = this.screenEffects.frames?.[effect.variant] || {};
+    const progress = Math.min(1, effect.elapsed / Math.max(effect.duration, 0.0001));
+    const falloffPower = Number(frameConfig.falloffPower) || 1.4;
+    const eased = Math.pow(Math.max(0, 1 - progress), falloffPower);
+    const baseAlpha = Math.min(Math.max(Number(frameConfig.baseAlpha) || 0.6, 0), 1);
+    const alpha = baseAlpha * eased;
+    if (alpha <= 0.01) {
+      return;
+    }
+
+    const jitterFactor = Math.max(0, Number(frameConfig.jitter) || 0);
+    const offsetX = jitterFactor
+      ? (Math.random() * 2 - 1) * canvas.width * jitterFactor
+      : 0;
+    const offsetY = jitterFactor
+      ? (Math.random() * 2 - 1) * canvas.height * jitterFactor
+      : 0;
+
+    ctx.save();
+    const previousComposite = ctx.globalCompositeOperation;
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(
+      this.screenEffects.image,
+      frameRect.sx,
+      frameRect.sy,
+      frameRect.sw,
+      frameRect.sh,
+      offsetX,
+      offsetY,
+      canvas.width,
+      canvas.height
+    );
+    ctx.globalCompositeOperation = previousComposite;
+    ctx.restore();
+  }
+
   _renderQuestMilestone(ctx, effect, canvas, theme) {
     const progress = Math.min(1, effect.elapsed / effect.duration);
     const intensity = Math.pow(1 - progress, 1.4);
@@ -682,5 +824,104 @@ export class FxOverlay {
     ctx.fillRect(0, cy - 1, canvas.width, 2);
     ctx.fillRect(cx - 1, 0, 2, canvas.height);
     ctx.restore();
+  }
+
+  _ensureScreenEffectImage() {
+    const config = this.screenEffects;
+    if (!config?.enabled || config.imageLoaded || config.loading) {
+      return;
+    }
+
+    const handleFailure = () => {
+      config.loading = false;
+      config.enabled = false;
+    };
+
+    if (config.loader && typeof config.loader.loadImage === 'function' && config.imagePath) {
+      config.loading = true;
+      config.loader.loadImage(config.imagePath)
+        .then((image) => {
+          this._setScreenEffectImage(image);
+        })
+        .catch((error) => {
+          console.warn('[FxOverlay] Screen effect image load failed:', error?.message || error);
+          handleFailure();
+        });
+      return;
+    }
+
+    if (typeof Image === 'function' && config.imagePath) {
+      config.loading = true;
+      const image = new Image();
+      image.crossOrigin = 'anonymous';
+      image.onload = () => {
+        this._setScreenEffectImage(image);
+      };
+      image.onerror = () => {
+        handleFailure();
+      };
+      image.src = config.imagePath;
+      return;
+    }
+
+    handleFailure();
+  }
+
+  _setScreenEffectImage(image) {
+    if (!image) {
+      this.screenEffects.enabled = false;
+      this.screenEffects.loading = false;
+      return;
+    }
+    this.screenEffects.image = image;
+    this.screenEffects.imageLoaded = true;
+    this.screenEffects.loading = false;
+    this._computeScreenEffectFrameRects();
+  }
+
+  _computeScreenEffectFrameRects() {
+    const config = this.screenEffects;
+    if (!config || !config.imageLoaded || !config.image) {
+      return;
+    }
+
+    const width = Number(config.image.width) || 0;
+    const height = Number(config.image.height) || 0;
+    if (!width || !height) {
+      config.frameRects.clear();
+      return;
+    }
+
+    const frameCount = Math.max(1, Number(config.frameCount) || 1);
+    const rects = config.frameRects;
+    rects.clear();
+
+    const frameEntries = Object.entries(config.frames || {});
+    if (config.orientation === 'horizontal') {
+      const frameWidth = width / frameCount;
+      for (let i = 0; i < frameEntries.length; i += 1) {
+        const [key, frame] = frameEntries[i];
+        const index = Math.min(frameCount - 1, Math.max(0, Number(frame.index) || 0));
+        rects.set(key, {
+          sx: frameWidth * index,
+          sy: 0,
+          sw: frameWidth,
+          sh: height,
+        });
+      }
+      return;
+    }
+
+    const frameHeight = height / frameCount;
+    for (let i = 0; i < frameEntries.length; i += 1) {
+      const [key, frame] = frameEntries[i];
+      const index = Math.min(frameCount - 1, Math.max(0, Number(frame.index) || 0));
+      rects.set(key, {
+        sx: 0,
+        sy: frameHeight * index,
+        sw: width,
+        sh: frameHeight,
+      });
+    }
   }
 }

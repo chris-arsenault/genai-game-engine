@@ -1,0 +1,48 @@
+{
+  "summary": {
+    "slot": "profiling-latency",
+    "iterations": 5,
+    "thresholdMs": 2000,
+    "load": {
+      "averageMs": 0,
+      "maxMs": 0,
+      "underThreshold": true,
+      "averageLabel": "0ms",
+      "maxLabel": "0ms"
+    },
+    "save": {
+      "averageMs": 1,
+      "maxMs": 2,
+      "averageLabel": "1ms",
+      "maxLabel": "2ms"
+    },
+    "totalDurationLabel": "4ms"
+  },
+  "samples": [
+    {
+      "iteration": 0,
+      "saveMs": 1.6122859999999974,
+      "loadMs": 0.3317210000000017
+    },
+    {
+      "iteration": 1,
+      "saveMs": 0.32555200000000184,
+      "loadMs": 0.2020690000000016
+    },
+    {
+      "iteration": 2,
+      "saveMs": 0.33589699999999567,
+      "loadMs": 0.22756000000000398
+    },
+    {
+      "iteration": 3,
+      "saveMs": 0.4247390000000024,
+      "loadMs": 0.25421599999999955
+    },
+    {
+      "iteration": 4,
+      "saveMs": 0.3160230000000013,
+      "loadMs": 0.18483900000000375
+    }
+  ]
+}

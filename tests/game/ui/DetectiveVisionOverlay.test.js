@@ -163,4 +163,34 @@ describe('DetectiveVisionOverlay', () => {
     expect(energyFillCall[2]).toBeCloseTo(expectedEnergyWidth, 3);
     overlay.cleanup();
   });
+
+  it('emits AR-007 particle cues while detective vision is active', () => {
+    const overlay = new DetectiveVisionOverlay(
+      canvas,
+      eventBus,
+      {
+        worldToScreen: (x, y) => ({ x, y }),
+      },
+      componentRegistry,
+      { highlightRefreshInterval: 0.1 }
+    );
+    overlay.init();
+
+    getHandler('detective_vision:activated')({ duration: 5 });
+    overlay.update(0.016);
+    overlay.update(0.9);
+
+    const overlayCues = eventBus.emit.mock.calls
+      .filter(([event]) => event === 'fx:overlay_cue')
+      .map(([, payload]) => payload.effectId);
+
+    expect(overlayCues).toEqual(
+      expect.arrayContaining([
+        'detectiveVisionRainfall',
+        'detectiveVisionNeonBloom',
+        'detectiveVisionMemoryFragmentBurst',
+      ])
+    );
+    overlay.cleanup();
+  });
 });

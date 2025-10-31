@@ -126,9 +126,16 @@ function summariseStatuses(entries, weekSet) {
   return summary;
 }
 
+function getProjectRoot() {
+  if (process.env.TRACK_BESPOKE_ROOT) {
+    return path.resolve(process.env.TRACK_BESPOKE_ROOT);
+  }
+  return path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
+}
+
 function main() {
   const { week, updatesPath } = parseArgs(process.argv.slice(2));
-  const projectRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
+  const projectRoot = getProjectRoot();
 
   const requestsPath = path.resolve(projectRoot, 'assets/images/requests.json');
   const schedulePath = path.resolve(

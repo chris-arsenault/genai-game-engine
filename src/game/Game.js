@@ -9,6 +9,7 @@
 
 // Game systems
 import { PlayerMovementSystem } from './systems/PlayerMovementSystem.js';
+import { PlayerAnimationSystem } from './systems/PlayerAnimationSystem.js';
 import { InvestigationSystem } from './systems/InvestigationSystem.js';
 import { FactionReputationSystem } from './systems/FactionReputationSystem.js';
 import { KnowledgeProgressionSystem } from './systems/KnowledgeProgressionSystem.js';
@@ -113,6 +114,7 @@ import { Collider } from './components/Collider.js';
 import { Sprite } from './components/Sprite.js';
 import { TriggerSystem } from '../engine/physics/TriggerSystem.js';
 import { CollisionSystem } from '../engine/physics/CollisionSystem.js';
+import { SpriteAnimationSystem } from './systems/SpriteAnimationSystem.js';
 
 const ACT1_RETURN_SPAWN = { x: 220, y: 360 };
 const DEFAULT_FORENSIC_TOOL_LABELS = Object.freeze({
@@ -199,6 +201,7 @@ export class Game {
     // Game systems (game-specific, not engine)
     this.gameSystems = {
       playerMovement: null,
+      playerAnimation: null,
       deduction: null,
       investigation: null,
       forensic: null,
@@ -213,6 +216,7 @@ export class Game {
       collision: null,
       trigger: null,
       quest: null,
+      spriteAnimation: null,
       render: null  // RenderSystem (engine system managed by game)
     };
 
@@ -429,6 +433,12 @@ export class Game {
       this.inputState
     );
 
+    this.gameSystems.playerAnimation = new PlayerAnimationSystem(
+      this.componentRegistry,
+      this.eventBus,
+      this.inputState
+    );
+
     this.gameSystems.navigationConstraint = new NavigationConstraintSystem(
       this.componentRegistry,
       this.eventBus,
@@ -640,10 +650,26 @@ export class Game {
       this.camera
     );
 
+    const assetManager =
+      (typeof this.engine?.getAssetManager === 'function' && this.engine.getAssetManager()) ||
+      this.engine?.assetManager ||
+      null;
+    const spriteAnimationOptions = {};
+    if (assetManager && assetManager.loader) {
+      spriteAnimationOptions.assetLoader = assetManager.loader;
+    }
+
+    this.gameSystems.spriteAnimation = new SpriteAnimationSystem(
+      this.componentRegistry,
+      this.eventBus,
+      spriteAnimationOptions
+    );
+
     // Register systems with engine SystemManager (priorities come from each system definition)
     const systemRegistrationOrder = [
       ['tutorial', this.gameSystems.tutorial],
       ['playerMovement', this.gameSystems.playerMovement],
+      ['playerAnimation', this.gameSystems.playerAnimation],
       ['navigationConstraint', this.gameSystems.navigationConstraint],
       ['npcMemory', this.gameSystems.npcMemory],
       ['firewallScrambler', this.gameSystems.firewallScrambler],
@@ -658,6 +684,7 @@ export class Game {
       ['knowledgeProgression', this.gameSystems.knowledgeProgression],
       ['dialogue', this.gameSystems.dialogue],
       ['cameraFollow', this.gameSystems.cameraFollow],
+      ['spriteAnimation', this.gameSystems.spriteAnimation],
       ['render', this.gameSystems.render],
     ];
 

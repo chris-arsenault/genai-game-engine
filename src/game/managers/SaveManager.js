@@ -468,6 +468,8 @@ export class SaveManager {
    * @param {string} [options.slot='autosave'] - Slot to target during the burst.
    * @param {boolean} [options.collectResults=false] - Whether to include per-iteration success flags.
    * @param {Function} [options.onIteration] - Optional callback for each iteration.
+   * @param {boolean} [options.exportInspector=false] - When true, exports inspector telemetry after the burst.
+   * @param {object} [options.exportOptions] - Options forwarded to exportInspectorSummary when exportInspector is true.
    * @returns {Promise<object>} Summary of the burst execution.
    */
   async runAutosaveBurst(options = {}) {
@@ -500,9 +502,18 @@ export class SaveManager {
       }
     }
 
+    let exportResult = null;
+    const shouldExport = options.exportInspector === true;
+    if (shouldExport) {
+      exportResult = await this.exportInspectorSummary(options.exportOptions || {});
+    }
+
     const summary = { iterations, failures, slot };
     if (collect) {
       summary.results = results;
+    }
+    if (shouldExport) {
+      summary.exportResult = exportResult;
     }
     if (this.eventBus && typeof this.eventBus.emit === 'function') {
       this.eventBus.emit('telemetry:autosave_burst_completed', summary);
@@ -1263,10 +1274,41 @@ export class SaveManager {
    */
   collectFactionData() {
     if (!this.factionManager) return {};
+
+    if (typeof this.factionManager.serialize === 'function') {
+      const snapshot = this.factionManager.serialize();
+      return {
+        version: snapshot?.version ?? 1,
+        timestamp: snapshot?.timestamp ?? Date.now(),
+        reputation: snapshot?.reputation ?? {},
+        recentMemberRemovals: Array.isArray(snapshot?.recentMemberRemovals)
+          ? snapshot.recentMemberRemovals.map((entry) => ({ ...entry }))
+          : [],
+      };
+    }
+
+    const sourceReputation = this.factionManager.reputation || {};
+    const clonedReputation = {};
+    for (const [factionId, record] of Object.entries(sourceReputation)) {
+      clonedReputation[factionId] = {
+        fame: record?.fame ?? 0,
+        infamy: record?.infamy ?? 0,
+      };
+    }
+
+    const removalSnapshot =
+      typeof this.factionManager.getRecentMemberRemovals === 'function'
+        ? this.factionManager.getRecentMemberRemovals()
+        : [];
+    const recentRemovals = Array.isArray(removalSnapshot)
+      ? removalSnapshot.map((entry) => ({ ...entry }))
+      : [];
+
     return {
       version: 1,
-      reputation: this.factionManager.reputation,
+      reputation: clonedReputation,
       timestamp: Date.now(),
+      recentMemberRemovals: recentRemovals,
     };
   }
 
@@ -1322,6 +1364,13 @@ export class SaveManager {
    */
   restoreFactionData(data) {
     if (!this.factionManager || !data) return;
+    if (typeof this.factionManager.deserialize === 'function') {
+      if (this.factionManager.deserialize(data)) {
+        console.log('[SaveManager] Faction reputation restored');
+      }
+      return;
+    }
+
     if (data.reputation) {
       this.factionManager.reputation = data.reputation;
       console.log('[SaveManager] Faction reputation restored');

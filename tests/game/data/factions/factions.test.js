@@ -85,6 +85,21 @@ describe('Faction Data Validation', () => {
       }
     });
 
+    it('should define initial reputation baselines within bounds', () => {
+      for (const factionId of factionIds) {
+        const faction = getFaction(factionId);
+        expect(faction).toHaveProperty('initialReputation');
+        expect(faction.initialReputation).toHaveProperty('fame');
+        expect(faction.initialReputation).toHaveProperty('infamy');
+        expect(typeof faction.initialReputation.fame).toBe('number');
+        expect(typeof faction.initialReputation.infamy).toBe('number');
+        expect(faction.initialReputation.fame).toBeGreaterThanOrEqual(0);
+        expect(faction.initialReputation.fame).toBeLessThanOrEqual(100);
+        expect(faction.initialReputation.infamy).toBeGreaterThanOrEqual(0);
+        expect(faction.initialReputation.infamy).toBeLessThanOrEqual(100);
+      }
+    });
+
     it('should have valid relationship arrays', () => {
       for (const factionId of factionIds) {
         const faction = getFaction(factionId);

@@ -1,0 +1,172 @@
+{
+  "iterations": 3,
+  "failures": 0,
+  "slot": "autosave",
+  "results": [
+    {
+      "iteration": 0,
+      "success": true
+    },
+    {
+      "iteration": 1,
+      "success": true
+    },
+    {
+      "iteration": 2,
+      "success": true
+    }
+  ],
+  "exportResult": {
+    "summary": {
+      "generatedAt": 1761926728087,
+      "generatedIso": "2025-10-31T16:05:28.087Z",
+      "source": "worldStateStore",
+      "factions": {
+        "lastCascadeEvent": null,
+        "cascadeTargets": [],
+        "recentMemberRemovals": [],
+        "metrics": {
+          "cascadeTargetCount": 0,
+          "activeCascadeTargets": 0,
+          "recentMemberRemovalCount": 0
+        }
+      },
+      "tutorial": {
+        "latestSnapshot": null,
+        "snapshots": [],
+        "transcript": [],
+        "metrics": {
+          "snapshotCount": 0,
+          "transcriptCount": 0
+        }
+      },
+      "engine": {
+        "spatialHash": null
+      },
+      "controlBindings": {
+        "source": "unavailable",
+        "totalEvents": 0,
+        "durationMs": 0,
+        "durationLabel": "0s",
+        "firstEventAt": null,
+        "lastEventAt": null,
+        "actionsVisitedCount": 0,
+        "actionsVisited": [],
+        "actionsRemappedCount": 0,
+        "actionsRemapped": [],
+        "listModesVisited": [],
+        "pageRange": null,
+        "lastSelectedAction": null,
+        "metrics": {
+          "selectionMoves": 0,
+          "selectionBlocked": 0,
+          "listModeChanges": 0,
+          "listModeUnchanged": 0,
+          "pageNavigations": 0,
+          "pageNavigationBlocked": 0,
+          "pageSetChanges": 0,
+          "pageSetBlocked": 0,
+          "captureStarted": 0,
+          "captureCancelled": 0,
+          "bindingsApplied": 0,
+          "bindingsReset": 0,
+          "manualOverrideEvents": 0
+        },
+        "captureCancelReasons": {},
+        "dwell": {
+          "count": 0,
+          "totalMs": 0,
+          "averageMs": 0,
+          "averageLabel": "0s",
+          "maxMs": 0,
+          "maxLabel": "0s",
+          "minMs": 0,
+          "minLabel": "0s",
+          "lastMs": 0,
+          "lastLabel": "0s",
+          "lastAction": null,
+          "longestAction": null
+        },
+        "ratios": {
+          "selectionBlocked": {
+            "numerator": 0,
+            "denominator": 0,
+            "value": 0,
+            "percentage": "0%"
+          },
+          "pageNavigationBlocked": {
+            "numerator": 0,
+            "denominator": 0,
+            "value": 0,
+            "percentage": "0%"
+          }
+        }
+      },
+      "districts": {
+        "lastUpdatedAt": 0,
+        "lastUpdatedIso": "1970-01-01T00:00:00.000Z",
+        "lastLockdownAt": 0,
+        "lastLockdownIso": "1970-01-01T00:00:00.000Z",
+        "metrics": {
+          "total": 4,
+          "restricted": 0,
+          "fastTravelDisabled": 3,
+          "infiltrationLocked": 9,
+          "infiltrationUnlocked": 0,
+          "lockdownEvents": 0
+        },
+        "restrictedDistricts": []
+      },
+      "npcs": {
+        "lastUpdatedAt": 0,
+        "lastUpdatedIso": "1970-01-01T00:00:00.000Z",
+        "metrics": {
+          "total": 0,
+          "alerts": 0,
+          "suspicious": 0,
+          "knowsPlayer": 0,
+          "witnessedCrimes": 0
+        },
+        "alerts": [],
+        "suspicious": []
+      }
+    },
+    "artifacts": [
+      {
+        "type": "json",
+        "filename": "test-burst-summary-20251031T160528Z.json",
+        "mimeType": "application/json",
+        "content": "{\n  \"generatedAt\": 1761926728087,\n  \"generatedIso\": \"2025-10-31T16:05:28.087Z\",\n  \"source\": \"worldStateStore\",\n  \"factions\": {\n    \"lastCascadeEvent\": null,\n    \"cascadeTargets\": [],\n    \"recentMemberRemovals\": [],\n    \"metrics\": {\n      \"cascadeTargetCount\": 0,\n      \"activeCascadeTargets\": 0,\n      \"recentMemberRemovalCount\": 0\n    }\n  },\n  \"tutorial\": {\n    \"latestSnapshot\": null,\n    \"snapshots\": [],\n    \"transcript\": [],\n    \"metrics\": {\n      \"snapshotCount\": 0,\n      \"transcriptCount\": 0\n    }\n  },\n  \"engine\": {\n    \"spatialHash\": null\n  },\n  \"controlBindings\": {\n    \"source\": \"unavailable\",\n    \"totalEvents\": 0,\n    \"durationMs\": 0,\n    \"durationLabel\": \"0s\",\n    \"firstEventAt\": null,\n    \"lastEventAt\": null,\n    \"actionsVisitedCount\": 0,\n    \"actionsVisited\": [],\n    \"actionsRemappedCount\": 0,\n    \"actionsRemapped\": [],\n    \"listModesVisited\": [],\n    \"pageRange\": null,\n    \"lastSelectedAction\": null,\n    \"metrics\": {\n      \"selectionMoves\": 0,\n      \"selectionBlocked\": 0,\n      \"listModeChanges\": 0,\n      \"listModeUnchanged\": 0,\n      \"pageNavigations\": 0,\n      \"pageNavigationBlocked\": 0,\n      \"pageSetChanges\": 0,\n      \"pageSetBlocked\": 0,\n      \"captureStarted\": 0,\n      \"captureCancelled\": 0,\n      \"bindingsApplied\": 0,\n      \"bindingsReset\": 0,\n      \"manualOverrideEvents\": 0\n    },\n    \"captureCancelReasons\": {},\n    \"dwell\": {\n      \"count\": 0,\n      \"totalMs\": 0,\n      \"averageMs\": 0,\n      \"averageLabel\": \"0s\",\n      \"maxMs\": 0,\n      \"maxLabel\": \"0s\",\n      \"minMs\": 0,\n      \"minLabel\": \"0s\",\n      \"lastMs\": 0,\n      \"lastLabel\": \"0s\",\n      \"lastAction\": null,\n      \"longestAction\": null\n    },\n    \"ratios\": {\n      \"selectionBlocked\": {\n        \"numerator\": 0,\n        \"denominator\": 0,\n        \"value\": 0,\n        \"percentage\": \"0%\"\n      },\n      \"pageNavigationBlocked\": {\n        \"numerator\": 0,\n        \"denominator\": 0,\n        \"value\": 0,\n        \"percentage\": \"0%\"\n      }\n    }\n  },\n  \"districts\": {\n    \"lastUpdatedAt\": 0,\n    \"lastUpdatedIso\": \"1970-01-01T00:00:00.000Z\",\n    \"lastLockdownAt\": 0,\n    \"lastLockdownIso\": \"1970-01-01T00:00:00.000Z\",\n    \"metrics\": {\n      \"total\": 4,\n      \"restricted\": 0,\n      \"fastTravelDisabled\": 3,\n      \"infiltrationLocked\": 9,\n      \"infiltrationUnlocked\": 0,\n      \"lockdownEvents\": 0\n    },\n    \"restrictedDistricts\": []\n  },\n  \"npcs\": {\n    \"lastUpdatedAt\": 0,\n    \"lastUpdatedIso\": \"1970-01-01T00:00:00.000Z\",\n    \"metrics\": {\n      \"total\": 0,\n      \"alerts\": 0,\n      \"suspicious\": 0,\n      \"knowsPlayer\": 0,\n      \"witnessedCrimes\": 0\n    },\n    \"alerts\": [],\n    \"suspicious\": []\n  }\n}\n"
+      },
+      {
+        "type": "csv",
+        "section": "cascade",
+        "filename": "test-burst-cascade-targets-20251031T160528Z.csv",
+        "mimeType": "text/csv",
+        "content": "row_type,faction_id,faction_name,cascade_count,last_source_faction_id,last_source_faction_name,new_attitude,occurred_at,occurred_iso,sources\n"
+      },
+      {
+        "type": "csv",
+        "section": "tutorial",
+        "filename": "test-burst-tutorial-snapshots-20251031T160528Z.csv",
+        "mimeType": "text/csv",
+        "content": "event,timestamp,timestamp_iso,step_index,total_steps,step_id,step_title,completed_steps,metadata\n"
+      }
+    ],
+    "metrics": {
+      "artifactsAttempted": 3,
+      "artifactsWritten": 3,
+      "failures": [],
+      "writerSummaries": [
+        {
+          "id": "writer_1",
+          "attempted": 3,
+          "successes": 3,
+          "failures": 0,
+          "durationMs": 1
+        }
+      ],
+      "durationMs": 1
+    }
+  }
+}

@@ -8,6 +8,14 @@
 import { FactionManager } from '../../../src/game/managers/FactionManager.js';
 import { getFactionIds, getFaction } from '../../../src/game/data/factions/index.js';
 
+const expectedInitialReputation = {
+  vanguard_prime: { fame: 35, infamy: 10 },
+  luminari_syndicate: { fame: 28, infamy: 12 },
+  cipher_collective: { fame: 22, infamy: 8 },
+  wraith_network: { fame: 12, infamy: 26 },
+  memory_keepers: { fame: 30, infamy: 6 },
+};
+
 describe('FactionManager', () => {
   let factionManager;
   let mockEventBus;
@@ -80,13 +88,14 @@ describe('FactionManager', () => {
       }
     });
 
-    it('should start all factions at neutral reputation', () => {
+    it('should start all factions at configured baseline reputation', () => {
       const factionIds = getFactionIds();
 
       for (const factionId of factionIds) {
         const rep = factionManager.reputation[factionId];
-        expect(rep.fame).toBe(20);
-        expect(rep.infamy).toBe(20);
+        const baseline = expectedInitialReputation[factionId];
+        expect(rep.fame).toBe(baseline.fame);
+        expect(rep.infamy).toBe(baseline.infamy);
       }
     });
 
@@ -112,28 +121,28 @@ describe('FactionManager', () => {
       factionManager.modifyReputation('vanguard_prime', 10, 0, 'Test');
 
       const rep = factionManager.getReputation('vanguard_prime');
-      expect(rep.fame).toBe(30); // 20 + 10
+      expect(rep.fame).toBe(45); // 35 + 10
     });
 
     it('should decrease fame correctly', () => {
       factionManager.modifyReputation('vanguard_prime', -10, 0, 'Test');
 
       const rep = factionManager.getReputation('vanguard_prime');
-      expect(rep.fame).toBe(10); // 20 - 10
+      expect(rep.fame).toBe(25); // 35 - 10
     });
 
     it('should increase infamy correctly', () => {
       factionManager.modifyReputation('vanguard_prime', 0, 15, 'Test');
 
       const rep = factionManager.getReputation('vanguard_prime');
-      expect(rep.infamy).toBe(35); // 20 + 15
+      expect(rep.infamy).toBe(25); // 10 + 15
     });
 
     it('should decrease infamy correctly', () => {
       factionManager.modifyReputation('vanguard_prime', 0, -15, 'Test');
 
       const rep = factionManager.getReputation('vanguard_prime');
-      expect(rep.infamy).toBe(5); // 20 - 15
+      expect(rep.infamy).toBe(0); // 10 - 15 (clamped)
     });
 
     it('should clamp fame to 0-100 range (upper bound)', () => {
@@ -174,8 +183,8 @@ describe('FactionManager', () => {
           factionName: 'Vanguard Prime',
           deltaFame: 10,
           deltaInfamy: 5,
-          newFame: 30,
-          newInfamy: 25,
+          newFame: 45,
+          newInfamy: 15,
           reason: 'Quest completed',
         })
       );
@@ -196,8 +205,8 @@ describe('FactionManager', () => {
       factionManager.modifyReputation('vanguard_prime', 15, 10, 'Mixed action');
 
       const rep = factionManager.getReputation('vanguard_prime');
-      expect(rep.fame).toBe(35); // 20 + 15
-      expect(rep.infamy).toBe(30); // 20 + 10
+      expect(rep.fame).toBe(50); // 35 + 15
+      expect(rep.infamy).toBe(20); // 10 + 10
     });
   });
 
@@ -207,7 +216,7 @@ describe('FactionManager', () => {
       factionManager.modifyReputation('vanguard_prime', 20, 0, 'Helped Vanguard');
 
       const allyRep = factionManager.getReputation('luminari_syndicate');
-      expect(allyRep.fame).toBe(30); // 20 + (20 * 0.5)
+      expect(allyRep.fame).toBe(38); // 28 + (20 * 0.5)
     });
 
     it('should cascade -50% fame to enemies when helping faction', () => {
@@ -218,7 +227,7 @@ describe('FactionManager', () => {
       factionManager.modifyReputation('vanguard_prime', 20, 0, 'Helped Vanguard');
 
       const enemyRep = factionManager.getReputation('wraith_network');
-      expect(enemyRep.fame).toBe(10); // 20 - (20 * 0.5)
+      expect(enemyRep.fame).toBe(2); // 12 - (20 * 0.5)
     });
 
     it('should cascade infamy inversely to allies', () => {
@@ -227,7 +236,7 @@ describe('FactionManager', () => {
 
       const allyRep = factionManager.getReputation('luminari_syndicate');
       // Allies get -deltaInfamy * multiplier = -20 * 0.5 = -10
-      expect(allyRep.infamy).toBe(10); // 20 - 10
+      expect(allyRep.infamy).toBe(2); // 12 - 10
     });
 
     it('should cascade infamy to enemies', () => {
@@ -236,7 +245,7 @@ describe('FactionManager', () => {
 
       const enemyRep = factionManager.getReputation('wraith_network');
       // Enemies get +deltaInfamy * multiplier = 20 * 0.5 = 10
-      expect(enemyRep.infamy).toBe(30); // 20 + 10
+      expect(enemyRep.infamy).toBe(36); // 26 + 10
     });
 
     it('should handle multiple allies correctly', () => {
@@ -247,7 +256,7 @@ describe('FactionManager', () => {
 
       for (const allyId of allies) {
         const allyRep = factionManager.getReputation(allyId);
-        expect(allyRep.fame).toBeGreaterThan(20); // Should have cascaded fame
+        expect(allyRep.fame).toBeGreaterThan(expectedInitialReputation[allyId].fame); // Should have cascaded fame
       }
     });
 
@@ -259,7 +268,7 @@ describe('FactionManager', () => {
 
       for (const enemyId of enemies) {
         const enemyRep = factionManager.getReputation(enemyId);
-        expect(enemyRep.fame).toBeLessThan(20); // Should have negative cascade
+        expect(enemyRep.fame).toBeLessThan(expectedInitialReputation[enemyId].fame); // Should have negative cascade
       }
     });
 
@@ -502,10 +511,20 @@ describe('FactionManager', () => {
       factionManager.modifyReputation('wraith_network', -20, 15, 'Test');
 
       const serialized = factionManager.saveState();
+      const payload = JSON.parse(serialized);
 
       expect(localStorageMock.setItem).toHaveBeenCalledWith('faction_state', serialized);
-      expect(serialized).toContain('vanguard_prime');
-      expect(serialized).toContain('wraith_network');
+      expect(payload).toMatchObject({
+        version: 1,
+        reputation: expect.any(Object),
+        recentMemberRemovals: [],
+      });
+      expect(payload.reputation.vanguard_prime).toEqual(
+        factionManager.getReputation('vanguard_prime')
+      );
+      expect(payload.reputation.wraith_network).toEqual(
+        factionManager.getReputation('wraith_network')
+      );
     });
 
     it('should include version in saved state', () => {
@@ -532,6 +551,16 @@ describe('FactionManager', () => {
           vanguard_prime: { fame: 75, infamy: 5 },
           wraith_network: { fame: 10, infamy: 80 },
         },
+        recentMemberRemovals: [
+          {
+            factionId: 'wraith_network',
+            factionName: 'Wraith Network',
+            entityId: 12,
+            npcId: 'wraith_agent',
+            removedAt: 1700000000000,
+            tag: 'npc',
+          },
+        ],
         timestamp: Date.now(),
       };
 
@@ -544,6 +573,16 @@ describe('FactionManager', () => {
       expect(factionManager.reputation.vanguard_prime.infamy).toBe(5);
       expect(factionManager.reputation.wraith_network.fame).toBe(10);
       expect(factionManager.reputation.wraith_network.infamy).toBe(80);
+      expect(factionManager.getRecentMemberRemovals()).toEqual([
+        {
+          factionId: 'wraith_network',
+          factionName: 'Wraith Network',
+          entityId: 12,
+          npcId: 'wraith_agent',
+          removedAt: 1700000000000,
+          tag: 'npc',
+        },
+      ]);
     });
 
     it('should handle missing save data gracefully', () => {
@@ -596,11 +635,53 @@ describe('FactionManager', () => {
       factionManager.saveState();
 
       // Create new manager and load
-      const newManager = new FactionManager(mockEventBus);
+      const newManager = new FactionManager(mockEventBus, { storage: localStorageMock });
       newManager.loadState();
 
       expect(newManager.getReputation('vanguard_prime')).toEqual(originalVanguard);
       expect(newManager.getReputation('cipher_collective')).toEqual(originalCipher);
+    });
+
+    it('serialize should clone internal state', () => {
+      factionManager.modifyReputation('vanguard_prime', 10, 5, 'Test');
+
+      const snapshot = factionManager.serialize();
+      snapshot.reputation.vanguard_prime.fame = 999;
+
+      expect(factionManager.getReputation('vanguard_prime').fame).not.toBe(999);
+    });
+
+    it('deserialize should clamp values and retain unknown factions', () => {
+      const snapshot = {
+        version: 1,
+        reputation: {
+          vanguard_prime: { fame: 250, infamy: -50 },
+          new_faction: { fame: 33, infamy: 11 },
+        },
+        recentMemberRemovals: [{ factionId: 'new_faction', removedAt: 123 }],
+      };
+
+      const result = factionManager.deserialize(snapshot);
+
+      expect(result).toBe(true);
+      expect(factionManager.reputation.vanguard_prime).toEqual({ fame: 100, infamy: 0 });
+      expect(factionManager.reputation.new_faction).toEqual({ fame: 33, infamy: 11 });
+      expect(factionManager.getRecentMemberRemovals()).toEqual([
+        {
+          factionId: 'new_faction',
+          factionName: null,
+          entityId: null,
+          npcId: null,
+          tag: null,
+          removedAt: 123,
+        },
+      ]);
+    });
+
+    it('deserialize should return false for invalid payload', () => {
+      expect(factionManager.deserialize(null)).toBe(false);
+      expect(factionManager.deserialize({ version: 2, reputation: {} })).toBe(false);
+      expect(factionManager.deserialize({ version: 1 })).toBe(false);
     });
   });
 
@@ -622,7 +703,7 @@ describe('FactionManager', () => {
 
       const rep = factionManager.getReputation('vanguard_prime');
 
-      expect(rep).toEqual({ fame: 50, infamy: 10 });
+      expect(rep).toEqual({ fame: 65, infamy: 0 });
     });
 
     it('should return null for invalid faction in getReputation', () => {
@@ -640,8 +721,8 @@ describe('FactionManager', () => {
       const factionIds = getFactionIds();
       for (const factionId of factionIds) {
         const rep = factionManager.getReputation(factionId);
-        expect(rep.fame).toBe(20);
-        expect(rep.infamy).toBe(20);
+        expect(rep.fame).toBe(expectedInitialReputation[factionId].fame);
+        expect(rep.infamy).toBe(expectedInitialReputation[factionId].infamy);
       }
     });
 

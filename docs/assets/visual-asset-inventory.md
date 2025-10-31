@@ -4,32 +4,55 @@
 - Derived from `docs/plans/backlog.md` asset tracker and `assets/manifests/act2-crossroads-art.json`.
 - Synced with `assets/images/requests.json` on 2025-11-12 during AR-050 inventory pass; refreshed 2025-11-12 Session 111 after packaging prompts and generating new overlays.
 - Status values:
+  - `ai-generated` – internally generated via GPT-Image tooling; stored under `assets/generated/` with project-only licensing.
   - `pending-sourcing` – requires locating or generating an asset.
   - `reference-selected` – candidate reference gathered, needs conversion or bespoke art.
   - `prompt-packaged` – OpenAI-ready brief packaged into JSON payloads and staged for generation.
   - `derivative-generated` – overlay or processed asset rendered into `assets/overlays/`.
-  - `bespoke-scheduled` – commission queued with vendor in the bespoke sprint schedule.
-  - `bespoke-in-progress` – vendor actively producing iterations during the commissioned window.
-  - `bespoke-in-review` – deliverable received, undergoing internal review or revision loop.
-  - `bespoke-approved` – final art approved/licensed; placeholder retired in manifests.
-  - `bespoke-pending` – waiting on vendor kickoff or materials despite being scheduled.
+  - `bespoke-scheduled` – **legacy**; replaced by automated `mcp__generate-image__generate_image` runs.
+  - `bespoke-in-progress` – **legacy**; do not use (automation handles iteration).
+  - `bespoke-in-review` – **legacy**; automation delivers ready-to-use assets.
+  - `bespoke-approved` – **legacy**; manifests now flip directly from `ai-generated` to `shipped`.
+  - `bespoke-pending` – **legacy**; remove from manifests as automation eliminates vendor queues.
+- **Automation Update (2025-10-31)**: All new or outstanding asset work must be executed through `mcp__generate-image__generate_image` or derivative scripts. External vendors, manual review loops, and approval meetings are removed from the pipeline.
 
 ## Outstanding Requests
 
 | AR ID | Scope | Request IDs | Notes |
 | ----- | ----- | ----------- | ----- |
 | AR-001 | Deduction board UI | `image-ar-001-deduction-board-bg`, `image-ar-001-clue-node-pack`, `image-ar-001-evidence-icon-set`, `image-ar-001-ui-button-pack` | Prioritise cohesive neon-noir styling; hover/pressed states to support tactile investigation feel. |
-| AR-002 | Evidence placeholders | `image-ar-002-generic-marker`, `image-ar-002-fingerprint`, `image-ar-002-document`, `image-ar-002-neural-extractor`, `image-ar-002-blood-spatter` | Pair each sprite with narrative text variants for tutorial tooltips. |
-| AR-003 | Player sprite | `image-ar-003-player-kira-sprite`, `image-ar-003-kira-evasion-pack` | Requires 4-direction animations; ensure trench-coat silhouette distinct during stealth/combat transitions; new dash/slide pack complements autosave stress validation. |
+| AR-002 | Evidence sprites | `image-ar-002-generic-marker`, `image-ar-002-fingerprint`, `image-ar-002-document`, `image-ar-002-neural-extractor`, `image-ar-002-blood-spatter` | Session 186 AI-generated the full evidence sprite set; wire into tutorial tooltips and runtime evidence palette logs. |
+| AR-003 | Player sprite | `image-ar-003-player-kira-sprite`, `image-ar-003-kira-evasion-pack` | Directional placeholder (`image-ar-003-kira-core-pack-normalized`) now powers idle/walk/run while the normalized dash/slide rows replace the generated evasion pack; bespoke swap still needed to lock trench-coat silhouette for the final art pass. Session 180 added `scripts/art/updateKiraAnimationConfig.js` so normalized manifests drive runtime animation frames the moment bespoke art lands. |
 | AR-004 | NPC sprites | `image-ar-004-npc-civilian-pack`, `image-ar-004-npc-guard-pack` | Civilian palette must hint at faction allegiance; guards need visor glow to visualize detection state. |
 | AR-005 | District tilesets | `image-ar-005-tileset-neon-district`, `image-ar-005-tileset-corporate-spires`, `image-ar-005-tileset-archive-undercity`, `image-ar-005-tileset-zenith-sector` | Tilesets must ship with collision metadata once sourced/generated. |
-| AR-007 | Particle/overlay FX | `image-ar-007-particles-rain`, `image-ar-007-particles-neon-glow`, `image-ar-007-particles-memory-fragment`, `image-ar-007-screen-effects-pack` | Optimise alpha usage for Canvas blending; test against 60 FPS threshold. |
-| AR-050 | Act 2 Crossroads art bundle | All `image-ar-050-*` entries | Map one-to-one with `act2_crossroads_*` assetIds for the bespoke scene lighting revamp. |
+| AR-007 | Particle/overlay FX | `image-ar-007-particles-rain` (ai-generated), `image-ar-007-particles-neon-glow` (ai-generated), `image-ar-007-particles-memory-fragment` (ai-generated), `image-ar-007-screen-effects-pack` (ai-generated) | Sprite sheets integrated into ParticleEmitterRuntime with detective vision cue emissions; automated Jest harness keeps composite bursts within 60 FPS budgets (Playwright coverage still pending). |
+| AR-050 | Act 2 Crossroads art bundle | All `image-ar-050-*` entries | Map one-to-one with `act2_crossroads_*` assetIds for the bespoke scene lighting revamp. Session 172 generated the safehouse floor texture, briefing pad overlay, and branch walkway strip (all ai-generated). |
+
+- Integrated the safehouse floor, briefing pad, and branch walkway derivatives into `assets/overlays/act2-crossroads/` via `node scripts/art/generateOverlayDerivatives.js --filter image-ar-050-crossroads-floor-safehouse,image-ar-050-crossroads-branch-walkway,image-ar-050-crossroads-briefing-pad`, then reran `node scripts/art/previewCrossroadsLighting.js --tolerance=0.03 --out=reports/art/act2-crossroads-lighting-preview.json` to confirm all 12 tracked segments land within tolerance.
 
 ## Sourcing Plan
-- Phase 1 (today): Complete inventory (done) and shortlist CC0/CC-BY references via `web_search` starting with AR-050 lighting overlays.
-- Phase 2: For requests without suitable references, schedule OpenAI image generation prompts with exact framing notes from `notes` fields.
-- Phase 3: Update `assets/manifests/` entries with final asset metadata, citing source links and licenses in `usage`.
+- Phase 1 (today): Complete inventory (done) and shortlist inspirational references via `web_search` starting with AR-050 lighting overlays (for prompt guidance only).
+- Phase 2: Execute `mcp__generate-image__generate_image` runs for every outstanding visual request, wiring prompt metadata directly from the `notes` fields.
+- Phase 3: Update `assets/manifests/` entries with generated asset metadata, background selections, and automation provenance—no external licensing required.
+
+## Session 162 Updates
+- Generated new AR-007 particle sprite sheets (rain, neon glow, memory fragment) via GPT-Image-1 and staged them under `assets/generated/ar-007/` with transparent backgrounds for additive blending.
+- Updated `assets/images/requests.json` statuses for the new sheets to `ai-generated`, capturing generation metadata and licensing notes.
+- Flagged `image-ar-007-screen-effects-pack` as the remaining pending-sourcing deliverable for the AR-007 bundle; future work should focus on that overlay set and runtime validation of the new particles.
+
+## Session 166 Updates
+- Re-routed `image-ar-003-kira-evasion-pack` through `mcp__generate-image__generate_image`, saving the transparent dash/slide sprite sheet to `assets/generated/images/ar-003/image-ar-003-kira-evasion-pack.png` and updating manifests to `ai-generated` with GPT-Image-1 provenance so autosave stress encounters can consume the new frames immediately.
+- Session 167 wired the dash/slide pack into the new AnimatedSprite/PlayerAnimation runtime layer so player dash/slide states render from `image-ar-003-kira-evasion-pack` with Jest validation.
+- Session 179 normalized the generated atlas into `assets/generated/images/ar-003/image-ar-003-kira-evasion-pack-normalized.png`, merged the frames into `image-ar-003-kira-core-pack-normalized.png`, and regenerated locomotion reference captures for autosave overlay authors (`reports/art/player-locomotion-reference/manifest.json`).
+- Cleared RenderOps approval queue job `c2d9170c-9d13-4e3b-941c-e1ee89d8bb68` by importing narrative-approved feedback (`reports/art/renderops-feedback.json`) and updating `reports/telemetry/renderops-approvals/...` to mark safehouse floor and branch walkway segments as `approved`.
+
+## Session 172 Updates
+- Generated `image-ar-007-screen-effects-pack` via GPT-Image-1 (three stacked overlay frames: flash, scanline, glitch) and marked the manifest entry `ai-generated` with transparent overlay metadata.
+- Produced `image-ar-050-crossroads-floor-safehouse`, `image-ar-050-crossroads-briefing-pad`, and `image-ar-050-crossroads-branch-walkway` through GPT-Image-1, updated their manifest entries to `ai-generated`, and stored the assets under `assets/generated/ar-050/` for lighting pipeline integration.
+
+## Session 175 Updates
+- Wired the AR-007 rain/neon/memory sprite sheets into `src/game/fx/ParticleEmitterRuntime.js`, refreshed detective vision cue emissions (`src/game/ui/DetectiveVisionOverlay.js`), and broadened Jest coverage (`tests/game/fx/ParticleEmitterRuntime.test.js`, `tests/game/ui/DetectiveVisionOverlay.test.js`) to lock in particle budgets ahead of Playwright coverage.
+- Reran `scripts/art/packageRenderOpsLighting.js`, generating `reports/art/renderops-packets/act2-crossroads-2025-10-31T16-03-38-011Z` (ZIP + manifests) and staging a ready_for_ack queue entry under `reports/telemetry/renderops-approvals/` so Crossroads lighting packets stay aligned with the refreshed overlays.
 
 ## Session 107 Updates
 - `image-ar-050-crossroads-selection-conduit` now points to Tanozzo’s **High Energy** plasma arc photography (CC BY 2.0, Flickr). The radial beams provide a strong base for recoloring into the Crossroads conduit glow.
@@ -81,6 +104,7 @@
 - Recalibrated the Act 2 Crossroads lighting overlays: raised alpha floors for the selection conduit, checkpoint glow, and all column beams, then regenerated the derivatives so average normalized alpha now lands between 0.67–0.78 for the affected assets.
 - Updated `Act2CrossroadsArtConfig` colours and alpha weights to match the brighter overlays (conduit now uses warm amber `#ffd27a`, checkpoint columns adopt gold-tinted washes, safehouse columns shift to luminous cyan) and recorded the new `overlayAverageAlpha` metadata for the preview tooling.
 - Reran `scripts/art/previewCrossroadsLighting.js`, producing an updated report where all evaluable segments pass the preset thresholds (9 “ok”, 2 “skipped”), clearing the previous under-luminance warnings prior to RenderOps sign-off.
+- Session 176 generated a narrative-facing luminance snapshot via `npm run art:export-crossroads-luminance`, publishing Markdown + JSON outputs to `reports/art/luminance-snapshots/act2-crossroads/` so the narrative team can spot drift before approving the refreshed briefing-pad luminance.
 
 ## Session 115 Updates
 - Generated neon-noir placeholder atlas set for AR-001 through AR-005 via `python scripts/art/generate_ar_placeholders.py`; outputs reside in `assets/generated/ar-placeholders/` and cover deduction board UI, evidence icons, player/NPC sprites, and the four district tilesets.
@@ -106,7 +130,7 @@
   - `image-ar-001-deduction-board-bg` → `bespoke-approved` (Helena Voss, Internal Commission – Full Rights). Final PSD mirrored at `assets/bespoke/week1/image-ar-001-deduction-board-bg.png`.
   - `image-ar-001-evidence-icon-set` → `bespoke-approved` (Helena Voss, Internal Commission – UI Iconography Pack) with monochrome + color exports.
   - `image-ar-001-clue-node-pack` → `bespoke-approved` (glow loop revision delivered 2025-11-16; Art Lead M. Cortez sign-off, full UI rights).
-  - `image-ar-002-generic-marker` → `bespoke-pending` (awaiting vendor thumbnails; ETA 2025-11-16).
+- `image-ar-002-generic-marker` → `ai-generated` (Session 186 OpenAI run; bespoke brief parked unless narrative requests bespoke variant).
   - `image-ar-005-tileset-neon-district` → `bespoke-in-review` (Axiom Studio reflection polish received 2025-11-15; signage glow under narrative review, Internal Commission – Environment Tiles).
 - Approved entries now record commission licenses, reviewers, and approval timestamps; see new `statusHistory`, `bespokeApprovedOn`, and `bespokeNotes` fields in the manifest for compliance/audit trails.
 - Added `assets/bespoke/week1/README.md` to log vendor hand-offs and repository-visible exports while original source files remain in the studio vault.
@@ -124,6 +148,46 @@
 - New artifacts `reports/art/renderops-feedback.json` and `reports/art/renderops-feedback.md` capture the aggregated history, per-segment status, and reviewer notes so art, lighting, and narrative can coordinate revisions without parsing email threads or ad-hoc docs.
 - When feedback lands, import it, regenerate the RenderOps packet if required (`npm run art:package-renderops`), and link the feedback entry in `assets/images/requests.json` notes for any segments that shift back to `needs_revision`.
 
+## Session 165 Updates
+- Shipping `scripts/audio/generateAr008AdaptiveStems.js` procedurally renders the AR-008 downtown tension/combat stems into `assets/generated/audio/ar-008/`, records loop metadata in `assets/generated/audio/ar-008/metadata.json`, and auto-updates `assets/music/requests.json` so adaptive music sourcing stays automation-only with seeded checksums.
+- Enhancing `scripts/art/packageRenderOpsLighting.js` now pushes every packet into the telemetry approval queue (`reports/telemetry/renderops-approvals/`) via `RenderOpsApprovalQueue`, mirroring actionable segment metadata so RenderOps approvals proceed without manual meetings or ad-hoc status pings.
+
+## Session 168 Updates
+- Generated a directional placeholder core sheet for Kira (`assets/generated/images/ar-003/image-ar-003-kira-core-pack.png`) via scripted automation (GPT concept archived at `image-ar-003-kira-core-pack-source.png`), updating manifests and runtime locomotion loops to cover idle/walk/run across all facings.
+- `scripts/art/monitorRenderOpsApprovals.js` now aggregates job status, queue totals, and actionable segment counts into `reports/art/renderops-approval-summary.json`; add `--markdown` to emit a partner summary at `reports/art/renderops-approval-summary.md` for quick ingest into art reviews, and run with `--verbose` for aggregated dashboards or `--quiet` inside cron sweeps.
+
+## Session 169 Updates
+- Authored `scripts/art/capturePlayerLocomotionFrames.js` plus npm hook `npm run art:capture-locomotion` to export Kira's idle/walk/run facings into `reports/art/player-locomotion-reference/`, producing both per-animation crops and facing contact sheets with a JSON manifest for documentation crosslinking.
+- Captured the latest placeholder-driven reference set (`reports/art/player-locomotion-reference/manifest.json`) so autosave overlay authors and bespoke swap reviews can reference exact frames until the final `image-ar-003-player-kira-sprite` sheet lands.
+
+## Session 181 Updates
+- Generated bespoke idle/walk/run sprite sheet for Kira (`assets/generated/images/ar-003/image-ar-003-kira-core-pack-bespoke.png`) via OpenAI gpt-image-1, upgrading `image-ar-003-player-kira-sprite` to `ai-generated` in `assets/images/requests.json`.
+- Normalization pipeline still pending—rerun `python scripts/art/normalize_kira_evasion_pack.py` and `node scripts/art/updateKiraAnimationConfig.js` before swapping the sprite sheet into runtime configs.
+
+## Session 184 Updates
+- Reran `python scripts/art/normalize_kira_evasion_pack.py` with bespoke art preferred as the core source, regenerating `image-ar-003-kira-core-pack-normalized.png` and updating the manifest with provenance metadata for AR-003/M3-016 ingestion.
+- Refreshed the auto-generated animation config via `node scripts/art/updateKiraAnimationConfig.js`, keeping gameplay-facing `kiraAnimationConfig.js` synchronized with the latest dash/slide normalization manifest.
+- Captured a new locomotion reference set (`npm run art:capture-locomotion`) so autosave overlays and traversal QA review the bespoke idle/walk/run frames; outputs and manifest timestamps now reference the bespoke-normalized atlas.
+
+## Session 186 Updates
+- Generated the full AR-002 evidence sprite suite via `mcp__generate-image__generate_image`, storing transparent 32×32 renders under `assets/generated/images/ar-002/`.
+- Promoted `image-ar-002-*` manifest entries to `ai-generated`, logging provenance and updated file paths in `assets/images/requests.json`.
+- Updated evidence runtime defaults so `EvidenceEntity` auto-selects the new sprites (fingerprints, blood spatter, neural extractor, dossier) and refreshed Act 1 scene markers to draw the holographic marker art.
+
+## Session 187 Updates
+- Completed AR-002 evidence sprite art review, recording findings in `docs/assets/reviews/ar-002-evidence-sprites.md` and adding automated guards (`tests/assets/ar002Sprites.test.js`, `tests/game/entities/EvidenceEntity.test.js`) to watch 32×32 metadata and heuristic sprite selection.
+
+## Session 189 Updates
+- Replayed the bespoke tracking cadence (`npm run art:track-bespoke`) to ingest week-one approvals, generating `reports/art/week1-bespoke-progress.json` (3/5 assets approved, 1 pending, 1 in review) and syncing manifest statuses ahead of week-two intake.
+- Packaged and staged the refreshed Act 2 Crossroads lighting packet (`reports/art/renderops-packets/act2-crossroads-2025-10-31T20-26-00-520Z`, ZIP + delivery manifest) via `npm run art:package-renderops` and `npm run art:stage-renderops`, ready for RenderOps delivery under `deliveries/renderops/act2-crossroads/act2-crossroads-2025-10-31T20-26-00-520Z/`.
+- Exported `reports/art/luminance-snapshots/act2-crossroads/act2-crossroads-luminance-2025-10-31T20-26-05-365Z.{json,md}` confirming all 12 segments remain within luminance targets.
+- Week-two bespoke tracking sweep scheduled for **2025-11-07** using `npm run art:track-bespoke -- --week=2` once new asset notes land in `assets/images/requests.json`.
+
+## Session 191 Updates
+- Shared the staged Act 2 Crossroads RenderOps bundle (`deliveries/renderops/act2-crossroads/act2-crossroads-2025-10-31T20-26-00-520Z/act2-crossroads-2025-10-31T20-26-00-520Z.zip`), recording acknowledgement in `reports/telemetry/renderops-approvals/act2-crossroads/2025-10-31T20:26:00.543Z-c488a1c4-4834-4a83-9b33-57510d68c396.json` (status `completed`) and marking the earlier `2025-10-31T16:03:38.036Z-f426b509-8894-4e32-8af6-3ac278a3bdb8.json` queue entry as `superseded`.
+- Regenerated `reports/art/renderops-approval-summary.(json|md)` via `node scripts/art/monitorRenderOpsApprovals.js --markdown`, confirming zero pending actionable segments post-share.
+
 ## Next Actions
-1. Distribute the latest RenderOps packet (`npm run art:package-renderops` then `npm run art:stage-renderops`) and attach the staged ZIP (`deliveries/renderops/.../*.zip`) plus `*-delivery.json` manifest when sharing with RenderOps; log feedback on actionable segments and regenerate after art tweaks.
+1. Monitor RenderOps feedback channels and import notes into `reports/art/renderops-feedback.json` if follow-up arrives for the 2025-10-31 packet.
 2. Follow `reports/art/placeholder-replacement-schedule.md` to drive weekly bespoke assignments and annotate `assets/images/requests.json` with source/licensing updates upon completion.
+3. Run the scheduled week-two bespoke tracking pass on 2025-11-07 via `npm run art:track-bespoke -- --week=2` and update manifests/reports with new approvals.

@@ -1,0 +1,6 @@
+{
+  "maxLoadMs": 500,
+  "averageLoadMs": 200,
+  "maxSaveMs": 500,
+  "averageSaveMs": 200
+}

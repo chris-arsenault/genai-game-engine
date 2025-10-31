@@ -1,0 +1,62 @@
+{
+  "generatedAt": "2025-10-31T20:29:34.379Z",
+  "stems": [
+    {
+      "file": "assets/generated/audio/ar-008/ar-008-downtown-ambient.wav",
+      "loopStartSeconds": 0,
+      "loopEndSeconds": 64,
+      "sampleRate": 44100,
+      "channels": 2,
+      "seed": "ar008-ambient",
+      "statistics": {
+        "peak": 0.7831075191497803,
+        "rms": {
+          "left": 0.2697341197531668,
+          "right": 0.26436699826438953
+        }
+      },
+      "checksumSha256": "2bef998b22f8c1d91209385ecf3efe0e6e7332f83dcf5da34e86e170b0b7e5c8",
+      "id": "music-downtown-ambient-001",
+      "title": "Downtown Pulse Ambient Stem",
+      "usage": "AR-008 downtown district adaptive ambient base layer."
+    },
+    {
+      "file": "assets/generated/audio/ar-008/ar-008-downtown-tension.wav",
+      "loopStartSeconds": 0,
+      "loopEndSeconds": 64,
+      "sampleRate": 44100,
+      "channels": 2,
+      "seed": "ar008-tension",
+      "statistics": {
+        "peak": 1,
+        "rms": {
+          "left": 0.299607218117365,
+          "right": 0.29373803603484006
+        }
+      },
+      "checksumSha256": "71108a93f42f0808d5fa725e96e38ab276bcb7fa43fc0114db355226bb822325",
+      "id": "music-downtown-tension-001",
+      "title": "Downtown Pulse Tension Stem",
+      "usage": "AR-008 downtown district adaptive tension layer."
+    },
+    {
+      "file": "assets/generated/audio/ar-008/ar-008-downtown-combat.wav",
+      "loopStartSeconds": 0,
+      "loopEndSeconds": 64,
+      "sampleRate": 44100,
+      "channels": 2,
+      "seed": "ar008-combat",
+      "statistics": {
+        "peak": 0.9950276613235474,
+        "rms": {
+          "left": 0.6143530500824051,
+          "right": 0.6021231579981154
+        }
+      },
+      "checksumSha256": "d96454ecec4ddcceaa2d21318faebe25a7fdf0c6daefcc1375a0784cc4550271",
+      "id": "music-downtown-combat-001",
+      "title": "Downtown Pulse Combat Stem",
+      "usage": "AR-008 downtown district adaptive combat escalation layer."
+    }
+  ]
+}

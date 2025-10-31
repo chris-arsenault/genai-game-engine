@@ -1,0 +1,75 @@
+{
+  "packetId": "caa6051f-f7ac-4eae-906f-a46053aaeffc",
+  "label": "act2-crossroads",
+  "createdAt": "2025-10-31T08:50:35.169Z",
+  "sourcePaths": {
+    "report": "/home/tsonu/src/genai-game-engine/reports/art/act2-crossroads-lighting-preview.json",
+    "summary": "/home/tsonu/src/genai-game-engine/reports/art/act2-crossroads-lighting-preview-summary.md"
+  },
+  "files": {
+    "report": "lighting-preview.json",
+    "summary": "lighting-preview-summary.md",
+    "readme": "PACKET_README.md",
+    "metadata": "metadata.json",
+    "shareManifest": "share-manifest.json",
+    "attachments": [
+      "attachments/neon-glow-approvals-json-summary.json",
+      "attachments/neon-glow-approvals-markdown-summary.md"
+    ]
+  },
+  "summary": {
+    "total": 11,
+    "statusCounts": {
+      "skipped": 2,
+      "ok": 9
+    },
+    "metadataDriftCount": 0,
+    "skippedCount": 2
+  },
+  "actionableSegments": [
+    {
+      "segmentId": "crossroads_floor_safehouse",
+      "category": "floors",
+      "status": "skipped",
+      "presetId": "safehouse_idle",
+      "projected": {
+        "luminance": null,
+        "targetLuminance": null,
+        "deviation": null
+      },
+      "issues": []
+    },
+    {
+      "segmentId": "crossroads_branch_walkway",
+      "category": "floors",
+      "status": "skipped",
+      "presetId": "branch_idle",
+      "projected": {
+        "luminance": null,
+        "targetLuminance": null,
+        "deviation": null
+      },
+      "issues": []
+    }
+  ],
+  "bundle": {
+    "format": "zip",
+    "relativePath": "../act2-crossroads-2025-10-31T08-50-35-169Z.zip"
+  },
+  "attachments": [
+    {
+      "filename": "attachments/neon-glow-approvals-json-summary.json",
+      "label": "Neon glow approvals — JSON summary",
+      "originalPath": "/home/tsonu/src/genai-game-engine/reports/art/neon-glow-approval-status.json",
+      "sizeBytes": 25054,
+      "checksumSha256": "df23b287d04dfdc4c4c71029bc3990f704482c5eb962f99b74c0fadf70a3d7bf"
+    },
+    {
+      "filename": "attachments/neon-glow-approvals-markdown-summary.md",
+      "label": "Neon glow approvals — Markdown summary",
+      "originalPath": "/home/tsonu/src/genai-game-engine/reports/art/neon-glow-approval-status.md",
+      "sizeBytes": 9169,
+      "checksumSha256": "594216dbcf24027e0f0b04516c74a67767cfef99690a14b52954d48caabe68ae"
+    }
+  ]
+}

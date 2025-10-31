@@ -633,6 +633,8 @@ describe('QuestManager', () => {
     });
 
     test('should grant rewards on completion', () => {
+      const baseline = factionManager.getReputation('cipher_collective').fame;
+
       // Complete required objective
       eventBus.emit('evidence:collected', {});
 
@@ -644,7 +646,7 @@ describe('QuestManager', () => {
 
       // Check faction reputation (starts at 20, should be 30 after +10)
       const rep = factionManager.getReputation('cipher_collective');
-      expect(rep.fame).toBe(30);
+      expect(rep.fame).toBe(baseline + 10);
     });
 
     test('should not complete if required objectives incomplete', () => {

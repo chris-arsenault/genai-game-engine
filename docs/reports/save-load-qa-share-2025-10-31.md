@@ -11,6 +11,7 @@
 - `save-load-latency.json`
 - `save-payload-summary.json`
 - `metadata.json`
+- Distribution staging: `deliveries/qa/save-load/save-load/save-load-distribution-2025-10-31T04-42-21-907Z/` (includes manifest, handoff readme, QA feedback tracker).
 
 ## Suggested Message
 ```
