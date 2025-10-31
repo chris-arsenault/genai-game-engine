@@ -25,8 +25,8 @@
 | AR-003 | Player sprite | `image-ar-003-player-kira-sprite`, `image-ar-003-kira-evasion-pack` | Directional placeholder (`image-ar-003-kira-core-pack`) now powers idle/walk/run; bespoke swap still needed to lock trench-coat silhouette while dash/slide pack covers autosave stress beats. |
 | AR-004 | NPC sprites | `image-ar-004-npc-civilian-pack`, `image-ar-004-npc-guard-pack` | Civilian palette must hint at faction allegiance; guards need visor glow to visualize detection state. |
 | AR-005 | District tilesets | `image-ar-005-tileset-neon-district`, `image-ar-005-tileset-corporate-spires`, `image-ar-005-tileset-archive-undercity`, `image-ar-005-tileset-zenith-sector` | Tilesets must ship with collision metadata once sourced/generated. |
-| AR-007 | Particle/overlay FX | `image-ar-007-particles-rain` (ai-generated), `image-ar-007-particles-neon-glow` (ai-generated), `image-ar-007-particles-memory-fragment` (ai-generated), `image-ar-007-screen-effects-pack` (pending-sourcing) | Optimise alpha usage for Canvas blending; test against 60 FPS threshold. Screen overlay pack still outstanding; other particle sheets staged under `assets/generated/ar-007/`. |
-| AR-050 | Act 2 Crossroads art bundle | All `image-ar-050-*` entries | Map one-to-one with `act2_crossroads_*` assetIds for the bespoke scene lighting revamp. |
+| AR-007 | Particle/overlay FX | `image-ar-007-particles-rain` (ai-generated), `image-ar-007-particles-neon-glow` (ai-generated), `image-ar-007-particles-memory-fragment` (ai-generated), `image-ar-007-screen-effects-pack` (ai-generated) | Optimise alpha usage for Canvas blending; run VFX integration + 60 FPS validation sweeps now that the screen overlay pack exists under `assets/generated/ar-007/`. |
+| AR-050 | Act 2 Crossroads art bundle | All `image-ar-050-*` entries | Map one-to-one with `act2_crossroads_*` assetIds for the bespoke scene lighting revamp. Session 172 generated the safehouse floor texture, briefing pad overlay, and branch walkway strip (all ai-generated). |
 
 ## Sourcing Plan
 - Phase 1 (today): Complete inventory (done) and shortlist inspirational references via `web_search` starting with AR-050 lighting overlays (for prompt guidance only).
@@ -42,6 +42,10 @@
 - Re-routed `image-ar-003-kira-evasion-pack` through `mcp__generate-image__generate_image`, saving the transparent dash/slide sprite sheet to `assets/generated/images/ar-003/image-ar-003-kira-evasion-pack.png` and updating manifests to `ai-generated` with GPT-Image-1 provenance so autosave stress encounters can consume the new frames immediately.
 - Session 167 wired the dash/slide pack into the new AnimatedSprite/PlayerAnimation runtime layer so player dash/slide states render from `image-ar-003-kira-evasion-pack` with Jest validation.
 - Cleared RenderOps approval queue job `c2d9170c-9d13-4e3b-941c-e1ee89d8bb68` by importing narrative-approved feedback (`reports/art/renderops-feedback.json`) and updating `reports/telemetry/renderops-approvals/...` to mark safehouse floor and branch walkway segments as `approved`.
+
+## Session 172 Updates
+- Generated `image-ar-007-screen-effects-pack` via GPT-Image-1 (three stacked overlay frames: flash, scanline, glitch) and marked the manifest entry `ai-generated` with transparent overlay metadata.
+- Produced `image-ar-050-crossroads-floor-safehouse`, `image-ar-050-crossroads-briefing-pad`, and `image-ar-050-crossroads-branch-walkway` through GPT-Image-1, updated their manifest entries to `ai-generated`, and stored the assets under `assets/generated/ar-050/` for lighting pipeline integration.
 
 ## Session 107 Updates
 - `image-ar-050-crossroads-selection-conduit` now points to Tanozzo’s **High Energy** plasma arc photography (CC BY 2.0, Flickr). The radial beams provide a strong base for recoloring into the Crossroads conduit glow.
