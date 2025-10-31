@@ -70,6 +70,37 @@ export class AudioFeedbackController {
       insufficientVolume,
     };
 
+    const saveLoadRevealVolume = this._clampVolume(
+      options.saveLoadOverlayRevealVolume,
+      this.options.promptVolume
+    );
+    const saveLoadDismissVolume = this._clampVolume(
+      options.saveLoadOverlayDismissVolume,
+      this.options.promptVolume
+    );
+    const saveLoadFocusVolume = this._clampVolume(
+      options.saveLoadOverlayFocusVolume,
+      this.options.movementVolume
+    );
+
+    this.overlayCueConfig = {
+      saveLoadOverlayReveal: {
+        sfxId: options.saveLoadOverlayRevealId ?? 'ui_prompt_ping',
+        volume: saveLoadRevealVolume,
+        cooldown: Math.max(0, options.saveLoadOverlayRevealCooldown ?? 0.05),
+      },
+      saveLoadOverlayFocus: {
+        sfxId: options.saveLoadOverlayFocusId ?? 'ui_movement_pulse',
+        volume: saveLoadFocusVolume,
+        cooldown: Math.max(0, options.saveLoadOverlayFocusCooldown ?? 0.18),
+      },
+      saveLoadOverlayDismiss: {
+        sfxId: options.saveLoadOverlayDismissId ?? 'ui_prompt_ping',
+        volume: saveLoadDismissVolume,
+        cooldown: Math.max(0, options.saveLoadOverlayDismissCooldown ?? 0.05),
+      },
+    };
+
     this._now =
       typeof options.now === 'function'
         ? options.now
@@ -85,6 +116,7 @@ export class AudioFeedbackController {
     this._lastPromptStamp = -Infinity;
     this._initialized = false;
     this._detectiveVisionLoopInstance = null;
+    this._overlayCueLastStamp = new Map();
   }
 
   /**
@@ -108,6 +140,7 @@ export class AudioFeedbackController {
       this.eventBus.on('ability:insufficient_resource', (data) =>
         this._onAbilityInsufficientResource(data)
       ),
+      this.eventBus.on('fx:overlay_cue', (data) => this._onOverlayCue(data)),
     ];
 
     // Filter out listeners that failed to register (should rarely happen)
@@ -127,6 +160,7 @@ export class AudioFeedbackController {
     }
     this._unbinders = [];
     this._stopDetectiveVisionLoop();
+    this._overlayCueLastStamp.clear();
     this._initialized = false;
   }
 
@@ -245,6 +279,39 @@ export class AudioFeedbackController {
     const volume =
       typeof data.volume === 'number' ? data.volume : this.options.evidenceVolume;
     this._playSFX(data.id, volume);
+  }
+
+  _onOverlayCue(payload = {}) {
+    if (!payload || payload.overlay !== 'saveLoad') {
+      return;
+    }
+
+    const effectId = payload.effectId;
+    if (!effectId) {
+      return;
+    }
+
+    const config = this.overlayCueConfig?.[effectId];
+    if (!config || !config.sfxId) {
+      return;
+    }
+
+    const now = this._now();
+    const lastStamp = this._overlayCueLastStamp.get(effectId) ?? -Infinity;
+    const cooldown = Number.isFinite(config.cooldown) ? config.cooldown : 0;
+    if (now - lastStamp < cooldown) {
+      return;
+    }
+
+    this._overlayCueLastStamp.set(effectId, now);
+    const volume =
+      typeof config.volume === 'number' && Number.isFinite(config.volume)
+        ? config.volume
+        : effectId === 'saveLoadOverlayFocus'
+          ? this.options.movementVolume
+          : this.options.promptVolume;
+
+    this._triggerSFX(config.sfxId, volume);
   }
 
   /**

@@ -24,6 +24,13 @@
 
 **Next Session Focus**: Share the neon glow approval summary with Narrative/RenderOps to capture sign-off on the neon district tileset, fold SaveManager telemetry budget events into CI/QA monitoring, and stage the next RenderOps lighting feedback pass.
 
+### Session #160 Backlog Updates
+
+#### M3-016: Save/Load System Implementation
+- Extended `AudioFeedbackController` so `fx:overlay_cue` traffic from the Save/Load overlay now plays reveal/focus/dismiss SFX (`src/game/audio/AudioFeedbackController.js`, `tests/game/audio/AudioFeedbackController.test.js`).
+- Added `SaveManager.runAutosaveBurst()` with regression coverage to support repeatable autosave churn checks (`src/game/managers/SaveManager.js`, `tests/game/managers/SaveManager.test.js`).
+- Authored Playwright scenario `tests/e2e/save-load-overlay-autosave.spec.js` to exercise the autosave stress burst inside the running build, verifying focus stability and the new audio cues.
+
 ### Session #150 Backlog Updates
 
 #### M3-012: District Data Definitions

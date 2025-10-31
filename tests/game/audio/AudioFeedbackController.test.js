@@ -55,6 +55,59 @@ describe('AudioFeedbackController', () => {
     expect(audioManager.playSFX).not.toHaveBeenCalled();
   });
 
+  it('maps save/load overlay cues to SFX playback', () => {
+    audioManager.playSFX.mockClear();
+    eventBus.emit('fx:overlay_cue', {
+      overlay: 'saveLoad',
+      effectId: 'saveLoadOverlayReveal',
+      source: 'test',
+    });
+    expect(audioManager.playSFX).toHaveBeenCalledWith('ui_prompt_ping', controller.options.promptVolume);
+
+    audioManager.playSFX.mockClear();
+    eventBus.emit('fx:overlay_cue', {
+      overlay: 'saveLoad',
+      effectId: 'saveLoadOverlayDismiss',
+      source: 'test',
+    });
+    expect(audioManager.playSFX).toHaveBeenCalledWith('ui_prompt_ping', controller.options.promptVolume);
+  });
+
+  it('throttles rapid save/load overlay focus cues', () => {
+    audioManager.playSFX.mockClear();
+    eventBus.emit('fx:overlay_cue', {
+      overlay: 'saveLoad',
+      effectId: 'saveLoadOverlayFocus',
+      index: 0,
+    });
+    expect(audioManager.playSFX).toHaveBeenCalledWith('ui_movement_pulse', controller.options.movementVolume);
+
+    audioManager.playSFX.mockClear();
+    eventBus.emit('fx:overlay_cue', {
+      overlay: 'saveLoad',
+      effectId: 'saveLoadOverlayFocus',
+      index: 1,
+    });
+    expect(audioManager.playSFX).not.toHaveBeenCalled();
+
+    now += 0.3;
+    eventBus.emit('fx:overlay_cue', {
+      overlay: 'saveLoad',
+      effectId: 'saveLoadOverlayFocus',
+      index: 2,
+    });
+    expect(audioManager.playSFX).toHaveBeenCalledWith('ui_movement_pulse', controller.options.movementVolume);
+  });
+
+  it('ignores overlay cues for unrelated overlays', () => {
+    audioManager.playSFX.mockClear();
+    eventBus.emit('fx:overlay_cue', {
+      overlay: 'inventory',
+      effectId: 'saveLoadOverlayReveal',
+    });
+    expect(audioManager.playSFX).not.toHaveBeenCalled();
+  });
+
   it('forwards audio:sfx:play events to audio manager', () => {
     eventBus.emit('audio:sfx:play', { id: 'quest_complete', volume: 0.4 });
     expect(audioManager.playSFX).toHaveBeenCalledWith('quest_complete', 0.4);

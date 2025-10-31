@@ -31,6 +31,10 @@ while true; do
   ((sessionNum++))
   echo $sessionNum > .session
 
+  shouldPause=$(cat .pause || echo 1)
+  if (( sessionNum % 2 == 0 )); then
+    exit
+  fi
   # Delay before next cycle (adjust as needed)
   sleep 15
 done

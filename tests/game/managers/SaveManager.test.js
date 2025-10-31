@@ -1053,6 +1053,62 @@ describe('SaveManager', () => {
     });
   });
 
+  describe('Autosave burst helper', () => {
+    beforeEach(() => {
+      saveManager.init();
+    });
+
+    test('runs multiple autosaves and emits telemetry summary', async () => {
+      const summaries = [];
+      eventBus.on('telemetry:autosave_burst_completed', (payload) => {
+        summaries.push(payload);
+      });
+
+      const summary = await saveManager.runAutosaveBurst({ iterations: 3, collectResults: true });
+
+      expect(summary).toMatchObject({ iterations: 3, failures: 0, slot: 'autosave' });
+      expect(summary.results).toHaveLength(3);
+      expect(summary.results.every((entry) => entry.success)).toBe(true);
+      expect(localStorageMock.setItem).toHaveBeenCalled();
+      expect(summaries).toHaveLength(1);
+      expect(summaries[0].iterations).toBe(3);
+    });
+
+    test('counts failures when storage throws during burst', async () => {
+      const originalSetItem = localStorageMock.setItem;
+      let writes = 0;
+      localStorageMock.setItem = jest.fn((key, value) => {
+        writes += 1;
+        if (writes === 1) {
+          throw new Error('storage-fail');
+        }
+        return originalSetItem.call(localStorageMock, key, value);
+      });
+
+      const summary = await saveManager.runAutosaveBurst({
+        iterations: 3,
+        collectResults: true,
+      });
+
+      expect(summary.failures).toBe(1);
+      expect(summary.results.filter((entry) => entry.success === false)).toHaveLength(1);
+
+      localStorageMock.setItem = originalSetItem;
+    });
+
+    test('invokes iteration hook without breaking execution when it throws', async () => {
+      const hook = jest.fn(() => {
+        throw new Error('iteration failure');
+      });
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+      await saveManager.runAutosaveBurst({ iterations: 2, onIteration: hook });
+
+      expect(hook).toHaveBeenCalledTimes(2);
+      warnSpy.mockRestore();
+    });
+  });
+
   // ==================== SLOT MANAGEMENT TESTS ====================
 
   describe('Slot Management', () => {

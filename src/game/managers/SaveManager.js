@@ -459,6 +459,57 @@ export class SaveManager {
     }
   }
 
+  /**
+   * Execute a burst of autosave operations for QA stress validation.
+   * Useful for confirming SaveLoad overlay stability during high churn scenarios.
+   * @param {object} [options]
+   * @param {number} [options.iterations=20] - Number of autosaves to perform.
+   * @param {number} [options.delayMs=0] - Delay between saves (milliseconds).
+   * @param {string} [options.slot='autosave'] - Slot to target during the burst.
+   * @param {boolean} [options.collectResults=false] - Whether to include per-iteration success flags.
+   * @param {Function} [options.onIteration] - Optional callback for each iteration.
+   * @returns {Promise<object>} Summary of the burst execution.
+   */
+  async runAutosaveBurst(options = {}) {
+    const iterations = Math.max(1, Math.floor(options.iterations ?? 20));
+    const slot = this._normalizeSlotName(options.slot ?? 'autosave');
+    const delayMs = Math.max(0, options.delayMs ?? 0);
+    const collect = options.collectResults === true;
+    const onIteration = typeof options.onIteration === 'function' ? options.onIteration : null;
+
+    let failures = 0;
+    const results = collect ? [] : null;
+
+    for (let i = 0; i < iterations; i++) {
+      const success = this.saveGame(slot);
+      if (!success) {
+        failures += 1;
+      }
+      if (collect) {
+        results.push({ iteration: i, success });
+      }
+      if (onIteration) {
+        try {
+          onIteration({ iteration: i, success, slot });
+        } catch (error) {
+          console.warn('[SaveManager] runAutosaveBurst iteration hook failed', error);
+        }
+      }
+      if (delayMs > 0 && i < iterations - 1) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
+
+    const summary = { iterations, failures, slot };
+    if (collect) {
+      summary.results = results;
+    }
+    if (this.eventBus && typeof this.eventBus.emit === 'function') {
+      this.eventBus.emit('telemetry:autosave_burst_completed', summary);
+    }
+    return summary;
+  }
+
   _normalizeSlotName(slot) {
     if (typeof slot === 'number' && Number.isFinite(slot)) {
       const numeric = Math.max(0, Math.floor(slot));
