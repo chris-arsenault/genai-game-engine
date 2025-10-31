@@ -2831,6 +2831,15 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
 - Expanded sampler unit tests to exercise the synthetic helpers and documented verification via `npm test` and `npx playwright test tests/e2e/debug-overlay-fx-metrics.spec.js` (`tests/game/fx/FxCueMetricsSampler.test.js`).
 
 
+### Session #147 Backlog Updates
+
+#### FX-243: Disguise & Prompt Overlay FX Hooks
+- DisguiseUI now emits FX cues for overlay reveal/dismiss, selection focus, and equip/unequip transitions with contextual metadata routed through the event bus (`src/game/ui/DisguiseUI.js`, `tests/game/ui/DisguiseUI.fx.test.js`).
+- InteractionPromptOverlay emits FX cues on reveal, text updates, and dismiss flows while signature tracking prevents duplicate pulses (`src/game/ui/InteractionPromptOverlay.js`, `tests/game/ui/InteractionPromptOverlay.fx.test.js`).
+- MovementIndicatorOverlay fires throttled movement pulses carrying direction and speed context into the FX pipeline, preventing spam during sustained motion (`src/game/ui/MovementIndicatorOverlay.js`, `tests/game/ui/MovementIndicatorOverlay.fx.test.js`).
+- FxCueCoordinator durations/limits, FxOverlay render mappings, and CompositeCueParticleBridge presets now include the new cue identifiers so downstream visuals stay aligned (`src/game/fx/FxCueCoordinator.js`, `src/game/ui/FxOverlay.js`, `src/game/fx/CompositeCueParticleBridge.js`, `tests/game/fx/FxCueCoordinator.test.js`, `tests/game/ui/FxOverlay.test.js`, `tests/game/fx/CompositeCueParticleBridge.test.js`).
+- Full Jest suite executed (`npm test`) confirming the new FX cue coverage paths hold alongside existing regression suites.
+
 ---
 
 ## Closing Notes

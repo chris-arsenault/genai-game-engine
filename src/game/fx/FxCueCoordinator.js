@@ -54,6 +54,15 @@ export class FxCueCoordinator {
       tutorialOverlayDismiss: 360,
       tutorialStepStarted: 560,
       tutorialStepCompleted: 840,
+      disguiseOverlayReveal: 620,
+      disguiseOverlayDismiss: 360,
+      disguiseSelectionFocus: 420,
+      disguiseEquipIntent: 540,
+      disguiseUnequipIntent: 400,
+      interactionPromptReveal: 520,
+      interactionPromptUpdate: 420,
+      interactionPromptDismiss: 360,
+      movementIndicatorPulse: 300,
       default: 500,
     };
 
@@ -80,6 +89,12 @@ export class FxCueCoordinator {
       tutorialOverlayReveal: 1,
       tutorialOverlayDismiss: 1,
       tutorialStepCompleted: 1,
+      disguiseOverlayReveal: 1,
+      disguiseOverlayDismiss: 1,
+      disguiseEquipIntent: 1,
+      disguiseUnequipIntent: 1,
+      interactionPromptReveal: 1,
+      interactionPromptDismiss: 1,
     };
 
     this.options = {

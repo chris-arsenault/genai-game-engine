@@ -148,6 +148,51 @@ describe('CompositeCueParticleBridge', () => {
     );
   });
 
+  it('maps disguise, prompt, and movement cues to dedicated presets', () => {
+    const bridge = createBridge();
+    bridge.attach();
+    const handler = listeners['fx:composite_cue'];
+
+    handler({
+      effectId: 'disguiseOverlayReveal',
+      coordinator: { durationMs: 600 },
+    });
+    expect(eventBus.emit).toHaveBeenLastCalledWith(
+      'fx:particle_emit',
+      expect.objectContaining({ preset: 'disguise-overlay-reveal' }),
+    );
+
+    eventBus.emit.mockClear();
+    handler({
+      effectId: 'disguiseSelectionFocus',
+      coordinator: { durationMs: 420 },
+    });
+    expect(eventBus.emit).toHaveBeenLastCalledWith(
+      'fx:particle_emit',
+      expect.objectContaining({ preset: 'disguise-selection-focus' }),
+    );
+
+    eventBus.emit.mockClear();
+    handler({
+      effectId: 'interactionPromptReveal',
+      coordinator: { durationMs: 520 },
+    });
+    expect(eventBus.emit).toHaveBeenLastCalledWith(
+      'fx:particle_emit',
+      expect.objectContaining({ preset: 'interaction-prompt-reveal' }),
+    );
+
+    eventBus.emit.mockClear();
+    handler({
+      effectId: 'movementIndicatorPulse',
+      coordinator: { durationMs: 300 },
+    });
+    expect(eventBus.emit).toHaveBeenLastCalledWith(
+      'fx:particle_emit',
+      expect.objectContaining({ preset: 'movement-indicator-pulse' }),
+    );
+  });
+
   it('maps tutorial cues to dedicated presets', () => {
     const bridge = createBridge();
     bridge.attach();

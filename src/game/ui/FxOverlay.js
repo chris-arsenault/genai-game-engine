@@ -182,6 +182,21 @@ export class FxOverlay {
       case 'inventoryItemFocus':
         this._spawnCaseProgressEffect({ ...payload, effectId: 'caseEvidencePulse' });
         break;
+      case 'disguiseOverlayReveal':
+        this._spawnCaseObjectiveEffect({ ...payload, effectId: 'caseObjectivePulse' });
+        break;
+      case 'disguiseOverlayDismiss':
+        this._spawnCaseProgressEffect({ ...payload, effectId: 'caseCluePulse' });
+        break;
+      case 'disguiseSelectionFocus':
+        this._spawnCaseProgressEffect({ ...payload, effectId: 'caseEvidencePulse' });
+        break;
+      case 'disguiseEquipIntent':
+        this._spawnQuestMilestoneEffect({ ...payload, effectId: 'questMilestonePulse' });
+        break;
+      case 'disguiseUnequipIntent':
+        this._spawnCaseProgressEffect({ ...payload, effectId: 'caseCluePulse' });
+        break;
       case 'tutorialOverlayReveal':
         this._spawnQuestMilestoneEffect({ ...payload, effectId: 'questMilestonePulse' });
         break;
@@ -196,6 +211,18 @@ export class FxOverlay {
         break;
       case 'caseSolvedBurst':
         this._spawnCaseSolvedEffect(payload);
+        break;
+      case 'interactionPromptReveal':
+        this._spawnQuestMilestoneEffect({ ...payload, effectId: 'questMilestonePulse' });
+        break;
+      case 'interactionPromptUpdate':
+        this._spawnCaseProgressEffect({ ...payload, effectId: 'caseEvidencePulse' });
+        break;
+      case 'interactionPromptDismiss':
+        this._spawnCaseProgressEffect({ ...payload, effectId: 'caseCluePulse' });
+        break;
+      case 'movementIndicatorPulse':
+        this._spawnForensicPulseEffect({ ...payload, effectId: 'forensicPulse' });
         break;
       default:
         break;

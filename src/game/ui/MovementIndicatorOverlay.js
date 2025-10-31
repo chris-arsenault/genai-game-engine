@@ -24,16 +24,24 @@ export class MovementIndicatorOverlay {
     };
     this._unbindMoving = null;
     this._unbindMoved = null;
+    this._fxThrottleMs = Math.max(60, Number(options.fxThrottleMs) || 140);
+    this._lastFxEmitAt = 0;
   }
 
   init() {
-    this._unbindMoving = this.eventBus.on('player:moving', (data) => {
-      this._updateIndicator(data.position, data.direction);
+    this._unbindMoving = this.eventBus.on('player:moving', (data = {}) => {
+      this._updateIndicator(data.position, data.direction, 'player:moving', {
+        speed: data.speed,
+        velocity: data.velocity,
+      });
     });
 
-    this._unbindMoved = this.eventBus.on('player:moved', (data) => {
+    this._unbindMoved = this.eventBus.on('player:moved', (data = {}) => {
       if (!this.indicator) {
-        this._updateIndicator(data.to, data.velocity);
+        this._updateIndicator(data.to, data.velocity, 'player:moved', {
+          speed: data.speed,
+          velocity: data.velocity,
+        });
         return;
       }
 
@@ -41,6 +49,10 @@ export class MovementIndicatorOverlay {
         x: data.to.x,
         y: data.to.y
       };
+
+      if (data.velocity) {
+        this.indicator.direction = this._normalize(data.velocity);
+      }
     });
   }
 
@@ -123,8 +135,9 @@ export class MovementIndicatorOverlay {
     }
   }
 
-  _updateIndicator(position = { x: 0, y: 0 }, direction = { x: 0, y: 0 }) {
+  _updateIndicator(position = { x: 0, y: 0 }, direction = { x: 0, y: 0 }, source = 'player:moving', metadata = {}) {
     const norm = this._normalize(direction);
+    const previous = this.indicator;
     this.indicator = {
       worldPosition: {
         x: position.x,
@@ -134,6 +147,20 @@ export class MovementIndicatorOverlay {
       ttl: this.defaultTTL,
       maxTTL: this.defaultTTL
     };
+
+    if (source === 'player:moving') {
+      const directionChanged = !previous || !previous.direction || Math.abs(previous.direction.x - norm.x) > 0.05 || Math.abs(previous.direction.y - norm.y) > 0.05;
+      if (!previous || directionChanged) {
+        this._emitMovementFx({
+          source,
+          position,
+          direction: norm,
+          rawDirection: direction,
+          speed: metadata?.speed,
+          velocity: metadata?.velocity,
+        });
+      }
+    }
   }
 
   _normalize(vector = { x: 0, y: 0 }) {
@@ -145,5 +172,46 @@ export class MovementIndicatorOverlay {
       x: vector.x / magnitude,
       y: vector.y / magnitude
     };
+  }
+
+  _emitMovementFx(context = {}) {
+    if (!this.eventBus || typeof this.eventBus.emit !== 'function') {
+      return;
+    }
+
+    const now = Date.now();
+    if (now - this._lastFxEmitAt < this._fxThrottleMs) {
+      return;
+    }
+    this._lastFxEmitAt = now;
+
+    const direction = context.direction ?? { x: 0, y: 0 };
+    const hasDirection = Math.abs(direction.x) > 0.01 || Math.abs(direction.y) > 0.01;
+    const speed = this._resolveSpeed(context);
+
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId: 'movementIndicatorPulse',
+      source: 'MovementIndicatorOverlay',
+      context: {
+        source: context.source ?? 'player:moving',
+        hasDirection,
+        speed,
+      },
+    });
+  }
+
+  _resolveSpeed(context = {}) {
+    if (typeof context.speed === 'number' && !Number.isNaN(context.speed)) {
+      return context.speed;
+    }
+    const velocity = context.velocity;
+    if (velocity && typeof velocity.x === 'number' && typeof velocity.y === 'number') {
+      return Math.hypot(velocity.x, velocity.y);
+    }
+    const rawDirection = context.rawDirection;
+    if (rawDirection && typeof rawDirection.x === 'number' && typeof rawDirection.y === 'number') {
+      return Math.hypot(rawDirection.x, rawDirection.y);
+    }
+    return 0;
   }
 }

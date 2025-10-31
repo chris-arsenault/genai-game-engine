@@ -122,4 +122,24 @@ describe('FxCueCoordinator', () => {
     expect(coordinator.options.perEffectLimit.tutorialOverlayDismiss).toBe(1);
     expect(coordinator.options.perEffectLimit.tutorialStepCompleted).toBe(1);
   });
+
+  it('includes disguise, prompt, and movement cues in default configuration', () => {
+    const coordinator = new FxCueCoordinator(eventBus);
+    const { defaultDurations, perEffectLimit } = coordinator.options;
+
+    expect(defaultDurations.disguiseOverlayReveal).toBeGreaterThan(0);
+    expect(defaultDurations.disguiseOverlayDismiss).toBeGreaterThan(0);
+    expect(defaultDurations.disguiseSelectionFocus).toBeGreaterThan(0);
+    expect(defaultDurations.interactionPromptReveal).toBeGreaterThan(0);
+    expect(defaultDurations.interactionPromptUpdate).toBeGreaterThan(0);
+    expect(defaultDurations.interactionPromptDismiss).toBeGreaterThan(0);
+    expect(defaultDurations.movementIndicatorPulse).toBeGreaterThan(0);
+
+    expect(perEffectLimit.disguiseOverlayReveal).toBe(1);
+    expect(perEffectLimit.disguiseOverlayDismiss).toBe(1);
+    expect(perEffectLimit.disguiseEquipIntent).toBe(1);
+    expect(perEffectLimit.disguiseUnequipIntent).toBe(1);
+    expect(perEffectLimit.interactionPromptReveal).toBe(1);
+    expect(perEffectLimit.interactionPromptDismiss).toBe(1);
+  });
 });

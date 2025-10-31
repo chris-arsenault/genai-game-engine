@@ -222,4 +222,26 @@ describe('FxOverlay', () => {
     overlay.render(dismissCtx);
     expect(dismissCtx.arc).toHaveBeenCalled();
   });
+
+  it('routes disguise, prompt, and movement cues through existing renderers', () => {
+    const overlay = new FxOverlay(canvas, eventBus, {});
+    overlay.init();
+
+    const handler = getLastHandler('fx:overlay_cue');
+
+    handler({ effectId: 'disguiseOverlayReveal', duration: 0.4 });
+    expect(overlay.effects[0].id).toBe('caseObjectivePulse');
+    overlay.update(0.5);
+
+    handler({ effectId: 'disguiseSelectionFocus', duration: 0.35 });
+    expect(overlay.effects[0].id).toBe('caseEvidencePulse');
+    overlay.update(0.5);
+
+    handler({ effectId: 'interactionPromptReveal', duration: 0.3 });
+    expect(overlay.effects[0].id).toBe('questMilestonePulse');
+    overlay.update(0.4);
+
+    handler({ effectId: 'movementIndicatorPulse', duration: 0.3 });
+    expect(overlay.effects[0].id).toBe('forensicPulse');
+  });
 });
