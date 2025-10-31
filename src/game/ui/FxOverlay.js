@@ -224,6 +224,40 @@ export class FxOverlay {
       case 'movementIndicatorPulse':
         this._spawnForensicPulseEffect({ ...payload, effectId: 'forensicPulse' });
         break;
+      case 'objectiveListRefresh':
+        this._spawnCaseObjectiveEffect({ ...payload, effectId: 'caseObjectivePulse' });
+        break;
+      case 'objectiveListCompletion':
+        this._spawnQuestMilestoneEffect({ ...payload, effectId: 'questMilestonePulse' });
+        break;
+      case 'objectiveListScroll':
+        this._spawnCaseProgressEffect({ ...payload, effectId: 'caseCluePulse' });
+        break;
+      case 'crossroadsBranchLandingReveal':
+      case 'crossroadsBranchLandingUpdate':
+        this._spawnQuestMilestoneEffect({ ...payload, effectId: 'questMilestonePulse' });
+        break;
+      case 'crossroadsBranchLandingDismiss':
+        this._spawnCaseProgressEffect({ ...payload, effectId: 'caseCluePulse' });
+        break;
+      case 'questNotificationDisplay': {
+        const type = payload?.context?.type;
+        if (type === 'completed') {
+          this._spawnQuestCompleteEffect({ ...payload, effectId: 'questCompleteBurst' });
+        } else if (type === 'failed') {
+          this._spawnDeactivationEffect({ ...payload, effectId: 'detectiveVisionDeactivate' });
+        } else {
+          this._spawnQuestMilestoneEffect({ ...payload, effectId: 'questMilestonePulse' });
+        }
+        break;
+      }
+      case 'questNotificationDismiss':
+      case 'questNotificationClear':
+        this._spawnCaseProgressEffect({ ...payload, effectId: 'caseCluePulse' });
+        break;
+      case 'questNotificationQueued':
+        this._spawnCaseProgressEffect({ ...payload, effectId: 'caseEvidencePulse' });
+        break;
       default:
         break;
     }

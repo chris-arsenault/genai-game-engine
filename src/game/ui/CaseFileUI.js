@@ -46,7 +46,10 @@ export class CaseFileUI {
       this.x + 20,
       this.y + 140,
       this.width - 40,
-      { maxHeight: 120 }
+      {
+        maxHeight: 120,
+        eventBus: this.eventBus,
+      }
     );
 
     // Scroll state for evidence/clues

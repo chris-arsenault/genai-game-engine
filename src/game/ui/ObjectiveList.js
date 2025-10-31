@@ -19,6 +19,7 @@ export class ObjectiveList {
     this.y = y;
     this.width = width;
     this.maxHeight = options.maxHeight || 200;
+    this.eventBus = options.eventBus || null;
 
     // Objectives data
     this.objectives = [];
@@ -42,6 +43,8 @@ export class ObjectiveList {
       padding: 10,
       ...options.style
     };
+
+    this._previousSnapshot = null;
   }
 
   /**
@@ -49,12 +52,39 @@ export class ObjectiveList {
    * @param {Array} objectives - Array of objective objects {description, completed}
    */
   loadObjectives(objectives) {
+    const previousSnapshot = this._previousSnapshot;
     this.objectives = objectives.map(obj => ({
       description: obj.description,
-      completed: obj.completed || false
+      completed: Boolean(obj.completed)
     }));
 
     this._updateScrollBounds();
+
+    const nextSnapshot = this._captureSnapshot();
+    const signatureChanged = !previousSnapshot || previousSnapshot.signature !== nextSnapshot.signature;
+
+    if (signatureChanged) {
+      const totalDelta = nextSnapshot.total - (previousSnapshot?.total || 0);
+      const completedDelta = nextSnapshot.completed - (previousSnapshot?.completed || 0);
+
+      this._emitFxCue('objectiveListRefresh', {
+        reason: previousSnapshot ? 'update' : 'initial',
+        totalObjectives: nextSnapshot.total,
+        completedObjectives: nextSnapshot.completed,
+        totalDelta,
+        completedDelta,
+      });
+
+      if (completedDelta > 0) {
+        this._emitFxCue('objectiveListCompletion', {
+          newlyCompleted: completedDelta,
+          totalCompleted: nextSnapshot.completed,
+          totalObjectives: nextSnapshot.total,
+        });
+      }
+    }
+
+    this._previousSnapshot = nextSnapshot;
   }
 
   /**
@@ -71,7 +101,19 @@ export class ObjectiveList {
    * @param {number} delta - Scroll amount (positive = down, negative = up)
    */
   scroll(delta) {
-    this.scrollOffset = Math.max(0, Math.min(this.maxScroll, this.scrollOffset + delta));
+    const previousOffset = this.scrollOffset;
+    const nextOffset = Math.max(0, Math.min(this.maxScroll, previousOffset + delta));
+    if (nextOffset === previousOffset) {
+      return;
+    }
+
+    this.scrollOffset = nextOffset;
+    this._emitFxCue('objectiveListScroll', {
+      reason: 'userScroll',
+      offset: this.scrollOffset,
+      delta: this.scrollOffset - previousOffset,
+      maxScroll: this.maxScroll,
+    });
   }
 
   /**
@@ -233,5 +275,30 @@ export class ObjectiveList {
     lines.push(currentLine);
 
     return lines;
+  }
+
+  _captureSnapshot() {
+    const total = this.objectives.length;
+    const completed = this.objectives.filter(obj => obj.completed).length;
+    const signature = this.objectives
+      .map((obj) => `${obj.completed ? '1' : '0'}:${obj.description ?? ''}`)
+      .join('|');
+
+    return { total, completed, signature };
+  }
+
+  _emitFxCue(effectId, context = {}) {
+    if (!effectId || !this.eventBus || typeof this.eventBus.emit !== 'function') {
+      return;
+    }
+
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId,
+      source: 'ObjectiveList',
+      origin: 'caseObjectives',
+      context: {
+        ...context,
+      },
+    });
   }
 }

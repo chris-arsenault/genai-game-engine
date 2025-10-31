@@ -24,6 +24,14 @@
 
 **Next Session Focus**: Share the neon glow approval summary with Narrative/RenderOps to capture sign-off on the neon district tileset, fold SaveManager telemetry budget events into CI/QA monitoring, and stage the next RenderOps lighting feedback pass.
 
+### Session #148 Backlog Updates
+
+#### FX-244: Secondary Overlay FX Cue Audit
+- CrossroadsBranchLandingOverlay now emits `fx:overlay_cue` payloads for reveal, update, and dismiss transitions, threading branch identifiers plus clear/timeout metadata into the FX pipeline.
+- ObjectiveList broadcasts refresh, completion, and scroll cues (plumbed through CaseFileUI) so case progress changes feed downstream FX coordinator and particle mappings.
+- QuestNotification overlay emits display/queue/dismiss/clear cues and shares a unified cleanup path, with new Jest coverage verifying the emission lifecycle.
+- FxCueCoordinator durations/limits, FxOverlay render routing, and CompositeCueParticleBridge presets were expanded for the new cue identifiers, with `npm test` passing after the additions.
+
 ### Session #140 Backlog Updates
 
 #### FX-201: Detective Vision Overlay FX Integration

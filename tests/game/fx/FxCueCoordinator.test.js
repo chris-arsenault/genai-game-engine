@@ -142,4 +142,26 @@ describe('FxCueCoordinator', () => {
     expect(perEffectLimit.interactionPromptReveal).toBe(1);
     expect(perEffectLimit.interactionPromptDismiss).toBe(1);
   });
+
+  it('includes branch landing, objective list, and quest notification cues in default configuration', () => {
+    const coordinator = new FxCueCoordinator(eventBus);
+    const { defaultDurations, perEffectLimit } = coordinator.options;
+
+    expect(defaultDurations.crossroadsBranchLandingReveal).toBeGreaterThan(0);
+    expect(defaultDurations.crossroadsBranchLandingUpdate).toBeGreaterThan(0);
+    expect(defaultDurations.crossroadsBranchLandingDismiss).toBeGreaterThan(0);
+    expect(defaultDurations.objectiveListRefresh).toBeGreaterThan(0);
+    expect(defaultDurations.objectiveListCompletion).toBeGreaterThan(0);
+    expect(defaultDurations.objectiveListScroll).toBeGreaterThan(0);
+    expect(defaultDurations.questNotificationDisplay).toBeGreaterThan(0);
+    expect(defaultDurations.questNotificationDismiss).toBeGreaterThan(0);
+    expect(defaultDurations.questNotificationClear).toBeGreaterThan(0);
+    expect(defaultDurations.questNotificationQueued).toBeGreaterThan(0);
+
+    expect(perEffectLimit.crossroadsBranchLandingReveal).toBe(1);
+    expect(perEffectLimit.crossroadsBranchLandingDismiss).toBe(1);
+    expect(perEffectLimit.questNotificationDisplay).toBe(1);
+    expect(perEffectLimit.questNotificationDismiss).toBe(1);
+    expect(perEffectLimit.questNotificationClear).toBe(1);
+  });
 });

@@ -255,4 +255,39 @@ describe('CompositeCueParticleBridge', () => {
       expect.objectContaining({ preset: 'save-inspector-overlay-refresh' })
     );
   });
+
+  it('maps branch landing, objective list, and quest notification cues to presets', () => {
+    const bridge = createBridge();
+    bridge.attach();
+    const handler = listeners['fx:composite_cue'];
+
+    handler({
+      effectId: 'crossroadsBranchLandingReveal',
+      coordinator: { durationMs: 900 },
+    });
+    expect(eventBus.emit).toHaveBeenLastCalledWith(
+      'fx:particle_emit',
+      expect.objectContaining({ preset: 'quest-milestone-wave' })
+    );
+
+    eventBus.emit.mockClear();
+    handler({
+      effectId: 'objectiveListRefresh',
+      coordinator: { durationMs: 640 },
+    });
+    expect(eventBus.emit).toHaveBeenLastCalledWith(
+      'fx:particle_emit',
+      expect.objectContaining({ preset: 'case-objective-arc' })
+    );
+
+    eventBus.emit.mockClear();
+    handler({
+      effectId: 'questNotificationDisplay',
+      coordinator: { durationMs: 780 },
+    });
+    expect(eventBus.emit).toHaveBeenLastCalledWith(
+      'fx:particle_emit',
+      expect.objectContaining({ preset: 'quest-milestone-wave' })
+    );
+  });
 });

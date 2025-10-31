@@ -244,4 +244,34 @@ describe('FxOverlay', () => {
     handler({ effectId: 'movementIndicatorPulse', duration: 0.3 });
     expect(overlay.effects[0].id).toBe('forensicPulse');
   });
+
+  it('routes branch landing, objective list, and quest notification cues to existing renderers', () => {
+    const overlay = new FxOverlay(canvas, eventBus, {});
+    overlay.init();
+
+    const handler = getLastHandler('fx:overlay_cue');
+
+    handler({ effectId: 'crossroadsBranchLandingReveal', duration: 0.5 });
+    expect(overlay.effects[0].id).toBe('questMilestonePulse');
+    overlay.effects.length = 0;
+
+    handler({ effectId: 'objectiveListRefresh', duration: 0.4 });
+    expect(overlay.effects[0].id).toBe('caseObjectivePulse');
+    overlay.effects.length = 0;
+
+    handler({ effectId: 'objectiveListCompletion', duration: 0.4 });
+    expect(overlay.effects[0].id).toBe('questMilestonePulse');
+    overlay.effects.length = 0;
+
+    handler({
+      effectId: 'questNotificationDisplay',
+      context: { type: 'completed' },
+      duration: 0.6,
+    });
+    expect(overlay.effects[0].id).toBe('questCompleteBurst');
+    overlay.effects.length = 0;
+
+    handler({ effectId: 'questNotificationDismiss', duration: 0.3 });
+    expect(overlay.effects[0].id).toBe('caseCluePulse');
+  });
 });

@@ -35,6 +35,10 @@ export class FxCueCoordinator {
       questLogOverlayDismiss: 420,
       questLogTabPulse: 560,
       questLogQuestSelected: 600,
+      questNotificationDisplay: 780,
+      questNotificationDismiss: 480,
+      questNotificationClear: 420,
+      questNotificationQueued: 460,
       inventoryOverlayReveal: 620,
       inventoryOverlayDismiss: 360,
       inventoryItemFocus: 420,
@@ -63,6 +67,12 @@ export class FxCueCoordinator {
       interactionPromptUpdate: 420,
       interactionPromptDismiss: 360,
       movementIndicatorPulse: 300,
+      objectiveListRefresh: 640,
+      objectiveListCompletion: 720,
+      objectiveListScroll: 420,
+      crossroadsBranchLandingReveal: 900,
+      crossroadsBranchLandingUpdate: 720,
+      crossroadsBranchLandingDismiss: 520,
       default: 500,
     };
 
@@ -95,6 +105,11 @@ export class FxCueCoordinator {
       disguiseUnequipIntent: 1,
       interactionPromptReveal: 1,
       interactionPromptDismiss: 1,
+      questNotificationDisplay: 1,
+      questNotificationDismiss: 1,
+      questNotificationClear: 1,
+      crossroadsBranchLandingReveal: 1,
+      crossroadsBranchLandingDismiss: 1,
     };
 
     this.options = {
