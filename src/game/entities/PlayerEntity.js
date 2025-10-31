@@ -14,6 +14,7 @@ import { FactionMember } from '../components/FactionMember.js';
 import { Disguise } from '../components/Disguise.js';
 import { GameConfig } from '../config/GameConfig.js';
 import { NavigationAgent } from '../components/NavigationAgent.js';
+import { kiraAnimationConfig, buildKiraAnimationDefinitions } from '../data/animations/kiraAnimationConfig.js';
 
 /**
  * Create player entity
@@ -44,121 +45,13 @@ export function createPlayerEntity(entityManager, componentRegistry, x = 0, y = 
   });
   componentRegistry.addComponent(entityId, 'Sprite', sprite);
 
-  const animationRow = {
-    idleDown: 0,
-    walkDown: 1,
-    runDown: 2,
-    idleLeft: 3,
-    walkLeft: 4,
-    runLeft: 5,
-    idleRight: 6,
-    walkRight: 7,
-    runRight: 8,
-    idleUp: 9,
-    walkUp: 10,
-    runUp: 11,
-    dash: 12,
-    slide: 13,
-  };
-
-  const frames = (row, countOrColumns = 6) => {
-    if (Array.isArray(countOrColumns)) {
-      return countOrColumns.map((col) => ({ col, row }));
-    }
-    const count = countOrColumns;
-    return Array.from({ length: count }, (_, index) => ({ col: index, row }));
-  };
-
   const animatedSprite = new AnimatedSprite({
     image: null,
-    imageUrl: '/generated/images/ar-003/image-ar-003-kira-core-pack-normalized.png',
-    frameWidth: 32,
-    frameHeight: 32,
-    defaultAnimation: 'idleDown',
-    animations: {
-      idleDown: {
-        frames: frames(animationRow.idleDown, 6),
-        loop: true,
-        frameDuration: 0.28,
-      },
-      walkDown: {
-        frames: frames(animationRow.walkDown, 6),
-        loop: true,
-        frameDuration: 0.14,
-      },
-      runDown: {
-        frames: frames(animationRow.runDown, 6),
-        loop: true,
-        frameDuration: 0.1,
-      },
-      idleLeft: {
-        frames: frames(animationRow.idleLeft, 6),
-        loop: true,
-        frameDuration: 0.28,
-      },
-      walkLeft: {
-        frames: frames(animationRow.walkLeft, 6),
-        loop: true,
-        frameDuration: 0.14,
-      },
-      runLeft: {
-        frames: frames(animationRow.runLeft, 6),
-        loop: true,
-        frameDuration: 0.1,
-      },
-      idleRight: {
-        frames: frames(animationRow.idleRight, 6),
-        loop: true,
-        frameDuration: 0.28,
-      },
-      walkRight: {
-        frames: frames(animationRow.walkRight, 6),
-        loop: true,
-        frameDuration: 0.14,
-      },
-      runRight: {
-        frames: frames(animationRow.runRight, 6),
-        loop: true,
-        frameDuration: 0.1,
-      },
-      idleUp: {
-        frames: frames(animationRow.idleUp, 6),
-        loop: true,
-        frameDuration: 0.28,
-      },
-      walkUp: {
-        frames: frames(animationRow.walkUp, 6),
-        loop: true,
-        frameDuration: 0.14,
-      },
-      runUp: {
-        frames: frames(animationRow.runUp, 6),
-        loop: true,
-        frameDuration: 0.1,
-      },
-      dash: {
-        frames: frames(animationRow.dash, [0, 1, 2, 3, 4, 5]),
-        loop: false,
-        frameDuration: 0.055,
-        next: 'idleDown',
-      },
-      dashLoop: {
-        frames: frames(animationRow.dash, [0, 1, 2, 3, 4, 5]),
-        loop: true,
-        frameDuration: 0.06,
-      },
-      slide: {
-        frames: frames(animationRow.slide, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
-        loop: false,
-        frameDuration: 0.06,
-        next: 'idleDown',
-      },
-      idle: {
-        frames: frames(animationRow.idleDown, 6),
-        loop: true,
-        frameDuration: 0.28,
-      },
-    },
+    imageUrl: kiraAnimationConfig.imageUrl,
+    frameWidth: kiraAnimationConfig.frameWidth,
+    frameHeight: kiraAnimationConfig.frameHeight,
+    defaultAnimation: kiraAnimationConfig.defaultAnimation,
+    animations: buildKiraAnimationDefinitions(),
   });
 
   componentRegistry.addComponent(entityId, 'AnimatedSprite', animatedSprite);

@@ -90,6 +90,7 @@
 #### M3-016: Save/Load System Implementation
 - Re-routed `image-ar-003-kira-evasion-pack` through GPT-Image-1 automation, updating `assets/images/requests.json` to `ai-generated` and storing the transparent dash/slide sprite sheet at `assets/generated/images/ar-003/image-ar-003-kira-evasion-pack.png`. Manifests/docs now note the automation provenance and next integration step.
 - Session 179 normalized the generated dash/slide atlas (see `assets/generated/images/ar-003/image-ar-003-kira-evasion-pack-normalized.png` + manifest) and merged the frames into `image-ar-003-kira-core-pack-normalized.png`, refreshing autosave overlay captures once the sheet aligned.
+- Session 180 added `scripts/art/updateKiraAnimationConfig.js` and refactored `PlayerEntity` to consume the generated config so future bespoke swaps only require rerunning the script before verification.
 
 #### AR-008: Adaptive Music Tracks (M7)
 - Added AdaptiveMusicLayerController regression coverage (`tests/engine/audio/AdaptiveMusicLayerController.test.js`) that validates ambient/tension/combat volume weights derived from `GameConfig.audio.memoryParlorAmbient`, protecting future mix tweaks for downtown stems.
