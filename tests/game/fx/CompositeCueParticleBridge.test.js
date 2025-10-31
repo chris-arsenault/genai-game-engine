@@ -148,6 +148,42 @@ describe('CompositeCueParticleBridge', () => {
     );
   });
 
+  it('maps tutorial cues to dedicated presets', () => {
+    const bridge = createBridge();
+    bridge.attach();
+    const handler = listeners['fx:composite_cue'];
+
+    handler({
+      effectId: 'tutorialOverlayReveal',
+      coordinator: { durationMs: 520 },
+    });
+    expect(eventBus.emit).toHaveBeenLastCalledWith(
+      'fx:particle_emit',
+      expect.objectContaining({ preset: 'tutorial-overlay-reveal' })
+    );
+
+    eventBus.emit.mockClear();
+    handler({
+      effectId: 'tutorialStepStarted',
+      coordinator: { durationMs: 540 },
+    });
+    expect(eventBus.emit).toHaveBeenLastCalledWith(
+      'fx:particle_emit',
+      expect.objectContaining({ preset: 'tutorial-step-start' })
+    );
+
+    eventBus.emit.mockClear();
+    handler({
+      effectId: 'tutorialStepCompleted',
+      coordinator: { durationMs: 820 },
+      concurrency: { global: 1 },
+    });
+    expect(eventBus.emit).toHaveBeenLastCalledWith(
+      'fx:particle_emit',
+      expect.objectContaining({ preset: 'tutorial-step-complete' })
+    );
+  });
+
   it('maps control bindings cues to dedicated presets', () => {
     const bridge = createBridge();
     bridge.attach();

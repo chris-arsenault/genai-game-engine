@@ -113,4 +113,54 @@ describe('FxCueMetricsSampler', () => {
     sampler.update(0.2);
     expect(onSample).not.toHaveBeenCalled();
   });
+
+  it('emits synthetic samples without mutating rolling state', () => {
+    const received = [];
+    const sampler = new FxCueMetricsSampler(coordinator, eventBus, {
+      getNow: () => currentTime,
+      onSample: (payload) => received.push(payload),
+    });
+
+    const payload = sampler.emitSyntheticSample({
+      throughputPerSecond: 12,
+      active: 6,
+      queued: 3,
+      intervalSeconds: 0.5,
+      totals: { accepted: 42, deferred: 3, dropped: 1, replayed: 2 },
+      averages: { throughput: 10, active: 5, queued: 2 },
+      peaks: { throughput: 14, active: 7, queued: 4 },
+    });
+
+    expect(payload.throughputPerSecond).toBe(12);
+    expect(payload.totals.accepted).toBe(42);
+    expect(eventBus.emit).toHaveBeenCalledWith(
+      'fx:metrics_sample',
+      expect.objectContaining({ throughputPerSecond: 12, active: 6, queued: 3 })
+    );
+    expect(received).toHaveLength(1);
+    expect(sampler._window).toHaveLength(0);
+  });
+
+  it('emits synthetic warnings for automation harnesses', () => {
+    const warnings = [];
+    const sampler = new FxCueMetricsSampler(coordinator, eventBus, {
+      getNow: () => currentTime,
+      onWarning: (payload) => warnings.push(payload),
+    });
+
+    const payload = sampler.emitSyntheticWarning({
+      throughputPerSecond: 28,
+      active: 9,
+      queued: 5,
+      totals: { accepted: 140, deferred: 10, dropped: 2 },
+      reasons: { throughput: true, active: true, queued: false },
+    });
+
+    expect(payload.throughputPerSecond).toBe(28);
+    expect(eventBus.emit).toHaveBeenCalledWith(
+      'fx:metrics_warning',
+      expect.objectContaining({ throughputPerSecond: 28, active: 9, queued: 5 })
+    );
+    expect(warnings).toHaveLength(1);
+  });
 });

@@ -150,3 +150,114 @@ describe('TutorialOverlay event bus wiring', () => {
     onSpy.mockRestore();
   });
 });
+
+describe('TutorialOverlay FX cue emissions', () => {
+  it('emits overlay and step cues without duplicating step starts', () => {
+    const canvas = createMockCanvas();
+    const emitted = [];
+    const handlers = {};
+    const eventBus = {
+      emit: jest.fn((eventName, payload) => {
+        emitted.push({ eventName, payload });
+      }),
+      on: jest.fn((eventName, handler) => {
+        handlers[eventName] = handler;
+        return jest.fn();
+      }),
+    };
+
+    const overlay = new TutorialOverlay(canvas, eventBus, {});
+    overlay.init();
+
+    handlers['tutorial:started']?.({
+      totalSteps: 3,
+      startedAt: 1000,
+    });
+    const revealCue = emitted.find(
+      (evt) =>
+        evt.eventName === 'fx:overlay_cue' &&
+        evt.payload?.effectId === 'tutorialOverlayReveal'
+    );
+    expect(revealCue).toBeDefined();
+    expect(revealCue.payload.context.source).toBe('tutorial:started');
+    expect(revealCue.payload.context.totalSteps).toBe(3);
+
+    emitted.length = 0;
+    handlers['tutorial:step_started']?.({
+      stepId: 'movement',
+      stepIndex: 0,
+      totalSteps: 3,
+      title: 'Movement',
+      canSkip: true,
+    });
+    const firstStepCue = emitted.find(
+      (evt) =>
+        evt.eventName === 'fx:overlay_cue' &&
+        evt.payload?.effectId === 'tutorialStepStarted'
+    );
+    expect(firstStepCue).toBeDefined();
+    expect(firstStepCue.payload.context.stepId).toBe('movement');
+
+    emitted.length = 0;
+    handlers['tutorial:step_started']?.({
+      stepId: 'movement',
+      stepIndex: 0,
+      totalSteps: 3,
+      title: 'Movement',
+      canSkip: true,
+    });
+    expect(
+      emitted.some(
+        (evt) => evt.eventName === 'fx:overlay_cue' && evt.payload?.effectId === 'tutorialStepStarted'
+      )
+    ).toBe(false);
+
+    handlers['tutorial:step_completed']?.({
+      stepId: 'movement',
+      stepIndex: 0,
+      totalSteps: 3,
+      completedAt: 1500,
+      durationMs: 500,
+    });
+    const completedCue = emitted.find(
+      (evt) =>
+        evt.eventName === 'fx:overlay_cue' &&
+        evt.payload?.effectId === 'tutorialStepCompleted'
+    );
+    expect(completedCue).toBeDefined();
+
+    emitted.length = 0;
+    handlers['tutorial:step_started']?.({
+      stepId: 'investigate',
+      stepIndex: 1,
+      totalSteps: 3,
+      title: 'Investigate',
+      canSkip: false,
+    });
+    const nextStepCue = emitted.find(
+      (evt) =>
+        evt.eventName === 'fx:overlay_cue' &&
+        evt.payload?.effectId === 'tutorialStepStarted'
+    );
+    expect(nextStepCue).toBeDefined();
+    expect(nextStepCue.payload.context.stepId).toBe('investigate');
+    expect(nextStepCue.payload.context.canSkip).toBe(false);
+
+    emitted.length = 0;
+    handlers['tutorial:completed']?.({
+      totalSteps: 3,
+      completedSteps: 3,
+      completedAt: 2500,
+    });
+    const dismissCue = emitted.find(
+      (evt) =>
+        evt.eventName === 'fx:overlay_cue' &&
+        evt.payload?.effectId === 'tutorialOverlayDismiss'
+    );
+    expect(dismissCue).toBeDefined();
+    expect(dismissCue.payload.context.source).toBe('tutorial:completed');
+    expect(dismissCue.payload.context.completedAt).toBe(2500);
+
+    overlay.cleanup();
+  });
+});

@@ -50,6 +50,10 @@ export class FxCueCoordinator {
       controlBindingsBindingReset: 480,
       controlBindingsListModeChange: 520,
       controlBindingsPageChange: 480,
+      tutorialOverlayReveal: 620,
+      tutorialOverlayDismiss: 360,
+      tutorialStepStarted: 560,
+      tutorialStepCompleted: 840,
       default: 500,
     };
 
@@ -73,6 +77,9 @@ export class FxCueCoordinator {
       controlBindingsCaptureStart: 1,
       controlBindingsCaptureApplied: 1,
       controlBindingsBindingReset: 1,
+      tutorialOverlayReveal: 1,
+      tutorialOverlayDismiss: 1,
+      tutorialStepCompleted: 1,
     };
 
     this.options = {

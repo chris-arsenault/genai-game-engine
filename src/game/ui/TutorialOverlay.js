@@ -100,6 +100,7 @@ export class TutorialOverlay {
 
     this.unsubscribe = null;
     this._offHandlers = [];
+    this._lastStepCueKey = null;
   }
 
   /**
@@ -315,25 +316,41 @@ export class TutorialOverlay {
     }
 
     // Subscribe to tutorial events
-    this._offHandlers.push(this.eventBus.on('tutorial:started', () => {
-      this.show();
+    this._offHandlers.push(this.eventBus.on('tutorial:started', (payload = {}) => {
+      this.show('tutorial:started', {
+        totalSteps: typeof payload.totalSteps === 'number' ? payload.totalSteps : null,
+        startedAt: payload.startedAt ?? null,
+      });
     }));
 
     this._offHandlers.push(this.eventBus.on('tutorial:step_started', (data) => {
-      this.showPrompt(data);
+      this.showPrompt(data, 'tutorial:step_started');
     }));
 
-    this._offHandlers.push(this.eventBus.on('tutorial:step_completed', () => {
+    this._offHandlers.push(this.eventBus.on('tutorial:step_completed', (data) => {
       // Brief fade before next step
       this.targetAlpha = 0.5;
+      this._emitFxCue('tutorialStepCompleted', {
+        ...data,
+        source: 'tutorial:step_completed',
+      });
+      this._lastStepCueKey = null;
     }));
 
-    this._offHandlers.push(this.eventBus.on('tutorial:completed', () => {
-      this.hide();
+    this._offHandlers.push(this.eventBus.on('tutorial:completed', (data) => {
+      this.hide('tutorial:completed', {
+        completedAt: data?.completedAt ?? null,
+        totalSteps: data?.totalSteps ?? null,
+        completedSteps: data?.completedSteps ?? null,
+      });
     }));
 
-    this._offHandlers.push(this.eventBus.on('tutorial:skipped', () => {
-      this.hide();
+    this._offHandlers.push(this.eventBus.on('tutorial:skipped', (data) => {
+      this.hide('tutorial:skipped', {
+        stepId: data?.stepId ?? null,
+        stepIndex: data?.stepIndex ?? null,
+        skippedAt: data?.skippedAt ?? null,
+      });
     }));
   }
 
@@ -358,30 +375,37 @@ export class TutorialOverlay {
     this.telemetry.timeline = rawSnapshots.slice(0, maxTimelineEntries);
 
     if (overlay.visible && overlay.prompt) {
-      this.show();
-      this.showPrompt(overlay.prompt);
+      this.show('world-state');
+      this.showPrompt(overlay.prompt, 'world-state');
     } else {
-      this.hide();
+      this.hide('world-state');
     }
   }
 
   /**
    * Show the overlay
    */
-  show(source = 'show') {
+  show(source = 'show', context = {}) {
     const wasVisible = this.visible;
     this.visible = true;
     this.targetAlpha = 1;
 
     if (!wasVisible) {
       emitOverlayVisibility(this.eventBus, 'tutorial', true, { source });
+      const defaultContext = {
+        source,
+        stepId: this.currentPrompt?.stepId ?? null,
+        stepIndex: this.currentPrompt?.stepIndex ?? null,
+        totalSteps: this.currentPrompt?.totalSteps ?? null,
+      };
+      this._emitFxCue('tutorialOverlayReveal', { ...defaultContext, ...context });
     }
   }
 
   /**
    * Hide the overlay
    */
-  hide(source = 'hide') {
+  hide(source = 'hide', context = {}) {
     if (!this.visible && this.targetAlpha === 0) {
       return;
     }
@@ -392,9 +416,14 @@ export class TutorialOverlay {
     this.currentPrompt = null;
     this.highlight = null;
     this.highlightEntities = [];
+    this._lastStepCueKey = null;
 
     if (wasVisible) {
       emitOverlayVisibility(this.eventBus, 'tutorial', false, { source });
+      this._emitFxCue('tutorialOverlayDismiss', {
+        source,
+        ...context,
+      });
     }
   }
 
@@ -402,7 +431,7 @@ export class TutorialOverlay {
    * Show tutorial prompt
    * @param {Object} promptData
    */
-  showPrompt(promptData) {
+  showPrompt(promptData, source = 'showPrompt') {
     this.currentPrompt = promptData;
     this.targetAlpha = 1;
     this.highlight = promptData.highlight ?? null;
@@ -411,6 +440,7 @@ export class TutorialOverlay {
     } else {
       this.highlightEntities = [];
     }
+    this._maybeEmitStepStartedCue(promptData, source);
   }
 
   /**
@@ -765,6 +795,38 @@ export class TutorialOverlay {
     ctx.lineTo(x, y + radius);
     ctx.quadraticCurveTo(x, y, x + radius, y);
     ctx.closePath();
+  }
+
+  _emitFxCue(effectId, context = {}) {
+    if (!this.eventBus || typeof this.eventBus.emit !== 'function' || !effectId) {
+      return;
+    }
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId,
+      source: 'TutorialOverlay',
+      context,
+    });
+  }
+
+  _maybeEmitStepStartedCue(promptData, source) {
+    if (!promptData || typeof promptData !== 'object') {
+      return;
+    }
+    const stepId = promptData.stepId ?? null;
+    const stepIndex = typeof promptData.stepIndex === 'number' ? promptData.stepIndex : null;
+    const key = stepId != null ? `step:${stepId}` : (stepIndex != null ? `index:${stepIndex}` : null);
+    if (!key || key === this._lastStepCueKey) {
+      return;
+    }
+    this._lastStepCueKey = key;
+    this._emitFxCue('tutorialStepStarted', {
+      source,
+      stepId,
+      stepIndex,
+      totalSteps: typeof promptData.totalSteps === 'number' ? promptData.totalSteps : null,
+      title: promptData.title ?? null,
+      canSkip: Boolean(promptData.canSkip),
+    });
   }
 
   /**

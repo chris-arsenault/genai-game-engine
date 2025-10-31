@@ -109,4 +109,17 @@ describe('FxCueCoordinator', () => {
       warnSpy.mockRestore();
     }
   });
+
+  it('includes tutorial overlay cues in default configuration', () => {
+    const coordinator = new FxCueCoordinator(eventBus);
+
+    expect(coordinator.options.defaultDurations.tutorialOverlayReveal).toBeGreaterThan(0);
+    expect(coordinator.options.defaultDurations.tutorialOverlayDismiss).toBeGreaterThan(0);
+    expect(coordinator.options.defaultDurations.tutorialStepStarted).toBeGreaterThan(0);
+    expect(coordinator.options.defaultDurations.tutorialStepCompleted).toBeGreaterThan(0);
+
+    expect(coordinator.options.perEffectLimit.tutorialOverlayReveal).toBe(1);
+    expect(coordinator.options.perEffectLimit.tutorialOverlayDismiss).toBe(1);
+    expect(coordinator.options.perEffectLimit.tutorialStepCompleted).toBe(1);
+  });
 });

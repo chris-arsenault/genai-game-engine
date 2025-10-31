@@ -195,4 +195,31 @@ describe('FxOverlay', () => {
     overlay.render(solvedCtx);
     expect(solvedCtx.fillRect).toHaveBeenCalled();
   });
+
+  it('handles tutorial cues by reusing existing renderers', () => {
+    const overlay = new FxOverlay(canvas, eventBus, {});
+    overlay.init();
+
+    const handler = getLastHandler('fx:overlay_cue');
+
+    handler({ effectId: 'tutorialOverlayReveal', duration: 0.4 });
+    const revealCtx = createMockContext();
+    overlay.render(revealCtx);
+    expect(revealCtx.moveTo).toHaveBeenCalled();
+
+    handler({ effectId: 'tutorialStepStarted', duration: 0.45 });
+    const stepCtx = createMockContext();
+    overlay.render(stepCtx);
+    expect(stepCtx.arc).toHaveBeenCalled();
+
+    handler({ effectId: 'tutorialStepCompleted', duration: 0.6 });
+    const completeCtx = createMockContext();
+    overlay.render(completeCtx);
+    expect(completeCtx.fillRect).toHaveBeenCalled();
+
+    handler({ effectId: 'tutorialOverlayDismiss', duration: 0.3 });
+    const dismissCtx = createMockContext();
+    overlay.render(dismissCtx);
+    expect(dismissCtx.arc).toHaveBeenCalled();
+  });
 });

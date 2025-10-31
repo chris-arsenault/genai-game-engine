@@ -2818,6 +2818,18 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
 #### FX-239: Narrative Overlay Secondary Cues
 - Extended cue emission to `SaveInspectorOverlay` and `ControlBindingsOverlay`, wiring new identifiers through the coordinator/bridge stack with supporting Jest coverage (`src/game/ui/SaveInspectorOverlay.js`, `src/game/ui/ControlBindingsOverlay.js`).
 
+### Session #146 Backlog Updates
+
+#### FX-242: Tutorial Overlay FX cues
+- TutorialOverlay now emits `fx:overlay_cue` payloads on reveal/dismiss and step transitions with duplicate guarding, ensuring onboarding beats feed the shared FX pipeline (`src/game/ui/TutorialOverlay.js`).
+- FxCueCoordinator, FxOverlay, and CompositeCueParticleBridge recognise the new tutorial identifiers with tuned durations, per-effect limits, and particle presets (`src/game/fx/FxCueCoordinator.js`, `src/game/ui/FxOverlay.js`, `src/game/fx/CompositeCueParticleBridge.js`).
+- Jest coverage spans TutorialOverlay, FxCueCoordinator, FxOverlay, and composite bridge suites to lock in the tutorial cue contract (`tests/game/ui/TutorialOverlay.test.js`, `tests/game/fx/FxCueCoordinator.test.js`, `tests/game/ui/FxOverlay.test.js`, `tests/game/fx/CompositeCueParticleBridge.test.js`).
+
+#### QA-331: Stabilize FX metrics Playwright scenario
+- Added `emitSyntheticSample` / `emitSyntheticWarning` helpers to `FxCueMetricsSampler` for deterministic automation hooks without mutating rolling averages (`src/game/fx/FxCueMetricsSampler.js`).
+- Refactored the FX metrics Playwright spec to drive HUD updates via the new sampler helpers, eliminating ad-hoc event bus emissions and reducing flake risk (`tests/e2e/debug-overlay-fx-metrics.spec.js`).
+- Expanded sampler unit tests to exercise the synthetic helpers and documented verification via `npm test` and `npx playwright test tests/e2e/debug-overlay-fx-metrics.spec.js` (`tests/game/fx/FxCueMetricsSampler.test.js`).
+
 
 ---
 

@@ -37,20 +37,18 @@ test.describe('Debug overlay FX metrics panel', () => {
 
     await page.waitForFunction(() => {
       const activeEl = document.getElementById('debug-fx-active');
-      if (activeEl && activeEl.textContent?.trim() === '6') {
+      if (activeEl?.textContent?.trim() === '6') {
         return true;
       }
-      const bus = window.game?.eventBus;
-      if (bus && typeof bus.emit === 'function') {
-        const nowSeconds = performance.now() / 1000;
-        bus.emit('fx:metrics_sample', {
-          timestamp: nowSeconds,
-          intervalSeconds: 0.25,
+      const sampler = window.game?.fxCueMetricsSampler;
+      if (sampler && typeof sampler.emitSyntheticSample === 'function') {
+        sampler.emitSyntheticSample({
           throughputPerSecond: 18,
           active: 6,
           queued: 3,
+          intervalSeconds: 0.25,
           averages: { throughput: 12, active: 4, queued: 2 },
-          peaks: { active: 8, throughput: 22 },
+          peaks: { throughput: 22, active: 8, queued: 3 },
           totals: { accepted: 120, deferred: 8, dropped: 1, replayed: 2 },
         });
       }
@@ -65,11 +63,9 @@ test.describe('Debug overlay FX metrics panel', () => {
       if (warning?.dataset.state === 'warning') {
         return true;
       }
-      const bus = window.game?.eventBus;
-      if (bus && typeof bus.emit === 'function') {
-        const nowSeconds = performance.now() / 1000;
-        bus.emit('fx:metrics_warning', {
-          timestamp: nowSeconds,
+      const sampler = window.game?.fxCueMetricsSampler;
+      if (sampler && typeof sampler.emitSyntheticWarning === 'function') {
+        sampler.emitSyntheticWarning({
           throughputPerSecond: 28,
           active: 9,
           queued: 5,

@@ -182,6 +182,18 @@ export class FxOverlay {
       case 'inventoryItemFocus':
         this._spawnCaseProgressEffect({ ...payload, effectId: 'caseEvidencePulse' });
         break;
+      case 'tutorialOverlayReveal':
+        this._spawnQuestMilestoneEffect({ ...payload, effectId: 'questMilestonePulse' });
+        break;
+      case 'tutorialOverlayDismiss':
+        this._spawnCaseProgressEffect({ ...payload, effectId: 'caseCluePulse' });
+        break;
+      case 'tutorialStepStarted':
+        this._spawnCaseObjectiveEffect({ ...payload, effectId: 'caseObjectivePulse' });
+        break;
+      case 'tutorialStepCompleted':
+        this._spawnQuestCompleteEffect({ ...payload, effectId: 'questCompleteBurst' });
+        break;
       case 'caseSolvedBurst':
         this._spawnCaseSolvedEffect(payload);
         break;

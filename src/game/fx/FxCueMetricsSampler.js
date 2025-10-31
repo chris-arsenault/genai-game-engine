@@ -231,4 +231,103 @@ export class FxCueMetricsSampler {
       this.eventBus.emit(this.options.warningEvent, warningPayload);
     }
   }
+
+  /**
+   * Emit a synthetic metrics sample without mutating rolling state.
+   * Useful for automation harnesses that need deterministic HUD updates.
+   * @param {object} [sampleOverrides]
+   * @returns {object} payload emitted to listeners
+   */
+  emitSyntheticSample(sampleOverrides = {}) {
+    const timestamp = typeof sampleOverrides.timestamp === 'number'
+      ? sampleOverrides.timestamp
+      : this.options.getNow();
+    const intervalSeconds = typeof sampleOverrides.intervalSeconds === 'number'
+      ? sampleOverrides.intervalSeconds
+      : this.options.sampleIntervalSeconds;
+    const throughput = typeof sampleOverrides.throughputPerSecond === 'number'
+      ? sampleOverrides.throughputPerSecond
+      : 0;
+    const active = typeof sampleOverrides.active === 'number' ? sampleOverrides.active : 0;
+    const queued = typeof sampleOverrides.queued === 'number' ? sampleOverrides.queued : 0;
+
+    const totals = {
+      accepted: sampleOverrides.totals?.accepted ?? 0,
+      deferred: sampleOverrides.totals?.deferred ?? 0,
+      dropped: sampleOverrides.totals?.dropped ?? 0,
+      replayed: sampleOverrides.totals?.replayed ?? 0,
+    };
+
+    const payload = {
+      timestamp,
+      intervalSeconds,
+      throughputPerSecond: throughput,
+      active,
+      queued,
+      totals,
+      averages: sampleOverrides.averages ?? {
+        throughput,
+        active,
+        queued,
+      },
+      peaks: sampleOverrides.peaks ?? {
+        throughput,
+        active,
+        queued,
+      },
+    };
+
+    if (typeof this.options.onSample === 'function') {
+      this.options.onSample(payload);
+    }
+
+    if (this.eventBus && typeof this.eventBus.emit === 'function' && this.options.emitEvent) {
+      this.eventBus.emit(this.options.emitEvent, payload);
+    }
+
+    return payload;
+  }
+
+  /**
+   * Emit a synthetic warning payload for deterministic automation.
+   * @param {object} [warningOverrides]
+   * @returns {object} warning payload emitted
+   */
+  emitSyntheticWarning(warningOverrides = {}) {
+    const timestamp = typeof warningOverrides.timestamp === 'number'
+      ? warningOverrides.timestamp
+      : this.options.getNow();
+    const throughput = typeof warningOverrides.throughputPerSecond === 'number'
+      ? warningOverrides.throughputPerSecond
+      : 0;
+    const active = typeof warningOverrides.active === 'number' ? warningOverrides.active : 0;
+    const queued = typeof warningOverrides.queued === 'number' ? warningOverrides.queued : 0;
+
+    const payload = {
+      timestamp,
+      throughputPerSecond: throughput,
+      active,
+      queued,
+      totals: {
+        accepted: warningOverrides.totals?.accepted ?? 0,
+        deferred: warningOverrides.totals?.deferred ?? 0,
+        dropped: warningOverrides.totals?.dropped ?? 0,
+      },
+      reasons: warningOverrides.reasons ?? {
+        throughput: throughput > 0,
+        active: active > 0,
+        queued: queued > 0,
+      },
+    };
+
+    if (typeof this.options.onWarning === 'function') {
+      this.options.onWarning(payload);
+    }
+
+    if (this.eventBus && typeof this.eventBus.emit === 'function' && this.options.warningEvent) {
+      this.eventBus.emit(this.options.warningEvent, payload);
+    }
+
+    return payload;
+  }
 }
