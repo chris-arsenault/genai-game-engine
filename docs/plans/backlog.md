@@ -16,7 +16,7 @@
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
 | BUG-201 | P0 | Completed | Collision system crashes on load when Collider metadata overwrites shape definitions (`shapeA`/`shapeB` null). Refactoring Collider component to preserve `shapeType` while keeping ECS registration stable; adding guards/tests. | Land collider refactor + guard rails, expand physics regression tests, and run targeted Jest suites (`CollisionSystem`, `physics/integration`, `integration-full`) before CI handoff. |
-| AR-050 | P0 | Pending | Visual asset sourcing pipeline now covers Act 2 Crossroads selection conduit/pad, checkpoint glow/plaza, safehouse arc, boundary walls, and column beam overlays with CC0/CC-BY references captured in manifests; Session 112 calibrated tint/alpha parameters (~0.13 columns/conduits, ~0.75 boundaries), Session 113 added a lighting preview harness plus queued the AR-001–AR-005 generation batch, Session 114 boosted conduit/glow/column luminance so previewed segments meet thresholds, Session 115 delivered placeholder atlases for AR-001–AR-005, Session 116 layered RenderOps packet/placeholder audit automation, Session 117 shipped prioritized replacement plans, Session 118 produced a four-week bespoke art sprint schedule plus delivery staging CLI, and Session 121 automated week-one bespoke status ingestion with licensing approvals recorded in manifests/reports. | Resume RenderOps ingest and bespoke tracking once BUG-201 collision crash is confirmed resolved. |
+| AR-050 | P0 | Pending | Visual asset sourcing pipeline now covers Act 2 Crossroads selection conduit/pad, checkpoint glow/plaza, safehouse arc, boundary walls, and column beam overlays with CC0/CC-BY references captured in manifests; Session 112 calibrated tint/alpha parameters (~0.13 columns/conduits, ~0.75 boundaries), Session 113 added a lighting preview harness plus queued the AR-001–AR-005 generation batch, Session 114 boosted conduit/glow/column luminance so previewed segments meet thresholds, Session 115 delivered placeholder atlases for AR-001–AR-005, Session 116 layered RenderOps packet/placeholder audit automation, Session 117 shipped prioritized replacement plans, Session 118 produced a four-week bespoke art sprint schedule plus delivery staging CLI, and Session 121 automated week-one bespoke status ingestion with licensing approvals recorded in manifests/reports. | Resume RenderOps ingestion once SaveManager/WorldState parity wraps; align neon signage sign-off with narrative before the next bespoke batch. |
 | TUT-201 | P0 | Completed | Tutorial case blocked at step 3 (`evidence_detection`) because legacy scene entities bypassed ECS detection events. | ECS-aligned tutorial scene entities shipped Session #51; re-run tutorial smoke tests after combat audio validation. |
 | AUDIO-351 | P0 | Completed | Validate live combat/disguise trigger routing through `AmbientSceneAudioController` using real combat loop events. | Adaptive audio routing now responds to gameplay emits; telemetry verified by Jest/Playwright suites and new infiltration benchmark. |
 | PERF-214 | P1 | Pending | Browser-level performance profiling for adaptive audio + overlay interactions to confirm <16 ms frame time budget. | Run Chromium/Firefox performance audits with combat/stealth transitions, log hotspots, and file perf follow-ups as needed. |
@@ -1054,6 +1054,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 
 #### M1-001: Project Infrastructure Setup
 - **Priority**: P0
+- **Status**: Completed (Infrastructure operational; Vite/Jest/ESLint pipeline established)
 - **Tags**: `engine`, `test`, `docs`
 - **Effort**: 2 hours
 - **Dependencies**: None
@@ -1104,6 +1105,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 
 #### M1-003: ComponentRegistry Implementation
 - **Priority**: P0
+- **Status**: Completed (Component registry + tests landed; see Sessions 119+)
 - **Tags**: `engine`, `ecs`
 - **Effort**: 6 hours
 - **Dependencies**: M1-002
@@ -1331,6 +1333,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 
 #### M1-013: Collision Detection Algorithms
 - **Priority**: P0
+- **Status**: Completed (Collision detectors + regression suite in place)
 - **Tags**: `engine`, `physics`
 - **Effort**: 4 hours
 - **Dependencies**: M1-012
@@ -1353,6 +1356,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 
 #### M1-014: CollisionSystem Implementation
 - **Priority**: P1
+- **Status**: Completed (Spatial hash + collision event system active)
 - **Tags**: `engine`, `physics`, `ecs`
 - **Effort**: 6 hours
 - **Dependencies**: M1-004, M1-012, M1-013
@@ -1658,7 +1662,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Tags**: `gameplay`, `investigation`, `ecs`
 - **Effort**: 4 hours
 - **Dependencies**: M1-004
-- **Status**: Blocked — deferred until BUG-201 collision crash is cleared so investigation triggers can be validated safely.
+- **Status**: Todo — resume once M3-013 save-state parity lands and investigation resourcing is scheduled
 - **Description**: Core investigation mechanics
 - **Files**:
   - `src/game/components/Investigation.js`
@@ -2085,7 +2089,7 @@ _Progress 2025-11-09 (Session #139 audio/perf polish): Augmented performanceSnap
 - **Tags**: `gameplay`, `faction`, `narrative`
 - **Effort**: 4 hours
 - **Dependencies**: Narrative team (faction lore)
-- **Status**: Blocked — awaiting BUG-201 collision fix to restore stable runtime for data validation passes.
+- **Status**: Todo — pending narrative briefs and faction progression scheduling
 - **Description**: Define 5 faction data structures
 - **Files**:
   - `src/game/data/factions/neurosynch.js`
@@ -2237,7 +2241,7 @@ _Progress 2025-11-09 (Session #139 audio/perf polish): Augmented performanceSnap
 - **Tags**: `gameplay`, `faction`, `ecs`
 - **Effort**: 6 hours
 - **Dependencies**: M3-005
-- **Status**: Blocked — work paused until BUG-201 fix stabilizes physics runtime for disguise detection loops.
+- **Status**: Todo — waiting on scheduling after investigation/faction resourcing reshuffle
 - **Description**: Disguise mechanics
 - **Files**:
   - `src/game/systems/DisguiseSystem.js`
@@ -2340,6 +2344,7 @@ _Progress 2025-11-09 (Session #139 audio/perf polish): Augmented performanceSnap
 
 #### M3-013: WorldStateManager Implementation
 - **Priority**: P0
+- **Status**: In Progress (NPC and district slices shipped; SaveManager parity tests outstanding)
 - **Tags**: `gameplay`, `faction`
 - **Effort**: 5 hours
 - **Dependencies**: M3-012
@@ -2634,7 +2639,7 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Detective coat, distinctive look
   - 4-direction or 8-direction movement
 - **File**: `assets/images/requests.json`
-- **Status**: Blocked — prompt brief packaged via `art:package-generation-prompts` (see `assets/images/generation-payloads/ar-001-005.json`); sprite generation review deferred until BUG-201 collision fix restores reliable runtime validation.
+- **Status**: In Progress — prompt brief packaged via `art:package-generation-prompts`; awaiting RenderOps window to review generated sprite batch alongside bespoke art.
 
 ### High Priority Assets (P1 - Required for M3-M6)
 
@@ -2899,7 +2904,7 @@ The goal is a compelling vertical slice demonstrating The Memory Syndicate's uni
 
 **Protected scope**: Investigation mechanics, faction system, Act 1 story, procedural generation. Everything else is negotiable if timeline pressures arise.
 
-**Next immediate action**: Begin M1-001 (Project Infrastructure Setup).
+**Next immediate action**: Focus on M3-013 SaveManager parity tests and hook DistrictTravelOverlay into traversal blockers.
 
 ---
 
