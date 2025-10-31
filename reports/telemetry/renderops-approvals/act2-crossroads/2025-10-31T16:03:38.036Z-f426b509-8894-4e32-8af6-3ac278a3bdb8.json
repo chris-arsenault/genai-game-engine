@@ -1,8 +1,11 @@
 {
   "jobId": "f426b509-8894-4e32-8af6-3ac278a3bdb8",
   "queue": "renderops-lighting",
-  "status": "ready_for_ack",
+  "status": "superseded",
   "createdAt": "2025-10-31T16:03:38.036Z",
+  "processedAt": "2025-10-31T20:57:39Z",
+  "supersededBy": "c488a1c4-4834-4a83-9b33-57510d68c396",
+  "note": "Superseded by refreshed packet act2-crossroads-2025-10-31T20-26-00-520Z; no share required.",
   "packet": {
     "id": "7c5deb80-d0c7-408f-899e-b5fd86faa405",
     "label": "act2-crossroads",

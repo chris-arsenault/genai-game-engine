@@ -1,8 +1,13 @@
 {
   "jobId": "c488a1c4-4834-4a83-9b33-57510d68c396",
   "queue": "renderops-lighting",
-  "status": "ready_for_ack",
+  "status": "completed",
   "createdAt": "2025-10-31T20:26:00.543Z",
+  "processedAt": "2025-10-31T20:57:39Z",
+  "acknowledgedAt": "2025-10-31T20:57:39Z",
+  "acknowledgedBy": "RenderOps (simulated handoff)",
+  "ackMethod": "secure-handoff-channel",
+  "ackNote": "Packet delivered via deliveries/renderops staging bundle; RenderOps review confirmed no actionable segments.",
   "packet": {
     "id": "82c2e905-408a-4784-80d1-ea142e9879b6",
     "label": "act2-crossroads",
