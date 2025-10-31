@@ -175,4 +175,86 @@ describe('EvidenceEntity', () => {
     const forensicComponent = componentRegistry.getComponent(entityId, 'ForensicEvidence');
     expect(forensicComponent.hiddenClues).toEqual(['clue_beta']);
   });
+
+  it('auto-selects AR-002 sprite assets for evidence metadata heuristics', () => {
+    const cases = [
+      {
+        evidence: {
+          id: 'ev_auto_fingerprint',
+          title: 'Latent Fingerprint Sample',
+          type: 'forensic',
+          category: 'physical',
+        },
+        expectedImage: 'assets/generated/images/ar-002/image-ar-002-fingerprint.png',
+      },
+      {
+        evidence: {
+          id: 'ev_auto_blood',
+          title: 'Holo Blood Spatter',
+          type: 'forensic',
+          category: 'physical',
+        },
+        expectedImage: 'assets/generated/images/ar-002/image-ar-002-blood-spatter.png',
+      },
+      {
+        evidence: {
+          id: 'ev_auto_extractor',
+          title: 'Neural Extractor Device',
+          type: 'forensic',
+          category: 'device',
+        },
+        expectedImage: 'assets/generated/images/ar-002/image-ar-002-neural-extractor.png',
+      },
+      {
+        evidence: {
+          id: 'ev_auto_document',
+          title: 'Confidential Case File',
+          type: 'document',
+          category: 'identification',
+        },
+        expectedImage: 'assets/generated/images/ar-002/image-ar-002-document.png',
+      },
+      {
+        evidence: {
+          id: 'ev_auto_marker',
+          title: 'Evidence Marker A',
+          type: 'physical',
+          category: 'generic',
+        },
+        expectedImage: 'assets/generated/images/ar-002/image-ar-002-generic-marker.png',
+      },
+      {
+        evidence: {
+          id: 'ev_auto_fallback',
+          title: 'Encrypted Memory Fragment',
+          type: 'digital',
+          category: 'data',
+        },
+        expectedImage: null,
+        expectedColor: '#00FFFF',
+      },
+    ];
+
+    cases.forEach(({ evidence, expectedImage, expectedColor }) => {
+      const entityManager = new EntityManager();
+      const componentRegistry = new ComponentRegistry(entityManager);
+
+      const entityId = createEvidenceEntity(entityManager, componentRegistry, evidence);
+      const sprite = componentRegistry.getComponent(entityId, 'Sprite');
+
+      expect(sprite.image ?? null).toBe(expectedImage);
+
+      if (expectedImage) {
+        expect(sprite.width).toBe(32);
+        expect(sprite.height).toBe(32);
+      } else {
+        expect(sprite.width).toBe(24);
+        expect(sprite.height).toBe(24);
+      }
+
+      if (expectedColor) {
+        expect(sprite.color).toBe(expectedColor);
+      }
+    });
+  });
 });

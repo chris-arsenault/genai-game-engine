@@ -174,6 +174,9 @@
 - Promoted `image-ar-002-*` manifest entries to `ai-generated`, logging provenance and updated file paths in `assets/images/requests.json`.
 - Updated evidence runtime defaults so `EvidenceEntity` auto-selects the new sprites (fingerprints, blood spatter, neural extractor, dossier) and refreshed Act 1 scene markers to draw the holographic marker art.
 
+## Session 187 Updates
+- Completed AR-002 evidence sprite art review, recording findings in `docs/assets/reviews/ar-002-evidence-sprites.md` and adding automated guards (`tests/assets/ar002Sprites.test.js`, `tests/game/entities/EvidenceEntity.test.js`) to watch 32×32 metadata and heuristic sprite selection.
+
 ## Next Actions
 1. Distribute the latest RenderOps packet (`npm run art:package-renderops` then `npm run art:stage-renderops`) and attach the staged ZIP (`deliveries/renderops/.../*.zip`) plus `*-delivery.json` manifest when sharing with RenderOps; log feedback on actionable segments and regenerate after art tweaks.
 2. Follow `reports/art/placeholder-replacement-schedule.md` to drive weekly bespoke assignments and annotate `assets/images/requests.json` with source/licensing updates upon completion.
