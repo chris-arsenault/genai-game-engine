@@ -50,6 +50,7 @@ import { CrossroadsBranchLandingOverlay } from './ui/CrossroadsBranchLandingOver
 import { InventoryOverlay } from './ui/InventoryOverlay.js';
 import { DetectiveVisionOverlay } from './ui/DetectiveVisionOverlay.js';
 import { ControlBindingsOverlay, CONTROL_BINDINGS_NAV_EVENT } from './ui/ControlBindingsOverlay.js';
+import { DistrictTravelOverlay } from './ui/DistrictTravelOverlay.js';
 import { FxOverlay } from './ui/FxOverlay.js';
 import { FxCueCoordinator } from './fx/FxCueCoordinator.js';
 import { CompositeCueParticleBridge } from './fx/CompositeCueParticleBridge.js';
@@ -235,6 +236,7 @@ export class Game {
     this.compositeCueParticleBridge = null;
     this.fxCueMetricsSampler = null;
     this.movementIndicatorOverlay = null;
+    this.districtTravelOverlay = null;
     this.caseFileUI = null;
     this.deductionBoard = null;
     this.audioFeedback = null;
@@ -903,6 +905,15 @@ export class Game {
       }
     );
     this.inventoryOverlay.init();
+
+    this.districtTravelOverlay = new DistrictTravelOverlay(
+      this.engine.canvas,
+      this.eventBus,
+      {
+        store: this.worldStateStore,
+      }
+    );
+    this.districtTravelOverlay.init();
 
     // Create control bindings overlay
     this.controlBindingsOverlay = new ControlBindingsOverlay(
@@ -2506,6 +2517,9 @@ export class Game {
     if (this.movementIndicatorOverlay) {
       this.movementIndicatorOverlay.update(deltaTime);
     }
+    if (this.districtTravelOverlay) {
+      this.districtTravelOverlay.update(deltaTime);
+    }
     if (this.detectiveVisionOverlay) {
       this.detectiveVisionOverlay.update(deltaTime);
     }
@@ -2550,6 +2564,10 @@ export class Game {
 
     if (this.inventoryOverlay && this.inputState.wasJustPressed('inventory')) {
       this.inventoryOverlay.toggle('input:inventory');
+    }
+
+    if (this.districtTravelOverlay && this.inputState.wasJustPressed('travel')) {
+      this.districtTravelOverlay.toggle('input:travel');
     }
 
     if (this.saveInspectorOverlay && this.inputState.wasJustPressed('saveInspector')) {
@@ -2731,6 +2749,40 @@ export class Game {
           selectedItemId: selected?.id ?? null,
           equippedSlots: this.inventoryOverlay.equipped
             ? Object.keys(this.inventoryOverlay.equipped).filter((slot) => this.inventoryOverlay.equipped[slot]).length
+            : 0,
+        },
+      });
+    }
+
+    if (this.districtTravelOverlay) {
+      const selected = typeof this.districtTravelOverlay.getSelectedEntry === 'function'
+        ? this.districtTravelOverlay.getSelectedEntry()
+        : null;
+      const statusKey = selected?.status?.status ?? 'locked';
+      const statusLabel = (() => {
+        switch (statusKey) {
+          case 'accessible':
+            return 'access granted';
+          case 'restricted':
+            return 'restricted';
+          case 'gated':
+            return 'requirements pending';
+          case 'locked':
+          default:
+            return 'access locked';
+        }
+      })();
+      overlays.push({
+        id: 'districtTravel',
+        label: 'District Travel',
+        visible: Boolean(this.districtTravelOverlay.visible),
+        summary: selected
+          ? `${selected.name} · ${statusLabel}`
+          : `${Array.isArray(this.districtTravelOverlay.entries) ? this.districtTravelOverlay.entries.length : 0} districts`,
+        metadata: {
+          selectedDistrictId: selected?.districtId ?? null,
+          trackedDistricts: Array.isArray(this.districtTravelOverlay.entries)
+            ? this.districtTravelOverlay.entries.length
             : 0,
         },
       });
@@ -3236,6 +3288,10 @@ export class Game {
       this.inventoryOverlay.render(ctx);
     }
 
+    if (this.districtTravelOverlay) {
+      this.districtTravelOverlay.render(ctx);
+    }
+
     // Render quest log UI (on top if visible)
     if (this.questLogUI) {
       this.questLogUI.render(ctx);
@@ -3337,6 +3393,9 @@ export class Game {
     }
     if (this.inventoryOverlay && this.inventoryOverlay.cleanup) {
       this.inventoryOverlay.cleanup();
+    }
+    if (this.districtTravelOverlay && this.districtTravelOverlay.cleanup) {
+      this.districtTravelOverlay.cleanup();
     }
     if (this.controlBindingsOverlay && this.controlBindingsOverlay.cleanup) {
       this.controlBindingsOverlay.cleanup();

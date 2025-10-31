@@ -6,6 +6,7 @@ import { factionSlice } from '../../../src/game/state/slices/factionSlice.js';
 import { tutorialSlice } from '../../../src/game/state/slices/tutorialSlice.js';
 import { dialogueSlice } from '../../../src/game/state/slices/dialogueSlice.js';
 import { inventorySlice } from '../../../src/game/state/slices/inventorySlice.js';
+import { npcSlice } from '../../../src/game/state/slices/npcSlice.js';
 
 describe('WorldStateStore', () => {
   let eventBus;
@@ -152,9 +153,16 @@ describe('WorldStateStore', () => {
       canAdvance: true,
     });
 
+    eventBus.emit('npc:interviewed', {
+      npcId: 'npc_beta',
+      npcName: 'NPC Beta',
+      dialogueId: 'dlg_beta',
+    });
+
     const snapshot = store.snapshot();
     expect(snapshot.storyFlags.flags.act1_started.value).toBe(true);
     expect(snapshot.dialogue.active.dialogueId).toBe('dlg_beta');
+    expect(snapshot.npcs.byId.npc_beta.status).toBe('cooperative');
     expect(snapshot.meta).toBeUndefined();
 
     const secondBus = new EventBus();
@@ -167,6 +175,9 @@ describe('WorldStateStore', () => {
 
     const restoredDialogue = restoredStore.select(dialogueSlice.selectors.selectActiveDialogue);
     expect(restoredDialogue.dialogueId).toBe('dlg_beta');
+
+    const restoredNpc = restoredStore.select(npcSlice.selectors.selectNpcById, 'npc_beta');
+    expect(restoredNpc.status).toBe('cooperative');
 
     restoredStore.destroy();
   });
@@ -258,5 +269,50 @@ describe('WorldStateStore', () => {
     const removals = store.select(factionSlice.selectors.selectRecentMemberRemovals);
     expect(removals).toHaveLength(1);
     expect(removals[0].npcId).toBe('operative_x');
+  });
+
+  test('captures npc state signals', () => {
+    eventBus.emit('npc:recognized_player', {
+      npcId: 'npc_alpha',
+      npcName: 'Officer Hale',
+      npcFaction: 'foundation_security',
+      playerKnown: true,
+    });
+
+    eventBus.emit('npc:became_suspicious', {
+      npcId: 'npc_alpha',
+      npcName: 'Officer Hale',
+      reason: 'disguise',
+    });
+
+    eventBus.emit('npc:witnessed_crime', {
+      npcId: 'npc_alpha',
+      npcName: 'Officer Hale',
+      crimeType: 'trespass',
+      severity: 2,
+    });
+
+    eventBus.emit('npc:alerted', {
+      npcId: 'npc_alpha',
+      reason: 'disguise_blown',
+    });
+
+    eventBus.emit('npc:interviewed', {
+      npcId: 'npc_alpha',
+      npcName: 'Officer Hale',
+      dialogueId: 'dlg_alpha',
+    });
+
+    const npcRecord = store.select(npcSlice.selectors.selectNpcById, 'npc_alpha');
+    expect(npcRecord).toBeDefined();
+    expect(npcRecord.status).toBe('alerted');
+    expect(npcRecord.interactions.interviews).toBe(1);
+    expect(npcRecord.interactions.recognitions).toBe(1);
+    expect(npcRecord.interactions.witnessedCrimes).toBe(1);
+    expect(npcRecord.alert.active).toBe(true);
+    expect(npcRecord.history.length).toBeGreaterThan(0);
+
+    const snapshot = store.snapshot();
+    expect(snapshot.npcs.byId.npc_alpha.status).toBe('alerted');
   });
 });

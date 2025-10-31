@@ -18,7 +18,7 @@
 3. **Update**: Track progress through `update_backlog_item`, adjusting `status`, `next_steps`, `completed_work`, and `notes` as sessions advance; include links to docs, PRs, or assets in the `notes`.
 4. **Close**: Optimistically close stories when acceptance criteria are complete. Do not extend stories with other functionality. Prioritize Closing of stories and moving on to new work.
 5. **Synchronize**: After MCP updates, refresh `docs/plans/backlog.md` (or other surfaced roadmaps) so markdown mirrors the MCP source; never treat the markdown as authoritative.
-6. **Review**: During planning, pull aggregated views from the MCP backlog to drive sprint goals, then record decisions or reprioritizations back into the MCP items immediately.
+6. **Review**: During planning, pull aggregated views from the MCP backlog to drive sprint goals, then record decisions or reprioritizations back into the MCP items immediately. Focus on completing in progress items.
 
 **Non-negotiable:** The backlog must be updated for every change made and for every new work item identified.
 

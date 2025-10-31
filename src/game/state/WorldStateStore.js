@@ -5,6 +5,7 @@ import { tutorialSlice } from './slices/tutorialSlice.js';
 import { dialogueSlice } from './slices/dialogueSlice.js';
 import { inventorySlice } from './slices/inventorySlice.js';
 import { districtSlice } from './slices/districtSlice.js';
+import { npcSlice } from './slices/npcSlice.js';
 
 const DEFAULT_ACTION_HISTORY = 50;
 const DEFAULT_DIALOGUE_HISTORY_LIMIT = 10;
@@ -16,6 +17,7 @@ const sliceRegistry = {
   tutorial: tutorialSlice,
   dialogue: dialogueSlice,
   inventory: inventorySlice,
+  npc: npcSlice,
   district: districtSlice,
 };
 
@@ -515,6 +517,91 @@ export class WorldStateStore {
         });
       }),
 
+      this.eventBus.on('npc:registered', (payload = {}) => {
+        const npcId = payload.npcId ?? payload.id ?? null;
+        if (!npcId) return;
+        this.dispatch({
+          type: 'NPC_REGISTERED',
+          domain: 'npc',
+          payload: {
+            npcId,
+            npcName: payload.npcName ?? payload.name ?? null,
+            npcFaction: payload.npcFaction ?? payload.factionId ?? null,
+          },
+        });
+      }),
+
+      this.eventBus.on('npc:interviewed', (payload = {}) => {
+        const npcId = payload.npcId ?? null;
+        if (!npcId) return;
+        this.dispatch({
+          type: 'NPC_INTERVIEWED',
+          domain: 'npc',
+          payload: {
+            npcId,
+            npcName: payload.npcName ?? null,
+            dialogueId: payload.dialogueId ?? null,
+          },
+        });
+      }),
+
+      this.eventBus.on('npc:recognized_player', (payload = {}) => {
+        const npcId = payload.npcId ?? null;
+        if (!npcId) return;
+        this.dispatch({
+          type: 'NPC_RECOGNIZED_PLAYER',
+          domain: 'npc',
+          payload: {
+            npcId,
+            npcName: payload.npcName ?? null,
+            npcFaction: payload.npcFaction ?? null,
+            playerKnown: payload.playerKnown ?? true,
+          },
+        });
+      }),
+
+      this.eventBus.on('npc:witnessed_crime', (payload = {}) => {
+        const npcId = payload.npcId ?? null;
+        if (!npcId) return;
+        this.dispatch({
+          type: 'NPC_WITNESSED_CRIME',
+          domain: 'npc',
+          payload: {
+            npcId,
+            npcName: payload.npcName ?? null,
+            crimeType: payload.crimeType ?? null,
+            severity: payload.severity ?? null,
+          },
+        });
+      }),
+
+      this.eventBus.on('npc:became_suspicious', (payload = {}) => {
+        const npcId = payload.npcId ?? null;
+        if (!npcId) return;
+        this.dispatch({
+          type: 'NPC_BECAME_SUSPICIOUS',
+          domain: 'npc',
+          payload: {
+            npcId,
+            npcName: payload.npcName ?? null,
+            reason: payload.reason ?? null,
+          },
+        });
+      }),
+
+      this.eventBus.on('npc:alerted', (payload = {}) => {
+        const npcId = payload.npcId ?? null;
+        if (!npcId) return;
+        this.dispatch({
+          type: 'NPC_ALERTED',
+          domain: 'npc',
+          payload: {
+            npcId,
+            reason: payload.reason ?? null,
+          },
+        });
+      }),
+
       this.eventBus.on('district:registered', (payload = {}) => {
         const districtId = payload.districtId ?? payload.id ?? null;
         if (!districtId) return;
@@ -776,6 +863,7 @@ export class WorldStateStore {
     const dialogue = sliceRegistry.dialogue.serialize(this.state.dialogue);
     const inventory = sliceRegistry.inventory.serialize(this.state.inventory);
     const districts = sliceRegistry.district.serialize(this.state.district);
+    const npcs = sliceRegistry.npc.serialize(this.state.npc);
 
     return {
       storyFlags,
@@ -785,6 +873,7 @@ export class WorldStateStore {
       dialogue,
       inventory,
       districts,
+      npcs,
       tutorialComplete: Boolean(tutorial?.completed),
     };
   }
@@ -804,6 +893,7 @@ export class WorldStateStore {
       dialogue: snapshot.dialogue ?? {},
       inventory: snapshot.inventory ?? {},
       districts: snapshot.districts ?? {},
+      npc: snapshot.npcs ?? snapshot.npc ?? {},
     };
 
     this.dispatch({

@@ -40,6 +40,18 @@
 - Authored progression unit suite validating lock/unlock flows, restriction handling, and contextual overrides (`tests/game/progression/DistrictAccessEvaluator.test.js`).
 - Verification: `npm test -- district`.
 
+### Session #151 Backlog Updates
+
+#### M3-022: District Access Evaluation Utilities
+- Integrated the evaluator into the new `DistrictTravelOverlay` so the travel/navigation UX lists blockers, restrictions, and unlocked routes sourced from world state (`src/game/ui/DistrictTravelOverlay.js`, `src/game/ui/helpers/districtTravelViewModel.js`).
+- Added helper coverage under `tests/game/ui/helpers/districtTravelViewModel.test.js` to guard route/blocker summaries.
+- Verification: `npm test -- districtTravelViewModel`.
+
+#### M3-013: WorldStateManager Implementation
+- Added `npcSlice` with reducers/selectors for recognition, suspicion, alert, and interview events plus snapshot/hydration support (`src/game/state/slices/npcSlice.js`).
+- Extended `WorldStateStore` event wiring and snapshot tests so NPC state is persisted and restored (`tests/game/state/worldStateStore.test.js`, `tests/game/state/npcSlice.test.js`).
+- Verification: `npm test -- npcSlice worldStateStore`.
+
 ### Session #149 Backlog Updates
 
 #### UX-173: Debug Audio Overlay Ergonomics

@@ -24,6 +24,7 @@ export const Controls = {
   caseFile: ['Tab'], // Open case file
   deductionBoard: ['KeyB'], // Open deduction board
   inventory: ['KeyI'], // Open inventory
+  travel: ['KeyT'], // Open district travel overview
   pause: ['Escape'], // Pause menu
   faction: ['KeyR'], // Open reputation/faction UI
   disguise: ['KeyG'], // Open disguise UI (G for Gear/Garb)

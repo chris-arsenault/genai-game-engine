@@ -12,7 +12,11 @@ while true; do
   git checkout -b "$branch" || git checkout "$branch"
 
   # Run Codex autonomous development
-  codex --yolo --search exec "review AGENTS.md fetch handoff from game-mcp-server, and use result to plan and execute an autonomous development cycle"
+  COMMAND="review AGENTS.md, fetch handoff from game-mcp-server, and use result to plan and execute an autonomous development cycle"
+  if (( sessionNum % 5 == 0 )); then
+    COMMAND="review AGENTS.md, fetch handoff from game-mcp-server, and complete an autonomous development cycle. For this cycle do not complete TODOS or development work. focus only on clean up and backlog managemnt. review existing state of stories and project and delete unused artifiacts and close unneeded stories"
+  fi
+  codex --yolo --search exec $COMMAND
   sleep 15
 
   # Commit and push results
