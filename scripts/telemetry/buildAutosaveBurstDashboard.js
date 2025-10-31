@@ -199,6 +199,18 @@ export function buildAutosaveBurstDashboardDataset(summary, options = {}) {
   return dataset;
 }
 
+const DEFAULT_MIRROR_OUTPUTS = [
+  'telemetry-artifacts/reports/autosave-burst/dashboard-feed.json',
+  'telemetry-artifacts/analytics/autosave-burst/dashboard-feed.json',
+];
+
+async function writeDatasetFile(targetPath, dataset) {
+  const resolved = path.resolve(targetPath);
+  await mkdir(path.dirname(resolved), { recursive: true });
+  await writeFile(resolved, `${JSON.stringify(dataset, null, 2)}\n`, 'utf8');
+  return resolved;
+}
+
 export async function buildAutosaveBurstDashboard(options = {}) {
   const cwd = options.cwd ?? process.cwd();
   const summaryPath = path.resolve(
@@ -221,15 +233,40 @@ export async function buildAutosaveBurstDashboard(options = {}) {
   }
 
   const dataset = buildAutosaveBurstDashboardDataset(summary, options);
+  const mirrorCandidates =
+    options.mirrorOutputPaths ??
+    (options.includeDefaultMirrors === false ? [] : DEFAULT_MIRROR_OUTPUTS);
+  const mirrorOutputPaths = Array.isArray(mirrorCandidates)
+    ? mirrorCandidates
+    : typeof mirrorCandidates === 'string' && mirrorCandidates.length > 0
+      ? [mirrorCandidates]
+      : [];
+
+  let finalOutputPath = path.resolve(outputPath);
+  const writtenMirrors = [];
 
   if (options.writeOutput !== false) {
-    await mkdir(path.dirname(outputPath), { recursive: true });
-    await writeFile(outputPath, `${JSON.stringify(dataset, null, 2)}\n`, 'utf8');
+    finalOutputPath = await writeDatasetFile(outputPath, dataset);
+
+    const seen = new Set([finalOutputPath]);
+    for (const candidate of mirrorOutputPaths) {
+      if (typeof candidate !== 'string' || candidate.trim().length === 0) {
+        continue;
+      }
+      const resolvedCandidate = path.resolve(cwd, candidate.trim());
+      if (seen.has(resolvedCandidate)) {
+        continue;
+      }
+      await writeDatasetFile(resolvedCandidate, dataset);
+      seen.add(resolvedCandidate);
+      writtenMirrors.push(resolvedCandidate);
+    }
   }
 
   return {
     dataset,
-    outputPath,
+    outputPath: finalOutputPath,
+    mirrorOutputPaths: writtenMirrors,
   };
 }
 
@@ -238,27 +275,49 @@ async function main() {
   let summaryPath = 'reports/telemetry/autosave-burst/test-burst-summary.json';
   let outputPath = 'reports/telemetry/autosave-burst/dashboard-feed.json';
   let includeArtifacts = true;
+  const mirrorOutputs = [];
+  let includeDefaultMirrors = true;
 
-  for (const arg of args) {
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
     if (arg.startsWith('--summary=')) {
       summaryPath = arg.slice('--summary='.length).trim();
     } else if (arg.startsWith('--output=')) {
       outputPath = arg.slice('--output='.length).trim();
     } else if (arg === '--no-artifacts') {
       includeArtifacts = false;
+    } else if (arg === '--include-artifacts') {
+      includeArtifacts = true;
+    } else if (arg.startsWith('--mirror=')) {
+      const value = arg.slice('--mirror='.length).trim();
+      if (value.length > 0) {
+        mirrorOutputs.push(value);
+      }
+    } else if (arg === '--mirror') {
+      const next = args[index + 1];
+      if (next && !next.startsWith('-')) {
+        mirrorOutputs.push(next.trim());
+        index += 1;
+      }
+    } else if (arg === '--no-default-mirrors') {
+      includeDefaultMirrors = false;
     }
   }
 
-  const { dataset, outputPath: resolvedOutput } = await buildAutosaveBurstDashboard({
-    summaryPath,
-    outputPath,
-    includeArtifacts,
-  });
+  const { dataset, outputPath: resolvedOutput, mirrorOutputPaths: mirrors } =
+    await buildAutosaveBurstDashboard({
+      summaryPath,
+      outputPath,
+      includeArtifacts,
+      mirrorOutputPaths: mirrorOutputs.length > 0 ? mirrorOutputs : undefined,
+      includeDefaultMirrors,
+    });
 
   console.log(
     `[buildAutosaveBurstDashboard] Processed ${dataset.iterations} iterations ` +
       `(${dataset.successCount} successes, ${dataset.failureCount} failures) ` +
-      `-> ${resolvedOutput}`
+      `-> ${resolvedOutput}` +
+      (mirrors.length > 0 ? ` mirrors=[${mirrors.join(', ')}]` : '')
   );
 }
 

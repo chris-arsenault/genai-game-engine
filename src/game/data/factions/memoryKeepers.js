@@ -27,6 +27,12 @@ export const memoryKeepers = {
     allied: { fame: 95, infamy: 0 }, // The One We've Waited For (complete truth)
   },
 
+  // Initial reputation baseline (Keepers quietly support the detective's mission)
+  initialReputation: {
+    fame: 30,
+    infamy: 6,
+  },
+
   // Territory control
   territories: ['undercroft'], // Hidden sanctuaries
   headquarters: 'archive_reliquary',

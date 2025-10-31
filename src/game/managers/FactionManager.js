@@ -18,15 +18,15 @@ export class FactionManager {
     // Reputation storage: { factionId: { fame: 0-100, infamy: 0-100 } }
     this.reputation = {};
 
-    // Initialize all factions at neutral
-    this.initializeReputation();
-
     // Configuration
     this.config = {
       cascadeMultiplier: 0.5, // Allies get 50% bonus, enemies get 50% penalty
       maxReputation: 100,
       minReputation: 0,
     };
+
+    // Initialize all factions at their baseline reputation
+    this.initializeReputation();
 
     this.recentMemberRemovals = [];
   }
@@ -36,11 +36,18 @@ export class FactionManager {
    */
   initializeReputation() {
     const factionIds = getFactionIds();
+    const min = this.config?.minReputation ?? 0;
+    const max = this.config?.maxReputation ?? 100;
 
     for (const factionId of factionIds) {
+      const faction = getFaction(factionId);
+      const initial = faction?.initialReputation ?? {};
+      const baseFame = Number.isFinite(initial.fame) ? initial.fame : 20;
+      const baseInfamy = Number.isFinite(initial.infamy) ? initial.infamy : 20;
+
       this.reputation[factionId] = {
-        fame: 20, // Start neutral
-        infamy: 20,
+        fame: this.clamp(baseFame, min, max),
+        infamy: this.clamp(baseInfamy, min, max),
       };
     }
   }

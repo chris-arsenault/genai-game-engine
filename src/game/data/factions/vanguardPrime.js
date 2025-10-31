@@ -27,6 +27,12 @@ export const vanguardPrime = {
     allied: { fame: 80, infamy: 0 }, // Full trust, security clearance
   },
 
+  // Initial reputation baseline (player is a former Vanguard detective)
+  initialReputation: {
+    fame: 35,
+    infamy: 10,
+  },
+
   // Territory control (Vesper Arcology strata)
   territories: ['crest', 'lattice'], // Upper stratum and mid-levels
   headquarters: 'spire_court',

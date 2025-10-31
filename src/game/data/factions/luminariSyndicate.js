@@ -27,6 +27,12 @@ export const luminariSyndicate = {
     allied: { fame: 80, infamy: 0 }, // Full archive access, classified records
   },
 
+  // Initial reputation baseline (player retains cautious academic ties)
+  initialReputation: {
+    fame: 28,
+    infamy: 12,
+  },
+
   // Territory control
   territories: ['crest'], // Upper stratum
   headquarters: 'the_observatory',

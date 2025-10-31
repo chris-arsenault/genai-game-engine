@@ -27,6 +27,12 @@ export const cipherCollective = {
     allied: { fame: 85, infamy: 5 }, // Full transcendence path, inner circle
   },
 
+  // Initial reputation baseline (player shares technical curiosity but keeps distance)
+  initialReputation: {
+    fame: 22,
+    infamy: 8,
+  },
+
   // Territory control
   territories: ['lattice'], // Mid-upper stratum research districts
   headquarters: 'meridian_labs_district',

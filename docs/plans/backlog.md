@@ -12,6 +12,13 @@
 **Team Structure**: Solo developer; no external approvals required for sign-off.
 **Automation Mandate**: QA validation, asset approvals, and content sourcing execute exclusively through automated scripts and MCP tooling (`mcp__generate-image__generate_image` for all visual assets); manual outreach or waiting on external parties is prohibited.
 
+### Backlog Governance (Updated)
+
+- A strict WIP ceiling of ten active items (statuses `in-progress`, `blocked`, `ready-for-review`) is enforced; defer pulls or escalate conflicts instead of breaching the cap.
+- New backlog entries are only created when the work is critical to delivering committed roadmap functionality or sprint objectives.
+- Tangential initiatives—such as net-new systems, auxiliary tooling, narrative review suites, or analytics dashboards—remain out of scope until roadmap deliverables ship.
+- Telemetry and performance testing initiatives are closed; do not schedule or create new work in these areas per the 2025-10-31 directive.
+
 ### Current High-Priority Focus (Groomed 2025-10-29)
 
 | ID | Priority | Status | Summary | Next Steps |
@@ -23,7 +30,7 @@
 | PERF-214 | P1 | Completed | Profiling harness restored; `npm run profile` runs without module errors and captures infiltration telemetry. | Monitor profiling harness results in CI and schedule the next performance sweep after overlay integration lands. |
 | UX-173 | P1 | Completed | Debug audio overlay now fully keyboard navigable with Shift+Alt+A shortcut, focus trap, and Playwright coverage. | Continue watching the automated Playwright spec for regressions during future overlay changes. |
 
-**Next Session Focus**: Drive the neon district approval loop entirely through the RenderOps automation scripts (`scripts/art/packageRenderOpsLighting.js`, `scripts/art/trackBespokeDeliverables.js`), extend SaveManager telemetry hooks so CI captures every budget regression automatically, and queue the next lighting feedback pass via generated packets—no manual reviews or sign-off meetings.
+**Next Session Focus**: Drive the neon district approval loop entirely through the RenderOps automation scripts (`scripts/art/packageRenderOpsLighting.js`, `scripts/art/trackBespokeDeliverables.js`) and queue the next lighting feedback pass via generated packets—no manual reviews or sign-off meetings. Telemetry and performance testing work remains frozen.
 
 ### Session #173 Backlog Maintenance
 
@@ -82,7 +89,7 @@
 
 #### M3-016: Save/Load System Implementation
 - Re-routed `image-ar-003-kira-evasion-pack` through GPT-Image-1 automation, updating `assets/images/requests.json` to `ai-generated` and storing the transparent dash/slide sprite sheet at `assets/generated/images/ar-003/image-ar-003-kira-evasion-pack.png`. Manifests/docs now note the automation provenance and next integration step.
-- Next: wire the generated dash/slide frames into the player animation set and refresh autosave overlay captures once hooked.
+- Next: normalize the generated dash/slide atlas (`image-ar-003-kira-evasion-pack`) into consistent rows before wiring it into the player animation set, then refresh autosave overlay captures once the sheet is aligned.
 
 #### AR-008: Adaptive Music Tracks (M7)
 - Added AdaptiveMusicLayerController regression coverage (`tests/engine/audio/AdaptiveMusicLayerController.test.js`) that validates ambient/tension/combat volume weights derived from `GameConfig.audio.memoryParlorAmbient`, protecting future mix tweaks for downtown stems.
@@ -718,6 +725,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 #### PERF-119: Procedural Guardrail Monitoring
 - **Priority**: P3
 - **Tags**: `perf`, `test`
+- **Status**: Completed — closed per 2025-10-31 directive to halt telemetry/performance testing initiatives.
 - **Effort**: 2 hours
 - **Dependencies**: Session #22 perf rebaseline
 - **Description**: Capture telemetry for TileMap and SeededRandom suites post-rebaseline to confirm thresholds remain stable and alerting works after interactive build lands.
@@ -733,6 +741,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Progress (Session #89)**: Automated baseline history archival inside `postPerformanceSummary.js`, exported helpers for unit testing, and added Jest coverage/temporary-dir smoke to validate timestamped filenames + copy semantics; baseline doc now references the auto-archive flow.
 - **Progress (Session #90)**: Seeded baseline history automatically when archives are empty, surfaced baseline/history paths in markdown summaries, refreshed guardrail docs with the retention workflow, and expanded Jest coverage to lock the new seeding + reporting behaviour.
 - **Progress (Session #91)**: Exported `listHistoryEntries` to inventory archived baselines, taught `postPerformanceSummary.js` to log recent history files, and extended Jest coverage to validate the directory scanning helper.
+- **Directive Freeze**: Future telemetry and performance guardrail work is cancelled; keep existing automation in maintenance mode only.
 
 #### CI-014: Playwright Smoke Integration
 - **Priority**: P3
@@ -2248,24 +2257,26 @@ _Progress 2025-11-09 (Session #139 audio/perf polish): Augmented performanceSnap
 - **Tags**: `gameplay`, `faction`, `narrative`
 - **Effort**: 4 hours
 - **Dependencies**: Narrative team (faction lore)
-- **Status**: Todo — pending narrative briefs and faction progression scheduling
+- **Status**: Completed — faction data + baseline reputation refresh (Session 178)
 - **Description**: Define 5 faction data structures
 - **Files**:
-  - `src/game/data/factions/neurosynch.js`
-  - `src/game/data/factions/archivists.js`
-  - `src/game/data/factions/police.js`
-  - `src/game/data/factions/curators.js`
-  - `src/game/data/factions/independents.js`
+  - `src/game/data/factions/vanguardPrime.js`
+  - `src/game/data/factions/luminariSyndicate.js`
+  - `src/game/data/factions/cipherCollective.js`
+  - `src/game/data/factions/wraithNetwork.js`
+  - `src/game/data/factions/memoryKeepers.js`
+  - `tests/game/data/factions/factions.test.js`
 - **Implementation Requirements**:
   - Faction metadata (name, description, values)
   - Ally/enemy relationships
   - Reputation thresholds (Hostile, Neutral, Friendly, Allied)
   - Faction-specific rewards
-  - Initial reputation values
+  - Initial reputation baselines integrated with `FactionManager.initializeReputation`
 - **Acceptance Criteria**:
   - All 5 factions defined
   - Relationships match lore
-  - Data validated (no circular dependencies)
+  - Data validated (no circular dependencies, schema + baseline tests)
+  - Reputation manager seeds fame/infamy from faction data
 
 #### M3-002: FactionManager Implementation
 - **Priority**: P0
