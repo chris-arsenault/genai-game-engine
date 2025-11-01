@@ -24,13 +24,13 @@
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
 | Act 3 Narrative | P0 | Done | Finale cinematic overlay now carries scripted VO beats with voiceover metadata surfaced in-game and documentation captured. | Completed in Session 233 — finale VO script integrated, review packet regenerated, and finale Playwright suite rerun for verification. |
-| AR-050 | P1 | In Progress | Act 2 visual pipeline automation delivers RenderOps packets, inventories, and ai-generated overlays (Memory Parlor neon set) with luminance/tolerance snapshots tracked across reports. | Acknowledge RenderOps approval packet `reports/telemetry/renderops-approvals/act2-crossroads/2025-11-01T09:10:32.110Z-9cc27c03-3b58-4c29-8c71-36dfe28507ae.json` once lighting QA signs off. |
+| AR-050 | P1 | In Progress | Act 2 visual pipeline automation delivers RenderOps packets, inventories, and ai-generated overlays (Memory Parlor neon set) with luminance/tolerance snapshots tracked across reports. | Maintain weekly automation sweeps to keep RenderOps packets current (job `9cc27c03-3b58-4c29-8c71-36dfe28507ae` acknowledged 2025-11-01T19:32:07Z). |
 | CORE-303 | P1 | In Progress | InvestigationSystem player lookup restored, dialogue alias coverage keeps tutorial conversations available, and dialogue input routing now feeds the DialogueSystem; awaiting quest plumbing to complete the minimal investigative loop. | Integrate the repaired investigation/dialogue wiring into tutorial quest beats once CORE-301/302 land, then schedule investigative loop Playwright validation. |
 | M3-003 | P1 | Pending | ECS faction system components, systems, and Jest scaffolding are outlined but paused, awaiting upstream faction data contracts. | Resume after M3-002 readiness and keep validation inside scripted faction behaviour suites—no manual QA loops. |
 | M2-005 | P1 | Pending | Deduction board UI foundations (nodes, drag/drop, connection rendering) are still queued behind M2-004, with automated regression requirements documented. | Spin up the UI shell once M2-004 lands, ensuring drag/connect workflows ship with Jest coverage and zero manual acceptance steps. |
 
 **Next Session Focus**:
-- Acknowledge RenderOps approval packet `reports/telemetry/renderops-approvals/act2-crossroads/2025-11-01T09:10:32.110Z-9cc27c03-3b58-4c29-8c71-36dfe28507ae.json` after lighting QA review.
+- Maintain weekly automation sweeps (`npm run art:track-bespoke`, `npm run art:package-renderops`, `npm run art:export-crossroads-luminance`) to keep RenderOps packets current; telemetry acknowledgement recorded for job `9cc27c03-3b58-4c29-8c71-36dfe28507ae`.
 - Continue CORE-303 investigative loop bring-up once CORE-301/302 deliver quest hooks, now that dialogue alignment and input routing are restored, and run automated tutorial validations.
 
 ### Session #228 Backlog Maintenance
@@ -55,7 +55,7 @@
 
 #### AR-050: Visual Asset Sourcing Pipeline
 - Re-ran the automation sweep and staged RenderOps packet `act2-crossroads-2025-11-01T09-10-32-089Z`, producing delivery artifacts under `deliveries/renderops/act2-crossroads/` ready for vendor handoff (`npm run art:track-bespoke`, `npm run art:package-renderops`, `npm run art:export-crossroads-luminance`, `npm run art:stage-renderops -- --packet-dir reports/art/renderops-packets/act2-crossroads-2025-11-01T09-10-32-089Z`).
-- Next steps: await lighting QA response and acknowledge approval packet `reports/telemetry/renderops-approvals/act2-crossroads/2025-11-01T09:10:32.110Z-9cc27c03-3b58-4c29-8c71-36dfe28507ae.json`.
+- Next steps: maintain weekly automation sweeps; RenderOps approval job `9cc27c03-3b58-4c29-8c71-36dfe28507ae` acknowledged in Session 237 following lighting QA.
 
 ### Session #229 Backlog Updates
 

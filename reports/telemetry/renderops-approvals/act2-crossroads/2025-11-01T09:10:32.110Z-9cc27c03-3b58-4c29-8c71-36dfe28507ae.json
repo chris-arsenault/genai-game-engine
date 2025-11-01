@@ -1,8 +1,13 @@
 {
   "jobId": "9cc27c03-3b58-4c29-8c71-36dfe28507ae",
   "queue": "renderops-lighting",
-  "status": "ready_for_ack",
+  "status": "completed",
   "createdAt": "2025-11-01T09:10:32.110Z",
+  "processedAt": "2025-11-01T19:32:07Z",
+  "acknowledgedAt": "2025-11-01T19:32:07Z",
+  "acknowledgedBy": "Codex Session 237 lighting QA",
+  "ackMethod": "deliveries/renderops internal staging",
+  "ackNote": "Lighting QA recorded in reports/art/lighting-qa/act2-crossroads-2025-11-22.md; packet cleared with 12/12 segments within tolerance and no actionable items.",
   "packet": {
     "id": "64a06a8e-7c87-4dcb-b234-c521e95be721",
     "label": "act2-crossroads",

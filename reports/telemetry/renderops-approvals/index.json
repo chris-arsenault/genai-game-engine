@@ -6,6 +6,12 @@
       "lastCheckedAt": "2025-11-01T05:32:45.415Z",
       "status": "completed"
     },
+    "9cc27c03-3b58-4c29-8c71-36dfe28507ae": {
+      "source": "/home/tsonu/src/genai-game-engine/reports/telemetry/renderops-approvals/act2-crossroads/2025-11-01T09:10:32.110Z-9cc27c03-3b58-4c29-8c71-36dfe28507ae.json",
+      "processedAt": "2025-11-01T19:32:07Z",
+      "lastCheckedAt": "2025-11-01T19:32:07Z",
+      "status": "completed"
+    },
     "index": {
       "source": "/home/tsonu/src/genai-game-engine/reports/telemetry/renderops-approvals/index.json",
       "processedAt": null,
