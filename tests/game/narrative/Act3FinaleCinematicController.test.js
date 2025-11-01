@@ -56,8 +56,21 @@ function buildPayload(overrides = {}) {
     summary: 'Test summary for finale playback.',
     musicCue: 'track-ending-support',
     epilogueBeats: [
-      { id: 'beat1', title: 'Beat 1', description: 'First beat' },
-      { id: 'beat2', title: 'Beat 2', description: 'Second beat' },
+      {
+        id: 'beat1',
+        title: 'Beat 1',
+        description: 'First beat',
+        voiceover: [
+          { speaker: 'Kira', line: 'Hold steady, Zenith.', delivery: 'steady' },
+          { line: 'No speaker assigned, just the city listening.' },
+        ],
+      },
+      {
+        id: 'beat2',
+        title: 'Beat 2',
+        description: 'Second beat',
+        voiceover: [{ speaker: 'Zara', line: 'Grid diagnostics still green.' }],
+      },
     ],
     ...overrides,
   };
@@ -98,6 +111,13 @@ describe('Act3FinaleCinematicController', () => {
     eventBus.emit('narrative:finale_cinematic_ready', buildPayload());
 
     expect(overlay.setCinematic).toHaveBeenCalledTimes(1);
+    const cinematicPayload = overlay.setCinematic.mock.calls[0][0];
+    expect(cinematicPayload.epilogueBeats[0].voiceover[0]).toEqual(
+      expect.objectContaining({
+        speaker: 'Kira',
+        line: 'Hold steady, Zenith.',
+      })
+    );
     expect(assetManager.prepareAssets).toHaveBeenCalledTimes(1);
     const options = overlay.setCinematic.mock.calls[0][1];
     expect(options.visuals).toBeDefined();
@@ -107,6 +127,13 @@ describe('Act3FinaleCinematicController', () => {
     expect(controller.getState().assets.hero.assetId).toBe('hero_asset');
     expect(overlay.show).toHaveBeenCalledTimes(1);
     expect(begins).toHaveLength(1);
+    const statePayload = controller.getState().payload;
+    expect(statePayload.epilogueBeats[0].voiceover[1]).toEqual(
+      expect.objectContaining({
+        speaker: 'narrator_2',
+        line: 'No speaker assigned, just the city listening.',
+      })
+    );
 
     const finaleDefinition = getFinaleAdaptiveDefinition('track-ending-support');
     expect(defines).toHaveLength(1);

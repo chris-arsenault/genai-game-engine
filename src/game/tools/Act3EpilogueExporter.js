@@ -30,6 +30,30 @@ export function buildAct3EpilogueSummary() {
         description: beat.description ?? '',
         narrativeBeat: beat.narrativeBeat ?? null,
         telemetryTag: beat.telemetryTag ?? null,
+        voiceover: Array.isArray(beat.voiceover)
+          ? beat.voiceover
+              .map((entry, idx) => {
+                const line =
+                  typeof entry?.line === 'string' && entry.line.trim().length > 0
+                    ? entry.line.trim()
+                    : '';
+                if (!line) {
+                  return null;
+                }
+                return {
+                  speaker:
+                    typeof entry?.speaker === 'string' && entry.speaker.trim().length > 0
+                      ? entry.speaker.trim()
+                      : `Narrator ${idx + 1}`,
+                  line,
+                  delivery:
+                    typeof entry?.delivery === 'string' && entry.delivery.trim().length > 0
+                      ? entry.delivery.trim()
+                      : null,
+                };
+              })
+              .filter(Boolean)
+          : [],
       })),
     };
   });
@@ -113,6 +137,13 @@ export function renderAct3EpilogueMarkdown(summary, options = {}) {
         lines.push(
           `  - Narrative Beat: ${beat.narrativeBeat ?? '—'} | Telemetry: ${beat.telemetryTag ?? '—'}`
         );
+      }
+      if (Array.isArray(beat.voiceover) && beat.voiceover.length > 0) {
+        lines.push('  - VO Script:');
+        for (const entry of beat.voiceover) {
+          const delivery = entry.delivery ? ` (${entry.delivery})` : '';
+          lines.push(`    - ${entry.speaker}${delivery}: "${entry.line}"`);
+        }
       }
     }
     lines.push('');

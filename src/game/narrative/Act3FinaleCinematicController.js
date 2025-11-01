@@ -517,6 +517,7 @@ export class Act3FinaleCinematicController {
         typeof beat?.telemetryTag === 'string' && beat.telemetryTag.trim().length
           ? beat.telemetryTag.trim()
           : null,
+      voiceover: this._sanitizeVoiceover(beat?.voiceover),
     }));
 
     const stanceTitle =
@@ -556,6 +557,35 @@ export class Act3FinaleCinematicController {
       dispatchedAt: Number.isFinite(payload.dispatchedAt) ? payload.dispatchedAt : Date.now(),
       epilogueBeats: mapped,
     };
+  }
+
+  _sanitizeVoiceover(entries) {
+    if (!Array.isArray(entries)) {
+      return [];
+    }
+    const sanitized = [];
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
+      const line =
+        typeof entry?.line === 'string' && entry.line.trim().length > 0
+          ? entry.line.trim()
+          : '';
+      if (!line) {
+        continue;
+      }
+      sanitized.push({
+        speaker:
+          typeof entry?.speaker === 'string' && entry.speaker.trim().length > 0
+            ? entry.speaker.trim()
+            : `narrator_${i + 1}`,
+        line,
+        delivery:
+          typeof entry?.delivery === 'string' && entry.delivery.trim().length > 0
+            ? entry.delivery.trim()
+            : null,
+      });
+    }
+    return sanitized;
   }
 
   _summarizeAssets(assets) {

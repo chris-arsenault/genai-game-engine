@@ -23,14 +23,13 @@
 
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
-| Act 3 Narrative | P0 | In Progress | Finale cinematic overlay now renders the shared memory well panel across all stances with automated coverage; finale scripting/VO polish remains. | Finalize Act 3 finale scripting/VO against the shared overlay and rerun `npx playwright test tests/e2e/act3-zenith-finale.spec.js`; continue monitoring finale adaptive audio automation passes for stability. |
+| Act 3 Narrative | P0 | Done | Finale cinematic overlay now carries scripted VO beats with voiceover metadata surfaced in-game and documentation captured. | Completed in Session 233 — finale VO script integrated, review packet regenerated, and finale Playwright suite rerun for verification. |
 | AR-050 | P1 | In Progress | Act 2 visual pipeline automation delivers RenderOps packets, inventories, and ai-generated overlays (Memory Parlor neon set) with luminance/tolerance snapshots tracked across reports. | Acknowledge RenderOps approval packet `reports/telemetry/renderops-approvals/act2-crossroads/2025-11-01T09:10:32.110Z-9cc27c03-3b58-4c29-8c71-36dfe28507ae.json` once lighting QA signs off. |
 | CORE-303 | P1 | Pending | Minimal investigative loop remains blocked on CORE-301/302 quest plumbing; scope captures evidence intake unlocking Detective Vision and advancing witness beats. | Break down implementation tasks once dependencies are ready and pre-wire quest/evidence validation via existing automation harnesses. |
 | M3-003 | P1 | Pending | ECS faction system components, systems, and Jest scaffolding are outlined but paused, awaiting upstream faction data contracts. | Resume after M3-002 readiness and keep validation inside scripted faction behaviour suites—no manual QA loops. |
 | M2-005 | P1 | Pending | Deduction board UI foundations (nodes, drag/drop, connection rendering) are still queued behind M2-004, with automated regression requirements documented. | Spin up the UI shell once M2-004 lands, ensuring drag/connect workflows ship with Jest coverage and zero manual acceptance steps. |
 
 **Next Session Focus**:
-- Finalize Act 3 finale scripting/VO against the shared overlay and rerun `npx playwright test tests/e2e/act3-zenith-finale.spec.js` to validate narrative playback.
 - Acknowledge RenderOps approval packet `reports/telemetry/renderops-approvals/act2-crossroads/2025-11-01T09:10:32.110Z-9cc27c03-3b58-4c29-8c71-36dfe28507ae.json` after lighting QA review.
 - Break down CORE-303 investigative loop tasks so dependencies (CORE-301/302) and faction prerequisites stay aligned with automation-first delivery.
 
@@ -38,6 +37,13 @@
 
 - Normalized AR-050, BUG-201, and QA-330 backlog entries to strip manual follow-ups and point entirely to scripted automation.
 - Refreshed high-priority focus and Next Session Focus so MCP and documentation stay in sync around Act 3, art automation, and investigative loop planning.
+
+### Session #233 Backlog Updates
+
+#### Act 3 Narrative (415b4bd3-2053-400e-92a5-1f1fceccc632)
+- Authored the finale voiceover script across all stance epilogues, embedded VO metadata into `src/game/data/narrative/Act3EpilogueLibrary.js`, and extended the finale sequencer/controller plus `FinaleCinematicOverlay` to surface scripted beats during playback.
+- Regenerated the epilogue review packet with VO lines via `npm run narrative:export-act3-epilogues -- --markdown --markdown-out=docs/narrative/epilogues/act-3-epilogues.md`, keeping documentation aligned with the canonical library.
+- Verification: `npm test -- --runTestsByPath tests/game/narrative/Act3FinaleCinematicSequencer.test.js tests/game/narrative/Act3FinaleCinematicController.test.js tests/game/tools/Act3EpilogueExporter.test.js` and `npx playwright test tests/e2e/act3-zenith-finale.spec.js`.
 
 ### Session #231 Backlog Updates
 

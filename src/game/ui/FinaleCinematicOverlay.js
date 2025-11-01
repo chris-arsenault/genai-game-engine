@@ -49,7 +49,37 @@ function cloneBeat(beat, index) {
       typeof beat?.telemetryTag === 'string' && beat.telemetryTag.trim().length
         ? beat.telemetryTag.trim()
         : null,
+    voiceover: cloneVoiceover(beat),
   };
+}
+
+function cloneVoiceover(beat) {
+  if (!Array.isArray(beat?.voiceover)) {
+    return [];
+  }
+  const result = [];
+  for (let i = 0; i < beat.voiceover.length; i++) {
+    const entry = beat.voiceover[i];
+    const line =
+      typeof entry?.line === 'string' && entry.line.trim().length > 0
+        ? entry.line.trim()
+        : '';
+    if (!line) {
+      continue;
+    }
+    result.push({
+      speaker:
+        typeof entry?.speaker === 'string' && entry.speaker.trim().length > 0
+          ? entry.speaker.trim()
+          : `Narrator ${i + 1}`,
+      line,
+      delivery:
+        typeof entry?.delivery === 'string' && entry.delivery.trim().length > 0
+          ? entry.delivery.trim()
+          : null,
+    });
+  }
+  return result;
 }
 
 function formatBinding(action, fallback) {
@@ -76,6 +106,9 @@ export class FinaleCinematicOverlay {
     this.fadeSpeed = options.fadeSpeed ?? 6;
 
     const { palette, typography, metrics } = overlayTheme;
+    const italicSmallFont = /italic/i.test(typography.small)
+      ? typography.small
+      : `italic ${typography.small}`;
     const overrides = options.styleOverrides ?? {};
 
     this.layout = {
@@ -121,6 +154,10 @@ export class FinaleCinematicOverlay {
           headingColor: palette.textMuted,
           titleFont: typography.body,
           descriptionFont: typography.small,
+           voiceoverFont: italicSmallFont,
+           voiceoverColor: palette.textMuted,
+           voiceoverLineHeight: 14,
+           voiceoverMaxLines: 4,
           color: palette.textPrimary,
           activeColor: palette.accent,
           completedColor: '#6df7cb',
@@ -627,6 +664,11 @@ export class FinaleCinematicOverlay {
       ? this.style.summary.color
       : this.style.beats.lockedColor;
 
+    const voiceoverEntries = active && Array.isArray(beat?.voiceover) ? beat.voiceover : [];
+    const voiceoverLines = [];
+    const voiceoverLineHeight = this.style.beats.voiceoverLineHeight ?? 14;
+    const voiceoverMaxLines = this.style.beats.voiceoverMaxLines ?? 4;
+
     const { width: thumbWidth, height: thumbHeight, status: thumbStatus } =
       this._measureBeatThumbnail(visual, Math.min(96, width * 0.34), Math.min(88, maxHeight || 88));
     const textOffset = thumbWidth > 0 ? thumbWidth + 14 : 0;
@@ -639,16 +681,53 @@ export class FinaleCinematicOverlay {
     const lines = this._wrapText(ctx, text, textWidth);
     ctx.restore();
 
+    if (voiceoverEntries.length > 0) {
+      ctx.save();
+      ctx.font = this.style.beats.voiceoverFont;
+      for (const entry of voiceoverEntries) {
+        const speaker =
+          typeof entry?.speaker === 'string' && entry.speaker.trim().length > 0
+            ? entry.speaker.trim()
+            : 'Narrator';
+        const delivery =
+          typeof entry?.delivery === 'string' && entry.delivery.trim().length > 0
+            ? ` (${entry.delivery.trim()})`
+            : '';
+        const line =
+          typeof entry?.line === 'string' && entry.line.trim().length > 0
+            ? entry.line.trim()
+            : '';
+        if (!line) {
+          continue;
+        }
+        const formatted = `${speaker}${delivery}: ${line}`;
+        const wrapped = this._wrapText(ctx, formatted, textWidth);
+        for (const segment of wrapped) {
+          voiceoverLines.push(segment);
+          if (voiceoverLines.length >= voiceoverMaxLines) {
+            break;
+          }
+        }
+        if (voiceoverLines.length >= voiceoverMaxLines) {
+          break;
+        }
+      }
+      ctx.restore();
+    }
+
     const lineHeight = 16;
     const renderedLines = Math.min(lines.length, 3);
     const textHeight = 22 + renderedLines * lineHeight;
-    const contentHeight = Math.max(textHeight, thumbHeight, 54);
+    const baseContentHeight = Math.max(textHeight, thumbHeight, 54);
+    const voiceoverHeight =
+      voiceoverLines.length > 0 ? voiceoverLines.length * voiceoverLineHeight + 10 : 0;
+    const contentHeight = baseContentHeight + voiceoverHeight;
     let constrainedHeight =
       maxHeight && maxHeight > 0 ? Math.min(contentHeight, maxHeight) : contentHeight;
     constrainedHeight = Math.max(32, constrainedHeight);
 
     if (thumbWidth > 0 && constrainedHeight > 0) {
-      const thumbY = y + Math.max(0, (constrainedHeight - thumbHeight) / 2);
+      const thumbY = y + Math.max(0, (Math.min(baseContentHeight, constrainedHeight) - thumbHeight) / 2);
       this._drawBeatThumbnail(
         ctx,
         visual,
@@ -678,6 +757,19 @@ export class FinaleCinematicOverlay {
       }
       ctx.fillText(line, x + textOffset, textY);
       textY += lineHeight;
+    }
+
+    if (voiceoverLines.length > 0) {
+      textY += 8;
+      ctx.font = this.style.beats.voiceoverFont;
+      ctx.fillStyle = this.style.beats.voiceoverColor;
+      for (const segment of voiceoverLines) {
+        if (textY + voiceoverLineHeight > y + constrainedHeight) {
+          break;
+        }
+        ctx.fillText(segment, x + textOffset, textY);
+        textY += voiceoverLineHeight;
+      }
     }
     ctx.restore();
 

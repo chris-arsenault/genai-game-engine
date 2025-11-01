@@ -43,6 +43,13 @@ describe('Act3FinaleCinematicSequencer', () => {
         title: expect.any(String),
       })
     );
+    expect(Array.isArray(payload.epilogueBeats[0].voiceover)).toBe(true);
+    expect(payload.epilogueBeats[0].voiceover[0]).toEqual(
+      expect.objectContaining({
+        speaker: expect.any(String),
+        line: expect.any(String),
+      })
+    );
 
     sequencer.dispose();
   });
@@ -99,4 +106,3 @@ describe('Act3FinaleCinematicSequencer', () => {
     sequencer.dispose();
   });
 });
-
