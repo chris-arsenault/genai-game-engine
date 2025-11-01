@@ -46,6 +46,10 @@
 - AR-050 automation sweep executed (`npm run art:track-bespoke`, `npm run art:package-renderops`, `npm run art:export-crossroads-luminance`), producing packet `reports/art/renderops-packets/act2-crossroads-2025-11-01T20-13-32-755Z` with approval job `reports/telemetry/renderops-approvals/act2-crossroads/2025-11-01T20:13:32.777Z-9d5eefce-d467-4f54-92c5-37f235d68c5c.json` and luminance snapshot `reports/art/luminance-snapshots/act2-crossroads/act2-crossroads-luminance-2025-11-01T20-13-40-229Z.{json,md}`.
 - M3-016 telemetry monitors refreshed: autosave dashboard mirrored (`npm run telemetry:autosave-dashboard`), outbox acknowledgements confirmed with `npm run telemetry:ack`, and parity verified via `npm run telemetry:check-parity` (100% coverage, no pending labels).
 
+### Session #240 Backlog Updates
+
+- Closed **M3-005: NPC Component and Memory System** after wiring faction intel sharing for recognition/crime events, persisting NPC memory + player `knownBy` state through `SaveManager`, and landing Jest coverage at `tests/game/systems/NPCMemorySystem.test.js` (`npm test`).
+
 ### Session #228 Backlog Maintenance
 
 - Normalized AR-050, BUG-201, and QA-330 backlog entries to strip manual follow-ups and point entirely to scripted automation.
@@ -2582,6 +2586,7 @@ _Progress 2025-11-09 (Session #139 audio/perf polish): Augmented performanceSnap
   - Recognition distance appropriate
   - Memory persists across saves
   - Faction members share information
+- **Status**: Done (Session 240 – faction intel sharing, persistence, and automated tests landed)
 
 #### M3-006: NPCFactory
 - **Priority**: P1

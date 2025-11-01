@@ -23,7 +23,7 @@ export class FactionMember {
     this.primaryFaction = primaryFaction;
     this.reputation = new Map(Object.entries(reputation));
     this.currentDisguise = currentDisguise;
-    this.knownBy = knownBy;
+    this.knownBy = knownBy instanceof Set ? knownBy : new Set(knownBy || []);
     this.relationshipModifiers = relationshipModifiers;
   }
 
@@ -100,5 +100,13 @@ export class FactionMember {
    */
   markKnownBy(npcId) {
     this.knownBy.add(npcId);
+  }
+
+  /**
+   * Replace the knownBy set with a new collection of NPC identifiers.
+   * @param {Iterable<string>} npcIds
+   */
+  setKnownBy(npcIds = []) {
+    this.knownBy = new Set(npcIds);
   }
 }

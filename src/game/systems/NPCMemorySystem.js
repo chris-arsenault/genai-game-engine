@@ -16,6 +16,27 @@
 
 import { System } from '../../engine/ecs/System.js';
 
+function distanceBetween(a, b) {
+  if (!a || !b) {
+    return Number.POSITIVE_INFINITY;
+  }
+  const dx = (a.x ?? 0) - (b.x ?? 0);
+  const dy = (a.y ?? 0) - (b.y ?? 0);
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function cloneCrimeData(crime) {
+  return {
+    type: crime?.type ?? 'unknown',
+    location: crime?.location ?? 'unknown',
+    severity: crime?.severity ?? 1,
+    timestamp: crime?.timestamp ?? Date.now(),
+    reported: Boolean(crime?.reported ?? false),
+    shared: Boolean(crime?.shared ?? false),
+    sourceNpcId: crime?.sourceNpcId ?? null,
+  };
+}
+
 export class NPCMemorySystem extends System {
   constructor(componentRegistry, eventBus, factionManager) {
     super(componentRegistry, eventBus);
@@ -137,6 +158,69 @@ export class NPCMemorySystem extends System {
       npcFaction: npc.faction,
       playerKnown: true,
     });
+
+    // Share recognition intel with nearby faction members
+    this.shareRecognitionWithFaction(npcEntity, npc, playerEntity, playerFaction);
+  }
+
+  /**
+   * Share recognition intel with nearby faction members so they also
+   * remember the player through faction chatter.
+   * @param {string} sourceEntityId
+   * @param {NPC} sourceNpc
+   * @param {string} playerEntityId
+   * @param {FactionMember|null} playerFaction
+   */
+  shareRecognitionWithFaction(sourceEntityId, sourceNpc, playerEntityId, playerFaction) {
+    if (!sourceNpc?.faction) {
+      return;
+    }
+
+    const sourceTransform = this.componentRegistry.getComponent(sourceEntityId, 'Transform');
+    const npcEntities = this.componentRegistry.queryEntities(['Transform', 'NPC']);
+    const affectedNpcIds = [];
+
+    for (const targetEntityId of npcEntities) {
+      if (targetEntityId === sourceEntityId) {
+        continue;
+      }
+
+      const targetNpc = this.componentRegistry.getComponent(targetEntityId, 'NPC');
+      if (!targetNpc || targetNpc.faction !== sourceNpc.faction || targetNpc.knownPlayer) {
+        continue;
+      }
+
+      const targetTransform = this.componentRegistry.getComponent(targetEntityId, 'Transform');
+      const dist = distanceBetween(targetTransform, sourceTransform);
+      if (dist > this.config.factionShareRadius) {
+        continue;
+      }
+
+      targetNpc.recognizePlayer();
+      targetNpc.memory.sharedIntel = targetNpc.memory.sharedIntel || [];
+      targetNpc.memory.sharedIntel.push({
+        type: 'recognition',
+        sourceNpcId: sourceNpc.npcId,
+        playerEntityId,
+        distance: dist,
+        timestamp: Date.now(),
+      });
+
+      if (playerFaction) {
+        playerFaction.markKnownBy(targetNpc.npcId);
+      }
+
+      affectedNpcIds.push(targetNpc.npcId);
+    }
+
+    if (affectedNpcIds.length > 0) {
+      this.eventBus.emit('npc:intel_shared', {
+        sourceNpcId: sourceNpc.npcId,
+        faction: sourceNpc.faction,
+        intelType: 'recognition',
+        affectedNpcIds,
+      });
+    }
   }
 
   /**
@@ -172,6 +256,7 @@ export class NPCMemorySystem extends System {
           severity: severity || 1,
           timestamp: Date.now()
         });
+        const recordedCrime = npc.witnessedCrimes[npc.witnessedCrimes.length - 1];
 
         // Schedule crime report
         this.scheduleCrimeReport(npc, crimeType, severity);
@@ -183,6 +268,8 @@ export class NPCMemorySystem extends System {
           crimeType,
           severity
         });
+
+        this.shareCrimeIntel(npcEntity, npc, recordedCrime);
       }
     }
   }
@@ -201,6 +288,79 @@ export class NPCMemorySystem extends System {
       severity,
       reportAt: Date.now() + this.config.crimeReportDelay
     });
+  }
+
+  /**
+   * Share crime intel with nearby faction members so they retain memory of player actions.
+   * @param {string} sourceEntityId
+   * @param {NPC} sourceNpc
+   * @param {Object} crimeRecord
+   */
+  shareCrimeIntel(sourceEntityId, sourceNpc, crimeRecord) {
+    if (!sourceNpc?.faction || !crimeRecord) {
+      return;
+    }
+
+    const sourceTransform = this.componentRegistry.getComponent(sourceEntityId, 'Transform');
+    const npcEntities = this.componentRegistry.queryEntities(['Transform', 'NPC']);
+    const affectedNpcIds = [];
+
+    for (const targetEntityId of npcEntities) {
+      if (targetEntityId === sourceEntityId) {
+        continue;
+      }
+
+      const targetNpc = this.componentRegistry.getComponent(targetEntityId, 'NPC');
+      if (!targetNpc || targetNpc.faction !== sourceNpc.faction) {
+        continue;
+      }
+
+      const targetTransform = this.componentRegistry.getComponent(targetEntityId, 'Transform');
+      const dist = distanceBetween(targetTransform, sourceTransform);
+      if (dist > this.config.factionShareRadius) {
+        continue;
+      }
+
+      const alreadyHasIntel = targetNpc.witnessedCrimes.some(
+        (entry) =>
+          entry.shared === true &&
+          entry.sourceNpcId === sourceNpc.npcId &&
+          entry.timestamp === crimeRecord.timestamp &&
+          entry.type === crimeRecord.type
+      );
+      if (alreadyHasIntel) {
+        continue;
+      }
+
+      const sharedCrime = cloneCrimeData(crimeRecord);
+      sharedCrime.shared = true;
+      sharedCrime.sourceNpcId = sourceNpc.npcId;
+      sharedCrime.reported = false;
+
+      targetNpc.witnessedCrimes.push(sharedCrime);
+      targetNpc.memory.sharedIntel = targetNpc.memory.sharedIntel || [];
+      targetNpc.memory.sharedIntel.push({
+        type: 'crime',
+        sourceNpcId: sourceNpc.npcId,
+        crimeType: sharedCrime.type,
+        severity: sharedCrime.severity,
+        timestamp: Date.now(),
+        originalTimestamp: crimeRecord.timestamp,
+      });
+
+      affectedNpcIds.push(targetNpc.npcId);
+    }
+
+    if (affectedNpcIds.length > 0) {
+      this.eventBus.emit('npc:intel_shared', {
+        sourceNpcId: sourceNpc.npcId,
+        faction: sourceNpc.faction,
+        intelType: 'crime',
+        affectedNpcIds,
+        crimeType: crimeRecord.type,
+        severity: crimeRecord.severity,
+      });
+    }
   }
 
   /**
@@ -307,5 +467,121 @@ export class NPCMemorySystem extends System {
   cleanup() {
     console.log('[NPCMemorySystem] Cleaning up...');
     this.pendingReports = [];
+  }
+
+  /**
+   * Serialize NPC memory state for persistence.
+   * @returns {Object}
+   */
+  serialize() {
+    const npcEntities = this.componentRegistry.queryEntities(['NPC']);
+    const npcSnapshots = [];
+
+    for (const entityId of npcEntities) {
+      const npc = this.componentRegistry.getComponent(entityId, 'NPC');
+      if (!npc) {
+        continue;
+      }
+
+      npcSnapshots.push({
+        entityId,
+        npcId: npc.npcId,
+        faction: npc.faction,
+        knownPlayer: Boolean(npc.knownPlayer),
+        lastInteraction: npc.lastInteraction ?? null,
+        attitude: npc.attitude,
+        witnessedCrimes: Array.isArray(npc.witnessedCrimes)
+          ? npc.witnessedCrimes.map(cloneCrimeData)
+          : [],
+        memory: JSON.parse(JSON.stringify(npc.memory || {})),
+      });
+    }
+
+    const playerFaction = this._getPlayerFactionComponent();
+
+    return {
+      npcs: npcSnapshots,
+      pendingReports: this.pendingReports.map((report) => ({
+        npcId: report.npcId,
+        npcFaction: report.npcFaction,
+        crimeType: report.crimeType,
+        severity: report.severity,
+        reportAt: report.reportAt,
+      })),
+      playerKnownBy: playerFaction ? Array.from(playerFaction.knownBy) : [],
+    };
+  }
+
+  /**
+   * Restore NPC memory state from persisted snapshot.
+   * @param {Object} data
+   */
+  deserialize(data = {}) {
+    if (!data || typeof data !== 'object') {
+      return;
+    }
+
+    const npcEntities = this.componentRegistry.queryEntities(['NPC']);
+    const npcById = new Map();
+
+    for (const entityId of npcEntities) {
+      const npc = this.componentRegistry.getComponent(entityId, 'NPC');
+      if (npc) {
+        // Prefer mapping by npcId because entity ids can shift between loads
+        npcById.set(npc.npcId, { npc, entityId });
+      }
+    }
+
+    if (Array.isArray(data.npcs)) {
+      for (const snapshot of data.npcs) {
+        if (!snapshot || typeof snapshot !== 'object') {
+          continue;
+        }
+
+        const idKey = snapshot.npcId;
+        const mapped = idKey ? npcById.get(idKey) : null;
+        const npc = mapped?.npc;
+        if (!npc) {
+          continue;
+        }
+
+        npc.knownPlayer = Boolean(snapshot.knownPlayer);
+        npc.lastInteraction = snapshot.lastInteraction ?? npc.lastInteraction ?? null;
+        npc.attitude = snapshot.attitude ?? npc.attitude;
+        npc.witnessedCrimes = Array.isArray(snapshot.witnessedCrimes)
+          ? snapshot.witnessedCrimes.map(cloneCrimeData)
+          : [];
+        npc.memory = snapshot.memory ? JSON.parse(JSON.stringify(snapshot.memory)) : {};
+      }
+    }
+
+    if (Array.isArray(data.pendingReports)) {
+      this.pendingReports = data.pendingReports
+        .map((report) => ({
+          npcId: report.npcId,
+          npcFaction: report.npcFaction,
+          crimeType: report.crimeType,
+          severity: report.severity ?? 1,
+          reportAt: report.reportAt ?? Date.now(),
+        }))
+        .filter((report) => typeof report.npcId === 'string');
+    } else {
+      this.pendingReports = [];
+    }
+
+    if (Array.isArray(data.playerKnownBy)) {
+      const playerFaction = this._getPlayerFactionComponent();
+      if (playerFaction?.setKnownBy) {
+        playerFaction.setKnownBy(data.playerKnownBy);
+      }
+    }
+  }
+
+  _getPlayerFactionComponent() {
+    const playerEntities = this.componentRegistry.queryEntities(['FactionMember', 'PlayerController']);
+    if (!Array.isArray(playerEntities) || playerEntities.length === 0) {
+      return null;
+    }
+    return this.componentRegistry.getComponent(playerEntities[0], 'FactionMember') || null;
   }
 }
