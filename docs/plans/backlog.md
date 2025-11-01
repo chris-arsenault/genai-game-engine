@@ -2917,10 +2917,10 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Archive Undercity: Dark, ancient tech (16x16 tiles)
   - Zenith Sector: Futuristic, imposing (16x16 tiles)
 - **File**: `assets/images/requests.json`
-- **Status**: All four AR-005 atlases (Neon District, Corporate Spires, Archive Undercity, Zenith Sector) are now `ai-generated` and staged under `assets/generated/images/ar-005/`; Neon District seam metadata plus preview/validation outputs are live and wired into the authored template manifest (`neonDistrictSeamPreview`), DistrictGenerator placements, and CorridorSeamPainter summaries so tooling can consume doorway cluster metadata. Remaining atlases still await analysis.
+- **Status**: All four AR-005 atlases (Neon District, Corporate Spires, Archive Undercity, Zenith Sector) are now `ai-generated` and staged under `assets/generated/images/ar-005/`; seam preview catalogs for every atlas live under `src/game/procedural/templates/*SeamPreview.js`, aggregated by `tilesetSeamPreviewCatalog`, and flow through TemplateVariantResolver, CorridorSeamPainter, and the runtime tileset preview UI for cluster/annotation reporting.
 - **Next Steps**:
-  - Run the analyze -> promote -> preview -> validate pipeline for Corporate Spires, Archive Undercity, and Zenith Sector once their tileset analysis reports land so each atlas ships with seam manifests and corridor-ready preview summaries.
-  - Surface the shared seam preview catalog inside the runtime tileset preview UI once that layer comes online, and replicate the manifest/catalog wiring for the remaining atlases after their seam promotions complete.
+  - Drive `activeTilesetId` selection through DistrictGenerator/template config so TemplateVariantResolver and corridor tooling reference the correct atlas metadata per district rather than defaulting to Neon District.
+  - Integrate the catalog stats into downstream corridor validation dashboards (e.g. TemplateVariantResolver consumers, tooling overlays) to highlight mismatches once district-specific atlas selection is wired.
 
 #### AR-006: UI Sound Effects (M2-M6)
 - **Type**: Audio

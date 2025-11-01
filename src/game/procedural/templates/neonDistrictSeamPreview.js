@@ -148,4 +148,12 @@ export const NEON_DISTRICT_SEAM_CLUSTERS_BY_ORIENTATION = ORIENTATION_MAP;
 
 export const NEON_DISTRICT_SEAM_TILE_LOOKUP = Object.freeze({ ...tileIndexLookup });
 
+export const NEON_DISTRICT_TILESET_ATTACHMENT = Object.freeze({
+  id: NEON_DISTRICT_SEAM_PREVIEW.tilesetId,
+  label: 'Neon District',
+  seamPreview: NEON_DISTRICT_SEAM_PREVIEW,
+  clustersByOrientation: NEON_DISTRICT_SEAM_CLUSTERS_BY_ORIENTATION,
+  tileLookup: NEON_DISTRICT_SEAM_TILE_LOOKUP,
+});
+
 export default NEON_DISTRICT_SEAM_PREVIEW;

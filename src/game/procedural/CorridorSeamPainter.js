@@ -112,7 +112,27 @@ function resolveSeamClusters(placement) {
   if (Array.isArray(placement.seamClusters)) {
     return placement.seamClusters;
   }
-  const previewClusters = placement.metadata?.tileset?.seamPreview?.clusters;
+  let previewClusters = placement.metadata?.tileset?.seamPreview?.clusters;
+  if (!Array.isArray(previewClusters)) {
+    const catalog = Array.isArray(placement.metadata?.tilesetCatalog)
+      ? placement.metadata.tilesetCatalog
+      : null;
+    if (catalog && catalog.length) {
+      const activeId = placement.metadata?.activeTilesetId ?? null;
+      if (activeId) {
+        const activeEntry = catalog.find((entry) => entry?.id === activeId);
+        if (Array.isArray(activeEntry?.seamPreview?.clusters)) {
+          previewClusters = activeEntry.seamPreview.clusters;
+        }
+      }
+      if (!Array.isArray(previewClusters)) {
+        const fallbackEntry = catalog[0];
+        if (Array.isArray(fallbackEntry?.seamPreview?.clusters)) {
+          previewClusters = fallbackEntry.seamPreview.clusters;
+        }
+      }
+    }
+  }
   if (Array.isArray(previewClusters)) {
     return previewClusters;
   }

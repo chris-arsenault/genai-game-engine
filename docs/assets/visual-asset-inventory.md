@@ -201,6 +201,11 @@
 - Validated each manifest with `node scripts/art/validateTilesetSeams.js --manifest=...`, confirming zero warnings and recording stats for backlog reporting.
 - Added automated guard `tests/art/ar005TilesetSeamManifests.test.js` to assert manifest/preview stats stay consistent and keep future promotions honest.
 
+## Session 205 Updates
+- Frozen seam preview catalogs for Corporate Spires, Archive Undercity, and Zenith Sector (`src/game/procedural/templates/*SeamPreview.js`), aligning their cluster stats with the existing Neon District module and enabling TemplateVariantResolver to propagate multi-atlas metadata.
+- Introduced `tilesetSeamPreviewCatalog` to aggregate all AR-005 attachments, wiring the helper through `authoredTemplates.js` so corridor tooling receives catalog + active tileset identifiers alongside seam previews.
+- Extended the runtime debug overlay with a Tileset Seam Catalog panel (`index.html`, `src/main.js`) summarising annotations, cluster counts, longest spans, and orientation/open-edge distributions for each atlas using the new catalog feed.
+
 ## Next Actions
 1. Monitor RenderOps feedback channels and import notes into `reports/art/renderops-feedback.json` if follow-up arrives for the 2025-10-31 packet.
 2. Follow `reports/art/placeholder-replacement-schedule.md` to drive weekly bespoke assignments and annotate `assets/images/requests.json` with source/licensing updates upon completion.

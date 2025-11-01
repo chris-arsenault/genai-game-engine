@@ -2,6 +2,7 @@ import {
   NEON_DISTRICT_SEAM_PREVIEW,
   NEON_DISTRICT_SEAM_CLUSTERS_BY_ORIENTATION,
   NEON_DISTRICT_SEAM_TILE_LOOKUP,
+  NEON_DISTRICT_TILESET_ATTACHMENT,
 } from '../../../../src/game/procedural/templates/neonDistrictSeamPreview.js';
 
 describe('neonDistrictSeamPreview metadata', () => {
@@ -20,5 +21,8 @@ describe('neonDistrictSeamPreview metadata', () => {
 
     expect(NEON_DISTRICT_SEAM_TILE_LOOKUP[2144]).toBe('neon_district_cluster_1');
     expect(NEON_DISTRICT_SEAM_TILE_LOOKUP[3742]).toBe('neon_district_cluster_7');
+
+    expect(NEON_DISTRICT_TILESET_ATTACHMENT.label).toBe('Neon District');
+    expect(NEON_DISTRICT_TILESET_ATTACHMENT.seamPreview).toBe(NEON_DISTRICT_SEAM_PREVIEW);
   });
 });

@@ -165,6 +165,14 @@
       width: min(100%, 360px);
     }
 
+    #debug-tilesets {
+      margin-top: 8px;
+      border-top: 1px solid rgba(0, 255, 255, 0.35);
+      padding-top: 6px;
+      max-width: 360px;
+      width: min(100%, 360px);
+    }
+
     .debug-fx-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -667,6 +675,13 @@
           </div>
         </div>
         <div id="debug-fx-warning" class="debug-fx-warning" data-state="idle">No samples</div>
+      </div>
+      <div id="debug-tilesets">
+        <div class="debug-title">Tileset Seam Catalog</div>
+        <div id="debug-tileset-summary" class="debug-meta">Catalog not loaded</div>
+        <div id="debug-tileset-list" class="debug-world-list">
+          <div class="debug-world-row empty">No seam previews</div>
+        </div>
       </div>
       <div id="debug-systems">
         <div class="debug-title">Systems</div>
