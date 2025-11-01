@@ -151,6 +151,13 @@
 - Authored progression unit suite validating lock/unlock flows, restriction handling, and contextual overrides (`tests/game/progression/DistrictAccessEvaluator.test.js`).
 - Verification: `npm test -- district`.
 
+### Session #207 Backlog Updates
+
+#### Act 3 Narrative — Final Deduction Briefing (`415b4bd3-2053-400e-92a5-1f1fceccc632`)
+- Authored a branching war room dialogue for quest `main-act3-final-deduction`, covering Opposition, Support, and Alternative paths with Soren relationship gates; stored in MCP as scene `act3-final-deduction-war-room`.
+- Added `docs/narrative/dialogue/act3-final-deduction-war-room.md` and linked it into `docs/narrative/quests/act-3-quests.md` so narrative production can reference the scripted beats.
+- Next steps: expand dialogue coverage into `main-act3-gathering-support` missions and draft ending-specific epilogue sequences for each stance.
+
 ### Session #151 Backlog Updates
 
 #### M3-022: District Access Evaluation Utilities

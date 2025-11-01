@@ -87,6 +87,7 @@
 - Clear objective for Act 3
 - All allies' perspectives understood
 - **Archive Interface ability unlocked**: Direct neural connection to city database
+- **War Room Dialogue Reference**: See [`Act 3 Dialogue — Final Deduction War Room`](../dialogue/act3-final-deduction-war-room.md) for scripted briefing beats and branch conditions.
 
 ---
 
