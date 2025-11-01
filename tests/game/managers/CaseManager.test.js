@@ -710,6 +710,48 @@ describe('CaseManager', () => {
       );
     });
 
+    it('completes validate_theory objectives when case is solved', () => {
+      caseManager.createCase({
+        id: 'case_theory',
+        title: 'Theory Case',
+        objectives: [
+          {
+            id: 'solve_case',
+            type: 'validate_theory',
+            description: 'Validate the final theory',
+            minAccuracy: 0.75
+          }
+        ],
+        accuracyThreshold: 0.7
+      });
+
+      mockEventBus.emit.mockClear();
+
+      caseManager.solveCase('case_theory', 0.82);
+
+      const caseFile = caseManager.getCase('case_theory');
+      expect(caseFile.objectives[0].completed).toBe(true);
+
+      expect(mockEventBus.emit).toHaveBeenCalledWith(
+        'case:objective_completed',
+        expect.objectContaining({
+          caseId: 'case_theory',
+          objectiveId: 'solve_case',
+          objectiveType: 'validate_theory',
+          accuracy: 0.82,
+          threshold: 0.75
+        })
+      );
+
+      expect(mockEventBus.emit).toHaveBeenCalledWith(
+        'case:objectives_complete',
+        expect.objectContaining({
+          caseId: 'case_theory',
+          title: 'Theory Case'
+        })
+      );
+    });
+
     it('should not solve already solved case', () => {
       caseManager.solveCase('case_1', 0.85);
       mockEventBus.emit.mockClear();

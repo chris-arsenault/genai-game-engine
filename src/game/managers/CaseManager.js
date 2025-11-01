@@ -343,39 +343,113 @@ export class CaseManager {
         case 'discover_required_clues':
           completed = this.checkAllRequiredClues(caseFile);
           break;
+        case 'validate_theory':
+          completed = this.checkTheoryObjective(caseFile, objective);
+          break;
         default:
-          console.warn(`[CaseManager] Unknown objective type: ${objective.type}`);
+          console.warn(
+            `[CaseManager] Unknown objective type: ${objective.type} (objective id: ${objective.id ?? 'unknown'})`
+          );
       }
 
       if (completed) {
-        objective.completed = true;
-
-        this.eventBus.emit('case:objective_completed', {
-          caseId,
-          objective: objective.description
-        });
-
-        this.eventBus.emit('fx:overlay_cue', {
-          effectId: 'caseObjectivePulse',
-          origin: 'case',
-          caseId,
-          objectiveId: objective.id ?? objective.description,
-          objectiveType: objective.type,
-          completedObjectives: caseFile.objectives.filter(obj => obj.completed).length,
-          totalObjectives: caseFile.objectives.length,
-        });
-
-        console.log(`[CaseManager] Objective completed: ${objective.description}`);
+        const extraData =
+          objective.type === 'validate_theory'
+            ? {
+                accuracy: Number.isFinite(caseFile.accuracy) ? caseFile.accuracy : 0,
+                threshold: this.getTheoryAccuracyThreshold(caseFile, objective),
+              }
+            : {};
+        this.completeObjective(caseId, caseFile, objective, extraData);
       }
     }
+  }
 
-    // Check if all objectives completed
-    if (caseFile.objectives.every(obj => obj.completed)) {
+  /**
+   * Resolve the accuracy threshold for a theory validation objective.
+   * @param {Object} caseFile
+   * @param {Object} objective
+   * @returns {number}
+   */
+  getTheoryAccuracyThreshold(caseFile, objective) {
+    if (objective && typeof objective.minAccuracy === 'number' && Number.isFinite(objective.minAccuracy)) {
+      return objective.minAccuracy;
+    }
+    if (Number.isFinite(caseFile.accuracyThreshold)) {
+      return caseFile.accuracyThreshold;
+    }
+    return 0;
+  }
+
+  /**
+   * Determine if a theory validation objective is complete.
+   * @param {Object} caseFile
+   * @param {Object} objective
+   * @returns {boolean}
+   */
+  checkTheoryObjective(caseFile, objective) {
+    if (!caseFile || !objective) {
+      return false;
+    }
+
+    if (caseFile.status !== 'solved') {
+      return false;
+    }
+
+    const threshold = this.getTheoryAccuracyThreshold(caseFile, objective);
+    const accuracy = Number.isFinite(caseFile.accuracy) ? caseFile.accuracy : 0;
+    return accuracy >= threshold;
+  }
+
+  /**
+   * Mark an objective as completed, emitting objective and FX events.
+   * @param {string} caseId
+   * @param {Object} caseFile
+   * @param {Object} objective
+   * @param {Object} extraData
+   * @returns {boolean}
+   */
+  completeObjective(caseId, caseFile, objective, extraData = {}) {
+    if (!objective || objective.completed) {
+      return false;
+    }
+
+    objective.completed = true;
+
+    const objectiveId = objective.id ?? objective.description ?? 'objective';
+    const completedObjectives = caseFile.objectives.filter((obj) => obj.completed).length;
+    const objectiveType = objective.type ?? null;
+    const payload = {
+      caseId,
+      objective: objective.description ?? objectiveId,
+      objectiveId,
+      objectiveType,
+      ...extraData,
+    };
+
+    this.eventBus.emit('case:objective_completed', payload);
+
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId: 'caseObjectivePulse',
+      origin: 'case',
+      caseId,
+      objectiveId,
+      objectiveType,
+      completedObjectives,
+      totalObjectives: caseFile.objectives.length,
+      ...extraData,
+    });
+
+    console.log(`[CaseManager] Objective completed: ${objective.description ?? objectiveId}`);
+
+    if (caseFile.objectives.every((obj) => obj.completed)) {
       this.eventBus.emit('case:objectives_complete', {
         caseId,
         title: caseFile.title
       });
     }
+
+    return true;
   }
 
   /**
@@ -478,6 +552,9 @@ export class CaseManager {
     caseFile.status = 'solved';
     caseFile.solveTime = Date.now() - caseFile.startTime;
     caseFile.accuracy = accuracy;
+
+    // Ensure theory validation objectives and final completion state are updated
+    this.checkObjectiveCompletion(caseId);
 
     this.eventBus.emit('case:solved', {
       caseId,

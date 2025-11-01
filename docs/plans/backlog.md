@@ -27,12 +27,12 @@
 | AR-050 | P1 | In Progress | Act 2 visual pipeline automation delivers RenderOps packets, inventories, and ai-generated overlays (Memory Parlor neon set) with luminance/tolerance snapshots tracked across reports. | Maintain weekly automation sweeps to keep RenderOps packets current (job `9cc27c03-3b58-4c29-8c71-36dfe28507ae` acknowledged 2025-11-01T19:32:07Z). |
 | CORE-303 | P1 | In Progress | InvestigationSystem player lookup restored, dialogue alias coverage keeps tutorial conversations available, and dialogue input routing now feeds the DialogueSystem; awaiting quest plumbing to complete the minimal investigative loop. | Integrate the repaired investigation/dialogue wiring into tutorial quest beats once CORE-301/302 land, then schedule investigative loop Playwright validation. |
 | M3-003 | P1 | Pending | ECS faction system components, systems, and Jest scaffolding are outlined but paused, awaiting upstream faction data contracts. | Resume after M3-002 readiness and keep validation inside scripted faction behaviour suites—no manual QA loops. |
-| M2-005 | P1 | Pending | Deduction board UI foundations (nodes, drag/drop, connection rendering) are still queued behind M2-004, with automated regression requirements documented. | Spin up the UI shell once M2-004 lands, ensuring drag/connect workflows ship with Jest coverage and zero manual acceptance steps. |
+| M2-005 | P1 | Pending | Deduction board UI foundations (nodes, drag/drop, connection rendering) can start now that the CaseManager objective layer is live; automated regression requirements remain queued. | Spin up the UI shell immediately, wiring node interactions to the updated CaseManager events and ship drag/connect workflows with Jest coverage and zero manual acceptance steps. |
 
 **Next Session Focus**:
 - Maintain weekly automation sweeps (`npm run art:track-bespoke`, `npm run art:package-renderops`, `npm run art:export-crossroads-luminance`) to keep RenderOps packets current; telemetry acknowledgement recorded for job `9cc27c03-3b58-4c29-8c71-36dfe28507ae`.
 - Thread CORE-303 investigative loop wiring into the tutorial quest once CORE-301/302 hooks land, then expand the new investigative loop Playwright automation to cover deduction board and Captain Reese report beats.
-- Keep M3-003 faction systems and M2-005 deduction board UI on deck while dependencies unblock; ensure their Jest and Playwright scaffolds stay primed so work can spin up without manual QA.
+- Keep M3-003 faction systems staged while upstream faction data finalizes, and move M2-005 deduction board UI into active implementation now that CaseManager objective tracking shipped; ensure Jest and Playwright scaffolds stay primed so work can spin up without manual QA.
 
 ### Session #238 Backlog Updates
 
@@ -2129,6 +2129,9 @@ _Progress 2025-11-09 (Session #139 audio/perf polish): Augmented performanceSnap
   - Evidence organized by case
   - Clues derived correctly
   - Objectives update correctly
+- **Status**: ✅ Completed – Session #242 centralized objective completion with theory validation thresholds wired into solve flows.
+
+_Progress 2025-11-26 (Session #242 objective tracking pass): Implemented CaseManager accuracy-threshold handling for validate_theory objectives, added a shared completion helper to emit case progression events, and refreshed Jest coverage to lock the solve workflow (`npm test -- CaseManager`)._
 
 #### M2-005: Deduction Board UI (Basic)
 - **Priority**: P1
