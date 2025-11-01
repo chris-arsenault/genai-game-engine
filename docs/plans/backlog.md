@@ -31,9 +31,11 @@
 | UX-173 | P1 | Completed | Debug audio overlay now fully keyboard navigable with Shift+Alt+A shortcut, focus trap, and Playwright coverage. | Continue watching the automated Playwright spec for regressions during future overlay changes. |
 
 **Next Session Focus**:
-- Sync manifests and metadata for the newly generated AR-005 tilesets (Corporate Spires, Archive Undercity, Zenith Sector) and stage seam/collision annotations alongside the existing Neon District analysis.
-- Translate the Neon District seam/collision analysis (`npm run art:analyze-tileset`) into authored metadata by triaging the 108 warnings in `reports/art/neon-district-tileset-analysis.json`; integrate priority seams before enabling in-engine previews.
-- Execute the 2025-11-07 AR-050 bespoke sweep (`npm run art:track-bespoke -- --week=2` → `npm run art:export-crossroads-luminance`) and archive the scripted tolerance report.
+- Extend Act 3 narrative coverage to the `main-act3-gathering-support` questline with branch-specific objectives and dialogue beats wired through the existing automation checks.
+- Author ending-specific epilogues that map stance outcomes to finale cinematics while keeping narrative exports validated by the scripted pipelines.
+- Execute the 2025-11-07 AR-050 bespoke automation sweep (`npm run art:track-bespoke -- --week=2` → `npm run art:export-crossroads-luminance`) and archive the generated tolerance report.
+- Sync manifests and metadata for the newly generated AR-005 tilesets (Corporate Spires, Archive Undercity, Zenith Sector) using the art tooling so seam/collision annotations ship alongside the Neon District analysis.
+- Translate the Neon District seam/collision analysis (`npm run art:analyze-tileset`) into metadata by triaging the 108 automated warnings before enabling in-engine previews.
 - Keep the backlog aligned with the performance freeze; do not schedule new profiling, benchmarking, or telemetry initiatives.
 
 ### Session #173 Backlog Maintenance
@@ -626,8 +628,8 @@ Faction/disguise/quest overlays and dialogue prompts were invisible during brows
 - `npm test`
 
 **Next Steps**:
-- Perform manual dev-server smoke to confirm browser startup is clean.
-- Keep monitoring for legacy references to `this.events` vs. `this.eventBus` as narrative systems are modernized.
+- Keep the Playwright bootstrap smoke suites (`tests/e2e/tutorial-overlay.spec.js`, `tests/e2e/memory-parlor-infiltration.spec.js`) in nightly automation to confirm dev-server startup; investigate only when the runs fail.
+- Treat automated lint or test findings referencing `this.events` as blockers and migrate those call sites to the shared EventBus pattern.
 
 ---
 
@@ -1003,7 +1005,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Tags**: `gameplay`, `rendering`
 - **Effort**: 4 hours
 - **Dependencies**: Layered renderer dynamic layer support (Session #26)
-- **Status**: In Review — Scene decal, caution tape, and ambient props implemented; automated palette smoke now verifies the tuned crime scene colors.
+- **Status**: Review Approved — Palette metadata, Jest snapshots, and Playwright smoke guard the scene; only investigate if automation flags a regression.
 - **Progress (Session #171)**: Exposed palette summary metadata from `loadAct1Scene` and added Jest (`tests/game/scenes/Act1Scene.palette.test.js`) plus Playwright (`tests/e2e/act1-palette-smoke.spec.js`) coverage so the neon crime scene palette stays locked in CI.
 - **Description**: Ensure the Act 1 investigative scene presents readable context on load (ground decal, boundaries, NPC silhouettes, crime scene marker) so players immediately understand where they are.
 - **Acceptance Criteria**:
