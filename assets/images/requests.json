@@ -6,9 +6,9 @@
     "creator": "Codex Autonomous Agent (GPT-Image-1)",
     "source": "assets/generated/ar-050/image-memory-parlor-neon-001.png",
     "license": "Internal generation (OpenAI gpt-image-1)",
-    "status": "ai-generated",
+    "status": "derivative-generated",
     "usage": "Memory Parlor stealth lighting reference for cover blocks and firewall glow.",
-    "notes": "Session 217 GPT-Image run captured volumetric cyan/magenta beams, firewall arcs, and modular cover lanes aligned with infiltration encounter beats. Based on prior reference itsiken/Unsplash 8ZsBU6LBfO0 for palette cues.",
+    "notes": "Session 217 GPT-Image run captured volumetric cyan/magenta beams, firewall arcs, and modular cover lanes aligned with infiltration encounter beats. Based on prior reference itsiken/Unsplash 8ZsBU6LBfO0 for palette cues. Session 219 automation exported assets/overlays/act2-crossroads/memory_parlor_neon_001.png, delivering avgLuma 37.3 / avgAlpha 85.3 / peakAlpha 240 and refreshing the luminance snapshot at reports/art/luminance-snapshots/act2-crossroads/act2-crossroads-luminance-2025-11-01T04-38-24-648Z.md.",
     "generatedAt": "2025-11-01T04:19:25Z",
     "route": "ai",
     "statusHistory": [
@@ -17,6 +17,12 @@
         "recordedAt": "2025-11-01T04:19:25Z",
         "context": "Session 217 automation delivered neon memory parlor overlay via mcp__generate-image__generate_image.",
         "route": "ai"
+      },
+      {
+        "status": "derivative-generated",
+        "recordedAt": "2025-11-01T04:38:24Z",
+        "context": "Session 219 ran npm run art:generate-crossroads-overlays -- --filter image-memory-parlor-neon-001 and node scripts/art/analyzeCrossroadsOverlays.js to land the overlay derivative and capture luminance metrics.",
+        "route": "automation"
       }
     ]
   },
