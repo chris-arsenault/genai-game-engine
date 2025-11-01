@@ -17,6 +17,7 @@ import {
 } from './game/ui/helpers/systemBudget.js';
 import { factionSlice } from './game/state/slices/factionSlice.js';
 import { tutorialSlice } from './game/state/slices/tutorialSlice.js';
+import { getTilesetSeamPreviewCatalog } from './game/procedural/templates/tilesetSeamPreviewCatalog.js';
 
 // Wait for DOM to load
 window.addEventListener('DOMContentLoaded', async () => {
@@ -119,6 +120,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   const debugFxPeakActive = document.getElementById('debug-fx-peak-active');
   const debugFxPeakThroughput = document.getElementById('debug-fx-peak-throughput');
   const debugFxWarning = document.getElementById('debug-fx-warning');
+  const debugTilesetSummary = document.getElementById('debug-tileset-summary');
+  const debugTilesetList = document.getElementById('debug-tileset-list');
 
   const AUDIO_FOCUS_SELECTOR =
     'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
@@ -130,6 +133,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   let audioFocusableElements = [];
   let audioFocusRefreshScheduled = false;
   let previousAudioFocusReturnTarget = null;
+  let lastTilesetSignature = null;
 
   const formatClock = (timestamp) => {
     if (!timestamp || Number.isNaN(timestamp)) {
@@ -801,6 +805,41 @@ window.addEventListener('DOMContentLoaded', async () => {
     debugDialogueControls.textContent = 'Controls: F3 toggle overlay · F4 pause/resume transcript';
   }
 
+  function capitalize(label) {
+    if (typeof label !== 'string' || label.length === 0) {
+      return label;
+    }
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }
+
+  function formatOrientationSummary(orientation) {
+    if (!orientation || typeof orientation !== 'object') {
+      return 'n/a';
+    }
+    const entries = Object.entries(orientation);
+    if (entries.length === 0) {
+      return 'n/a';
+    }
+    return entries
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => `${capitalize(key)} ${value}`)
+      .join(' · ');
+  }
+
+  function formatOpenEdgeSummary(openEdges) {
+    if (!openEdges || typeof openEdges !== 'object') {
+      return 'n/a';
+    }
+    const entries = Object.entries(openEdges);
+    if (entries.length === 0) {
+      return 'n/a';
+    }
+    return entries
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => `${capitalize(key)} ${value}`)
+      .join(' · ');
+  }
+
   function formatDebugValue(value) {
     if (typeof value === 'boolean') {
       return value ? 'true' : 'false';
@@ -1072,6 +1111,78 @@ window.addEventListener('DOMContentLoaded', async () => {
               }
               row.textContent = entry.text;
               debugSystemsList.appendChild(row);
+            }
+          }
+        }
+      }
+    }
+
+    if (debugTilesetSummary || debugTilesetList) {
+      const catalog = getTilesetSeamPreviewCatalog();
+      const signature = catalog
+        .map((entry) => {
+          const stats = entry?.seamPreview?.stats ?? {};
+          return [
+            entry?.id ?? 'unknown',
+            stats.clusterCount ?? 0,
+            stats.longestClusterLength ?? 0,
+            stats.annotations ?? 0,
+          ].join(':');
+        })
+        .join('|');
+
+      if (signature !== lastTilesetSignature) {
+        lastTilesetSignature = signature;
+
+        if (debugTilesetSummary) {
+          const totalAnnotations = catalog.reduce(
+            (sum, entry) => sum + (entry?.seamPreview?.stats?.annotations ?? 0),
+            0
+          );
+          const longestSpan = catalog.reduce(
+            (max, entry) =>
+              Math.max(max, entry?.seamPreview?.stats?.longestClusterLength ?? 0),
+            0
+          );
+          debugTilesetSummary.textContent = `Atlases ${catalog.length} · ${totalAnnotations} annotations · longest span ${longestSpan} tiles`;
+        }
+
+        if (debugTilesetList) {
+          debugTilesetList.innerHTML = '';
+
+          if (catalog.length === 0) {
+            const row = document.createElement('div');
+            row.className = 'debug-world-row empty';
+            row.textContent = 'No seam previews';
+            debugTilesetList.appendChild(row);
+          } else {
+            for (const attachment of catalog) {
+              const stats = attachment?.seamPreview?.stats ?? {};
+              const orientationSummary = formatOrientationSummary(stats.orientation);
+              const openEdgeSummary = formatOpenEdgeSummary(stats.openEdge);
+              const parts = [
+                attachment?.label ?? attachment?.id ?? 'Unknown atlas',
+                `clusters ${stats.clusterCount ?? 0}`,
+                `longest ${stats.longestClusterLength ?? 0}`,
+                `annotations ${stats.annotations ?? 0}`,
+              ];
+
+              if (orientationSummary !== 'n/a') {
+                parts.push(`orientation ${orientationSummary}`);
+              }
+
+              if (openEdgeSummary !== 'n/a') {
+                parts.push(`open edges ${openEdgeSummary}`);
+              }
+
+              if (Number.isFinite(stats.averageClusterLength)) {
+                parts.push(`avg ${stats.averageClusterLength.toFixed(2)}`);
+              }
+
+              const row = document.createElement('div');
+              row.className = 'debug-world-row';
+              row.textContent = parts.join(' · ');
+              debugTilesetList.appendChild(row);
             }
           }
         }

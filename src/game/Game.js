@@ -35,6 +35,9 @@ import {
 // Engine systems
 import { RenderSystem } from '../engine/renderer/RenderSystem.js';
 
+// Asset management
+import { registerGlobalAssetManager } from './assets/assetResolver.js';
+
 // UI Components
 import { TutorialOverlay } from './ui/TutorialOverlay.js';
 import { DialogueBox } from './ui/DialogueBox.js';
@@ -64,9 +67,14 @@ import { SuspicionMoodMapper } from './audio/SuspicionMoodMapper.js';
 import { GameplayAdaptiveAudioBridge } from './audio/GameplayAdaptiveAudioBridge.js';
 import { SaveInspectorOverlay } from './ui/SaveInspectorOverlay.js';
 import { SaveLoadOverlay } from './ui/SaveLoadOverlay.js';
+import { FinaleCinematicOverlay } from './ui/FinaleCinematicOverlay.js';
 import { CrossroadsPromptController } from './narrative/CrossroadsPromptController.js';
 import { CrossroadsBranchTransitionController } from './narrative/CrossroadsBranchTransitionController.js';
+import { Act3FinaleCinematicSequencer } from './narrative/Act3FinaleCinematicSequencer.js';
+import { Act3FinaleCinematicController } from './narrative/Act3FinaleCinematicController.js';
+import { Act3FinaleCinematicAssetManager } from './narrative/Act3FinaleCinematicAssetManager.js';
 import { NavigationMeshService } from './navigation/NavigationMeshService.js';
+import { DeductionBoardPointerController } from './ui/helpers/deductionBoardPointerController.js';
 
 // Managers
 import { FactionManager } from './managers/FactionManager.js';
@@ -80,6 +88,8 @@ import { ControlBindingsObservationLog } from './telemetry/ControlBindingsObserv
 // Quest data
 import { registerAct1Quests } from './data/quests/act1Quests.js';
 import { registerAct2CrossroadsQuest } from './data/quests/act2CrossroadsQuest.js';
+import { registerAct3GatheringSupportQuest } from './data/quests/act3GatheringSupportQuest.js';
+import { registerAct3ZenithInfiltrationQuest } from './data/quests/act3ZenithInfiltrationQuest.js';
 import { registerAct2NeuroSyncQuest } from './data/quests/act2NeuroSyncQuest.js';
 import { registerAct2ResistanceQuest } from './data/quests/act2ResistanceQuest.js';
 import { registerAct2PersonalInvestigationQuest } from './data/quests/act2PersonalInvestigationQuest.js';
@@ -88,6 +98,8 @@ import { tutorialCase } from './data/cases/tutorialCase.js';
 // Dialogue data
 import { registerAct1Dialogues } from './data/dialogues/Act1Dialogues.js';
 import { registerAct2CrossroadsDialogues } from './data/dialogues/Act2CrossroadsDialogue.js';
+import { registerAct3GatheringSupportDialogues } from './data/dialogues/Act3GatheringSupportDialogues.js';
+import { registerAct3ZenithInfiltrationDialogues } from './data/dialogues/Act3ZenithInfiltrationDialogues.js';
 import { registerAct2BranchObjectiveDialogues } from './data/dialogues/Act2BranchObjectiveDialogues.js';
 
 // Entity factories
@@ -170,6 +182,10 @@ export class Game {
     this.audioManager = typeof engine.getAudioManager === 'function'
       ? engine.getAudioManager()
       : engine.audioManager || null;
+    this.assetManager = typeof engine.getAssetManager === 'function'
+      ? engine.getAssetManager()
+      : engine.assetManager || null;
+    registerGlobalAssetManager(this.assetManager);
     this.sfxCatalogLoader = null;
     this._sfxCatalogSummary = null;
     this.audioTelemetry = { currentState: null, history: [] };
@@ -181,6 +197,7 @@ export class Game {
     this.suspicionMoodMapper = null;
     this.adaptiveMoodEmitter = null;
     this.gameplayAdaptiveAudioBridge = null;
+    this._pendingAdaptiveMoodRequests = [];
     this.questTriggerTelemetryBridge = null;
     this.controlBindingsObservationLog = new ControlBindingsObservationLog();
 
@@ -244,11 +261,16 @@ export class Game {
     this.districtTravelOverlay = null;
     this.caseFileUI = null;
     this.deductionBoard = null;
+    this.deductionBoardPointerController = null;
     this.audioFeedback = null;
     this.saveLoadOverlay = null;
     this.saveInspectorOverlay = null;
+    this.finaleCinematicOverlay = null;
+    this.finaleCinematicAssetManager = null;
     this.crossroadsPromptController = null;
     this.crossroadsBranchTransitionController = null;
+    this.act3FinaleCinematicSequencer = null;
+    this.act3FinaleCinematicController = null;
     this.navigationMeshService = null;
 
     // Forensic prompt plumbing
@@ -392,6 +414,12 @@ export class Game {
     registerAct2CrossroadsQuest(this.questManager);
     console.log('[Game] Act 2 Crossroads quest registered');
 
+    // Register Act 3 stance preparation quest scaffolding
+    registerAct3GatheringSupportQuest(this.questManager);
+    console.log('[Game] Act 3 Gathering Support quest registered');
+    registerAct3ZenithInfiltrationQuest(this.questManager);
+    console.log('[Game] Act 3 Zenith Infiltration quest registered');
+
     // Initialize TutorialTranscriptRecorder prior to SaveManager wiring
     this.tutorialTranscriptRecorder = new TutorialTranscriptRecorder(this.eventBus);
     console.log('[Game] TutorialTranscriptRecorder initialized');
@@ -402,6 +430,8 @@ export class Game {
       questManager: this.questManager,
       factionManager: this.factionManager,
       tutorialSystem: null, // Will be set after tutorial system is created
+      caseManager: this.caseManager,
+      investigationSystem: null,
       worldStateStore: this.worldStateStore,
       tutorialTranscriptRecorder: this.tutorialTranscriptRecorder,
       controlBindingsObservationProvider: () => this.getControlBindingsObservationSummary(),
@@ -420,6 +450,10 @@ export class Game {
       this.componentRegistry,
       this.eventBus
     );
+    if (this.saveManager) {
+      this.saveManager.investigationSystem = this.gameSystems.investigation;
+      this.saveManager.caseManager = this.caseManager;
+    }
     // Create forensic system (processes analysis queues after investigation)
     this.gameSystems.forensic = new ForensicSystem(
       this.componentRegistry,
@@ -466,7 +500,7 @@ export class Game {
     this.gameSystems.dialogue = new DialogueSystem(
       this.componentRegistry,
       this.eventBus,
-      this.gameSystems.investigation,
+      this.caseManager,
       this.factionManager,
       this.worldStateStore
     );
@@ -482,6 +516,14 @@ export class Game {
     // Register Act 2 branch objective dialogues
     registerAct2BranchObjectiveDialogues(this.gameSystems.dialogue);
     console.log('[Game] Act 2 branch objective dialogues registered');
+
+    // Register Act 3 gathering support dialogues
+    registerAct3GatheringSupportDialogues(this.gameSystems.dialogue);
+    console.log('[Game] Act 3 Gathering Support dialogues registered');
+
+    // Register Act 3 Zenith infiltration dialogues
+    registerAct3ZenithInfiltrationDialogues(this.gameSystems.dialogue);
+    console.log('[Game] Act 3 Zenith Infiltration dialogues registered');
 
     // Create camera follow system
     this.gameSystems.cameraFollow = new CameraFollowSystem(
@@ -525,10 +567,7 @@ export class Game {
     // Broad-phase collision instrumentation (metrics only for stealth tuning)
     this.gameSystems.collision = new CollisionSystem(
       this.componentRegistry,
-      this.eventBus,
-      {
-        resolveCollisions: false,
-      }
+      this.eventBus
     );
     if (this.saveManager?.registerSpatialMetricsProvider) {
       this.saveManager.registerSpatialMetricsProvider(() => {
@@ -650,10 +689,7 @@ export class Game {
       this.camera
     );
 
-    const assetManager =
-      (typeof this.engine?.getAssetManager === 'function' && this.engine.getAssetManager()) ||
-      this.engine?.assetManager ||
-      null;
+    const assetManager = this.assetManager;
     const spriteAnimationOptions = {};
     if (assetManager && assetManager.loader) {
       spriteAnimationOptions.assetLoader = assetManager.loader;
@@ -920,6 +956,18 @@ export class Game {
         }
       }
     });
+    if (!this.deductionBoardPointerController) {
+      try {
+        this.deductionBoardPointerController = new DeductionBoardPointerController(
+          this.engine.canvas,
+          this.deductionBoard
+        );
+      } catch (error) {
+        console.warn('[Game] Unable to init deduction board pointer controller', error);
+      }
+    } else {
+      this.deductionBoardPointerController.setBoard(this.deductionBoard);
+    }
     if (this.gameSystems.deduction) {
       this.gameSystems.deduction.setDeductionBoard(this.deductionBoard);
     }
@@ -961,6 +1009,13 @@ export class Game {
     );
     this.saveLoadOverlay.init();
 
+    this.finaleCinematicOverlay = new FinaleCinematicOverlay(
+      this.engine.canvas,
+      this.eventBus,
+      {}
+    );
+    this.finaleCinematicOverlay.init();
+
     // Create interaction prompt overlay (HUD)
     this.interactionPromptOverlay = new InteractionPromptOverlay(
       this.engine.canvas,
@@ -992,7 +1047,9 @@ export class Game {
     this.fxOverlay = new FxOverlay(
       this.engine.canvas,
       this.eventBus,
-      {}
+      {
+        camera: this.camera,
+      }
     );
     this.fxOverlay.init();
 
@@ -1082,6 +1139,30 @@ export class Game {
       this.crossroadsBranchTransitionController.dispose();
     }
 
+    if (
+      this.act3FinaleCinematicSequencer &&
+      typeof this.act3FinaleCinematicSequencer.dispose === 'function'
+    ) {
+      this.act3FinaleCinematicSequencer.dispose();
+      this.act3FinaleCinematicSequencer = null;
+    }
+
+    if (
+      this.act3FinaleCinematicController &&
+      typeof this.act3FinaleCinematicController.dispose === 'function'
+    ) {
+      this.act3FinaleCinematicController.dispose();
+      this.act3FinaleCinematicController = null;
+    }
+
+    if (this.saveManager) {
+      if (typeof this.saveManager.setFinaleCinematicController === 'function') {
+        this.saveManager.setFinaleCinematicController(null);
+      } else {
+        this.saveManager.finaleCinematicController = null;
+      }
+    }
+
     this.crossroadsPromptController = new CrossroadsPromptController({
       eventBus: this.eventBus,
       dialogueSystem: this.gameSystems.dialogue,
@@ -1108,6 +1189,37 @@ export class Game {
       typeof this.crossroadsBranchTransitionController.init === 'function'
     ) {
       this.crossroadsBranchTransitionController.init();
+    }
+
+    if (this.eventBus && this.storyFlagManager) {
+      this.act3FinaleCinematicSequencer = new Act3FinaleCinematicSequencer({
+        eventBus: this.eventBus,
+        storyFlagManager: this.storyFlagManager,
+      });
+      this.act3FinaleCinematicSequencer.init();
+    }
+
+    if (!this.finaleCinematicAssetManager) {
+      const runtimeAssetManager = this.assetManager;
+      this.finaleCinematicAssetManager = new Act3FinaleCinematicAssetManager({
+        loader: runtimeAssetManager?.loader ?? null,
+      });
+    }
+
+    if (this.eventBus && this.finaleCinematicOverlay) {
+      this.act3FinaleCinematicController = new Act3FinaleCinematicController({
+        eventBus: this.eventBus,
+        overlay: this.finaleCinematicOverlay,
+        assetManager: this.finaleCinematicAssetManager,
+      });
+      this.act3FinaleCinematicController.init();
+      if (this.saveManager) {
+        if (typeof this.saveManager.setFinaleCinematicController === 'function') {
+          this.saveManager.setFinaleCinematicController(this.act3FinaleCinematicController);
+        } else {
+          this.saveManager.finaleCinematicController = this.act3FinaleCinematicController;
+        }
+      }
     }
 
     this._ensureQuestTriggerTelemetryBridge();
@@ -1357,6 +1469,9 @@ export class Game {
     try {
       this._destroySceneEntities();
 
+      const runtimeAssetManager = this.assetManager;
+      const fallbackAssetLoader = runtimeAssetManager?.loader ?? null;
+
       const sceneData = await loadMemoryParlorScene(
         this.entityManager,
         this.componentRegistry,
@@ -1364,6 +1479,7 @@ export class Game {
         {
           ...options,
           audioManager: this.audioManager,
+          assetLoader: options.assetLoader ?? fallbackAssetLoader,
         }
       );
 
@@ -1835,7 +1951,8 @@ export class Game {
       'case:activated',
       'case:objective_completed',
       'case:objectives_complete',
-      'case:solved'
+      'case:solved',
+      'case:hydrated'
     ];
     for (const eventName of caseEventsForRefresh) {
       this._offGameEventHandlers.push(this.eventBus.on(eventName, () => {
@@ -2582,13 +2699,18 @@ export class Game {
     if (this.saveLoadOverlay) {
       this.saveLoadOverlay.update(deltaTime);
     }
+    if (this.finaleCinematicOverlay) {
+      this.finaleCinematicOverlay.update(deltaTime);
+    }
     if (this.saveInspectorOverlay) {
       this.saveInspectorOverlay.update(deltaTime);
     }
 
     // Check for pause input
     if (this.inputState.wasJustPressed('pause')) {
-      this.togglePause();
+      if (!(this.dialogueBox && this.dialogueBox.visible)) {
+        this.togglePause();
+      }
     }
 
     // Toggle reputation UI with 'R' key
@@ -3014,9 +3136,19 @@ export class Game {
         const options = typeof payload?.options === 'object' && payload.options !== null
           ? payload.options
           : {};
+        if (!this._adaptiveMusicReady) {
+          this._enqueueAdaptiveMoodRequest({ mood, options, silent: payload?.silent === true });
+          return;
+        }
         const applied = this.setAdaptiveMood(mood, options);
-        if (!applied && payload?.silent !== true) {
-          console.warn('[Game] Failed to apply adaptive mood request', mood);
+        if (!applied) {
+          if (!this._adaptiveMusicReady) {
+            this._enqueueAdaptiveMoodRequest({ mood, options, silent: payload?.silent === true });
+            return;
+          }
+          if (payload?.silent !== true) {
+            console.warn('[Game] Failed to apply adaptive mood request', mood);
+          }
         }
       })
     );
@@ -3064,24 +3196,69 @@ export class Game {
     this._adaptiveMoodHandlers.length = 0;
   }
 
+  _enqueueAdaptiveMoodRequest(request) {
+    if (!request || typeof request.mood !== 'string' || !request.mood) {
+      return;
+    }
+    if (!Array.isArray(this._pendingAdaptiveMoodRequests)) {
+      this._pendingAdaptiveMoodRequests = [];
+    }
+    this._pendingAdaptiveMoodRequests.push({
+      mood: request.mood,
+      options: request.options ? { ...request.options } : {},
+      silent: request.silent === true,
+    });
+  }
+
+  _flushPendingAdaptiveMoods() {
+    if (!Array.isArray(this._pendingAdaptiveMoodRequests) || this._pendingAdaptiveMoodRequests.length === 0) {
+      return;
+    }
+    const queue = this._pendingAdaptiveMoodRequests.splice(0);
+    for (const entry of queue) {
+      const applied = this.setAdaptiveMood(entry.mood, entry.options);
+      if (!applied && entry.silent !== true) {
+        console.warn('[Game] Failed to apply queued adaptive mood request', entry.mood);
+      }
+    }
+  }
+
   _registerAdaptiveMusic(adaptiveInstance, meta = {}) {
     if (adaptiveInstance === this.adaptiveMusic) {
       return;
     }
 
     this.adaptiveMusic = adaptiveInstance || null;
-    this._adaptiveMusicReady = Boolean(this.adaptiveMusic);
+    this._adaptiveMusicReady = false;
 
     if (!this.adaptiveMusic) {
       return;
     }
 
+    let initResult = true;
     if (typeof this.adaptiveMusic.init === 'function' && meta?.skipInit !== true) {
       try {
-        void this.adaptiveMusic.init();
+        initResult = this.adaptiveMusic.init();
       } catch (error) {
         console.warn('[Game] Adaptive music init failed during registration', error);
+        initResult = false;
       }
+    }
+
+    if (initResult && typeof initResult.then === 'function') {
+      initResult
+        .then((initialized) => {
+          if (initialized !== false) {
+            this._adaptiveMusicReady = true;
+            this._flushPendingAdaptiveMoods();
+          }
+        })
+        .catch((error) => {
+          console.warn('[Game] Adaptive music init promise rejected', error);
+        });
+    } else if (initResult !== false) {
+      this._adaptiveMusicReady = true;
+      this._flushPendingAdaptiveMoods();
     }
 
     this._ensureAdaptiveMoodHandlers();
@@ -3374,9 +3551,13 @@ export class Game {
       this.saveLoadOverlay.render();
     }
 
-    // Render tutorial overlay (kept highest priority for in-world guidance)
+    // Render tutorial overlay (kept high priority for in-world guidance; finale overlay renders above)
     if (this.tutorialOverlay) {
       this.tutorialOverlay.render(ctx);
+    }
+
+    if (this.finaleCinematicOverlay) {
+      this.finaleCinematicOverlay.render(ctx);
     }
 
     // Modal control bindings overlay renders last to sit above other HUD layers
@@ -3437,6 +3618,10 @@ export class Game {
     if (this.deductionBoard) {
       this.deductionBoard.hide('cleanup');
     }
+    if (this.deductionBoardPointerController) {
+      this.deductionBoardPointerController.destroy();
+      this.deductionBoardPointerController = null;
+    }
     if (this.gameSystems.deduction && typeof this.gameSystems.deduction.setDeductionBoard === 'function') {
       this.gameSystems.deduction.setDeductionBoard(null);
     }
@@ -3486,9 +3671,34 @@ export class Game {
     if (this.crossroadsBranchOverlay && this.crossroadsBranchOverlay.cleanup) {
       this.crossroadsBranchOverlay.cleanup();
     }
+    if (
+      this.act3FinaleCinematicSequencer &&
+      typeof this.act3FinaleCinematicSequencer.dispose === 'function'
+    ) {
+      this.act3FinaleCinematicSequencer.dispose();
+      this.act3FinaleCinematicSequencer = null;
+    }
+    if (
+      this.act3FinaleCinematicController &&
+      typeof this.act3FinaleCinematicController.dispose === 'function'
+    ) {
+      this.act3FinaleCinematicController.dispose();
+      this.act3FinaleCinematicController = null;
+    }
     if (this.saveLoadOverlay && this.saveLoadOverlay.cleanup) {
       this.saveLoadOverlay.cleanup();
     }
+    if (this.finaleCinematicOverlay && this.finaleCinematicOverlay.cleanup) {
+      this.finaleCinematicOverlay.cleanup();
+      this.finaleCinematicOverlay = null;
+    }
+    if (
+      this.finaleCinematicAssetManager &&
+      typeof this.finaleCinematicAssetManager.dispose === 'function'
+    ) {
+      this.finaleCinematicAssetManager.dispose();
+    }
+    this.finaleCinematicAssetManager = null;
     if (this.saveInspectorOverlay && this.saveInspectorOverlay.cleanup) {
       this.saveInspectorOverlay.cleanup();
     }

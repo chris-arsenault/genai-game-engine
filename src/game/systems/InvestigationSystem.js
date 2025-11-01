@@ -46,6 +46,9 @@ export class InvestigationSystem extends System {
 
     this._offAbilityUnlocked = null;
     this._offKnowledgeLearned = null;
+    this._offInteractInput = null;
+    this._offInputAction = null;
+    this._interactInputSignal = false;
   }
 
   /**
@@ -75,6 +78,16 @@ export class InvestigationSystem extends System {
       console.log(`[InvestigationSystem] Knowledge registered via event: ${knowledgeId}`);
     });
 
+    this._offInteractInput = this.eventBus.on('input:interact:pressed', () => {
+      this._interactInputSignal = true;
+    });
+
+    this._offInputAction = this.eventBus.on('input:action_pressed', (payload = {}) => {
+      if (payload?.action === 'interact') {
+        this._interactInputSignal = true;
+      }
+    });
+
     console.log('[InvestigationSystem] Initialized');
 
     this._emitDetectiveVisionStatus({ reason: 'init' }, true);
@@ -92,14 +105,23 @@ export class InvestigationSystem extends System {
     this.playerEntityId = null;
     this.playerInvestigation = null;
 
-    // Find player entity
-    const player = entities.find((id) => {
-      const tag =
-        this.componentRegistry.entityManager.getTag(id) ??
-        this.componentRegistry.entityManager.getEntity(id)?.tag ??
-        null;
-      return tag === 'player';
-    });
+    const entityManager = this.componentRegistry?.entityManager;
+    let player = null;
+
+    if (entityManager?.getEntitiesByTag) {
+      const candidates = entityManager.getEntitiesByTag('player') || [];
+      player =
+        candidates.find((id) => this.hasComponent(id, 'Transform')) ?? null;
+    }
+
+    if (!player && entityManager?.getTag) {
+      for (const id of entities) {
+        if (entityManager.getTag(id) === 'player') {
+          player = id;
+          break;
+        }
+      }
+    }
 
     if (!player) return;
     this.playerEntityId = player;
@@ -245,7 +267,11 @@ export class InvestigationSystem extends System {
     const playerController = this.getComponent(playerId, 'PlayerController');
     if (!playerController) return;
 
-    const interactPressed = playerController.input.interact;
+    const interactPressed = Boolean(
+      playerController.input.interact ||
+      playerController.input.interactJustPressed ||
+      this._consumeInteractSignal()
+    );
     let promptShown = false;
 
     for (const entityId of entities) {
@@ -330,6 +356,12 @@ export class InvestigationSystem extends System {
     if (!promptShown && this.promptVisible) {
       this.hideActivePrompt();
     }
+  }
+
+  _consumeInteractSignal() {
+    const signal = this._interactInputSignal;
+    this._interactInputSignal = false;
+    return signal;
   }
 
   _resolveZonePrompt(zone, fallbackActionText = 'interact') {
@@ -990,7 +1022,18 @@ export class InvestigationSystem extends System {
       this._offKnowledgeLearned = null;
     }
 
+    if (typeof this._offInteractInput === 'function') {
+      this._offInteractInput();
+      this._offInteractInput = null;
+    }
+
+    if (typeof this._offInputAction === 'function') {
+      this._offInputAction();
+      this._offInputAction = null;
+    }
+
     this._lastDetectiveVisionStatus = null;
+    this._interactInputSignal = false;
   }
 
   /**

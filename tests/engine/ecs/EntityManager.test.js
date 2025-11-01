@@ -17,8 +17,8 @@ describe('EntityManager', () => {
       const id1 = manager.createEntity();
       const id2 = manager.createEntity();
 
-      expect(id1).toBe(0);
-      expect(id2).toBe(1);
+      expect(id1).toBe(1);
+      expect(id2).toBe(2);
       expect(manager.hasEntity(id1)).toBe(true);
       expect(manager.hasEntity(id2)).toBe(true);
     });
@@ -128,7 +128,7 @@ describe('EntityManager', () => {
 
       expect(id4).toBe(id2);
       expect(id5).toBe(id1);
-      expect(id3).toBe(2);
+      expect(id3).toBe(3);
     });
   });
 

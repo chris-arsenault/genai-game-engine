@@ -34,9 +34,21 @@ export class CorridorSeamPainter {
     let seamsApplied = 0;
     let placementsWithSeams = 0;
     let skippedOutOfBounds = 0;
+    let seamClustersEnumerated = 0;
+    let seamClusterTiles = 0;
+    const seamClusterOrientations = new Map();
 
     for (const placement of placements) {
       if (!placement || !Array.isArray(placement.seams) || placement.seams.length === 0) {
+        const clusters = resolveSeamClusters(placement);
+        if (clusters.length > 0) {
+          seamClustersEnumerated += clusters.length;
+          for (const cluster of clusters) {
+            seamClusterTiles += Array.isArray(cluster.tileIndices) ? cluster.tileIndices.length : 0;
+            const key = cluster.orientation ?? 'unknown';
+            seamClusterOrientations.set(key, (seamClusterOrientations.get(key) ?? 0) + 1);
+          }
+        }
         continue;
       }
 
@@ -65,6 +77,16 @@ export class CorridorSeamPainter {
       if (appliedForPlacement) {
         placementsWithSeams += 1;
       }
+
+      const clusters = resolveSeamClusters(placement);
+      if (clusters.length > 0) {
+        seamClustersEnumerated += clusters.length;
+        for (const cluster of clusters) {
+          seamClusterTiles += Array.isArray(cluster.tileIndices) ? cluster.tileIndices.length : 0;
+          const key = cluster.orientation ?? 'unknown';
+          seamClusterOrientations.set(key, (seamClusterOrientations.get(key) ?? 0) + 1);
+        }
+      }
     }
 
     return {
@@ -74,8 +96,45 @@ export class CorridorSeamPainter {
       placementsWithSeams,
       seamsApplied,
       skippedOutOfBounds,
+      seamClustersSeen: seamClustersEnumerated,
+      seamClusterTiles,
+      seamClusterOrientations: Object.fromEntries(seamClusterOrientations.entries()),
     };
   }
 }
 
 export default CorridorSeamPainter;
+
+function resolveSeamClusters(placement) {
+  if (!placement) {
+    return [];
+  }
+  if (Array.isArray(placement.seamClusters)) {
+    return placement.seamClusters;
+  }
+  let previewClusters = placement.metadata?.tileset?.seamPreview?.clusters;
+  if (!Array.isArray(previewClusters)) {
+    const catalog = Array.isArray(placement.metadata?.tilesetCatalog)
+      ? placement.metadata.tilesetCatalog
+      : null;
+    if (catalog && catalog.length) {
+      const activeId = placement.metadata?.activeTilesetId ?? null;
+      if (activeId) {
+        const activeEntry = catalog.find((entry) => entry?.id === activeId);
+        if (Array.isArray(activeEntry?.seamPreview?.clusters)) {
+          previewClusters = activeEntry.seamPreview.clusters;
+        }
+      }
+      if (!Array.isArray(previewClusters)) {
+        const fallbackEntry = catalog[0];
+        if (Array.isArray(fallbackEntry?.seamPreview?.clusters)) {
+          previewClusters = fallbackEntry.seamPreview.clusters;
+        }
+      }
+    }
+  }
+  if (Array.isArray(previewClusters)) {
+    return previewClusters;
+  }
+  return [];
+}

@@ -282,11 +282,39 @@ describe('DeductionSystem', () => {
 
       system.validateTheory(mockTheory);
 
-      expect(validatedSpy).toHaveBeenCalledWith({
-        caseId: 'case_1',
-        accuracy: 0.8,
-        valid: true
+      expect(validatedSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          caseId: 'case_1',
+          accuracy: 0.8,
+          valid: true,
+          hints: undefined
+        })
+      );
+    });
+
+    it('should emit hint events when provided', () => {
+      const hintsSpy = jest.fn();
+      mockEventBus.on('deduction_board:hints', hintsSpy);
+
+      mockCaseManager.validateTheory.mockReturnValue({
+        valid: false,
+        accuracy: 0.5,
+        feedback: 'Needs work',
+        hints: ['Connect clues'],
+        missingConnections: [],
+        extraConnections: [],
+        invalidConnections: []
       });
+
+      system.validateTheory(mockTheory);
+
+      expect(hintsSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          caseId: 'case_1',
+          hints: ['Connect clues'],
+          accuracy: 0.5
+        })
+      );
     });
 
     it('should return invalid if no current case', () => {

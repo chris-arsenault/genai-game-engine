@@ -26,14 +26,30 @@ import { QuestTriggerRegistry } from '../quests/QuestTriggerRegistry.js';
 import { QUEST_001_HOLLOW_CASE } from '../data/quests/act1Quests.js';
 import { createNPCEntity } from '../entities/NPCEntity.js';
 import { createMartinezDialogue } from '../data/dialogues/MartinezWitnessDialogue.js';
+import { createMrsChenDialogue } from '../data/dialogues/MrsChenWitnessDialogue.js';
 
 const TUTORIAL_TRIGGER_IDS = Object.freeze({
+  ARRIVAL: 'crime_scene_entry',
   DETECTIVE_VISION: 'tutorial_detective_vision_training',
   DEDUCTION: 'tutorial_deduction_board',
   EXIT: 'tutorial_scene_exit',
 });
 
 const TUTORIAL_TRIGGER_DEFINITIONS = [
+  {
+    id: TUTORIAL_TRIGGER_IDS.ARRIVAL,
+    questId: QUEST_001_HOLLOW_CASE.id,
+    objectiveId: 'obj_arrive_scene',
+    areaId: 'crime_scene_alley',
+    radius: 150,
+    once: true,
+    prompt: 'Crime Scene Perimeter',
+    triggerType: 'crime_scene',
+    metadata: {
+      moodHint: 'investigation_peak',
+      narrativeBeat: 'act1_arrival_scene',
+    },
+  },
   {
     id: TUTORIAL_TRIGGER_IDS.DETECTIVE_VISION,
     questId: QUEST_001_HOLLOW_CASE.id,
@@ -79,6 +95,11 @@ const TUTORIAL_TRIGGER_DEFINITIONS = [
 ];
 
 const TUTORIAL_TRIGGER_LAYOUT = {
+  [TUTORIAL_TRIGGER_IDS.ARRIVAL]: {
+    x: 200,
+    y: 320,
+    radius: 200,
+  },
   [TUTORIAL_TRIGGER_IDS.DETECTIVE_VISION]: {
     x: 520,
     y: 210,
@@ -293,15 +314,20 @@ export class TutorialScene {
       return;
     }
 
-    if (typeof dialogueSystem.getDialogueTree === 'function') {
-      const existing = dialogueSystem.getDialogueTree('martinez_witness_interview');
-      if (existing) {
-        return;
+    const ensureDialogue = (dialogueId, factory) => {
+      if (typeof dialogueSystem.getDialogueTree === 'function') {
+        const existing = dialogueSystem.getDialogueTree(dialogueId);
+        if (existing) {
+          return;
+        }
       }
-    }
 
-    const dialogueTree = createMartinezDialogue();
-    dialogueSystem.registerDialogueTree(dialogueTree);
+      const tree = factory();
+      dialogueSystem.registerDialogueTree(tree);
+    };
+
+    ensureDialogue('martinez_witness_interview', createMartinezDialogue);
+    ensureDialogue('mrs_chen_witness_interview', createMrsChenDialogue);
   }
 
   /**
@@ -490,27 +516,50 @@ export class TutorialScene {
     }
 
     const entityId = this.entityManager.createEntity('tutorial_trigger');
-    const centerX = layout.x + layout.width / 2;
-    const centerY = layout.y + layout.height / 2;
+    let interactionRadius = null;
 
-    const transform = new Transform(centerX, centerY, 0, 1, 1);
-    this.componentRegistry.addComponent(entityId, 'Transform', transform);
+    if (Number.isFinite(layout.radius)) {
+      const transform = new Transform(layout.x, layout.y, 0, 1, 1);
+      this.componentRegistry.addComponent(entityId, 'Transform', transform);
 
-    const collider = new Collider({
-      type: 'AABB',
-      width: layout.width,
-      height: layout.height,
-      isTrigger: true,
-      isStatic: true,
-      tags: ['tutorial_trigger', 'quest_trigger'],
-    });
-    this.componentRegistry.addComponent(entityId, 'Collider', collider);
+      const collider = new Collider({
+        type: 'circle',
+        radius: layout.radius,
+        isTrigger: true,
+        isStatic: true,
+        tags: ['tutorial_trigger', 'quest_trigger'],
+      });
+      this.componentRegistry.addComponent(entityId, 'Collider', collider);
+      interactionRadius = layout.radius;
+    } else {
+      const centerX = layout.x + layout.width / 2;
+      const centerY = layout.y + layout.height / 2;
 
-    const interactionRadius = Math.max(layout.width, layout.height) / 2;
+      const transform = new Transform(centerX, centerY, 0, 1, 1);
+      this.componentRegistry.addComponent(entityId, 'Transform', transform);
+
+      const collider = new Collider({
+        type: 'AABB',
+        width: layout.width,
+        height: layout.height,
+        isTrigger: true,
+        isStatic: true,
+        tags: ['tutorial_trigger', 'quest_trigger'],
+      });
+      this.componentRegistry.addComponent(entityId, 'Collider', collider);
+
+      interactionRadius = Math.max(layout.width, layout.height) / 2;
+    }
+    const effectiveRadius = Number.isFinite(interactionRadius)
+      ? interactionRadius
+      : Number.isFinite(definition.radius)
+      ? definition.radius
+      : 96;
+
     const interaction = new InteractionZone({
       id: triggerId,
       type: 'trigger',
-      radius: interactionRadius,
+      radius: effectiveRadius,
       requiresInput: false,
       prompt: definition.prompt ?? 'Interact',
       oneShot: definition.once ?? true,

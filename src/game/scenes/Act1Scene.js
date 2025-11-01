@@ -399,8 +399,6 @@ function createBoundary(entityManager, componentRegistry, x, y, width, height, p
     type: 'AABB',
     width,
     height,
-    offsetX: -width / 2,
-    offsetY: -height / 2,
     isTrigger: false,
     isStatic: true,
     tags: ['boundary', 'solid']

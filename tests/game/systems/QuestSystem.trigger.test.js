@@ -112,4 +112,45 @@ describe('QuestSystem trigger integration', () => {
     expect(questComponent.triggered).toBe(false);
     expect(componentRegistry.entityManager.hasEntity(entityId)).toBe(true);
   });
+
+  it('emits staged narrative events when trigger metadata defines emitEvent', () => {
+    const entityId = system.createQuestTrigger(0, 0, 'main-act3-zenith-infiltration', {
+      objectiveId: 'obj_zenith_sector_entry',
+    });
+    const trigger = componentRegistry.getComponent(entityId, 'Trigger');
+
+    trigger.data.metadata = {
+      emitEvent: 'act3:zenith_infiltration:stage',
+      emitEventPayload: {
+        branchId: 'shared',
+        stageId: 'shared_sector_entry',
+        successFlag: 'act3_zenith_sector_perimeter_breached',
+      },
+      branchId: 'shared',
+      stageId: 'shared_sector_entry',
+      successFlag: 'act3_zenith_sector_perimeter_breached',
+      telemetryTag: 'act3_zenith_sector_entry',
+    };
+
+    const handler = jest.fn();
+    eventBus.on('act3:zenith_infiltration:stage', handler);
+
+    eventBus.emit('area:entered', {
+      triggerId: entityId,
+      trigger,
+      data: { ...trigger.data, questTrigger: true },
+    });
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0][0]).toEqual(
+      expect.objectContaining({
+        questId: 'main-act3-zenith-infiltration',
+        objectiveId: 'obj_zenith_sector_entry',
+        branchId: 'shared',
+        stageId: 'shared_sector_entry',
+        successFlag: 'act3_zenith_sector_perimeter_breached',
+        telemetryTag: 'act3_zenith_sector_entry',
+      })
+    );
+  });
 });

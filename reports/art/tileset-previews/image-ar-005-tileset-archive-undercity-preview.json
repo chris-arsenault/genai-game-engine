@@ -1,0 +1,408 @@
+{
+  "tilesetId": "image-ar-005-tileset-archive-undercity",
+  "sourceImage": "assets/generated/images/ar-005/image-ar-005-tileset-archive-undercity.png",
+  "tileSize": 16,
+  "promotedAt": "2025-11-01T01:19:10.588Z",
+  "sourceAnalysis": "reports/art/archive-undercity-tileset-analysis.json",
+  "totals": {
+    "warnings": 61,
+    "promoted": 61
+  },
+  "stats": {
+    "annotations": 61,
+    "rowsCovered": 19,
+    "columnsCovered": 37,
+    "orientation": {
+      "vertical": 56,
+      "horizontal": 5
+    },
+    "openEdge": {
+      "south": 33,
+      "north": 23,
+      "west": 4,
+      "east": 1
+    },
+    "tags": {
+      "doorway": 61,
+      "vertical": 56,
+      "horizontal": 5
+    },
+    "collisions": {
+      "block": 61
+    },
+    "classifications": {
+      "solid": 61
+    },
+    "clusterCount": 30,
+    "averageClusterLength": 2.03,
+    "longestClusterLength": 8
+  },
+  "coverage": {
+    "minRow": 1,
+    "maxRow": 61,
+    "minColumn": 1,
+    "maxColumn": 62
+  },
+  "clusters": [
+    {
+      "length": 8,
+      "start": {
+        "row": 24,
+        "column": 34
+      },
+      "end": {
+        "row": 24,
+        "column": 41
+      },
+      "tileIndices": [
+        1570,
+        1571,
+        1572,
+        1573,
+        1574,
+        1575,
+        1576,
+        1577
+      ],
+      "orientation": "vertical",
+      "openEdges": [
+        "south"
+      ],
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "length": 5,
+      "start": {
+        "row": 59,
+        "column": 17
+      },
+      "end": {
+        "row": 59,
+        "column": 21
+      },
+      "tileIndices": [
+        3793,
+        3794,
+        3795,
+        3796,
+        3797
+      ],
+      "orientation": "vertical",
+      "openEdges": [
+        "north"
+      ],
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "length": 4,
+      "start": {
+        "row": 48,
+        "column": 4
+      },
+      "end": {
+        "row": 48,
+        "column": 7
+      },
+      "tileIndices": [
+        3076,
+        3077,
+        3078,
+        3079
+      ],
+      "orientation": "vertical",
+      "openEdges": [
+        "north"
+      ],
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "length": 4,
+      "start": {
+        "row": 61,
+        "column": 40
+      },
+      "end": {
+        "row": 61,
+        "column": 43
+      },
+      "tileIndices": [
+        3944,
+        3945,
+        3946,
+        3947
+      ],
+      "orientation": "vertical",
+      "openEdges": [
+        "north"
+      ],
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "length": 3,
+      "start": {
+        "row": 16,
+        "column": 49
+      },
+      "end": {
+        "row": 16,
+        "column": 51
+      },
+      "tileIndices": [
+        1073,
+        1074,
+        1075
+      ],
+      "orientation": "vertical",
+      "openEdges": [
+        "south"
+      ],
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "length": 3,
+      "start": {
+        "row": 24,
+        "column": 18
+      },
+      "end": {
+        "row": 24,
+        "column": 20
+      },
+      "tileIndices": [
+        1554,
+        1555,
+        1556
+      ],
+      "orientation": "vertical",
+      "openEdges": [
+        "south"
+      ],
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "length": 3,
+      "start": {
+        "row": 24,
+        "column": 22
+      },
+      "end": {
+        "row": 24,
+        "column": 24
+      },
+      "tileIndices": [
+        1558,
+        1559,
+        1560
+      ],
+      "orientation": "vertical",
+      "openEdges": [
+        "south"
+      ],
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "length": 3,
+      "start": {
+        "row": 41,
+        "column": 40
+      },
+      "end": {
+        "row": 41,
+        "column": 42
+      },
+      "tileIndices": [
+        2664,
+        2665,
+        2666
+      ],
+      "orientation": "vertical",
+      "openEdges": [
+        "south"
+      ],
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "length": 2,
+      "start": {
+        "row": 1,
+        "column": 56
+      },
+      "end": {
+        "row": 1,
+        "column": 57
+      },
+      "tileIndices": [
+        120,
+        121
+      ],
+      "orientation": "vertical",
+      "openEdges": [
+        "north"
+      ],
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "length": 2,
+      "start": {
+        "row": 16,
+        "column": 2
+      },
+      "end": {
+        "row": 16,
+        "column": 3
+      },
+      "tileIndices": [
+        1026,
+        1027
+      ],
+      "orientation": "vertical",
+      "openEdges": [
+        "south"
+      ],
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "length": 2,
+      "start": {
+        "row": 16,
+        "column": 57
+      },
+      "end": {
+        "row": 16,
+        "column": 58
+      },
+      "tileIndices": [
+        1081,
+        1082
+      ],
+      "orientation": "vertical",
+      "openEdges": [
+        "south"
+      ],
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "length": 2,
+      "start": {
+        "row": 27,
+        "column": 1
+      },
+      "end": {
+        "row": 27,
+        "column": 2
+      },
+      "tileIndices": [
+        1729,
+        1730
+      ],
+      "orientation": "vertical",
+      "openEdges": [
+        "south"
+      ],
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "tileIndex": 120,
+      "row": 1,
+      "column": 56,
+      "openEdge": "north",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ],
+      "collision": "block",
+      "warningType": "potential-door"
+    },
+    {
+      "tileIndex": 121,
+      "row": 1,
+      "column": 57,
+      "openEdge": "north",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ],
+      "collision": "block",
+      "warningType": "potential-door"
+    },
+    {
+      "tileIndex": 449,
+      "row": 7,
+      "column": 1,
+      "openEdge": "west",
+      "orientation": "horizontal",
+      "tags": [
+        "doorway",
+        "horizontal"
+      ],
+      "collision": "block",
+      "warningType": "potential-door"
+    },
+    {
+      "tileIndex": 593,
+      "row": 9,
+      "column": 17,
+      "openEdge": "north",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ],
+      "collision": "block",
+      "warningType": "potential-door"
+    },
+    {
+      "tileIndex": 599,
+      "row": 9,
+      "column": 23,
+      "openEdge": "north",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ],
+      "collision": "block",
+      "warningType": "potential-door"
+    }
+  ]
+}

@@ -1,0 +1,422 @@
+{
+  "tilesetId": "image-ar-005-tileset-corporate-spires",
+  "sourceImage": "assets/generated/images/ar-005/image-ar-005-tileset-corporate-spires.png",
+  "tileSize": 16,
+  "promotedAt": "2025-11-01T01:19:06.071Z",
+  "sourceAnalysis": "reports/art/corporate-spires-tileset-analysis.json",
+  "totals": {
+    "warnings": 196,
+    "promoted": 196
+  },
+  "stats": {
+    "annotations": 196,
+    "rowsCovered": 51,
+    "columnsCovered": 51,
+    "orientation": {
+      "horizontal": 148,
+      "vertical": 48
+    },
+    "openEdge": {
+      "west": 97,
+      "east": 51,
+      "south": 47,
+      "north": 1
+    },
+    "tags": {
+      "doorway": 196,
+      "horizontal": 148,
+      "vertical": 48
+    },
+    "collisions": {
+      "block": 196
+    },
+    "classifications": {
+      "solid": 196
+    },
+    "clusterCount": 153,
+    "averageClusterLength": 1.28,
+    "longestClusterLength": 14
+  },
+  "coverage": {
+    "minRow": 1,
+    "maxRow": 60,
+    "minColumn": 3,
+    "maxColumn": 60
+  },
+  "clusters": [
+    {
+      "length": 14,
+      "start": {
+        "row": 14,
+        "column": 4
+      },
+      "end": {
+        "row": 14,
+        "column": 17
+      },
+      "tileIndices": [
+        900,
+        901,
+        902,
+        903,
+        904,
+        905,
+        906,
+        907,
+        908,
+        909,
+        910,
+        911,
+        912,
+        913
+      ],
+      "orientation": "vertical",
+      "openEdges": [
+        "south"
+      ],
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "length": 14,
+      "start": {
+        "row": 14,
+        "column": 47
+      },
+      "end": {
+        "row": 14,
+        "column": 60
+      },
+      "tileIndices": [
+        943,
+        944,
+        945,
+        946,
+        947,
+        948,
+        949,
+        950,
+        951,
+        952,
+        953,
+        954,
+        955,
+        956
+      ],
+      "orientation": "vertical",
+      "openEdges": [
+        "south"
+      ],
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "length": 10,
+      "start": {
+        "row": 14,
+        "column": 34
+      },
+      "end": {
+        "row": 14,
+        "column": 43
+      },
+      "tileIndices": [
+        930,
+        931,
+        932,
+        933,
+        934,
+        935,
+        936,
+        937,
+        938,
+        939
+      ],
+      "orientation": "vertical",
+      "openEdges": [
+        "south"
+      ],
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "length": 9,
+      "start": {
+        "row": 14,
+        "column": 21
+      },
+      "end": {
+        "row": 14,
+        "column": 29
+      },
+      "tileIndices": [
+        917,
+        918,
+        919,
+        920,
+        921,
+        922,
+        923,
+        924,
+        925
+      ],
+      "orientation": "vertical",
+      "openEdges": [
+        "south"
+      ],
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "length": 1,
+      "start": {
+        "row": 1,
+        "column": 3
+      },
+      "end": {
+        "row": 1,
+        "column": 3
+      },
+      "tileIndices": [
+        67
+      ],
+      "orientation": "horizontal",
+      "openEdges": [
+        "west"
+      ],
+      "tags": [
+        "doorway",
+        "horizontal"
+      ]
+    },
+    {
+      "length": 1,
+      "start": {
+        "row": 1,
+        "column": 30
+      },
+      "end": {
+        "row": 1,
+        "column": 30
+      },
+      "tileIndices": [
+        94
+      ],
+      "orientation": "horizontal",
+      "openEdges": [
+        "east"
+      ],
+      "tags": [
+        "doorway",
+        "horizontal"
+      ]
+    },
+    {
+      "length": 1,
+      "start": {
+        "row": 1,
+        "column": 33
+      },
+      "end": {
+        "row": 1,
+        "column": 33
+      },
+      "tileIndices": [
+        97
+      ],
+      "orientation": "horizontal",
+      "openEdges": [
+        "west"
+      ],
+      "tags": [
+        "doorway",
+        "horizontal"
+      ]
+    },
+    {
+      "length": 1,
+      "start": {
+        "row": 2,
+        "column": 3
+      },
+      "end": {
+        "row": 2,
+        "column": 3
+      },
+      "tileIndices": [
+        131
+      ],
+      "orientation": "horizontal",
+      "openEdges": [
+        "west"
+      ],
+      "tags": [
+        "doorway",
+        "horizontal"
+      ]
+    },
+    {
+      "length": 1,
+      "start": {
+        "row": 2,
+        "column": 30
+      },
+      "end": {
+        "row": 2,
+        "column": 30
+      },
+      "tileIndices": [
+        158
+      ],
+      "orientation": "horizontal",
+      "openEdges": [
+        "east"
+      ],
+      "tags": [
+        "doorway",
+        "horizontal"
+      ]
+    },
+    {
+      "length": 1,
+      "start": {
+        "row": 2,
+        "column": 33
+      },
+      "end": {
+        "row": 2,
+        "column": 33
+      },
+      "tileIndices": [
+        161
+      ],
+      "orientation": "horizontal",
+      "openEdges": [
+        "west"
+      ],
+      "tags": [
+        "doorway",
+        "horizontal"
+      ]
+    },
+    {
+      "length": 1,
+      "start": {
+        "row": 3,
+        "column": 3
+      },
+      "end": {
+        "row": 3,
+        "column": 3
+      },
+      "tileIndices": [
+        195
+      ],
+      "orientation": "horizontal",
+      "openEdges": [
+        "west"
+      ],
+      "tags": [
+        "doorway",
+        "horizontal"
+      ]
+    },
+    {
+      "length": 1,
+      "start": {
+        "row": 3,
+        "column": 30
+      },
+      "end": {
+        "row": 3,
+        "column": 30
+      },
+      "tileIndices": [
+        222
+      ],
+      "orientation": "horizontal",
+      "openEdges": [
+        "east"
+      ],
+      "tags": [
+        "doorway",
+        "horizontal"
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "tileIndex": 67,
+      "row": 1,
+      "column": 3,
+      "openEdge": "west",
+      "orientation": "horizontal",
+      "tags": [
+        "doorway",
+        "horizontal"
+      ],
+      "collision": "block",
+      "warningType": "potential-door"
+    },
+    {
+      "tileIndex": 94,
+      "row": 1,
+      "column": 30,
+      "openEdge": "east",
+      "orientation": "horizontal",
+      "tags": [
+        "doorway",
+        "horizontal"
+      ],
+      "collision": "block",
+      "warningType": "potential-door"
+    },
+    {
+      "tileIndex": 97,
+      "row": 1,
+      "column": 33,
+      "openEdge": "west",
+      "orientation": "horizontal",
+      "tags": [
+        "doorway",
+        "horizontal"
+      ],
+      "collision": "block",
+      "warningType": "potential-door"
+    },
+    {
+      "tileIndex": 131,
+      "row": 2,
+      "column": 3,
+      "openEdge": "west",
+      "orientation": "horizontal",
+      "tags": [
+        "doorway",
+        "horizontal"
+      ],
+      "collision": "block",
+      "warningType": "potential-door"
+    },
+    {
+      "tileIndex": 158,
+      "row": 2,
+      "column": 30,
+      "openEdge": "east",
+      "orientation": "horizontal",
+      "tags": [
+        "doorway",
+        "horizontal"
+      ],
+      "collision": "block",
+      "warningType": "potential-door"
+    }
+  ]
+}

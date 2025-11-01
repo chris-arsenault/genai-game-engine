@@ -162,6 +162,31 @@ describe('FxOverlay', () => {
     expect(ctxReveal.fillRect).toHaveBeenCalled();
   });
 
+  it('anchors world-positioned cues using the camera projection', () => {
+    const camera = {
+      worldToScreen: jest.fn(() => ({ x: 400, y: 300 })),
+    };
+    const overlay = new FxOverlay(canvas, eventBus, {
+      camera,
+      forensicPulseDuration: 0.2,
+    });
+    overlay.init();
+
+    const handler = getLastHandler('fx:overlay_cue');
+    handler({
+      effectId: 'forensicPulse',
+      duration: 0.25,
+      worldPosition: { x: 12, y: 18 },
+    });
+
+    const ctx = createMockContext();
+    overlay.render(ctx);
+
+    expect(camera.worldToScreen).toHaveBeenCalledWith(12, 18);
+    const arcCall = ctx.arc.mock.calls.find((call) => call[0] === 400 && call[1] === 300);
+    expect(arcCall).toBeDefined();
+  });
+
   it('handles dialogue and case cue renders without throwing', () => {
     const overlay = new FxOverlay(canvas, eventBus, {});
     overlay.init();

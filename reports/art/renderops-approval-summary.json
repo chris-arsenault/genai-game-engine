@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2025-10-31T21:13:46.134Z",
-  "totalJobs": 4,
+  "generatedAt": "2025-11-01T19:32:07Z",
+  "totalJobs": 5,
   "newJobs": 0,
   "jobStatusTotals": {
-    "completed": 2,
+    "completed": 4,
     "superseded": 1,
-    "unknown": 1
+    "unknown": 0
   },
   "queueTotals": {
-    "renderops-lighting": 3,
+    "renderops-lighting": 5,
     "unassigned": 1
   },
   "actionableSegmentsByStatus": {
@@ -17,6 +17,27 @@
   "totalPendingSegments": 0,
   "totalApprovedSegments": 2,
   "entries": [
+    {
+      "jobId": "af361a7d-b05a-46f4-bf06-996e877f3dc5",
+      "source": "/home/tsonu/src/genai-game-engine/reports/telemetry/renderops-approvals/act2-crossroads/2025-11-01T05:19:21.571Z-af361a7d-b05a-46f4-bf06-996e877f3dc5.json",
+      "feedbackLogPath": null,
+      "queue": "renderops-lighting",
+      "status": "completed",
+      "createdAt": "2025-11-01T05:19:21.571Z",
+      "processedAt": "2025-11-01T05:32:10Z",
+      "actionableSegments": 0,
+      "approvedSegments": 0,
+      "pendingSegments": 0,
+      "packetLabel": "act2-crossroads",
+      "packetId": "35b92abf-e7cc-44d8-ae58-296a4ccb242c",
+      "notes": [
+        "Share the generated ZIP bundle with the RenderOps team via the secure art handoff channel.",
+        "Include PACKET_README.md in the communication so context and actionable segments are visible up front.",
+        "After RenderOps responds, update the placeholder audit and regenerate the packet if art tweaks were requested.",
+        "Flag the `attachments/` directory when sharing so supplemental references are reviewed alongside the metrics."
+      ],
+      "statusBreakdown": {}
+    },
     {
       "jobId": "f426b509-8894-4e32-8af6-3ac278a3bdb8",
       "source": "/home/tsonu/src/genai-game-engine/reports/telemetry/renderops-approvals/act2-crossroads/2025-10-31T16:03:38.036Z-f426b509-8894-4e32-8af6-3ac278a3bdb8.json",
@@ -81,6 +102,27 @@
       "statusBreakdown": {
         "approved": 2
       }
+    },
+    {
+      "jobId": "9cc27c03-3b58-4c29-8c71-36dfe28507ae",
+      "source": "/home/tsonu/src/genai-game-engine/reports/telemetry/renderops-approvals/act2-crossroads/2025-11-01T09:10:32.110Z-9cc27c03-3b58-4c29-8c71-36dfe28507ae.json",
+      "feedbackLogPath": null,
+      "queue": "renderops-lighting",
+      "status": "completed",
+      "createdAt": "2025-11-01T09:10:32.110Z",
+      "processedAt": "2025-11-01T19:32:07Z",
+      "actionableSegments": 0,
+      "approvedSegments": 0,
+      "pendingSegments": 0,
+      "packetLabel": "act2-crossroads",
+      "packetId": "64a06a8e-7c87-4dcb-b234-c521e95be721",
+      "notes": [
+        "Share the generated ZIP bundle with the RenderOps team via the secure art handoff channel.",
+        "Include PACKET_README.md in the communication so context and actionable segments are visible up front.",
+        "After RenderOps responds, update the placeholder audit and regenerate the packet if art tweaks were requested.",
+        "Flag the `attachments/` directory when sharing so supplemental references are reviewed alongside the metrics."
+      ],
+      "statusBreakdown": {}
     },
     {
       "jobId": "index",

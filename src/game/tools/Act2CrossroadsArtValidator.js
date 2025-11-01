@@ -28,9 +28,16 @@ const REQUIRED_SEGMENT_IDS = Object.freeze({
     'crossroads_boundary_north',
     'crossroads_boundary_south',
   ]),
+  questHighlights: Object.freeze([
+    'memory_parlor_infiltration_entry',
+    'memory_parlor_infiltration_firewall',
+    'memory_parlor_infiltration_escape',
+  ]),
 });
 
-const LIGHTING_CATEGORIES = Object.freeze(new Set(['floors', 'accents', 'lightColumns']));
+const LIGHTING_CATEGORIES = Object.freeze(
+  new Set(['floors', 'accents', 'lightColumns', 'questHighlights'])
+);
 const COLLISION_CATEGORIES = Object.freeze(new Set(['boundaries']));
 const HEX_COLOR_REGEX = /^#[0-9a-fA-F]{6}$/;
 
@@ -190,6 +197,7 @@ function buildCategoryMaps(source) {
       accents: new Map(),
       lightColumns: new Map(),
       boundaries: new Map(),
+      questHighlights: new Map(),
     };
   }
 
@@ -198,6 +206,7 @@ function buildCategoryMaps(source) {
     accents: toSegmentMap(source.accents),
     lightColumns: toSegmentMap(source.lightColumns),
     boundaries: toSegmentMap(source.boundaries),
+    questHighlights: toSegmentMap(source.questHighlights),
   };
 }
 

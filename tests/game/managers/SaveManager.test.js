@@ -58,6 +58,42 @@ describe('SaveManager', () => {
         isComplete: jest.fn(() => false),
         completeTutorial: jest.fn(),
       },
+      caseManager: {
+        serialize: jest.fn(() => ({
+          activeCaseId: 'case_001',
+          cases: {
+            case_001: {
+              status: 'active',
+              collectedEvidence: ['ev_a'],
+              discoveredClues: ['clue_a'],
+              objectives: [{ completed: true }],
+              accuracy: 0.5,
+              solveTime: null,
+              playerTheory: { nodes: [], connections: [] },
+            },
+          },
+        })),
+        deserialize: jest.fn(),
+      },
+      investigationSystem: {
+        serialize: jest.fn(() => ({
+          abilities: ['basic_observation', 'detective_vision'],
+          knowledge: ['kira_background'],
+          casesSolved: [],
+          collectedEvidence: { case_001: ['ev_a'] },
+          discoveredClues: { clue_a: true },
+          activeCase: 'case_001',
+          detectiveVision: {
+            active: true,
+            energy: 2,
+            energyMax: 5,
+            cooldown: 1,
+            timer: 3,
+          },
+          investigationComponent: null,
+        })),
+        deserialize: jest.fn(),
+      },
       worldStateStore: null,
       storage: localStorageMock,
       spatialMetricsProvider: null,
@@ -203,6 +239,33 @@ describe('SaveManager', () => {
       const saveData = JSON.parse(localStorageMock.store[saveKey]);
 
       expect(saveData.version).toBe(1);
+    });
+
+    test('should include investigation and case snapshots in save data', () => {
+      const result = saveManager.saveGame('test_slot');
+      expect(result).toBe(true);
+
+      const saveKey = saveManager.config.storageKeyPrefix + 'test_slot';
+      const saveData = JSON.parse(localStorageMock.store[saveKey]);
+
+      expect(mockManagers.investigationSystem.serialize).toHaveBeenCalled();
+      expect(mockManagers.caseManager.serialize).toHaveBeenCalled();
+      expect(saveData.gameData.investigation).toEqual(
+        expect.objectContaining({
+          abilities: expect.arrayContaining(['basic_observation', 'detective_vision']),
+          activeCase: 'case_001',
+        })
+      );
+      expect(saveData.gameData.cases).toEqual(
+        expect.objectContaining({
+          activeCaseId: 'case_001',
+          cases: expect.objectContaining({
+            case_001: expect.objectContaining({
+              collectedEvidence: expect.arrayContaining(['ev_a']),
+            }),
+          }),
+        })
+      );
     });
 
     test('should include timestamp in save data', () => {
@@ -697,6 +760,8 @@ describe('SaveManager', () => {
           reputation: {},
         },
         tutorialSystem: {},
+        caseManager: { deserialize: jest.fn() },
+        investigationSystem: { deserialize: jest.fn() },
       };
 
       const newSaveManager = new SaveManager(eventBus, {
@@ -708,6 +773,8 @@ describe('SaveManager', () => {
 
       expect(newManagers.storyFlagManager.deserialize).toHaveBeenCalled();
       expect(newManagers.questManager.deserialize).toHaveBeenCalled();
+      expect(newManagers.caseManager.deserialize).toHaveBeenCalled();
+      expect(newManagers.investigationSystem.deserialize).toHaveBeenCalled();
     });
 
     test('should verify save version before loading', () => {
@@ -853,6 +920,103 @@ describe('SaveManager', () => {
       expect(loadManagers.factionManager.reputation).toEqual(
         mockManagers.factionManager.reputation
       );
+    });
+
+    test('persists finale cinematic state across save and load cycles', () => {
+      const finaleState = {
+        active: true,
+        beatIndex: 1,
+        revealedBeats: 2,
+        status: 'playing',
+        payload: {
+          cinematicId: 'act3_support_finale',
+          stanceId: 'support',
+          stanceFlag: 'act3_support_path',
+          stanceTitle: 'Support Finale',
+          summary: 'Support your allies as the finale unfolds.',
+          musicCue: 'finale_support_theme',
+          epilogueBeats: [
+            { id: 'beat1', title: 'Rally', description: 'Allies rally together.' },
+            { id: 'beat2', title: 'Charge', description: 'Final charge into Zenith.' },
+          ],
+          libraryVersion: '1.0.0',
+          dispatchedAt: 1730400000000,
+        },
+        assets: {
+          hero: {
+            assetId: 'act3_finale_support_hero_v1',
+            src: '/overlays/act3-finale/support/act3_finale_support_hero.png',
+            alt: 'Support hero silhouette',
+            stanceId: 'support',
+            cinematicId: 'act3_support_finale',
+            status: 'ready',
+            tags: ['act3', 'hero'],
+            metadata: { artist: 'automation' },
+            palette: ['#202833', '#f1c550'],
+          },
+          beats: {
+            beat1: {
+              assetId: 'act3_finale_support_city_aftermath_v1',
+              src: '/overlays/act3-finale/support/act3_finale_support_city_aftermath.png',
+              alt: 'City aftermath with supporters',
+              stanceId: 'support',
+              beatId: 'beat1',
+              cinematicId: 'act3_support_finale',
+              status: 'ready',
+              tags: ['act3', 'beat'],
+              metadata: {},
+              palette: [],
+            },
+          },
+        },
+      };
+
+      const finaleController = {
+        getState: jest.fn(() => finaleState),
+        hydrate: jest.fn(),
+      };
+
+      saveManager.setFinaleCinematicController(finaleController);
+      saveManager.init();
+      saveManager.saveGame('finale_slot');
+
+      const stored = JSON.parse(localStorageMock.getItem('save_finale_slot'));
+      expect(stored.gameData.finaleCinematic).toEqual(expect.objectContaining({
+        payload: expect.objectContaining({ stanceId: 'support', cinematicId: 'act3_support_finale' }),
+        assets: expect.objectContaining({
+          hero: expect.objectContaining({ assetId: 'act3_finale_support_hero_v1' }),
+        }),
+        status: 'playing',
+      }));
+
+      const loadFinaleController = {
+        hydrate: jest.fn(() => true),
+      };
+
+      const loadSaveManager = new SaveManager(eventBus, {
+        storyFlagManager: { deserialize: jest.fn() },
+        questManager: { deserialize: jest.fn() },
+        factionManager: { deserialize: jest.fn(() => true), reputation: {} },
+        tutorialSystem: null,
+        caseManager: { deserialize: jest.fn() },
+        investigationSystem: { deserialize: jest.fn() },
+        storage: localStorageMock,
+        finaleCinematicController: loadFinaleController,
+      });
+      loadSaveManager.init();
+      const result = loadSaveManager.loadGame('finale_slot');
+
+      expect(result).toBe(true);
+      expect(loadFinaleController.hydrate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: expect.objectContaining({ stanceId: 'support' }),
+          assets: expect.objectContaining({
+            hero: expect.objectContaining({ assetId: 'act3_finale_support_hero_v1' }),
+          }),
+        })
+      );
+
+      loadSaveManager.cleanup();
     });
 
     test('should restore tutorial status correctly', () => {

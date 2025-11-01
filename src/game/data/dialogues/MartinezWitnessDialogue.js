@@ -2,11 +2,7 @@
  * Martinez Witness Dialogue
  *
  * Tutorial case dialogue tree for Officer Martinez.
- * First witness interview - introduces dialogue mechanics and branching choices.
- *
- * Context: Officer Martinez responded to the first hollow victim case.
- * Branches: Diplomatic, Aggressive, Analytical approaches
- * Consequences: Different clues revealed based on player approach
+ * Provides first-responder perspective and surfaces the pattern of targeted investigators.
  */
 
 import { DialogueTree } from '../DialogueTree.js';
@@ -19,244 +15,139 @@ export function createMartinezDialogue() {
   const nodes = {
     start: {
       speaker: 'Officer Martinez',
-      text: 'Detective. Thanks for coming. This is... unlike anything I have seen on patrol. The victim has no memories, no identity. Just staring into nothing.',
+      text: 'Detective Kira? Wish we were meeting under better circumstances. Your partner has not said a word since I arrived. Eyes forward, mind gone.',
       choices: [
         {
-          text: '[Diplomatic] Thank you for securing the scene, Officer. Walk me through what you found.',
+          text: '[Diplomatic] Appreciate you holding the scene. Walk me through the timeline.',
           nextNode: 'diplomatic_1',
           metadata: { approach: 'diplomatic' }
         },
         {
-          text: '[Aggressive] Cut to the chase, Martinez. What happened here?',
-          nextNode: 'aggressive_1',
-          metadata: { approach: 'aggressive' }
+          text: '[Direct] Tell me who touched what and when. No flourishes.',
+          nextNode: 'direct_1',
+          metadata: { approach: 'direct' }
         },
         {
-          text: '[Analytical] Describe the victim state when you arrived. Precise details.',
+          text: '[Analytical] Start with the victim state. Pupil dilation, vitals, scent—details please.',
           nextNode: 'analytical_1',
           metadata: { approach: 'analytical' }
         }
       ]
     },
 
-    // Diplomatic branch
     diplomatic_1: {
       speaker: 'Officer Martinez',
-      text: 'Of course, Detective. I arrived at 2:47 AM after a call from the building super. Found the victim in the basement archive room, sitting upright but completely unresponsive. Pupils dilated, no visible injuries.',
+      text: 'Dispatch pinged us at 02:47. Anonymous tip said “Apartment 4B, hurry.” I got here second, partner secured the hallway. Marcus was strapped to that chair when we breached—no struggle left in him.',
       choices: [
         {
-          text: 'Did anyone else have access to the building?',
-          nextNode: 'diplomatic_2',
-          consequences: {
-            revealClues: ['building_access']
-          }
+          text: 'Any sign of forced entry or tampered locks?',
+          nextNode: 'timeline_details'
         },
         {
-          text: 'What made the super call it in?',
-          nextNode: 'diplomatic_3',
-          consequences: {
-            revealClues: ['strange_behavior']
-          }
+          text: 'Who called it in? Anyone waiting outside?',
+          nextNode: 'tip_details'
         }
       ]
     },
 
-    diplomatic_2: {
+    direct_1: {
       speaker: 'Officer Martinez',
-      text: 'The super mentioned a maintenance crew left around midnight. He found the basement door ajar when he did his rounds. No signs of forced entry, though. Whoever did this had a key or knew the security codes.',
-      nextNode: 'approach_assessment_diplomatic',
-      consequences: {
-        reputation: {
-          vanguard_prime: { fame: 5 }
-        }
-      }
-    },
-
-    diplomatic_3: {
-      speaker: 'Officer Martinez',
-      text: 'He said the victim was his tenant - Sarah Chen, a data archivist. She normally keeps to herself, but the super heard strange sounds from the basement. Found her like this, muttering about "fragments" and "the gap between."',
-      nextNode: 'approach_assessment_diplomatic',
-      consequences: {
-        reputation: {
-          vanguard_prime: { fame: 5 }
-        }
-      }
-    },
-
-    approach_assessment_diplomatic: {
-      speaker: 'Officer Martinez',
-      text: 'Listen, Detective... between us, the department is worried. Three cases like this in two weeks. Command wants this quiet, but people are scared. Whatever you find, I hope it helps.',
-      nextNode: 'final_questions',
-      consequences: {
-        setFlags: ['martinez_trusts_player']
-      }
-    },
-
-    // Aggressive branch
-    aggressive_1: {
-      speaker: 'Officer Martinez',
-      text: 'Right. Got the call at 2:47 AM, victim found in basement. No ID, no memories, total blank. Medical team says physically healthy but mentally... gone. That direct enough for you?',
+      text: 'Just me, my partner, and the paramedics. We swept with body cams rolling. I logged every touch—only contact we made was checking vitals. Extractor was still warm when we got here.',
       choices: [
         {
-          text: 'Who else was here before me?',
-          nextNode: 'aggressive_2'
+          text: 'So they left the hardware behind on purpose?',
+          nextNode: 'timeline_details'
         },
         {
-          text: 'What did you touch? Did you contaminate my scene?',
-          nextNode: 'aggressive_3',
-          consequences: {
-            reputation: {
-              vanguard_prime: { fame: -10, infamy: 5 }
-            }
-          }
+          text: 'Anonymous caller give you anything useful?',
+          nextNode: 'tip_details'
         }
       ]
     },
 
-    aggressive_2: {
-      speaker: 'Officer Martinez',
-      text: 'Just me, my partner, and the paramedics. Building super called it in. We secured the perimeter and waited for you. By the book.',
-      nextNode: 'approach_assessment_aggressive',
-      consequences: {
-        revealClues: ['scene_secured']
-      }
-    },
-
-    aggressive_3: {
-      speaker: 'Officer Martinez',
-      text: 'I know how to work a crime scene, Detective. We did not touch anything except to check vitals. If you want to question my professionalism, take it up with my sergeant.',
-      nextNode: 'approach_assessment_aggressive'
-    },
-
-    approach_assessment_aggressive: {
-      speaker: 'Officer Martinez',
-      text: 'Look, I get it. High-pressure case. But we are on the same side here. Three hollow victims in two weeks - command is breathing down everyone necks. Just... try to work with us, alright?',
-      nextNode: 'final_questions',
-      consequences: {
-        setFlags: ['martinez_defensive']
-      }
-    },
-
-    // Analytical branch
     analytical_1: {
       speaker: 'Officer Martinez',
-      text: 'Arrived 2:47 AM. Victim: female, approximately 30 years old, sitting upright against archive shelving. Pupils dilated 8mm bilaterally, non-responsive to light. No external trauma. Vitals stable but cognitive function absent.',
+      text: 'Pupils blown, eight millimeters. Skin clammy but no blood loss beyond what you see. There is a faint ozone burn in the air and the extractor capacitors are still discharging. Whoever did this moved fast.',
       choices: [
         {
-          text: 'Environmental factors? Temperature, lighting, air quality?',
-          nextNode: 'analytical_2',
-          consequences: {
-            revealClues: ['environmental_scan']
-          }
+          text: 'Then they had a clean exit route. Show me the timeframe.',
+          nextNode: 'timeline_details'
         },
         {
-          text: 'Timeline. What happened between last known activity and discovery?',
-          nextNode: 'analytical_3',
-          consequences: {
-            revealClues: ['timeline_gap']
-          }
+          text: 'If the ozone lingers, the tipper called right after the strike.',
+          nextNode: 'tip_details'
         }
       ]
     },
 
-    analytical_2: {
+    timeline_details: {
       speaker: 'Officer Martinez',
-      text: 'Basement temperature: 18°C, slightly cooler than building standard. Fluorescent lighting, four of eight fixtures non-functional. Air quality normal except... faint ozone smell. Like after an electrical storm.',
-      nextNode: 'approach_assessment_analytical',
+      text: 'Building cams show a courier van at 01:18. Same model I have seen near other hollowings. Three silhouettes unload gear, swipe a maintenance key, and ride the service lift up. Nobody comes out until 02:41.',
+      nextNode: 'pattern_bridge',
       consequences: {
-        reputation: {
-          vanguard_prime: { fame: 8 }
-        }
+        setFlags: ['martinez_shared_timeline']
       }
     },
 
-    analytical_3: {
+    tip_details: {
       speaker: 'Officer Martinez',
-      text: 'Victim clocked out of work at 11:32 PM - building security logs. Building super discovered her at 2:30 AM during routine rounds. Approximately three-hour window. No one reported seeing or hearing anything unusual.',
-      nextNode: 'approach_assessment_analytical',
+      text: 'Call was routed through a public mesh node. Voice masked, just coordinates and “Get there before NeuroSync does.” Command wants me to log it as citizen concern and forget it.',
+      nextNode: 'pattern_bridge',
       consequences: {
-        reputation: {
-          vanguard_prime: { fame: 8 }
-        }
+        setFlags: ['martinez_shared_tip']
       }
     },
 
-    approach_assessment_analytical: {
+    pattern_bridge: {
       speaker: 'Officer Martinez',
-      text: 'I have been documenting everything. This is the third case with identical presentation. Command wants pattern analysis, but the brass is keeping it compartmentalized. If you are as thorough as you seem, you will see the connections.',
+      text: 'I am not supposed to say this, but you deserve the truth. Marcus makes five. Every victim this month is tied to NeuroSync investigations. Brass keeps telling us it is coincidence. I do not buy it.',
       nextNode: 'final_questions',
       consequences: {
-        setFlags: ['martinez_respects_player'],
-        revealClues: ['pattern_recognition']
+        revealClues: ['clue_006_pattern']
       }
     },
 
-    // Final questions (all branches converge)
     final_questions: {
       speaker: 'Officer Martinez',
-      text: 'Anything else you need from me before I file my report?',
+      text: 'Anything else you need logged before I send the report upstairs?',
       choices: [
         {
-          text: 'Did the victim say anything before going completely blank?',
-          nextNode: 'victim_words',
+          text: 'Keep digging. If command leans on you, I want to know.',
+          nextNode: 'closing_warning',
           consequences: {
-            revealClues: ['victim_last_words']
+            setFlags: ['martinez_warned_about_brass']
           }
         },
         {
-          text: 'Have you noticed any NeuroSynch Corp activity in the area?',
-          nextNode: 'neurosynch_question',
-          conditions: ['reputation_min:vanguard_prime:10']
+          text: 'Spotted any NeuroSync vans or personnel still lurking?',
+          nextNode: 'neurosync_presence'
         },
         {
-          text: 'That is all for now. Keep the scene locked down.',
+          text: 'That covers it. Maintain lockdown until forensics arrives.',
           nextNode: 'end_conversation'
         }
       ]
     },
 
-    victim_words: {
+    neurosync_presence: {
       speaker: 'Officer Martinez',
-      text: 'The paramedics said she kept repeating something... "The Syndicate knows. They know about the gap." Then nothing. Just silence and that thousand-yard stare.',
-      nextNode: 'final_choice'
-    },
-
-    neurosynch_question: {
-      speaker: 'Officer Martinez',
-      text: 'Now that you mention it... their mobile labs have been in the district lately. "Voluntary memory wellness scans" they call it. Free service for residents. My partner got one. Said it was harmless, but...',
-      nextNode: 'final_choice',
+      text: 'They packed up quick tonight, but my partner clocked the same plates outside Hollow Victim #3. Mobile labs. “Free wellness scans.” You ask me, they are scouting targets.',
+      nextNode: 'closing_warning',
       consequences: {
-        revealClues: ['neurosynch_mobile_labs']
+        setFlags: ['martinez_flags_neurosync']
       }
     },
 
-    final_choice: {
+    closing_warning: {
       speaker: 'Officer Martinez',
-      text: 'If there is nothing else, I will secure the scene until forensics arrives.',
-      choices: [
-        {
-          text: 'Thank you, Officer. I will take it from here.',
-          nextNode: 'end_conversation',
-          consequences: {
-            reputation: {
-              vanguard_prime: { fame: 3 }
-            }
-          }
-        },
-        {
-          text: 'Keep your eyes open. This is bigger than one victim.',
-          nextNode: 'end_conversation',
-          consequences: {
-            setFlags: ['warned_martinez']
-          }
-        }
-      ]
+      text: 'I will keep the hallway clear as long as I can. But command wants this quiet. If anyone from Central shows up, you did not hear the pattern from me.',
+      nextNode: 'end_conversation'
     },
 
     end_conversation: {
       speaker: 'Officer Martinez',
-      text: 'Good luck, Detective. Something tells me you are going to need it.',
-      nextNode: null // End dialogue
+      text: 'Good hunting, Detective. Whoever left that message wanted you here. Do not let them regret it.',
+      nextNode: null
     }
   };
 
@@ -267,10 +158,10 @@ export function createMartinezDialogue() {
     startNode: 'start',
     nodes,
     metadata: {
-      caseId: 'tutorial_case',
+      caseId: 'case_001_hollow_case',
       tags: ['tutorial', 'witness', 'police', 'hollow_victim'],
       difficulty: 'introductory',
-      estimatedDuration: '5-8 minutes'
+      estimatedDuration: '4-6 minutes'
     }
   });
 }

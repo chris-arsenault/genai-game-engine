@@ -1,0 +1,43 @@
+{
+  "jobId": "af361a7d-b05a-46f4-bf06-996e877f3dc5",
+  "queue": "renderops-lighting",
+  "status": "completed",
+  "createdAt": "2025-11-01T05:19:21.571Z",
+  "processedAt": "2025-11-01T05:32:10Z",
+  "acknowledgedAt": "2025-11-01T05:32:10Z",
+  "acknowledgedBy": "Codex Session 223 (simulated RenderOps handoff)",
+  "ackMethod": "deliveries/renderops internal staging",
+  "ackNote": "Packet delivered via deliveries/renderops/act2-crossroads/act2-crossroads-2025-11-01T05-19-21-549Z; RenderOps notified that no actionable segments remained.",
+  "packet": {
+    "id": "35b92abf-e7cc-44d8-ae58-296a4ccb242c",
+    "label": "act2-crossroads",
+    "packetDir": "/home/tsonu/src/genai-game-engine/reports/art/renderops-packets/act2-crossroads-2025-11-01T05-19-21-549Z",
+    "shareManifestPath": "/home/tsonu/src/genai-game-engine/reports/art/renderops-packets/act2-crossroads-2025-11-01T05-19-21-549Z/share-manifest.json",
+    "deliveryManifestPath": "/home/tsonu/src/genai-game-engine/reports/art/renderops-packets/act2-crossroads-2025-11-01T05-19-21-549Z-delivery.json",
+    "instructions": [
+      "Share the generated ZIP bundle with the RenderOps team via the secure art handoff channel.",
+      "Include PACKET_README.md in the communication so context and actionable segments are visible up front.",
+      "After RenderOps responds, update the placeholder audit and regenerate the packet if art tweaks were requested.",
+      "Flag the `attachments/` directory when sharing so supplemental references are reviewed alongside the metrics."
+    ],
+    "summary": {
+      "total": 12,
+      "statusCounts": {
+        "ok": 12
+      },
+      "metadataDriftCount": 0,
+      "skippedCount": 0
+    }
+  },
+  "actionableSegments": [],
+  "delivery": {
+    "bundle": {
+      "format": "zip",
+      "fileName": "act2-crossroads-2025-11-01T05-19-21-549Z.zip",
+      "absolutePath": "/home/tsonu/src/genai-game-engine/reports/art/renderops-packets/act2-crossroads-2025-11-01T05-19-21-549Z.zip",
+      "checksumSha256": "93b9a33662a0e41bf4a0c67d980eef1aa88b9fd85f186aa51e3c400f04fd9a47",
+      "sizeBytes": 12050
+    },
+    "attachmentCount": 2
+  }
+}

@@ -3,25 +3,37 @@
     "c2d9170c-9d13-4e3b-941c-e1ee89d8bb68": {
       "source": "/home/tsonu/src/genai-game-engine/reports/telemetry/renderops-approvals/act2-crossroads/2025-10-31T08:50:35.195Z-c2d9170c-9d13-4e3b-941c-e1ee89d8bb68.json",
       "processedAt": "2025-10-31T12:46:29Z",
-      "lastCheckedAt": "2025-10-31T21:13:46.133Z",
+      "lastCheckedAt": "2025-11-01T05:32:45.415Z",
+      "status": "completed"
+    },
+    "9cc27c03-3b58-4c29-8c71-36dfe28507ae": {
+      "source": "/home/tsonu/src/genai-game-engine/reports/telemetry/renderops-approvals/act2-crossroads/2025-11-01T09:10:32.110Z-9cc27c03-3b58-4c29-8c71-36dfe28507ae.json",
+      "processedAt": "2025-11-01T19:32:07Z",
+      "lastCheckedAt": "2025-11-01T19:32:07Z",
       "status": "completed"
     },
     "index": {
       "source": "/home/tsonu/src/genai-game-engine/reports/telemetry/renderops-approvals/index.json",
       "processedAt": null,
-      "lastCheckedAt": "2025-10-31T21:13:46.134Z",
+      "lastCheckedAt": "2025-11-01T05:32:45.416Z",
       "status": null
     },
     "f426b509-8894-4e32-8af6-3ac278a3bdb8": {
       "source": "/home/tsonu/src/genai-game-engine/reports/telemetry/renderops-approvals/act2-crossroads/2025-10-31T16:03:38.036Z-f426b509-8894-4e32-8af6-3ac278a3bdb8.json",
       "processedAt": "2025-10-31T20:57:39Z",
-      "lastCheckedAt": "2025-10-31T21:13:46.134Z",
+      "lastCheckedAt": "2025-11-01T05:32:45.415Z",
       "status": "superseded"
     },
     "c488a1c4-4834-4a83-9b33-57510d68c396": {
       "source": "/home/tsonu/src/genai-game-engine/reports/telemetry/renderops-approvals/act2-crossroads/2025-10-31T20:26:00.543Z-c488a1c4-4834-4a83-9b33-57510d68c396.json",
       "processedAt": "2025-10-31T20:57:39Z",
-      "lastCheckedAt": "2025-10-31T21:13:46.134Z",
+      "lastCheckedAt": "2025-11-01T05:32:45.415Z",
+      "status": "completed"
+    },
+    "af361a7d-b05a-46f4-bf06-996e877f3dc5": {
+      "source": "/home/tsonu/src/genai-game-engine/reports/telemetry/renderops-approvals/act2-crossroads/2025-11-01T05:19:21.571Z-af361a7d-b05a-46f4-bf06-996e877f3dc5.json",
+      "processedAt": "2025-11-01T05:32:10Z",
+      "lastCheckedAt": "2025-11-01T05:32:45.416Z",
       "status": "completed"
     }
   }

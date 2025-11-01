@@ -215,6 +215,79 @@ describe('CaseManager', () => {
     });
   });
 
+  describe('Serialization', () => {
+    beforeEach(() => {
+      caseManager.registerCase({
+        id: 'case_progress',
+        title: 'Progress Snapshot',
+        objectives: [
+          { id: 'objective_a', type: 'collect_evidence', description: 'Collect evidence', evidenceIds: ['ev_a'] },
+          { id: 'objective_b', type: 'discover_clue', description: 'Find the clue', clueIds: ['clue_a'] },
+        ],
+        evidenceIds: ['ev_a', 'ev_b'],
+        requiredClues: ['clue_a'],
+        evidence: [
+          { id: 'ev_a', title: 'Evidence A' },
+          { id: 'ev_b', title: 'Evidence B' },
+        ],
+        clues: [{ id: 'clue_a', title: 'Clue A' }],
+      }, { activate: true });
+    });
+
+    it('serializes case state with collected evidence and objectives', () => {
+      const caseFile = caseManager.getCase('case_progress');
+      caseFile.collectedEvidence.add('ev_a');
+      caseFile.discoveredClues.add('clue_a');
+      caseFile.objectives[0].completed = true;
+      caseFile.accuracy = 0.8;
+      caseFile.solveTime = 4200;
+
+      const snapshot = caseManager.serialize();
+
+      expect(snapshot.activeCaseId).toBe('case_progress');
+      expect(snapshot.cases.case_progress.collectedEvidence).toEqual(['ev_a']);
+      expect(snapshot.cases.case_progress.discoveredClues).toEqual(['clue_a']);
+      expect(snapshot.cases.case_progress.objectives[0].completed).toBe(true);
+      expect(snapshot.cases.case_progress.accuracy).toBeCloseTo(0.8);
+      expect(snapshot.cases.case_progress.solveTime).toBe(4200);
+    });
+
+    it('hydrates case state and emits hydration event', () => {
+      const snapshot = {
+        activeCaseId: 'case_progress',
+        cases: {
+          case_progress: {
+            status: 'solved',
+            collectedEvidence: ['ev_a', 'ev_b'],
+            discoveredClues: ['clue_a'],
+            objectives: [{ completed: true }, { completed: true }],
+            accuracy: 0.9,
+            solveTime: 5000,
+            playerTheory: {
+              nodes: [{ id: 'node_a' }],
+              connections: [{ from: 'node_a', to: 'node_b' }],
+            },
+          },
+        },
+      };
+
+      caseManager.deserialize(snapshot);
+
+      const hydratedCase = caseManager.getCase('case_progress');
+      expect(caseManager.activeCase).toBe('case_progress');
+      expect(hydratedCase.status).toBe('solved');
+      expect(Array.from(hydratedCase.collectedEvidence)).toEqual(['ev_a', 'ev_b']);
+      expect(Array.from(hydratedCase.discoveredClues)).toEqual(['clue_a']);
+      expect(hydratedCase.objectives.every((objective) => objective.completed)).toBe(true);
+      expect(hydratedCase.accuracy).toBeCloseTo(0.9);
+      expect(hydratedCase.solveTime).toBe(5000);
+      expect(mockEventBus.emit).toHaveBeenCalledWith(
+        'case:hydrated',
+        expect.objectContaining({ activeCaseId: 'case_progress' })
+      );
+    });
+  });
+
   describe('Evidence Collection', () => {
     beforeEach(() => {
       caseManager.createCase({
@@ -468,10 +541,12 @@ describe('CaseManager', () => {
 
       expect(result.valid).toBe(true);
       expect(result.accuracy).toBeGreaterThanOrEqual(0.7);
+      expect(result.hints).toHaveLength(0);
       expect(mockEventBus.emit).toHaveBeenCalledWith('theory:validated',
         expect.objectContaining({
           caseId: 'case_1',
-          valid: true
+          valid: true,
+          hints: expect.any(Array)
         })
       );
     });
@@ -488,6 +563,7 @@ describe('CaseManager', () => {
 
       expect(result.valid).toBe(false);
       expect(result.accuracy).toBeLessThan(0.7);
+      expect(result.hints.length).toBeGreaterThan(0);
     });
 
     it('should calculate partial accuracy', () => {
@@ -513,7 +589,7 @@ describe('CaseManager', () => {
       };
 
       const highResult = caseManager.validateTheory('case_1', highAccuracyTheory);
-      expect(highResult.feedback).toContain('sound');
+      expect(highResult.feedback).toContain('holds together');
 
       // Create low accuracy case
       caseManager.createCase({
@@ -565,6 +641,8 @@ describe('CaseManager', () => {
 
       expect(result.valid).toBe(true);
       expect(result.accuracy).toBe(1.0);
+      const caseFile = caseManager.getCase('case_no_theory');
+      expect(caseFile.status).toBe('active');
     });
   });
 
@@ -629,6 +707,48 @@ describe('CaseManager', () => {
             })
           ],
         ])
+      );
+    });
+
+    it('completes validate_theory objectives when case is solved', () => {
+      caseManager.createCase({
+        id: 'case_theory',
+        title: 'Theory Case',
+        objectives: [
+          {
+            id: 'solve_case',
+            type: 'validate_theory',
+            description: 'Validate the final theory',
+            minAccuracy: 0.75
+          }
+        ],
+        accuracyThreshold: 0.7
+      });
+
+      mockEventBus.emit.mockClear();
+
+      caseManager.solveCase('case_theory', 0.82);
+
+      const caseFile = caseManager.getCase('case_theory');
+      expect(caseFile.objectives[0].completed).toBe(true);
+
+      expect(mockEventBus.emit).toHaveBeenCalledWith(
+        'case:objective_completed',
+        expect.objectContaining({
+          caseId: 'case_theory',
+          objectiveId: 'solve_case',
+          objectiveType: 'validate_theory',
+          accuracy: 0.82,
+          threshold: 0.75
+        })
+      );
+
+      expect(mockEventBus.emit).toHaveBeenCalledWith(
+        'case:objectives_complete',
+        expect.objectContaining({
+          caseId: 'case_theory',
+          title: 'Theory Case'
+        })
       );
     });
 

@@ -58,6 +58,15 @@ describe('tutorialCase data structure', () => {
     }
   });
 
+  it('should only unlock clues that exist on the case definition', () => {
+    const clueIds = new Set(tutorialCase.clues.map((clue) => clue.id));
+    for (const witness of tutorialCase.witnesses) {
+      for (const clueId of witness.unlocksClues || []) {
+        expect(clueIds.has(clueId)).toBe(true);
+      }
+    }
+  });
+
   it('should align tutorial guidance with case objectives', () => {
     const objectiveIds = new Set(tutorialCase.objectives.map((objective) => objective.id));
 

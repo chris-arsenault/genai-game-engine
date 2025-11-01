@@ -17,6 +17,14 @@ import {
   templateVariantManifest as defaultTemplateVariantManifest,
   createAuthoredTemplateForRoomType,
 } from './templates/authoredTemplates.js';
+import {
+  NEON_DISTRICT_TILESET_ATTACHMENT,
+  CORPORATE_SPIRES_TILESET_ATTACHMENT,
+  ARCHIVE_UNDERCITY_TILESET_ATTACHMENT,
+  ZENITH_SECTOR_TILESET_ATTACHMENT,
+  applyTilesetCatalogMetadata,
+  getTilesetSeamPreviewById,
+} from './templates/tilesetSeamPreviewCatalog.js';
 
 /**
  * Room type constants for semantic district generation
@@ -47,6 +55,29 @@ export const DistrictTypes = {
   INDUSTRIAL: 'industrial',
   MIXED: 'mixed',
 };
+
+const DEFAULT_TILESET_ID = NEON_DISTRICT_TILESET_ATTACHMENT.id;
+
+const DEFAULT_TILESET_BY_DISTRICT_TYPE = Object.freeze({
+  [DistrictTypes.MIXED]: NEON_DISTRICT_TILESET_ATTACHMENT.id,
+  [DistrictTypes.RESIDENTIAL]: NEON_DISTRICT_TILESET_ATTACHMENT.id,
+  [DistrictTypes.COMMERCIAL]: CORPORATE_SPIRES_TILESET_ATTACHMENT.id,
+  [DistrictTypes.INDUSTRIAL]: ARCHIVE_UNDERCITY_TILESET_ATTACHMENT.id,
+});
+
+const DEFAULT_TILESET_BY_DISTRICT_ID = Object.freeze({
+  neon_districts: NEON_DISTRICT_TILESET_ATTACHMENT.id,
+  corporate_spires: CORPORATE_SPIRES_TILESET_ATTACHMENT.id,
+  archive_undercity: ARCHIVE_UNDERCITY_TILESET_ATTACHMENT.id,
+  zenith_sector: ZENITH_SECTOR_TILESET_ATTACHMENT.id,
+});
+
+const DISTRICT_ID_TO_TYPE = Object.freeze({
+  neon_districts: DistrictTypes.MIXED,
+  corporate_spires: DistrictTypes.COMMERCIAL,
+  archive_undercity: DistrictTypes.INDUSTRIAL,
+  zenith_sector: DistrictTypes.MIXED,
+});
 
 /**
  * Default room count distributions by district type
@@ -142,6 +173,7 @@ export class DistrictGenerator {
       rotationAngles: Array.isArray(config.rotationAngles) && config.rotationAngles.length
         ? config.rotationAngles
         : [0, 90, 180, 270],
+      activeTilesetId: config.activeTilesetId ?? null,
     };
 
     const manifest =
@@ -163,25 +195,38 @@ export class DistrictGenerator {
       config.corridorSeamPainter instanceof CorridorSeamPainter
         ? config.corridorSeamPainter
         : new CorridorSeamPainter();
+
+    this.tilesetResolver =
+      typeof config.tilesetResolver === 'function' ? config.tilesetResolver : defaultTilesetResolver;
+
+    this._currentTilesetOptions = {
+      activeTilesetId: this.config.activeTilesetId ?? DEFAULT_TILESET_ID,
+    };
   }
 
   /**
    * Generates a complete district with semantic room types
    * @param {number} seed - Random seed for deterministic generation
-   * @param {string} [districtType='mixed'] - District type (residential, commercial, industrial, mixed)
+   * @param {string|object} [district='mixed'] - District type or descriptor
    * @returns {{graph: LayoutGraph, rooms: RoomInstance[], tilemap: TileMap, metadata: object}}
    */
-  generate(seed, districtType = 'mixed') {
+  generate(seed, district = DistrictTypes.MIXED) {
     const startTime = performance.now();
 
     // Initialize RNG
     this.rng = new SeededRandom(seed);
 
+    const districtContext = this._normalizeDistrictContext(district);
+    const resolvedDistrictType = districtContext.districtType || DistrictTypes.MIXED;
+    const activeTilesetId = this._resolveActiveTilesetId(districtContext);
+    this._currentTilesetOptions = { activeTilesetId };
+    const activeTilesetAttachment = getTilesetSeamPreviewById(activeTilesetId);
+
     // Build district graph with semantic room types
-    const graph = this._buildDistrictGraph(this.rng, districtType);
+    const graph = this._buildDistrictGraph(this.rng, resolvedDistrictType);
 
     // Generate room interiors (BSP for buildings, simple for outdoor)
-    const roomData = this._generateRoomInteriors(graph, this.rng);
+    const roomData = this._generateRoomInteriors(graph, this.rng, this._currentTilesetOptions);
 
     // Place rooms spatially using force-directed layout
     const positions = this._placeRooms(graph, roomData, this.rng);
@@ -210,7 +255,12 @@ export class DistrictGenerator {
       corridors,
       metadata: {
         seed,
-        districtType,
+        districtType: resolvedDistrictType,
+        districtId: districtContext.districtId ?? null,
+        tileset: {
+          activeTilesetId,
+          label: activeTilesetAttachment?.label ?? null,
+        },
         generationTime: endTime - startTime,
         roomCount: rooms.length,
         corridorCount: corridors.length,
@@ -357,6 +407,71 @@ export class DistrictGenerator {
     return { width: rotatedWidth, height: rotatedHeight };
   }
 
+  _normalizeDistrictContext(district) {
+    if (district && typeof district === 'object') {
+      const districtId = district.id ?? district.districtId ?? null;
+      const tilesetId = district.tilesetId ?? district.activeTilesetId ?? null;
+      const providedType = district.districtType ?? district.type ?? null;
+      const resolvedType =
+        providedType ??
+        (districtId && DISTRICT_ID_TO_TYPE[districtId] ? DISTRICT_ID_TO_TYPE[districtId] : null);
+      return {
+        districtId,
+        districtType: resolvedType ?? null,
+        tilesetId,
+      };
+    }
+
+    if (typeof district === 'string') {
+      if (DEFAULT_TILESET_BY_DISTRICT_ID[district]) {
+        return {
+          districtId: district,
+          districtType: DISTRICT_ID_TO_TYPE[district] ?? null,
+        };
+      }
+      return { districtType: district };
+    }
+
+    return {
+      districtType: DistrictTypes.MIXED,
+    };
+  }
+
+  _resolveActiveTilesetId(context = {}) {
+    const explicit = this.config.activeTilesetId;
+    if (this._isValidTilesetId(explicit)) {
+      return explicit;
+    }
+
+    const contextTileset = context.tilesetId;
+    if (this._isValidTilesetId(contextTileset)) {
+      return contextTileset;
+    }
+
+    const resolverCandidate =
+      typeof this.tilesetResolver === 'function' ? this.tilesetResolver(context) : null;
+    if (this._isValidTilesetId(resolverCandidate)) {
+      return resolverCandidate;
+    }
+
+    if (context.districtId && DEFAULT_TILESET_BY_DISTRICT_ID[context.districtId]) {
+      return DEFAULT_TILESET_BY_DISTRICT_ID[context.districtId];
+    }
+
+    if (context.districtType && DEFAULT_TILESET_BY_DISTRICT_TYPE[context.districtType]) {
+      return DEFAULT_TILESET_BY_DISTRICT_TYPE[context.districtType];
+    }
+
+    return DEFAULT_TILESET_ID;
+  }
+
+  _isValidTilesetId(tilesetId) {
+    if (!tilesetId || typeof tilesetId !== 'string') {
+      return false;
+    }
+    return Boolean(getTilesetSeamPreviewById(tilesetId));
+  }
+
   /**
    * Generates interior layouts for each room using BSP or templates
    * @private
@@ -364,8 +479,12 @@ export class DistrictGenerator {
    * @param {SeededRandom} rng - Random number generator
    * @returns {Map<string, object>} Map of node ID to room data
    */
-  _generateRoomInteriors(graph, rng) {
+  _generateRoomInteriors(graph, rng, tilesetOptions = null) {
     const roomData = new Map();
+    const catalogOptions =
+      tilesetOptions && typeof tilesetOptions === 'object'
+        ? tilesetOptions
+        : this._currentTilesetOptions || { activeTilesetId: DEFAULT_TILESET_ID };
 
     for (const node of graph.nodes.values()) {
       const roomType = node.data.roomType || node.type;
@@ -385,7 +504,10 @@ export class DistrictGenerator {
           tilemap: authoredTemplate.tilemap,
           templateId: authoredTemplate.templateId,
           type: 'authored',
-          metadata: authoredTemplate.metadata || null,
+          metadata: applyTilesetCatalogMetadata(
+            authoredTemplate.metadata || { roomType },
+            catalogOptions
+          ),
         });
         continue;
       }
@@ -419,6 +541,7 @@ export class DistrictGenerator {
           tilemap: result.tilemap,
           rooms: result.rooms,
           type: 'bsp',
+          metadata: applyTilesetCatalogMetadata({ roomType }, catalogOptions),
         });
       } else {
         // Simple rectangular layout for outdoor areas
@@ -450,6 +573,7 @@ export class DistrictGenerator {
           layoutHeight: bounds.height,
           tilemap,
           type: 'outdoor',
+          metadata: applyTilesetCatalogMetadata({ roomType }, catalogOptions),
         });
       }
     }
@@ -924,6 +1048,29 @@ export class DistrictGenerator {
         }
       }
 
+      const baseMetadata =
+        variantSummary?.metadata ||
+        data.metadata ||
+        {
+          roomType: room.roomType || room.type || null,
+        };
+      const placementMetadata = applyTilesetCatalogMetadata(
+        baseMetadata,
+        this._currentTilesetOptions
+      );
+      const placementSeamPreview =
+        placementMetadata?.tileset?.seamPreview ??
+        variantSummary?.seamPreview ??
+        data.metadata?.tileset?.seamPreview ??
+        null;
+      const seamClusterSource =
+        Array.isArray(variantSummary?.seamClusters) && variantSummary.seamClusters.length
+          ? variantSummary.seamClusters
+          : Array.isArray(placementSeamPreview?.clusters)
+          ? placementSeamPreview.clusters
+          : [];
+      const placementSeamClusters = cloneSeamClusters(seamClusterSource);
+
       placements.push({
         roomId: room.id,
         roomType: room.roomType || room.type || null,
@@ -935,10 +1082,12 @@ export class DistrictGenerator {
         rotation: transformResult.rotation ?? resolvedRotation,
         variantId: variantSummary?.variantId ?? null,
         variantStrategy: variantSummary?.strategy ?? 'rotate',
-        metadata: variantSummary?.metadata ?? null,
+        metadata: placementMetadata,
         seams: Array.isArray(variantSummary?.seams)
           ? variantSummary.seams.map((seam) => ({ ...seam }))
           : [],
+        seamPreview: placementSeamPreview ?? null,
+        seamClusters: placementSeamClusters,
       });
     }
 
@@ -1033,4 +1182,34 @@ export class DistrictGenerator {
       warnings,
     };
   }
+}
+
+function defaultTilesetResolver(context = {}) {
+  if (context && typeof context === 'object') {
+    if (context.tilesetId && getTilesetSeamPreviewById(context.tilesetId)) {
+      return context.tilesetId;
+    }
+    if (context.districtId && DEFAULT_TILESET_BY_DISTRICT_ID[context.districtId]) {
+      return DEFAULT_TILESET_BY_DISTRICT_ID[context.districtId];
+    }
+    if (context.districtType && DEFAULT_TILESET_BY_DISTRICT_TYPE[context.districtType]) {
+      return DEFAULT_TILESET_BY_DISTRICT_TYPE[context.districtType];
+    }
+  }
+  return DEFAULT_TILESET_ID;
+}
+
+function cloneSeamClusters(clusters) {
+  if (!Array.isArray(clusters)) {
+    return [];
+  }
+
+  return clusters.map((cluster) => ({
+    ...cluster,
+    start: cluster?.start ? { ...cluster.start } : null,
+    end: cluster?.end ? { ...cluster.end } : null,
+    openEdges: Array.isArray(cluster?.openEdges) ? [...cluster.openEdges] : [],
+    tags: Array.isArray(cluster?.tags) ? [...cluster.tags] : [],
+    tileIndices: Array.isArray(cluster?.tileIndices) ? [...cluster.tileIndices] : [],
+  }));
 }

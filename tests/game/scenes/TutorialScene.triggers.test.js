@@ -7,6 +7,7 @@ import { QuestTriggerRegistry } from '../../../src/game/quests/QuestTriggerRegis
 import { QUEST_001_HOLLOW_CASE } from '../../../src/game/data/quests/act1Quests.js';
 
 const TUTORIAL_TRIGGER_IDS = {
+  ARRIVAL: 'crime_scene_entry',
   DETECTIVE_VISION: 'tutorial_detective_vision_training',
   DEDUCTION: 'tutorial_deduction_board',
   EXIT: 'tutorial_scene_exit',
@@ -158,9 +159,30 @@ describe('TutorialScene quest trigger migration', () => {
       }
     }
 
+    const arrival = Array.from(triggerLookup.values()).find(
+      (entry) => entry.trigger?.data?.objectiveId === 'obj_arrive_scene'
+    );
+    expect(arrival).toBeDefined();
     expect(triggerLookup.has(TUTORIAL_TRIGGER_IDS.DETECTIVE_VISION)).toBe(true);
     expect(triggerLookup.has(TUTORIAL_TRIGGER_IDS.DEDUCTION)).toBe(true);
     expect(triggerLookup.has(TUTORIAL_TRIGGER_IDS.EXIT)).toBe(true);
+
+    const arrivalQuest = componentRegistry.getComponent(arrival.entityId, 'Quest');
+    expect(arrivalQuest).toEqual(
+      expect.objectContaining({
+        questId: QUEST_001_HOLLOW_CASE.id,
+        objectiveId: 'obj_arrive_scene',
+        areaId: 'crime_scene_alley',
+        oneTime: true,
+      })
+    );
+    expect(arrival.trigger.once).toBe(true);
+    expect(arrival.trigger.data.areaId).toBe('crime_scene_alley');
+    const arrivalCollider = componentRegistry.getComponent(arrival.entityId, 'Collider');
+    expect(arrivalCollider).toBeDefined();
+    expect(arrivalCollider.type).toBe('Collider');
+    expect(arrivalCollider.shapeType).toBe('circle');
+    expect(arrivalCollider.radius).toBeGreaterThan(0);
 
     const detectiveVision = triggerLookup.get(TUTORIAL_TRIGGER_IDS.DETECTIVE_VISION);
     const deduction = triggerLookup.get(TUTORIAL_TRIGGER_IDS.DEDUCTION);

@@ -26,6 +26,19 @@ const ROOM_WIDTH = 960;
 const ROOM_HEIGHT = 600;
 const WALL_THICKNESS = 24;
 
+const MEMORY_PARLOR_OVERLAY_DESCRIPTOR = Object.freeze({
+  id: 'memory_parlor_neon_overlay',
+  x: 0,
+  y: 0,
+  width: ROOM_WIDTH,
+  height: ROOM_HEIGHT,
+  layer: 'ground_fx',
+  zIndex: 0,
+  alpha: 0.88,
+  imageUrl: 'assets/overlays/act2-crossroads/memory_parlor_neon_001.png',
+  fallbackColor: '#2a1742',
+});
+
 const ENTRANCE_POSITION = { x: 160, y: 320 };
 const FIREWALL_POSITION = { x: 480, y: 320 };
 const INTERIOR_CENTER = { x: 720, y: 320 };
@@ -204,8 +217,6 @@ function createWall(entityManager, componentRegistry, x, y, width, height, color
     type: 'AABB',
     width,
     height,
-    offsetX: -width / 2,
-    offsetY: -height / 2,
     isStatic: true,
     isTrigger: false,
     tags: ['boundary', 'solid'],
@@ -239,8 +250,6 @@ function createCoverBlock(entityManager, componentRegistry, {
     type: 'AABB',
     width,
     height,
-    offsetX: -width / 2,
-    offsetY: -height / 2,
     isStatic: true,
     isTrigger: false,
     tags: ['cover', 'solid'],
@@ -375,6 +384,19 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
   const cleanupHandlers = [];
   const questTriggerToolkit = new TriggerMigrationToolkit(componentRegistry, eventBus);
   let ambientAudioController = null;
+  const overlayDescriptor = MEMORY_PARLOR_OVERLAY_DESCRIPTOR;
+  const overlayMetadata = {
+    id: overlayDescriptor.id,
+    imageUrl: overlayDescriptor.imageUrl,
+    status: 'skipped',
+    layer: overlayDescriptor.layer,
+    alpha: overlayDescriptor.alpha,
+  };
+  const overlayLoader =
+    options.assetLoader && typeof options.assetLoader.loadImage === 'function'
+      ? options.assetLoader
+      : null;
+  let overlayImage = null;
 
   if (options.audioManager) {
     const config = GameConfig?.audio?.memoryParlorAmbient || {};
@@ -423,6 +445,18 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
     cleanupHandlers.push(() => ambientAudioController.dispose());
   }
 
+  if (overlayLoader && overlayDescriptor.imageUrl) {
+    overlayMetadata.status = 'pending';
+    try {
+      overlayImage = await overlayLoader.loadImage(overlayDescriptor.imageUrl);
+      overlayMetadata.status = 'loaded';
+    } catch (error) {
+      overlayMetadata.status = 'failed';
+      overlayMetadata.error = error?.message ?? 'unknown';
+      console.warn('[MemoryParlorScene] Failed to load neon overlay asset', error);
+    }
+  }
+
   const padFloorId = createRectEntity(entityManager, componentRegistry, {
     x: 0,
     y: 0,
@@ -434,6 +468,35 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
     zIndex: 0,
   });
   sceneEntities.push(padFloorId);
+
+  const overlayEntityId = entityManager.createEntity(overlayDescriptor.id);
+  componentRegistry.addComponent(
+    overlayEntityId,
+    'Transform',
+    new Transform(
+      overlayDescriptor.x + overlayDescriptor.width / 2,
+      overlayDescriptor.y + overlayDescriptor.height / 2,
+      0,
+      1,
+      1
+    )
+  );
+  componentRegistry.addComponent(
+    overlayEntityId,
+    'Sprite',
+    new Sprite({
+      image: overlayImage,
+      width: overlayDescriptor.width,
+      height: overlayDescriptor.height,
+      color: overlayImage ? '#ffffff' : overlayDescriptor.fallbackColor,
+      alpha: overlayDescriptor.alpha,
+      layer: overlayDescriptor.layer,
+      zIndex: overlayDescriptor.zIndex,
+      visible: true,
+    })
+  );
+  overlayMetadata.entityId = overlayEntityId;
+  sceneEntities.push(overlayEntityId);
 
   const entryRunnerId = createRectEntity(entityManager, componentRegistry, {
     x: 120,
@@ -881,6 +944,7 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
       interiorZoneId,
       firewallEntityId,
       exitZoneId,
+      overlay: overlayMetadata,
       ambientAudioController,
     },
   };

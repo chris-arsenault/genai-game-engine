@@ -16,9 +16,11 @@ describe('DialogueSystem', () => {
   let testDialogueTree;
   let mockWorldStateStore;
   let emittedEvents;
+  let listeners;
 
   beforeEach(() => {
     emittedEvents = [];
+    listeners = new Map();
 
     mockWorldStateStore = {
       getState: jest.fn(() => ({
@@ -35,9 +37,37 @@ describe('DialogueSystem', () => {
     mockEventBus = {
       emit: jest.fn((eventType, data) => {
         emittedEvents.push({ eventType, data });
+        const handlers = listeners.get(eventType);
+        if (handlers) {
+          for (const handler of Array.from(handlers)) {
+            handler(data);
+          }
+        }
       }),
-      on: jest.fn(),
-      off: jest.fn()
+      on: jest.fn((eventType, handler) => {
+        if (!listeners.has(eventType)) {
+          listeners.set(eventType, new Set());
+        }
+        listeners.get(eventType).add(handler);
+        return () => {
+          const set = listeners.get(eventType);
+          if (set) {
+            set.delete(handler);
+            if (set.size === 0) {
+              listeners.delete(eventType);
+            }
+          }
+        };
+      }),
+      off: jest.fn((eventType, handler) => {
+        const set = listeners.get(eventType);
+        if (set && handler) {
+          set.delete(handler);
+          if (set.size === 0) {
+            listeners.delete(eventType);
+          }
+        }
+      })
     };
 
     // Mock ComponentRegistry
@@ -128,11 +158,20 @@ describe('DialogueSystem', () => {
       expect(system.dialogueTrees.size).toBe(0);
     });
 
-    it('should subscribe to interaction events', () => {
-      expect(mockEventBus.on).toHaveBeenCalledWith(
+    it('registers event handlers for dialogue interactions and controls', () => {
+      const expectedEvents = [
         'interaction:dialogue',
-        expect.any(Function)
-      );
+        'dialogue:choice_requested',
+        'dialogue:advance_requested',
+        'dialogue:close_requested'
+      ];
+
+      for (const eventName of expectedEvents) {
+        expect(mockEventBus.on).toHaveBeenCalledWith(
+          eventName,
+          expect.any(Function)
+        );
+      }
     });
   });
 
@@ -186,6 +225,21 @@ describe('DialogueSystem', () => {
       expect(startEvent.data.text).toBe('Hello, Detective.');
     });
 
+    it('resolves dialogue aliases before starting dialogue', () => {
+      system.registerDialogueAlias('alias_dialogue', 'test_dialogue');
+
+      const result = system.startDialogue('npc_alias', 'alias_dialogue');
+
+      expect(result).toBe(true);
+      expect(system.activeDialogue.dialogueId).toBe('test_dialogue');
+      expect(system.activeDialogue.requestedDialogueId).toBe('alias_dialogue');
+
+      const startEvent = emittedEvents.find((e) => e.eventType === 'dialogue:started');
+      expect(startEvent).toBeDefined();
+      expect(startEvent.data.dialogueId).toBe('test_dialogue');
+      expect(startEvent.data.requestedDialogueId).toBe('alias_dialogue');
+    });
+
     it('should emit fx cue when dialogue starts', () => {
       system.startDialogue('npc_1', 'test_dialogue');
 
@@ -216,6 +270,45 @@ describe('DialogueSystem', () => {
 
       const visited = system.getVisitedNodes('npc_1');
       expect(visited.has('start')).toBe(true);
+    });
+
+    it('responds to dialogue:choice_requested events', () => {
+      system.startDialogue('npc_1', 'test_dialogue');
+      emittedEvents.length = 0;
+      mockEventBus.emit.mockClear();
+
+      mockEventBus.emit('dialogue:choice_requested', { choiceIndex: 1 });
+
+      expect(system.activeDialogue.currentNode).toBe('response_2');
+      const choiceEvent = emittedEvents.find((e) => e.eventType === 'dialogue:choice');
+      expect(choiceEvent).toBeDefined();
+      expect(choiceEvent.data.choiceIndex).toBe(1);
+    });
+
+    it('responds to dialogue:advance_requested events', () => {
+      system.startDialogue('npc_1', 'test_dialogue');
+      mockEventBus.emit('dialogue:choice_requested', { choiceIndex: 0 }); // move to response_1
+      emittedEvents.length = 0;
+      mockEventBus.emit.mockClear();
+
+      mockEventBus.emit('dialogue:advance_requested');
+
+      expect(system.activeDialogue.currentNode).toBe('end');
+      const nodeEvent = emittedEvents.find((e) => e.eventType === 'dialogue:node_changed');
+      expect(nodeEvent).toBeDefined();
+      expect(nodeEvent.data.nodeId).toBe('end');
+    });
+
+    it('responds to dialogue:close_requested events', () => {
+      system.startDialogue('npc_1', 'test_dialogue');
+      emittedEvents.length = 0;
+      mockEventBus.emit.mockClear();
+
+      mockEventBus.emit('dialogue:close_requested');
+
+      expect(system.activeDialogue).toBeNull();
+      const endedEvent = emittedEvents.find((e) => e.eventType === 'dialogue:ended');
+      expect(endedEvent).toBeDefined();
     });
   });
 

@@ -137,5 +137,8 @@ describe('Game.initializeGameSystems', () => {
 
     const scramblerSystem = engineStub.systemManager.getSystem('firewallScrambler');
     expect(scramblerSystem.priority).toBe(21);
+
+    const collisionSystem = engineStub.systemManager.getSystem('collision');
+    expect(collisionSystem.resolveCollisions).toBe(true);
   });
 });

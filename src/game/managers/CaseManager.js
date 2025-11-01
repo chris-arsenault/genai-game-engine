@@ -6,6 +6,8 @@
  *
  * @class CaseManager
  */
+import { TheoryValidator } from '../data/TheoryValidator.js';
+
 export class CaseManager {
   /**
    * Create a CaseManager
@@ -24,6 +26,7 @@ export class CaseManager {
 
     // Theory validation
     this.theoryGraphs = new Map(); // caseId -> correct theory graph
+    this.theoryValidator = new TheoryValidator();
 
     // Listen for investigation events
     this.setupEventListeners();
@@ -128,11 +131,17 @@ export class CaseManager {
       evidenceIds = [],
       requiredClues = [],
       theoryGraph = null,
+      alternateTheoryGraphs = [],
+      theoryGraphs = null,
       accuracyThreshold = 0.7,
       rewards = {},
       scene = null,
       witnesses: witnessDefinitions = [],
-      tutorial: tutorialMetadata = null
+      tutorial: tutorialMetadata = null,
+      allowedConnectionTypes = null,
+      optionalClueIds = [],
+      narrative = null,
+      hintOverrides = null
     } = caseData;
 
     if (this.cases.has(id)) {
@@ -162,6 +171,18 @@ export class CaseManager {
       theoryGraph, // Correct theory structure
       playerTheory: { nodes: [], connections: [] }, // Player's current theory
       accuracyThreshold, // Minimum accuracy to solve (0.0-1.0)
+      alternateTheoryGraphs: Array.isArray(alternateTheoryGraphs)
+        ? alternateTheoryGraphs.map((graph) => ({ ...graph }))
+        : [],
+      theoryGraphs: Array.isArray(theoryGraphs)
+        ? theoryGraphs.map((graph) => ({ ...graph }))
+        : [],
+      allowedConnectionTypes: Array.isArray(allowedConnectionTypes)
+        ? Array.from(new Set(allowedConnectionTypes.filter((type) => typeof type === 'string')))
+        : null,
+      optionalClueIds: Array.isArray(optionalClueIds)
+        ? Array.from(new Set(optionalClueIds.filter((idValue) => typeof idValue === 'string')))
+        : [],
 
       // Metadata
       startTime: Date.now(),
@@ -180,7 +201,9 @@ export class CaseManager {
         : [],
 
       // Tutorial metadata snapshot
-      tutorial: tutorialMetadata ? { ...tutorialMetadata } : null
+      tutorial: tutorialMetadata ? { ...tutorialMetadata } : null,
+      narrative: narrative ? { ...narrative } : null,
+      hintOverrides: hintOverrides ? { ...hintOverrides } : null
     };
 
     this.cases.set(id, caseFile);
@@ -320,39 +343,113 @@ export class CaseManager {
         case 'discover_required_clues':
           completed = this.checkAllRequiredClues(caseFile);
           break;
+        case 'validate_theory':
+          completed = this.checkTheoryObjective(caseFile, objective);
+          break;
         default:
-          console.warn(`[CaseManager] Unknown objective type: ${objective.type}`);
+          console.warn(
+            `[CaseManager] Unknown objective type: ${objective.type} (objective id: ${objective.id ?? 'unknown'})`
+          );
       }
 
       if (completed) {
-        objective.completed = true;
-
-        this.eventBus.emit('case:objective_completed', {
-          caseId,
-          objective: objective.description
-        });
-
-        this.eventBus.emit('fx:overlay_cue', {
-          effectId: 'caseObjectivePulse',
-          origin: 'case',
-          caseId,
-          objectiveId: objective.id ?? objective.description,
-          objectiveType: objective.type,
-          completedObjectives: caseFile.objectives.filter(obj => obj.completed).length,
-          totalObjectives: caseFile.objectives.length,
-        });
-
-        console.log(`[CaseManager] Objective completed: ${objective.description}`);
+        const extraData =
+          objective.type === 'validate_theory'
+            ? {
+                accuracy: Number.isFinite(caseFile.accuracy) ? caseFile.accuracy : 0,
+                threshold: this.getTheoryAccuracyThreshold(caseFile, objective),
+              }
+            : {};
+        this.completeObjective(caseId, caseFile, objective, extraData);
       }
     }
+  }
 
-    // Check if all objectives completed
-    if (caseFile.objectives.every(obj => obj.completed)) {
+  /**
+   * Resolve the accuracy threshold for a theory validation objective.
+   * @param {Object} caseFile
+   * @param {Object} objective
+   * @returns {number}
+   */
+  getTheoryAccuracyThreshold(caseFile, objective) {
+    if (objective && typeof objective.minAccuracy === 'number' && Number.isFinite(objective.minAccuracy)) {
+      return objective.minAccuracy;
+    }
+    if (Number.isFinite(caseFile.accuracyThreshold)) {
+      return caseFile.accuracyThreshold;
+    }
+    return 0;
+  }
+
+  /**
+   * Determine if a theory validation objective is complete.
+   * @param {Object} caseFile
+   * @param {Object} objective
+   * @returns {boolean}
+   */
+  checkTheoryObjective(caseFile, objective) {
+    if (!caseFile || !objective) {
+      return false;
+    }
+
+    if (caseFile.status !== 'solved') {
+      return false;
+    }
+
+    const threshold = this.getTheoryAccuracyThreshold(caseFile, objective);
+    const accuracy = Number.isFinite(caseFile.accuracy) ? caseFile.accuracy : 0;
+    return accuracy >= threshold;
+  }
+
+  /**
+   * Mark an objective as completed, emitting objective and FX events.
+   * @param {string} caseId
+   * @param {Object} caseFile
+   * @param {Object} objective
+   * @param {Object} extraData
+   * @returns {boolean}
+   */
+  completeObjective(caseId, caseFile, objective, extraData = {}) {
+    if (!objective || objective.completed) {
+      return false;
+    }
+
+    objective.completed = true;
+
+    const objectiveId = objective.id ?? objective.description ?? 'objective';
+    const completedObjectives = caseFile.objectives.filter((obj) => obj.completed).length;
+    const objectiveType = objective.type ?? null;
+    const payload = {
+      caseId,
+      objective: objective.description ?? objectiveId,
+      objectiveId,
+      objectiveType,
+      ...extraData,
+    };
+
+    this.eventBus.emit('case:objective_completed', payload);
+
+    this.eventBus.emit('fx:overlay_cue', {
+      effectId: 'caseObjectivePulse',
+      origin: 'case',
+      caseId,
+      objectiveId,
+      objectiveType,
+      completedObjectives,
+      totalObjectives: caseFile.objectives.length,
+      ...extraData,
+    });
+
+    console.log(`[CaseManager] Objective completed: ${objective.description ?? objectiveId}`);
+
+    if (caseFile.objectives.every((obj) => obj.completed)) {
       this.eventBus.emit('case:objectives_complete', {
         caseId,
         title: caseFile.title
       });
     }
+
+    return true;
   }
 
   /**
@@ -405,97 +502,37 @@ export class CaseManager {
       return { valid: false, accuracy: 0, feedback: 'Case not found' };
     }
 
-    if (!caseFile.theoryGraph) {
-      console.warn(`[CaseManager] No theory graph defined for case: ${caseId}`);
-      return { valid: true, accuracy: 1.0, feedback: 'No validation required' };
-    }
+    const validation = this.theoryValidator.validate(playerTheory, caseFile, {
+      clueLookup: this.clueDatabase,
+      threshold: caseFile.accuracyThreshold,
+      allowedConnectionTypes: caseFile.allowedConnectionTypes
+    });
 
-    // Calculate accuracy
-    const accuracy = this.calculateTheoryAccuracy(playerTheory, caseFile.theoryGraph);
+    caseFile.playerTheory = validation.normalizedTheory;
+    caseFile.accuracy = validation.accuracy;
 
-    // Update case file
-    caseFile.playerTheory = playerTheory;
-    caseFile.accuracy = accuracy;
+    const hasSolutionGraph =
+      Boolean(caseFile.theoryGraph) ||
+      (Array.isArray(caseFile.alternateTheoryGraphs) && caseFile.alternateTheoryGraphs.length > 0) ||
+      (Array.isArray(caseFile.theoryGraphs) && caseFile.theoryGraphs.length > 0);
 
-    // Check if accuracy meets threshold
-    const valid = accuracy >= caseFile.accuracyThreshold;
-
-    if (valid) {
-      this.solveCase(caseId, accuracy);
+    if (hasSolutionGraph && validation.valid) {
+      this.solveCase(caseId, validation.accuracy);
     }
 
     this.eventBus.emit('theory:validated', {
       caseId,
-      accuracy,
-      valid,
-      threshold: caseFile.accuracyThreshold
+      accuracy: validation.accuracy,
+      valid: validation.valid,
+      threshold: caseFile.accuracyThreshold,
+      hints: validation.hints,
+      missingConnections: validation.missingConnections,
+      extraConnections: validation.extraConnections,
+      invalidConnections: validation.invalidConnections,
+      solutionId: validation.solutionId
     });
 
-    return {
-      valid,
-      accuracy,
-      feedback: this.generateTheoryFeedback(accuracy, caseFile.accuracyThreshold)
-    };
-  }
-
-  /**
-   * Calculate theory accuracy
-   * @param {Object} playerTheory
-   * @param {Object} correctTheory
-   * @returns {number} Accuracy (0.0 to 1.0)
-   */
-  calculateTheoryAccuracy(playerTheory, correctTheory) {
-    // Simple graph matching algorithm
-    // In a full implementation, this would be more sophisticated
-
-    const correctConnections = new Set(
-      correctTheory.connections.map(c => `${c.from}:${c.to}:${c.type}`)
-    );
-
-    const playerConnections = new Set(
-      playerTheory.connections.map(c => `${c.from}:${c.to}:${c.type}`)
-    );
-
-    if (correctConnections.size === 0) {
-      return 1.0;
-    }
-
-    // Count matches
-    let matches = 0;
-    for (const conn of playerConnections) {
-      if (correctConnections.has(conn)) {
-        matches++;
-      }
-    }
-
-    // Calculate accuracy
-    // Penalize for missing connections and incorrect connections
-    const precision = playerConnections.size > 0 ? matches / playerConnections.size : 0;
-    const recall = matches / correctConnections.size;
-
-    // F1 score
-    if (precision + recall === 0) return 0;
-    const accuracy = (2 * precision * recall) / (precision + recall);
-
-    return Math.max(0, Math.min(1, accuracy));
-  }
-
-  /**
-   * Generate feedback based on accuracy
-   * @param {number} accuracy
-   * @param {number} threshold
-   * @returns {string}
-   */
-  generateTheoryFeedback(accuracy, threshold) {
-    if (accuracy >= threshold) {
-      return 'Your theory is sound. The pieces fit together.';
-    } else if (accuracy >= threshold * 0.8) {
-      return 'You are close, but some connections do not hold up.';
-    } else if (accuracy >= threshold * 0.5) {
-      return 'Your theory has some merit, but critical evidence is missing or misinterpreted.';
-    } else {
-      return 'This theory does not fit the evidence. Reexamine the clues.';
-    }
+    return validation;
   }
 
   /**
@@ -515,6 +552,9 @@ export class CaseManager {
     caseFile.status = 'solved';
     caseFile.solveTime = Date.now() - caseFile.startTime;
     caseFile.accuracy = accuracy;
+
+    // Ensure theory validation objectives and final completion state are updated
+    this.checkObjectiveCompletion(caseId);
 
     this.eventBus.emit('case:solved', {
       caseId,
@@ -542,6 +582,140 @@ export class CaseManager {
     });
 
     console.log(`[CaseManager] Case solved: ${caseFile.title} (${(accuracy * 100).toFixed(0)}% accuracy)`);
+  }
+
+  /**
+   * Serialize case progress for persistence.
+   * @returns {Object}
+   */
+  serialize() {
+    const cases = {};
+    for (const [caseId, caseFile] of this.cases.entries()) {
+      cases[caseId] = {
+        status: caseFile.status,
+        collectedEvidence: Array.from(caseFile.collectedEvidence),
+        discoveredClues: Array.from(caseFile.discoveredClues),
+        objectives: caseFile.objectives.map((objective) => ({
+          id: objective?.id ?? null,
+          type: objective?.type ?? null,
+          completed: Boolean(objective?.completed),
+        })),
+        accuracy: Number.isFinite(caseFile.accuracy) ? caseFile.accuracy : 0,
+        solveTime: Number.isFinite(caseFile.solveTime) ? caseFile.solveTime : null,
+        playerTheory:
+          caseFile.playerTheory && typeof caseFile.playerTheory === 'object'
+            ? {
+                nodes: Array.isArray(caseFile.playerTheory.nodes)
+                  ? caseFile.playerTheory.nodes
+                      .filter((node) => node && typeof node === 'object')
+                      .map((node) => ({ ...node }))
+                  : [],
+                connections: Array.isArray(caseFile.playerTheory.connections)
+                  ? caseFile.playerTheory.connections
+                      .filter((conn) => conn && typeof conn === 'object')
+                      .map((conn) => ({ ...conn }))
+                  : [],
+              }
+            : { nodes: [], connections: [] },
+      };
+    }
+
+    return {
+      activeCaseId: this.activeCase ?? null,
+      cases,
+    };
+  }
+
+  /**
+   * Restore case progress from serialized data.
+   * @param {Object} snapshot
+   * @returns {boolean}
+   */
+  deserialize(snapshot = {}) {
+    if (!snapshot || typeof snapshot !== 'object') {
+      return false;
+    }
+
+    const serializedCases =
+      snapshot.cases && typeof snapshot.cases === 'object' ? snapshot.cases : {};
+    for (const [caseId, caseData] of Object.entries(serializedCases)) {
+      if (!caseData || typeof caseData !== 'object') {
+        continue;
+      }
+      const caseFile = this.cases.get(caseId);
+      if (!caseFile) {
+        continue;
+      }
+
+      const status = caseData.status;
+      if (status === 'solved' || status === 'failed') {
+        caseFile.status = status;
+      } else {
+        caseFile.status = 'active';
+      }
+
+      const collectedEvidence = Array.isArray(caseData.collectedEvidence)
+        ? caseData.collectedEvidence.filter(
+            (evidenceId) => typeof evidenceId === 'string' && evidenceId.length > 0
+          )
+        : [];
+      caseFile.collectedEvidence = new Set(collectedEvidence);
+
+      const discoveredClues = Array.isArray(caseData.discoveredClues)
+        ? caseData.discoveredClues.filter(
+            (clueId) => typeof clueId === 'string' && clueId.length > 0
+          )
+        : [];
+      caseFile.discoveredClues = new Set(discoveredClues);
+
+      if (Array.isArray(caseData.objectives)) {
+        for (let index = 0; index < caseFile.objectives.length; index += 1) {
+          const incoming = caseData.objectives[index];
+          if (!incoming || typeof incoming !== 'object') {
+            continue;
+          }
+          if (!caseFile.objectives[index]) {
+            continue;
+          }
+          caseFile.objectives[index].completed = Boolean(incoming.completed);
+        }
+      }
+
+      if (Number.isFinite(caseData.accuracy)) {
+        caseFile.accuracy = caseData.accuracy;
+      }
+
+      if (Number.isFinite(caseData.solveTime)) {
+        caseFile.solveTime = caseData.solveTime;
+      }
+
+      if (caseData.playerTheory && typeof caseData.playerTheory === 'object') {
+        const nodes = Array.isArray(caseData.playerTheory.nodes)
+          ? caseData.playerTheory.nodes
+              .filter((node) => node && typeof node === 'object')
+              .map((node) => ({ ...node }))
+          : [];
+        const connections = Array.isArray(caseData.playerTheory.connections)
+          ? caseData.playerTheory.connections
+              .filter((conn) => conn && typeof conn === 'object')
+              .map((conn) => ({ ...conn }))
+          : [];
+        caseFile.playerTheory = { nodes, connections };
+      }
+    }
+
+    if (typeof snapshot.activeCaseId === 'string' && this.cases.has(snapshot.activeCaseId)) {
+      this.activeCase = snapshot.activeCaseId;
+    } else if (snapshot.activeCaseId === null) {
+      this.activeCase = null;
+    }
+
+    this.eventBus.emit('case:hydrated', {
+      activeCaseId: this.activeCase,
+      totalCases: this.cases.size,
+    });
+
+    return true;
   }
 
   /**

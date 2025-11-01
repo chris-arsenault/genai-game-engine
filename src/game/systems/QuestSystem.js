@@ -317,6 +317,54 @@ export class QuestSystem extends System {
       });
     }
 
+    const metadata = data.metadata || {};
+    if (metadata && typeof metadata.emitEvent === 'string') {
+      const basePayload = {
+        questId: questId || quest.questId || null,
+        objectiveId: data.objectiveId || quest.objectiveId || null,
+        areaId: data.areaId || quest.areaId || `trigger_${entityId}`,
+        triggerId: entityId,
+      };
+
+      const extraPayload =
+        metadata.emitEventPayload && typeof metadata.emitEventPayload === 'object'
+          ? { ...metadata.emitEventPayload }
+          : {};
+
+      if (!extraPayload.successFlag && typeof metadata.successFlag === 'string') {
+        extraPayload.successFlag = metadata.successFlag;
+      }
+      if (!extraPayload.storyFlags && Array.isArray(metadata.storyFlags)) {
+        extraPayload.storyFlags = [...metadata.storyFlags];
+      }
+      if (!extraPayload.worldFlags && Array.isArray(metadata.worldFlags)) {
+        extraPayload.worldFlags = [...metadata.worldFlags];
+      }
+      if (!extraPayload.branchId && typeof metadata.branchId === 'string') {
+        extraPayload.branchId = metadata.branchId;
+      }
+      if (!extraPayload.stanceId && typeof metadata.stanceId === 'string') {
+        extraPayload.stanceId = metadata.stanceId;
+      }
+      if (!extraPayload.approachId && typeof metadata.approachId === 'string') {
+        extraPayload.approachId = metadata.approachId;
+      }
+      if (!extraPayload.stageId && typeof metadata.stageId === 'string') {
+        extraPayload.stageId = metadata.stageId;
+      }
+      if (!extraPayload.telemetryTag && typeof metadata.telemetryTag === 'string') {
+        extraPayload.telemetryTag = metadata.telemetryTag;
+      }
+      if (!extraPayload.narrativeBeat && typeof metadata.narrativeBeat === 'string') {
+        extraPayload.narrativeBeat = metadata.narrativeBeat;
+      }
+
+      this.eventBus.emit(metadata.emitEvent, {
+        ...basePayload,
+        ...extraPayload,
+      });
+    }
+
     if (quest.oneTime && entityManager && entityManager.hasEntity(entityId)) {
       if (typeof this.components.removeAllComponents === 'function') {
         this.components.removeAllComponents(entityId);

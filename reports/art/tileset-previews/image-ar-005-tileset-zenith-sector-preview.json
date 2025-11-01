@@ -1,0 +1,213 @@
+{
+  "tilesetId": "image-ar-005-tileset-zenith-sector",
+  "sourceImage": "assets/generated/images/ar-005/image-ar-005-tileset-zenith-sector.png",
+  "tileSize": 16,
+  "promotedAt": "2025-11-01T01:19:16.321Z",
+  "sourceAnalysis": "reports/art/zenith-sector-tileset-analysis.json",
+  "totals": {
+    "warnings": 61,
+    "promoted": 61
+  },
+  "stats": {
+    "annotations": 61,
+    "rowsCovered": 1,
+    "columnsCovered": 61,
+    "orientation": {
+      "vertical": 61
+    },
+    "openEdge": {
+      "south": 61
+    },
+    "tags": {
+      "doorway": 61,
+      "vertical": 61
+    },
+    "collisions": {
+      "block": 61
+    },
+    "classifications": {
+      "solid": 61
+    },
+    "clusterCount": 2,
+    "averageClusterLength": 30.5,
+    "longestClusterLength": 41
+  },
+  "coverage": {
+    "minRow": 60,
+    "maxRow": 60,
+    "minColumn": 1,
+    "maxColumn": 62
+  },
+  "clusters": [
+    {
+      "length": 41,
+      "start": {
+        "row": 60,
+        "column": 1
+      },
+      "end": {
+        "row": 60,
+        "column": 41
+      },
+      "tileIndices": [
+        3841,
+        3842,
+        3843,
+        3844,
+        3845,
+        3846,
+        3847,
+        3848,
+        3849,
+        3850,
+        3851,
+        3852,
+        3853,
+        3854,
+        3855,
+        3856,
+        3857,
+        3858,
+        3859,
+        3860,
+        3861,
+        3862,
+        3863,
+        3864,
+        3865,
+        3866,
+        3867,
+        3868,
+        3869,
+        3870,
+        3871,
+        3872,
+        3873,
+        3874,
+        3875,
+        3876,
+        3877,
+        3878,
+        3879,
+        3880,
+        3881
+      ],
+      "orientation": "vertical",
+      "openEdges": [
+        "south"
+      ],
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "length": 20,
+      "start": {
+        "row": 60,
+        "column": 43
+      },
+      "end": {
+        "row": 60,
+        "column": 62
+      },
+      "tileIndices": [
+        3883,
+        3884,
+        3885,
+        3886,
+        3887,
+        3888,
+        3889,
+        3890,
+        3891,
+        3892,
+        3893,
+        3894,
+        3895,
+        3896,
+        3897,
+        3898,
+        3899,
+        3900,
+        3901,
+        3902
+      ],
+      "orientation": "vertical",
+      "openEdges": [
+        "south"
+      ],
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "tileIndex": 3841,
+      "row": 60,
+      "column": 1,
+      "openEdge": "south",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ],
+      "collision": "block",
+      "warningType": "potential-door"
+    },
+    {
+      "tileIndex": 3842,
+      "row": 60,
+      "column": 2,
+      "openEdge": "south",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ],
+      "collision": "block",
+      "warningType": "potential-door"
+    },
+    {
+      "tileIndex": 3843,
+      "row": 60,
+      "column": 3,
+      "openEdge": "south",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ],
+      "collision": "block",
+      "warningType": "potential-door"
+    },
+    {
+      "tileIndex": 3844,
+      "row": 60,
+      "column": 4,
+      "openEdge": "south",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ],
+      "collision": "block",
+      "warningType": "potential-door"
+    },
+    {
+      "tileIndex": 3845,
+      "row": 60,
+      "column": 5,
+      "openEdge": "south",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ],
+      "collision": "block",
+      "warningType": "potential-door"
+    }
+  ]
+}

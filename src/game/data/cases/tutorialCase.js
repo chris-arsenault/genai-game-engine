@@ -4,8 +4,8 @@
  * First investigation tutorial for The Memory Syndicate.
  * Teaches evidence collection, clue derivation, and theory validation.
  *
- * Story: Kira's former partner Marcus is found as a hollow victim.
- * Investigation reveals NeuroSync connection and memory extraction operation.
+ * Story: Kira's former partner Marcus is found hollow inside their building.
+ * Investigation reveals an anonymous tip, NeuroSync involvement, and a targeted pattern.
  *
  * Based on: Act 1 Quest M1.1 "The Hollow Victim"
  */
@@ -15,8 +15,8 @@ export const tutorialCase = {
   title: 'The Hollow Case',
   act: 'act1',
   description:
-    'Your former partner Marcus Reeve has been found hollow in his apartment. ' +
-    'Investigate the crime scene and uncover who is extracting memories from victims.',
+    'An anonymous tip leads you to Apartment 4B. Your former partner Marcus Reeve sits hollow, mind stripped away. ' +
+    'Comb the scene, follow the evidence, and uncover why NeuroSync wanted him erased.',
 
   scene: {
     location: 'Neon District - Apartment 4B',
@@ -40,40 +40,42 @@ export const tutorialCase = {
     {
       id: 'examine_scene',
       type: 'collect_evidence',
-      description: 'Examine the crime scene',
+      description: 'Scan the crime scene evidence markers.',
       evidenceIds: ['ev_001_extractor', 'ev_002_blood', 'ev_003_residue'],
       completed: false
     },
     {
       id: 'identify_victim',
       type: 'collect_evidence',
-      description: 'Identify the victim',
+      description: 'Verify the victim’s identity and connection to you.',
       evidenceIds: ['ev_004_badge'],
       completed: false
     },
     {
       id: 'analyze_memory',
       type: 'collect_evidence',
-      description: 'Analyze the extracted memory fragment',
+      description: 'Decrypt the recovered memory fragment for leads.',
       evidenceIds: ['ev_005_memory_drive'],
       completed: false
     },
     {
       id: 'discover_clues',
       type: 'discover_clue',
-      description: 'Discover all key clues',
+      description: 'Derive all key clues from evidence and interviews.',
       clueIds: [
         'clue_001_hollow',
         'clue_002_professional',
         'clue_003_neurosync',
-        'clue_004_personal'
+        'clue_004_personal',
+        'clue_005_tip_untraceable',
+        'clue_006_pattern'
       ],
       completed: false
     },
     {
       id: 'solve_case',
       type: 'validate_theory',
-      description: 'Connect the clues and validate your theory',
+      description: 'Connect the dots on the deduction board and validate your theory.',
       minAccuracy: 0.7,
       completed: false
     }
@@ -86,19 +88,38 @@ export const tutorialCase = {
       role: 'first_responder',
       faction: 'police',
       description:
-        'First responder who secured the scene. Provides insight into the extraction timeline ' +
-        'and hints about broader hollow victim patterns.',
+        'First responder who locked down the scene. Shares timeline details and departmental pressure to keep hollow cases quiet.',
       position: { x: 460, y: 340 },
       dialogueId: 'martinez_witness_interview',
-      unlocksClues: ['clue_005_systematic'],
+      unlocksClues: ['clue_006_pattern'],
       prerequisites: {
-        requiredEvidence: ['ev_001_extractor'],
+        requiredEvidence: ['ev_001_extractor', 'ev_002_blood'],
         requiredObjective: 'examine_scene'
       },
       interaction: {
         radius: 72,
         prompt: 'Talk to Officer Martinez',
-        lockedPrompt: 'Collect the neural extractor before interviewing Martinez.'
+        lockedPrompt: 'Scan the scene evidence before debriefing Martinez.'
+      }
+    },
+    {
+      id: 'mrs_chen',
+      name: 'Mrs. Chen',
+      role: 'neighbor_witness',
+      faction: 'civilian',
+      description:
+        'Marcus’s downstairs neighbor who heard the struggle and saw strangers entering the building after midnight.',
+      position: { x: 520, y: 420 },
+      dialogueId: 'mrs_chen_witness_interview',
+      unlocksClues: ['clue_005_tip_untraceable'],
+      prerequisites: {
+        requiredEvidence: ['ev_006_anonymous_tip'],
+        requiredObjective: 'identify_victim'
+      },
+      interaction: {
+        radius: 68,
+        prompt: 'Talk to Mrs. Chen',
+        lockedPrompt: 'Review the tip and confirm the victim before speaking to Mrs. Chen.'
       }
     }
   ],
@@ -109,15 +130,14 @@ export const tutorialCase = {
       id: 'ev_001_extractor',
       title: 'Neural Extractor Device',
       description:
-        'A sophisticated memory extraction device left at the scene. ' +
-        'Military-grade equipment, far beyond typical street crime tools.',
+        'A military-grade neural extractor left on the chair where Marcus was found. Purpose-built hardware, not scavenged tech.',
       type: 'forensic',
       category: 'physical',
-      position: { x: 250, y: 300 }, // Scene position
+      position: { x: 250, y: 300 },
       hidden: false,
-      requires: [], // No special abilities needed
+      requires: [],
       interactionPrompt: 'Scan the neural extractor hotspot',
-      derivedClues: ['clue_001_hollow'],
+      derivedClues: ['clue_001_hollow', 'clue_002_professional'],
       sprite: {
         width: 32,
         height: 32,
@@ -131,15 +151,14 @@ export const tutorialCase = {
       id: 'ev_002_blood',
       title: 'Blood Spatter Pattern',
       description:
-        'Blood spatter suggests a struggle. Victim fought back but was overpowered. ' +
-        'Pattern indicates victim was seated when extraction began.',
+        'Spatter streaks across the wall show Marcus fought back before being restrained. The precise arcs hint at practiced force.',
       type: 'forensic',
       category: 'physical',
       position: { x: 200, y: 320 },
       hidden: false,
       requires: [],
       interactionPrompt: 'Analyze the blood pattern',
-      derivedClues: ['clue_005_systematic'],
+      derivedClues: ['clue_002_professional', 'clue_006_pattern'],
       forensic: {
         forensicType: 'analysis',
         requiresAnalysis: true,
@@ -161,8 +180,7 @@ export const tutorialCase = {
       id: 'ev_003_residue',
       title: 'Neural Residue',
       description:
-        'Distinctive neural pattern left at extraction site. This signature could ' +
-        'identify the perpetrator if matched against other cases.',
+        'A luminous neural signature embedded in the upholstery. Identical to residues from other documented hollow victims.',
       type: 'forensic',
       category: 'neural',
       position: { x: 220, y: 280 },
@@ -183,8 +201,7 @@ export const tutorialCase = {
       id: 'ev_004_badge',
       title: "Marcus's MCD Badge",
       description:
-        'Former MCD detective badge belonging to Marcus Reeve. Your old partner. ' +
-        'This just got personal.',
+        'Marcus’s old Memory Crimes Division credentials. Expired but tucked beside the terminal—he was still chasing official leads.',
       type: 'document',
       category: 'identification',
       position: { x: 300, y: 350 },
@@ -205,8 +222,7 @@ export const tutorialCase = {
       id: 'ev_005_memory_drive',
       title: 'Encrypted Memory Fragment',
       description:
-        'A recovered memory drive containing fragments of Marcus\'s investigation. ' +
-        'Contains references to NeuroSync Corporation and memory trafficking.',
+        'A pocket drive pulsing with encrypted fragments from Marcus’s investigation. The contents reference NeuroSync coordinates.',
       type: 'digital',
       category: 'data',
       position: { x: 280, y: 250 },
@@ -222,6 +238,27 @@ export const tutorialCase = {
         color: '#C3A3FF',
         alpha: 0.94
       }
+    },
+    {
+      id: 'ev_006_anonymous_tip',
+      title: 'Anonymous Tip Packet',
+      description:
+        'A cached message on Kira’s terminal. Sent from a public node, scrubbed of origin metadata, and stamped with NeuroSync coordinates.',
+      type: 'digital',
+      category: 'communication',
+      position: { x: 160, y: 360 },
+      hidden: false,
+      requires: [],
+      interactionPrompt: 'Review the anonymous tip',
+      derivedClues: ['clue_003_neurosync', 'clue_005_tip_untraceable'],
+      sprite: {
+        width: 28,
+        height: 20,
+        layer: 'effects',
+        zIndex: 8,
+        color: '#8FE3FF',
+        alpha: 0.88
+      }
     }
   ],
 
@@ -231,8 +268,7 @@ export const tutorialCase = {
       id: 'clue_001_hollow',
       title: 'Victim was hollowed',
       description:
-        'Marcus is alive but empty. All personality and memories have been extracted. ' +
-        'This is the same distinctive signature found in other recent cases.',
+        'Marcus still breathes, but his memories were excised with precision. The residue matches other hollow victim cases.',
       confidence: 0.95,
       derivedFrom: ['ev_001_extractor', 'ev_003_residue']
     },
@@ -240,37 +276,41 @@ export const tutorialCase = {
       id: 'clue_002_professional',
       title: 'Professional operation',
       description:
-        'Equipment and technique exceed typical memory theft. This was not a crime of ' +
-        'opportunity but a planned, professional extraction by someone with resources.',
+        'The extractor hardware and disciplined restraint marks point to a trained strike team, not street-level memory thieves.',
       confidence: 0.9,
-      derivedFrom: ['ev_002_blood']
+      derivedFrom: ['ev_001_extractor', 'ev_002_blood']
     },
     {
       id: 'clue_003_neurosync',
       title: 'NeuroSync connection',
       description:
-        'Marcus was investigating NeuroSync Corporation before his hollowing. ' +
-        'The memory fragment contains encrypted coordinates to a NeuroSync facility.',
+        'Marcus’s fragment and the anonymous coordinates both lead to NeuroSync. He was closing in on something corporate.',
       confidence: 0.85,
-      derivedFrom: ['ev_005_memory_drive']
+      derivedFrom: ['ev_005_memory_drive', 'ev_006_anonymous_tip']
     },
     {
       id: 'clue_004_personal',
       title: 'Personal connection',
       description:
-        'Marcus was your former partner. His investigation was related to your dismissal. ' +
-        'This case may hold answers about your own past.',
+        'Marcus was your partner and dug into the case that cost you your badge. Whoever hollowed him wanted you rattled.',
       confidence: 0.8,
-      derivedFrom: ['ev_002_blood', 'ev_004_badge', 'ev_005_memory_drive']
+      derivedFrom: ['ev_004_badge', 'ev_005_memory_drive']
     },
     {
-      id: 'clue_005_systematic',
-      title: 'Systematic targeting',
+      id: 'clue_005_tip_untraceable',
+      title: 'Anonymous tip scrubbed clean',
       description:
-        'Marcus is the fifth hollow victim this month. All victims either worked for or ' +
-        'investigated NeuroSync. This is not random.',
-      confidence: 0.75,
-      derivedFrom: ['ev_004_badge', 'ev_005_memory_drive']
+        'The tip was routed through public nodes with military-grade obfuscation. Someone inside the system wants you on the case—without exposing themselves.',
+      confidence: 0.78,
+      derivedFrom: ['ev_006_anonymous_tip']
+    },
+    {
+      id: 'clue_006_pattern',
+      title: 'Pattern of targeted investigators',
+      description:
+        'Martinez confirms this is the fifth hollowing tied to NeuroSync investigators. A deliberate purge is underway.',
+      confidence: 0.82,
+      derivedFrom: ['ev_002_blood']
     }
   ],
 
@@ -288,7 +328,8 @@ export const tutorialCase = {
     'ev_002_blood',
     'ev_003_residue',
     'ev_004_badge',
-    'ev_005_memory_drive'
+    'ev_005_memory_drive',
+    'ev_006_anonymous_tip'
   ],
 
   // Correct theory graph for validation
@@ -298,49 +339,85 @@ export const tutorialCase = {
       'clue_002_professional',
       'clue_003_neurosync',
       'clue_004_personal',
-      'clue_005_systematic'
+      'clue_005_tip_untraceable',
+      'clue_006_pattern'
     ],
 
-    // Correct connections between clues
     connections: [
-      // Professional operation led to successful hollowing
       {
         from: 'clue_002_professional',
         to: 'clue_001_hollow',
         type: 'supports'
       },
-      // NeuroSync connection suggests corporate involvement
       {
         from: 'clue_003_neurosync',
         to: 'clue_002_professional',
         type: 'supports'
       },
-      // Personal connection to you is not coincidence
       {
         from: 'clue_004_personal',
-        to: 'clue_005_systematic',
+        to: 'clue_003_neurosync',
         type: 'supports'
       },
-      // Systematic targeting proves organized operation
       {
-        from: 'clue_005_systematic',
-        to: 'clue_002_professional',
+        from: 'clue_006_pattern',
+        to: 'clue_003_neurosync',
         type: 'supports'
       },
-      // NeuroSync is targeting investigators
       {
-        from: 'clue_003_neurosync',
-        to: 'clue_005_systematic',
+        from: 'clue_005_tip_untraceable',
+        to: 'clue_006_pattern',
         type: 'supports'
       }
     ]
   },
+  alternateTheoryGraphs: [
+    {
+      id: 'neurosync-direct',
+      nodes: [
+        'clue_001_hollow',
+        'clue_002_professional',
+        'clue_003_neurosync',
+        'clue_004_personal',
+        'clue_005_tip_untraceable',
+        'clue_006_pattern'
+      ],
+      connections: [
+        {
+          from: 'clue_002_professional',
+          to: 'clue_001_hollow',
+          type: 'supports'
+        },
+        {
+          from: 'clue_003_neurosync',
+          to: 'clue_001_hollow',
+          type: 'supports'
+        },
+        {
+          from: 'clue_004_personal',
+          to: 'clue_003_neurosync',
+          type: 'supports'
+        },
+        {
+          from: 'clue_005_tip_untraceable',
+          to: 'clue_003_neurosync',
+          type: 'supports'
+        },
+        {
+          from: 'clue_006_pattern',
+          to: 'clue_002_professional',
+          type: 'supports'
+        }
+      ]
+    }
+  ],
+  allowedConnectionTypes: ['supports', 'contradicts'],
 
   // Solution criteria
   solution: {
-    minAccuracy: 0.7, // 70% accuracy required to solve
+    minAccuracy: 0.7,
     rewards: {
-      abilityUnlock: 'memory_trace', // Unlock Memory Trace ability
+      abilityUnlock: 'memory_trace',
       credits: 500,
       reputation: {
         faction: 'vanguard_prime',
@@ -353,21 +430,14 @@ export const tutorialCase = {
   // Narrative context
   narrative: {
     intro:
-      'You received an anonymous tip. Apartment 4B. Same building as yours. ' +
-      'When you arrive, you know something is wrong. The door is ajar. Inside, ' +
-      'you find him. Marcus. Your old partner. Alive, but... empty.',
-
+      'An untraceable message: “Apartment 4B. Bring what you remember.” Inside, Marcus sits hollow—alive, eyes glassed over, memories surgically removed.',
     conclusion:
-      'The pieces fit together. This is no random crime. Someone is systematically ' +
-      'hollowing people connected to NeuroSync. And Marcus was investigating something ' +
-      'that got him erased. Whatever he found, it was worth killing for. ' +
-      'You need to finish what he started.',
-
+      'Every thread leads back to NeuroSync. Someone tipped you off, then erased Marcus when he got close. The purge of investigators has begun, and you are next unless you finish what he started.',
     hints: [
-      'Focus on how the clues connect. What do they tell you about who did this?',
-      'The professional equipment suggests resources. Who has those resources?',
-      'Why was Marcus targeted? What made him a threat?',
-      'Consider the pattern: Who else has been hollowed?'
+      'The extractor and residue tell you how the hollowing happened.',
+      'Compare the anonymous coordinates with the memory fragment metadata.',
+      'Interview both witnesses to surface motives and patterns.',
+      'Connect the professional execution with the NeuroSync lead to reveal who benefits.'
     ]
   },
 
@@ -376,32 +446,41 @@ export const tutorialCase = {
     objectives: [
       {
         step: 1,
-        title: 'Scan Evidence',
-        description: 'Move near evidence markers and press E to scan them',
-        targetObjective: 'examine_scene'
+        title: 'Review the Tip',
+        description: 'Check your terminal for the anonymous message that led you here.'
       },
       {
         step: 2,
-        title: 'Interview Witness',
-        description: 'Speak with Officer Martinez to gather context about the hollowing.',
-        targetObjective: 'discover_clues'
+        title: 'Scan Evidence',
+        description: 'Move near evidence markers and press E to scan them.',
+        targetObjective: 'examine_scene'
       },
       {
         step: 3,
-        title: 'Review Clues',
-        description: 'Evidence reveals clues. Check your case file to see what you\'ve learned',
-        targetObjective: 'discover_clues'
+        title: 'Interview Officer Martinez',
+        description: 'Debrief the first responder to understand the timeline.'
       },
       {
         step: 4,
-        title: 'Connect the Dots',
-        description: 'Press Tab to open the deduction board. Drag clues to connect them',
-        targetObjective: 'solve_case'
+        title: 'Talk to Mrs. Chen',
+        description: 'Gather what the neighbor heard when the attackers arrived.'
       },
       {
         step: 5,
+        title: 'Review Clues',
+        description: 'Open the case file to see newly derived clues.',
+        targetObjective: 'discover_clues'
+      },
+      {
+        step: 6,
+        title: 'Connect the Dots',
+        description: 'Press Tab to open the deduction board and link related clues.',
+        targetObjective: 'solve_case'
+      },
+      {
+        step: 7,
         title: 'Validate Theory',
-        description: 'Once connected, click Validate to test your theory',
+        description: 'Once confident, validate your theory to resolve the case.',
         targetObjective: 'solve_case'
       }
     ]

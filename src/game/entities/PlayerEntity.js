@@ -117,7 +117,7 @@ export function createPlayerEntity(entityManager, componentRegistry, x = 0, y = 
   });
   componentRegistry.addComponent(entityId, 'NavigationAgent', navigationAgent);
 
-  console.log(`[PlayerEntity] Created player entity at (${x}, ${y})`);
+  console.log(`[PlayerEntity] Created player entity at (${x}, ${y}), id ${entityId}`);
 
   return entityId;
 }

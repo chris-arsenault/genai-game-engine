@@ -1,8 +1,13 @@
 import TileMap, { TileType } from '../TileMap.js';
 import { TilemapTransformer } from '../TilemapTransformer.js';
 import { TileRotationMatrix } from '../../../engine/procedural/TileRotationMatrix.js';
+import { applyTilesetCatalogMetadata } from './tilesetSeamPreviewCatalog.js';
 
 const transformer = new TilemapTransformer();
+
+function withTilesetCatalogMetadata(metadata = {}, options = {}) {
+  return applyTilesetCatalogMetadata(metadata, options);
+}
 
 export const CRIME_SCENE_TEMPLATE_ID = 'act1_crime_scene_signature';
 export const VENDOR_STALL_TEMPLATE_ID = 'act1_vendor_corner';
@@ -141,11 +146,11 @@ const ALLEY_SPUR_VARIANTS = buildAlleySpurVariants();
 export const templateVariantManifest = {
   templates: {
     [CRIME_SCENE_TEMPLATE_ID]: {
-      metadata: {
+      metadata: withTilesetCatalogMetadata({
         roomType: 'crime_scene',
         variantFamily: 'act1_signature_crime_scene',
         moodHint: 'investigation_peak',
-      },
+      }),
       fallbackStrategy: 'rotate',
       seams: {
         base: CRIME_SCENE_BASE_SEAMS,
@@ -156,39 +161,39 @@ export const templateVariantManifest = {
           rotation: 0,
           tilemap: CRIME_SCENE_VARIANTS['90'].tilemap,
           seams: CRIME_SCENE_VARIANTS['90'].seams,
-          metadata: {
+          metadata: withTilesetCatalogMetadata({
             orientation: 90,
             lighting: 'side-lit',
-          },
+          }),
         },
         '180': {
           variantId: `${CRIME_SCENE_TEMPLATE_ID}_r180`,
           rotation: 0,
           tilemap: CRIME_SCENE_VARIANTS['180'].tilemap,
           seams: CRIME_SCENE_VARIANTS['180'].seams,
-          metadata: {
+          metadata: withTilesetCatalogMetadata({
             orientation: 180,
             lighting: 'noir-backlit',
-          },
+          }),
         },
         '270': {
           variantId: `${CRIME_SCENE_TEMPLATE_ID}_r270`,
           rotation: 0,
           tilemap: CRIME_SCENE_VARIANTS['270'].tilemap,
           seams: CRIME_SCENE_VARIANTS['270'].seams,
-          metadata: {
+          metadata: withTilesetCatalogMetadata({
             orientation: 270,
             lighting: 'holo-glow',
-          },
+          }),
         },
       },
     },
     [VENDOR_STALL_TEMPLATE_ID]: {
-      metadata: {
+      metadata: withTilesetCatalogMetadata({
         roomType: 'shop',
         variantFamily: 'act1_vendor_microshop',
         moodHint: 'market_intrigue',
-      },
+      }),
       fallbackStrategy: 'rotate',
       seams: {
         base: VENDOR_BASE_SEAMS,
@@ -199,39 +204,39 @@ export const templateVariantManifest = {
           rotation: 0,
           tilemap: VENDOR_VARIANTS['90'].tilemap,
           seams: VENDOR_VARIANTS['90'].seams,
-          metadata: {
+          metadata: withTilesetCatalogMetadata({
             orientation: 90,
             vendorFacing: 'east-alley',
-          },
+          }),
         },
         '180': {
           variantId: `${VENDOR_STALL_TEMPLATE_ID}_r180`,
           rotation: 0,
           tilemap: VENDOR_VARIANTS['180'].tilemap,
           seams: VENDOR_VARIANTS['180'].seams,
-          metadata: {
+          metadata: withTilesetCatalogMetadata({
             orientation: 180,
             vendorFacing: 'south-square',
-          },
+          }),
         },
         '270': {
           variantId: `${VENDOR_STALL_TEMPLATE_ID}_r270`,
           rotation: 0,
           tilemap: VENDOR_VARIANTS['270'].tilemap,
           seams: VENDOR_VARIANTS['270'].seams,
-          metadata: {
+          metadata: withTilesetCatalogMetadata({
             orientation: 270,
             vendorFacing: 'west-arcade',
-          },
+          }),
         },
       },
     },
     [DETECTIVE_OFFICE_TEMPLATE_ID]: {
-      metadata: {
+      metadata: withTilesetCatalogMetadata({
         roomType: 'detective_office',
         variantFamily: 'act1_detective_office_suite',
         moodHint: 'investigative_hub',
-      },
+      }),
       fallbackStrategy: 'rotate',
       seams: {
         base: DETECTIVE_OFFICE_BASE_SEAMS,
@@ -242,39 +247,39 @@ export const templateVariantManifest = {
           rotation: 0,
           tilemap: DETECTIVE_OFFICE_VARIANTS['90'].tilemap,
           seams: DETECTIVE_OFFICE_VARIANTS['90'].seams,
-          metadata: {
+          metadata: withTilesetCatalogMetadata({
             orientation: 90,
             deskLayout: 'corner_cluster',
-          },
+          }),
         },
         '180': {
           variantId: `${DETECTIVE_OFFICE_TEMPLATE_ID}_r180`,
           rotation: 0,
           tilemap: DETECTIVE_OFFICE_VARIANTS['180'].tilemap,
           seams: DETECTIVE_OFFICE_VARIANTS['180'].seams,
-          metadata: {
+          metadata: withTilesetCatalogMetadata({
             orientation: 180,
             deskLayout: 'dual_wall',
-          },
+          }),
         },
         '270': {
           variantId: `${DETECTIVE_OFFICE_TEMPLATE_ID}_r270`,
           rotation: 0,
           tilemap: DETECTIVE_OFFICE_VARIANTS['270'].tilemap,
           seams: DETECTIVE_OFFICE_VARIANTS['270'].seams,
-          metadata: {
+          metadata: withTilesetCatalogMetadata({
             orientation: 270,
             deskLayout: 'evidence_circle',
-          },
+          }),
         },
       },
     },
     [ALLEY_HUB_TEMPLATE_ID]: {
-      metadata: {
+      metadata: withTilesetCatalogMetadata({
         roomType: 'alley',
         variantFamily: 'act1_alley_hub',
         moodHint: 'shadow_network',
-      },
+      }),
       fallbackStrategy: 'rotate',
       seams: {
         base: ALLEY_HUB_BASE_SEAMS,
@@ -285,39 +290,39 @@ export const templateVariantManifest = {
           rotation: 0,
           tilemap: ALLEY_HUB_VARIANTS['90'].tilemap,
           seams: ALLEY_HUB_VARIANTS['90'].seams,
-          metadata: {
+          metadata: withTilesetCatalogMetadata({
             orientation: 90,
             accessPattern: 'vertical_split',
-          },
+          }),
         },
         '180': {
           variantId: `${ALLEY_HUB_TEMPLATE_ID}_r180`,
           rotation: 0,
           tilemap: ALLEY_HUB_VARIANTS['180'].tilemap,
           seams: ALLEY_HUB_VARIANTS['180'].seams,
-          metadata: {
+          metadata: withTilesetCatalogMetadata({
             orientation: 180,
             accessPattern: 'opposite_branches',
-          },
+          }),
         },
         '270': {
           variantId: `${ALLEY_HUB_TEMPLATE_ID}_r270`,
           rotation: 0,
           tilemap: ALLEY_HUB_VARIANTS['270'].tilemap,
           seams: ALLEY_HUB_VARIANTS['270'].seams,
-          metadata: {
+          metadata: withTilesetCatalogMetadata({
             orientation: 270,
             accessPattern: 'skewed_cross',
-          },
+          }),
         },
       },
     },
     [PRECINCT_WAR_ROOM_TEMPLATE_ID]: {
-      metadata: {
+      metadata: withTilesetCatalogMetadata({
         roomType: 'precinct_war_room',
         variantFamily: 'act1_precinct_command',
         moodHint: 'strategic_tension',
-      },
+      }),
       fallbackStrategy: 'rotate',
       seams: {
         base: PRECINCT_WAR_ROOM_BASE_SEAMS,
@@ -328,39 +333,39 @@ export const templateVariantManifest = {
           rotation: 0,
           tilemap: PRECINCT_WAR_ROOM_VARIANTS['90'].tilemap,
           seams: PRECINCT_WAR_ROOM_VARIANTS['90'].seams,
-          metadata: {
+          metadata: withTilesetCatalogMetadata({
             orientation: 90,
             commandFocus: 'evidence_matrix',
-          },
+          }),
         },
         '180': {
           variantId: `${PRECINCT_WAR_ROOM_TEMPLATE_ID}_r180`,
           rotation: 0,
           tilemap: PRECINCT_WAR_ROOM_VARIANTS['180'].tilemap,
           seams: PRECINCT_WAR_ROOM_VARIANTS['180'].seams,
-          metadata: {
+          metadata: withTilesetCatalogMetadata({
             orientation: 180,
             commandFocus: 'surveillance_wall',
-          },
+          }),
         },
         '270': {
           variantId: `${PRECINCT_WAR_ROOM_TEMPLATE_ID}_r270`,
           rotation: 0,
           tilemap: PRECINCT_WAR_ROOM_VARIANTS['270'].tilemap,
           seams: PRECINCT_WAR_ROOM_VARIANTS['270'].seams,
-          metadata: {
+          metadata: withTilesetCatalogMetadata({
             orientation: 270,
             commandFocus: 'strategic_projection',
-          },
+          }),
         },
       },
     },
     [ALLEY_SPUR_TEMPLATE_ID]: {
-      metadata: {
+      metadata: withTilesetCatalogMetadata({
         roomType: 'alley_spur',
         variantFamily: 'act1_side_alley',
         moodHint: 'escape_route',
-      },
+      }),
       fallbackStrategy: 'rotate',
       seams: {
         base: ALLEY_SPUR_BASE_SEAMS,
@@ -371,30 +376,30 @@ export const templateVariantManifest = {
           rotation: 0,
           tilemap: ALLEY_SPUR_VARIANTS['90'].tilemap,
           seams: ALLEY_SPUR_VARIANTS['90'].seams,
-          metadata: {
+          metadata: withTilesetCatalogMetadata({
             orientation: 90,
             branch: 'north_escape',
-          },
+          }),
         },
         '180': {
           variantId: `${ALLEY_SPUR_TEMPLATE_ID}_r180`,
           rotation: 0,
           tilemap: ALLEY_SPUR_VARIANTS['180'].tilemap,
           seams: ALLEY_SPUR_VARIANTS['180'].seams,
-          metadata: {
+          metadata: withTilesetCatalogMetadata({
             orientation: 180,
             branch: 'west_detour',
-          },
+          }),
         },
         '270': {
           variantId: `${ALLEY_SPUR_TEMPLATE_ID}_r270`,
           rotation: 0,
           tilemap: ALLEY_SPUR_VARIANTS['270'].tilemap,
           seams: ALLEY_SPUR_VARIANTS['270'].seams,
-          metadata: {
+          metadata: withTilesetCatalogMetadata({
             orientation: 270,
             branch: 'midnight_cache',
-          },
+          }),
         },
       },
     },
@@ -412,55 +417,55 @@ export function createAuthoredTemplateForRoomType(roomType) {
       return {
         templateId: CRIME_SCENE_TEMPLATE_ID,
         tilemap: CRIME_SCENE_BASE_TILEMAP.clone(),
-        metadata: {
+        metadata: withTilesetCatalogMetadata({
           lighting: 'neon-alley',
           moodHint: 'investigation_peak',
-        },
+        }),
       };
     case 'shop':
       return {
         templateId: VENDOR_STALL_TEMPLATE_ID,
         tilemap: VENDOR_BASE_TILEMAP.clone(),
-        metadata: {
+        metadata: withTilesetCatalogMetadata({
           stallType: 'act1_vendor',
           moodHint: 'market_intrigue',
-        },
+        }),
       };
     case 'detective_office':
       return {
         templateId: DETECTIVE_OFFICE_TEMPLATE_ID,
         tilemap: DETECTIVE_OFFICE_BASE_TILEMAP.clone(),
-        metadata: {
+        metadata: withTilesetCatalogMetadata({
           hubRole: 'case_command',
           moodHint: 'investigative_hub',
-        },
+        }),
       };
     case 'alley':
       return {
         templateId: ALLEY_HUB_TEMPLATE_ID,
         tilemap: ALLEY_HUB_BASE_TILEMAP.clone(),
-        metadata: {
+        metadata: withTilesetCatalogMetadata({
           hubType: 'crossroads',
           moodHint: 'shadow_network',
-        },
+        }),
       };
     case 'precinct_war_room':
       return {
         templateId: PRECINCT_WAR_ROOM_TEMPLATE_ID,
         tilemap: PRECINCT_WAR_ROOM_BASE_TILEMAP.clone(),
-        metadata: {
+        metadata: withTilesetCatalogMetadata({
           commandTier: 'act1_precinct',
           moodHint: 'strategic_tension',
-        },
+        }),
       };
     case 'alley_spur':
       return {
         templateId: ALLEY_SPUR_TEMPLATE_ID,
         tilemap: ALLEY_SPUR_BASE_TILEMAP.clone(),
-        metadata: {
+        metadata: withTilesetCatalogMetadata({
           branchRole: 'side_route',
           moodHint: 'escape_route',
-        },
+        }),
       };
     default:
       return null;

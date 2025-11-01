@@ -12,7 +12,7 @@ export class EntityManager {
    * @param {Function|Function[]} [options.onEntityDestroyed] Listener(s) invoked on destroy
    */
   constructor({ componentRegistry = null, onEntityDestroyed = [] } = {}) {
-    this.nextEntityId = 0;
+    this.nextEntityId = 1;
     this.entities = new Map(); // entityId -> metadata
     this.entitiesByTag = new Map(); // tag -> Set<entityId>
     this.recycledIds = []; // ID reuse pool

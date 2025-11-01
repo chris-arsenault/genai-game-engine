@@ -795,5 +795,9 @@ export function registerAct1Dialogues(dialogueSystem) {
   for (const dialogue of ACT1_DIALOGUES) {
     dialogueSystem.registerDialogueTree(dialogue);
   }
+  if (typeof dialogueSystem.registerDialogueAlias === 'function') {
+    dialogueSystem.registerDialogueAlias('captain_reese', DIALOGUE_REESE_BRIEFING.id);
+    dialogueSystem.registerDialogueAlias('witness_street_vendor', DIALOGUE_WITNESS_VENDOR.id);
+  }
   console.log(`[Act1Dialogues] Registered ${ACT1_DIALOGUES.length} Act 1 dialogue trees`);
 }

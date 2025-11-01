@@ -21,6 +21,7 @@ export class EventBus {
     this.eventQueue = []; // Deferred events processed at end of frame
     this.isProcessing = false;
     this.wildcardListeners = []; // Wildcard subscriptions (e.g., 'entity:*')
+    this.unhandledEvents = new Map(); // eventType -> { count, lastPayload, lastTimestamp }
   }
 
   /**
@@ -128,6 +129,8 @@ export class EventBus {
    * @param {object} data - Event data
    */
   emit(eventType, data = {}) {
+    let handled = false;
+
     // Call regular listeners
     const listeners = this.listeners.get(eventType);
     if (listeners) {
@@ -135,6 +138,7 @@ export class EventBus {
         const listener = listeners[i];
         try {
           listener.callback.call(listener.context, data);
+          handled = true;
         } catch (error) {
           console.error(`Error in event handler for ${eventType}:`, error);
         }
@@ -147,10 +151,15 @@ export class EventBus {
       if (this.matchesPattern(eventType, listener.pattern)) {
         try {
           listener.callback.call(listener.context, { eventType, ...data });
+          handled = true;
         } catch (error) {
           console.error(`Error in wildcard handler for ${listener.pattern}:`, error);
         }
       }
+    }
+
+    if (!handled) {
+      this._recordUnhandled(eventType, data);
     }
   }
 
@@ -216,6 +225,46 @@ export class EventBus {
   }
 
   /**
+   * Retrieve a snapshot of events that were emitted without any listeners.
+   * @returns {Array<{eventType: string, count: number, lastPayload: any, lastTimestamp: number}>}
+   */
+  getUnhandledEvents() {
+    return Array.from(this.unhandledEvents.entries()).map(([eventType, info]) => ({
+      eventType,
+      count: info.count,
+      lastPayload: info.lastPayload,
+      lastTimestamp: info.lastTimestamp,
+    }));
+  }
+
+  /**
+   * Clear tracked unhandled events. When an event type is provided, only that entry is cleared.
+   * @param {string|null} [eventType=null]
+   */
+  clearUnhandledEvents(eventType = null) {
+    if (typeof eventType === 'string' && eventType.length > 0) {
+      this.unhandledEvents.delete(eventType);
+      return;
+    }
+    this.unhandledEvents.clear();
+  }
+
+  _recordUnhandled(eventType, payload) {
+    const existing = this.unhandledEvents.get(eventType);
+    if (existing) {
+      existing.count += 1;
+      existing.lastTimestamp = Date.now();
+      existing.lastPayload = clonePayload(payload);
+    } else {
+      this.unhandledEvents.set(eventType, {
+        count: 1,
+        lastTimestamp: Date.now(),
+        lastPayload: clonePayload(payload),
+      });
+    }
+  }
+
+  /**
    * Removes all listeners for an event type.
    * @param {string} eventType - Event type (optional, clears all if not provided)
    */
@@ -265,6 +314,26 @@ export class EventBus {
    */
   getQueuedEventCount() {
     return this.eventQueue.length;
+  }
+}
+
+function clonePayload(payload) {
+  if (payload === null || typeof payload !== 'object') {
+    return payload;
+  }
+
+  if (typeof structuredClone === 'function') {
+    try {
+      return structuredClone(payload);
+    } catch (error) {
+      // Fall through to JSON cloning
+    }
+  }
+
+  try {
+    return JSON.parse(JSON.stringify(payload));
+  } catch (error) {
+    return '[unserializable]';
   }
 }
 

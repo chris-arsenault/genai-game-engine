@@ -20,6 +20,25 @@ import {
   currencyDeltaToInventoryUpdate,
 } from '../state/inventory/inventoryEvents.js';
 
+function matchesIdentifier(triggerValue, candidate) {
+  if (triggerValue == null) {
+    return true;
+  }
+
+  if (Array.isArray(triggerValue)) {
+    if (!triggerValue.length) {
+      return true;
+    }
+    return candidate != null && triggerValue.includes(candidate);
+  }
+
+  if (triggerValue instanceof Set) {
+    return candidate != null && triggerValue.has(candidate);
+  }
+
+  return candidate === triggerValue;
+}
+
 export class QuestManager {
   constructor(eventBus, factionManager, storyFlagManager) {
     this.eventBus = eventBus;
@@ -58,7 +77,10 @@ export class QuestManager {
       this.eventBus.on('faction:reputation:changed', (data) => this.onReputationChanged(data)),
       this.eventBus.on('knowledge:learned', (data) => this.onKnowledgeLearned(data)),
       this.eventBus.on('narrative:crossroads_prompt', (data) => this.onCrossroadsPrompt(data)),
-      this.eventBus.on('crossroads:thread_selected', (data) => this.onCrossroadsThreadSelected(data))
+      this.eventBus.on('crossroads:thread_selected', (data) => this.onCrossroadsThreadSelected(data)),
+      this.eventBus.on('act3:stance_committed', (data) => this.onAct3StanceCommitted(data)),
+      this.eventBus.on('act3:gathering_support:milestone', (data) => this.onAct3GatheringSupportMilestone(data)),
+      this.eventBus.on('act3:zenith_infiltration:stage', (data) => this.onAct3ZenithInfiltrationStage(data))
     ];
 
     console.log('[QuestManager] Initialized');
@@ -301,21 +323,30 @@ export class QuestManager {
   checkObjectiveTrigger(objective, eventType, eventData) {
     if (!objective.trigger) return { matched: false };
 
+    const payload = eventData ?? {};
     const trigger = objective.trigger;
 
     // Event type must match
     if (trigger.event !== eventType) return { matched: false };
 
     // Check additional conditions
-    if (trigger.caseId && eventData.caseId !== trigger.caseId) return { matched: false };
-    if (trigger.theoryId && eventData.theoryId !== trigger.theoryId) return { matched: false };
-    if (trigger.npcId && eventData.npcId !== trigger.npcId) return { matched: false };
-    if (trigger.areaId && eventData.areaId !== trigger.areaId) return { matched: false };
-    if (trigger.abilityId && eventData.abilityId !== trigger.abilityId) return { matched: false };
-    if (trigger.questId && eventData.questId && eventData.questId !== trigger.questId) return { matched: false };
-    if (trigger.branchId && eventData.branchId !== trigger.branchId) return { matched: false };
+    if (!matchesIdentifier(trigger.caseId, payload.caseId)) return { matched: false };
+    if (!matchesIdentifier(trigger.theoryId, payload.theoryId)) return { matched: false };
+    if (!matchesIdentifier(trigger.npcId, payload.npcId)) return { matched: false };
+    if (!matchesIdentifier(trigger.areaId, payload.areaId)) return { matched: false };
+    if (!matchesIdentifier(trigger.abilityId, payload.abilityId)) return { matched: false };
+    if (trigger.questId) {
+      const candidateQuestId = payload.questId;
+      if (candidateQuestId != null && !matchesIdentifier(trigger.questId, candidateQuestId)) {
+        return { matched: false };
+      }
+    }
+    if (!matchesIdentifier(trigger.branchId, payload.branchId)) return { matched: false };
+    if (!matchesIdentifier(trigger.stanceId, payload.stanceId)) return { matched: false };
+    if (!matchesIdentifier(trigger.milestoneId, payload.milestoneId)) return { matched: false };
+    if (!matchesIdentifier(trigger.objectiveId, payload.objectiveId)) return { matched: false };
 
-    const requirementResult = this.evaluateObjectiveRequirements(objective.requirements, eventData);
+    const requirementResult = this.evaluateObjectiveRequirements(objective.requirements, payload);
     if (!requirementResult.met) {
       return {
         matched: true,
@@ -815,6 +846,124 @@ export class QuestManager {
     this.updateObjectives('crossroads:thread_selected', data);
   }
 
+  onAct3StanceCommitted(data) {
+    if (this.storyFlags && data) {
+      const aggregatedFlags = new Set();
+
+      if (Array.isArray(data?.worldFlags)) {
+        for (const flagId of data.worldFlags) {
+          if (typeof flagId === 'string' && flagId.trim().length > 0) {
+            aggregatedFlags.add(flagId);
+          }
+        }
+      }
+
+      if (Array.isArray(data?.storyFlags)) {
+        for (const flagId of data.storyFlags) {
+          if (typeof flagId === 'string' && flagId.trim().length > 0) {
+            aggregatedFlags.add(flagId);
+          }
+        }
+      }
+
+      if (typeof data?.stanceFlag === 'string' && data.stanceFlag.trim().length > 0) {
+        aggregatedFlags.add(data.stanceFlag);
+      }
+
+      const planFlag =
+        typeof data?.planFlag === 'string' && data.planFlag.trim().length > 0
+          ? data.planFlag
+          : 'act3_plan_committed';
+      aggregatedFlags.add(planFlag);
+
+      for (const flagId of aggregatedFlags) {
+        this.storyFlags.setFlag(flagId, true, {
+          source: 'act3_stance_committed',
+          stanceId: data?.stanceId ?? null,
+        });
+      }
+    }
+
+    this.updateObjectives('act3:stance_committed', data);
+  }
+
+  onAct3GatheringSupportMilestone(data) {
+    if (this.storyFlags && data) {
+      const aggregatedFlags = new Set();
+
+      if (Array.isArray(data?.worldFlags)) {
+        for (const flagId of data.worldFlags) {
+          if (typeof flagId === 'string' && flagId.trim().length > 0) {
+            aggregatedFlags.add(flagId);
+          }
+        }
+      }
+
+      if (Array.isArray(data?.storyFlags)) {
+        for (const flagId of data.storyFlags) {
+          if (typeof flagId === 'string' && flagId.trim().length > 0) {
+            aggregatedFlags.add(flagId);
+          }
+        }
+      }
+
+      if (typeof data?.successFlag === 'string' && data.successFlag.trim().length > 0) {
+        aggregatedFlags.add(data.successFlag);
+      }
+
+      for (const flagId of aggregatedFlags) {
+        this.storyFlags.setFlag(flagId, true, {
+          source: 'act3_gathering_support_milestone',
+          branchId: data?.branchId ?? null,
+          milestoneId: data?.milestoneId ?? null,
+        });
+      }
+    }
+
+    this.updateObjectives('act3:gathering_support:milestone', data);
+  }
+
+  onAct3ZenithInfiltrationStage(data) {
+    if (this.storyFlags && data) {
+      const aggregatedFlags = new Set();
+
+      if (Array.isArray(data?.worldFlags)) {
+        for (const flagId of data.worldFlags) {
+          if (typeof flagId === 'string' && flagId.trim().length > 0) {
+            aggregatedFlags.add(flagId);
+          }
+        }
+      }
+
+      if (Array.isArray(data?.storyFlags)) {
+        for (const flagId of data.storyFlags) {
+          if (typeof flagId === 'string' && flagId.trim().length > 0) {
+            aggregatedFlags.add(flagId);
+          }
+        }
+      }
+
+      if (typeof data?.successFlag === 'string' && data.successFlag.trim().length > 0) {
+        aggregatedFlags.add(data.successFlag);
+      }
+
+      if (typeof data?.stanceFlag === 'string' && data.stanceFlag.trim().length > 0) {
+        aggregatedFlags.add(data.stanceFlag);
+      }
+
+      for (const flagId of aggregatedFlags) {
+        this.storyFlags.setFlag(flagId, true, {
+          source: 'act3_zenith_infiltration_stage',
+          branchId: data?.branchId ?? null,
+          stageId: data?.stageId ?? null,
+          approachId: data?.approachId ?? null,
+        });
+      }
+    }
+
+    this.updateObjectives('act3:zenith_infiltration:stage', data);
+  }
+
   /**
    * Handles entity destruction by marking dependent objectives as blocked.
    * @param {number} entityId
@@ -837,7 +986,10 @@ export class QuestManager {
           if (!objective?.trigger || objective.trigger.event !== 'npc:interviewed') {
             continue;
           }
-          if (objective.trigger.npcId !== narrative.npcId) {
+          if (objective.trigger.npcId == null) {
+            continue;
+          }
+          if (!matchesIdentifier(objective.trigger.npcId, narrative.npcId)) {
             continue;
           }
 

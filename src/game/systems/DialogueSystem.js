@@ -28,6 +28,7 @@ export class DialogueSystem extends System {
 
     // Dialogue tree registry
     this.dialogueTrees = new Map(); // treeId -> DialogueTree
+    this.dialogueAliases = new Map(); // aliasId -> treeId
 
     // Active dialogue state
     this.activeDialogue = null;
@@ -44,6 +45,30 @@ export class DialogueSystem extends System {
     // Subscribe to interaction events
     this.eventBus.on('interaction:dialogue', (data) => {
       this.onDialogueInteraction(data);
+    });
+
+    this.eventBus.on('dialogue:choice_requested', (data = {}) => {
+      if (!data) return;
+      const choiceIndex = Number(data.choiceIndex);
+      if (Number.isInteger(choiceIndex)) {
+        this.selectChoice(choiceIndex);
+      }
+    });
+
+    this.eventBus.on('dialogue:advance_requested', () => {
+      if (this.activeDialogue) {
+        const advanced = this.advanceDialogue();
+        if (!advanced && this.activeDialogue) {
+          // If advance failed because dialogue is at end without next node, close it.
+          this.endDialogue();
+        }
+      }
+    });
+
+    this.eventBus.on('dialogue:close_requested', () => {
+      if (this.activeDialogue) {
+        this.endDialogue();
+      }
     });
 
     console.log('[DialogueSystem] Initialized');
@@ -63,12 +88,31 @@ export class DialogueSystem extends System {
   }
 
   /**
+   * Register an alias for an existing dialogue tree.
+   * @param {string} aliasId
+   * @param {string} targetId
+   */
+  registerDialogueAlias(aliasId, targetId) {
+    if (typeof aliasId !== 'string' || aliasId.length === 0) {
+      console.warn('[DialogueSystem] Cannot register dialogue alias without aliasId');
+      return;
+    }
+    if (typeof targetId !== 'string' || targetId.length === 0) {
+      console.warn('[DialogueSystem] Cannot register dialogue alias without targetId');
+      return;
+    }
+
+    this.dialogueAliases.set(aliasId, targetId);
+  }
+
+  /**
    * Get dialogue tree by ID
    * @param {string} treeId - Tree identifier
    * @returns {DialogueTree|null} Tree instance
    */
   getDialogueTree(treeId) {
-    return this.dialogueTrees.get(treeId) || null;
+    const resolvedId = this.resolveDialogueId(treeId);
+    return this.dialogueTrees.get(resolvedId) || null;
   }
 
   /**
@@ -101,9 +145,15 @@ export class DialogueSystem extends System {
       return false;
     }
 
-    const tree = this.dialogueTrees.get(dialogueId);
+    const requestedDialogueId = dialogueId;
+    const resolvedDialogueId = this.resolveDialogueId(dialogueId);
+    const tree = this.dialogueTrees.get(resolvedDialogueId);
     if (!tree) {
-      console.error(`[DialogueSystem] Dialogue tree not found: ${dialogueId}`);
+      console.error(
+        `[DialogueSystem] Dialogue tree not found: ${dialogueId}${
+          resolvedDialogueId !== dialogueId ? ` (resolved: ${resolvedDialogueId})` : ''
+        }`
+      );
       return false;
     }
 
@@ -112,7 +162,8 @@ export class DialogueSystem extends System {
 
     this.activeDialogue = {
       npcId,
-      dialogueId,
+      dialogueId: resolvedDialogueId,
+      requestedDialogueId,
       tree,
       currentNode: tree.startNode,
       visitedNodes: this.getVisitedNodes(npcId),
@@ -141,7 +192,8 @@ export class DialogueSystem extends System {
     // Emit dialogue started event
     this.eventBus.emit('dialogue:started', {
       npcId,
-      dialogueId,
+      dialogueId: this.activeDialogue.dialogueId,
+      requestedDialogueId: this.activeDialogue.requestedDialogueId,
       nodeId: tree.startNode,
       speaker: startNode.speaker,
       text: startNode.text,
@@ -156,14 +208,17 @@ export class DialogueSystem extends System {
       effectId: 'dialogueStartPulse',
       origin: 'dialogue',
       npcId,
-      dialogueId,
+      dialogueId: this.activeDialogue.dialogueId,
+      requestedDialogueId: this.activeDialogue.requestedDialogueId,
       nodeId: tree.startNode,
       speaker: startNode.speaker ?? null,
       title: tree.title ?? null,
       timestamp: startedAt,
     });
 
-    console.log(`[DialogueSystem] Started dialogue: ${dialogueId} with NPC: ${npcId}`);
+    console.log(
+      `[DialogueSystem] Started dialogue: ${this.activeDialogue.dialogueId} (requested: ${requestedDialogueId}) with NPC: ${npcId}`
+    );
     return true;
   }
 
@@ -220,6 +275,7 @@ export class DialogueSystem extends System {
     this.lastChoice = {
       npcId: this.activeDialogue.npcId,
       dialogueId: this.activeDialogue.dialogueId,
+      requestedDialogueId: this.activeDialogue.requestedDialogueId,
       nodeId: this.activeDialogue.currentNode,
       choiceId: choice.id ?? null,
       choiceText: choice.text,
@@ -230,6 +286,7 @@ export class DialogueSystem extends System {
     this.eventBus.emit('dialogue:choice', {
       npcId: this.activeDialogue.npcId,
       dialogueId: this.activeDialogue.dialogueId,
+      requestedDialogueId: this.activeDialogue.requestedDialogueId,
       nodeId: this.activeDialogue.currentNode,
       choiceIndex,
       choiceId: choice.id ?? `choice_${choiceIndex}`,
@@ -243,6 +300,7 @@ export class DialogueSystem extends System {
       origin: 'dialogue',
       npcId: this.activeDialogue.npcId,
       dialogueId: this.activeDialogue.dialogueId,
+      requestedDialogueId: this.activeDialogue.requestedDialogueId,
       nodeId: this.activeDialogue.currentNode,
       choiceIndex,
       choiceId: choice.id ?? `choice_${choiceIndex}`,
@@ -311,6 +369,7 @@ export class DialogueSystem extends System {
     this.eventBus.emit('dialogue:node_changed', {
       npcId: this.activeDialogue.npcId,
       dialogueId: this.activeDialogue.dialogueId,
+      requestedDialogueId: this.activeDialogue.requestedDialogueId,
       nodeId,
       speaker: nextNode.speaker,
       text: nextNode.text,
@@ -328,6 +387,7 @@ export class DialogueSystem extends System {
       origin: 'dialogue',
       npcId: this.activeDialogue.npcId,
       dialogueId: this.activeDialogue.dialogueId,
+      requestedDialogueId: this.activeDialogue.requestedDialogueId,
       nodeId,
       speaker: nextNode.speaker ?? null,
       previousNodeId,
@@ -341,7 +401,7 @@ export class DialogueSystem extends System {
   endDialogue() {
     if (!this.activeDialogue) return;
 
-    const { npcId, dialogueId, currentNode } = this.activeDialogue;
+    const { npcId, dialogueId, requestedDialogueId, currentNode } = this.activeDialogue;
     const endedAt = Date.now();
 
     // Execute exit callback on current node
@@ -354,6 +414,7 @@ export class DialogueSystem extends System {
     this.eventBus.emit('dialogue:ended', {
       npcId,
       dialogueId,
+      requestedDialogueId,
       nodeId: currentNode,
       endedAt,
     });
@@ -362,6 +423,7 @@ export class DialogueSystem extends System {
     this.eventBus.emit('dialogue:completed', {
       npcId,
       dialogueId,
+      requestedDialogueId,
       nodeId: currentNode,
       choiceId: this.lastChoice?.choiceId ?? null,
       choiceText: this.lastChoice?.choiceText ?? null,
@@ -373,6 +435,7 @@ export class DialogueSystem extends System {
       origin: 'dialogue',
       npcId,
       dialogueId,
+      requestedDialogueId,
       nodeId: currentNode,
       choiceId: this.lastChoice?.choiceId ?? null,
       duration: 1.1,
@@ -381,7 +444,8 @@ export class DialogueSystem extends System {
 
     this.eventBus.emit('npc:interviewed', {
       npcId,
-      dialogueId
+      dialogueId,
+      requestedDialogueId,
     });
 
     this.activeDialogue = null;
@@ -611,6 +675,23 @@ export class DialogueSystem extends System {
   }
 
   /**
+   * Resolve a dialogue ID using alias mappings.
+   * @param {string} dialogueId
+   * @returns {string}
+   */
+  resolveDialogueId(dialogueId) {
+    if (!dialogueId) {
+      return dialogueId;
+    }
+
+    if (this.dialogueTrees.has(dialogueId)) {
+      return dialogueId;
+    }
+
+    return this.dialogueAliases.get(dialogueId) || dialogueId;
+  }
+
+  /**
    * Get visited nodes for NPC
    * @param {string} npcId - NPC ID
    * @returns {Set} Set of visited node IDs
@@ -654,6 +735,7 @@ export class DialogueSystem extends System {
   cleanup() {
     this.activeDialogue = null;
     this.dialogueTrees.clear();
+    this.dialogueAliases.clear();
     this.dialogueHistory.clear();
   }
 }

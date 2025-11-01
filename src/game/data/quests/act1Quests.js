@@ -68,7 +68,7 @@ export const QUEST_001_HOLLOW_CASE = {
       description: 'Interview the witness',
       trigger: {
         event: 'npc:interviewed',
-        npcId: 'witness_street_vendor'
+        npcId: ['witness_street_vendor', 'officer_martinez', 'mrs_chen']
       },
       optional: false
     },

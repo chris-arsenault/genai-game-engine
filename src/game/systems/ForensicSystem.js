@@ -114,13 +114,19 @@ export class ForensicSystem extends System {
       requirements: forensic.getRequirements()
     });
 
+    const transform = this.getComponent(entityId, 'Transform');
+    const worldPosition = transform
+      ? { x: transform.x, y: transform.y }
+      : null;
+
     this.eventBus.emit('fx:overlay_cue', {
       effectId: 'forensicPulse',
       origin: 'forensic',
       stage: 'available',
       evidenceId,
       forensicType: forensic.forensicType,
-      caseId
+      caseId,
+      worldPosition
     });
 
     console.log(`[ForensicSystem] Forensic analysis available for: ${evidenceId}`);
@@ -204,6 +210,11 @@ export class ForensicSystem extends System {
       duration: this.activeAnalysis.duration
     });
 
+    const transform = this.getComponent(this.activeAnalysis.entityId, 'Transform');
+    const worldPosition = transform
+      ? { x: transform.x, y: transform.y }
+      : null;
+
     this.eventBus.emit('fx:overlay_cue', {
       effectId: 'forensicPulse',
       origin: 'forensic',
@@ -211,7 +222,8 @@ export class ForensicSystem extends System {
       evidenceId: this.activeAnalysis.evidenceId,
       forensicType: this.activeAnalysis.forensicType,
       caseId: this.activeAnalysis.caseId,
-      duration: this.activeAnalysis.duration
+      duration: this.activeAnalysis.duration,
+      worldPosition
     });
 
     console.log(`[ForensicSystem] Analysis started: ${this.activeAnalysis.evidenceId}`);
@@ -247,6 +259,11 @@ export class ForensicSystem extends System {
         clues: revealedClues
       });
 
+      const transform = this.getComponent(entityId, 'Transform');
+      const worldPosition = transform
+        ? { x: transform.x, y: transform.y }
+        : null;
+
       this.eventBus.emit('fx:overlay_cue', {
         effectId: 'forensicRevealFlash',
         origin: 'forensic',
@@ -254,7 +271,8 @@ export class ForensicSystem extends System {
         evidenceId,
         forensicType,
         caseId,
-        cluesRevealed: revealedClues.length
+        cluesRevealed: revealedClues.length,
+        worldPosition
       });
 
       console.log(`[ForensicSystem] Analysis complete: ${evidenceId} (${revealedClues.length} clues revealed)`);

@@ -4,9 +4,54 @@ export const ACT2_CROSSROADS_ART_MANIFEST_URL =
 export const Act2CrossroadsArtConfig = Object.freeze({
   variantId: 'act2_crossroads_bespoke_overrides_v2',
   artist: 'RenderOps Finishing Team',
-  updatedAt: '2025-11-12T17:45:00Z',
+  updatedAt: '2025-11-20T00:00:00Z',
   description:
     'Colour-corrected overrides tuned for the bespoke Crossroads art bundle. Session 112 calibrates tint and alpha mappings so the generated overlays land with the intended narrative lighting beats.',
+  questHighlights: Object.freeze([
+    Object.freeze({
+      id: 'memory_parlor_infiltration_entry',
+      color: '#422a72',
+      alpha: 0.88,
+      assetId: 'memory_parlor_neon_001',
+      metadata: Object.freeze({
+        lightingPreset: 'memory_parlor_entry_tension',
+        narrativeCue: 'act1_memory_parlor_entry',
+        questId: 'quest_003_memory_parlor',
+        overlayAverageAlpha: 0.335,
+        questTriggerId: 'memory_parlor_entrance',
+      }),
+      tags: Object.freeze(['memory_parlor', 'quest_highlight', 'infiltration']),
+    }),
+    Object.freeze({
+      id: 'memory_parlor_infiltration_firewall',
+      color: '#4a2e84',
+      alpha: 0.9,
+      assetId: 'memory_parlor_neon_001',
+      metadata: Object.freeze({
+        lightingPreset: 'memory_parlor_firewall_alert',
+        narrativeCue: 'act1_memory_parlor_interior',
+        questId: 'quest_003_memory_parlor',
+        overlayAverageAlpha: 0.335,
+        questTriggerId: 'memory_parlor_interior',
+        requiresScrambler: true,
+      }),
+      tags: Object.freeze(['memory_parlor', 'quest_highlight', 'firewall']),
+    }),
+    Object.freeze({
+      id: 'memory_parlor_infiltration_escape',
+      color: '#402870',
+      alpha: 0.82,
+      assetId: 'memory_parlor_neon_001',
+      metadata: Object.freeze({
+        lightingPreset: 'memory_parlor_escape_release',
+        narrativeCue: 'act1_memory_parlor_exit',
+        questId: 'quest_003_memory_parlor',
+        overlayAverageAlpha: 0.335,
+        questTriggerId: 'neon_districts_street',
+      }),
+      tags: Object.freeze(['memory_parlor', 'quest_highlight', 'escape']),
+    }),
+  ]),
   floors: Object.freeze([
     Object.freeze({
       id: 'crossroads_floor_safehouse',

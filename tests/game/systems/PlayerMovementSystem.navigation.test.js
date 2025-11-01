@@ -22,6 +22,10 @@ class StubInputState {
   isPressed() {
     return false;
   }
+
+  wasJustPressed() {
+    return false;
+  }
 }
 
 function createNavMesh() {

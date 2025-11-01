@@ -87,6 +87,7 @@
 - Clear objective for Act 3
 - All allies' perspectives understood
 - **Archive Interface ability unlocked**: Direct neural connection to city database
+- **War Room Dialogue Reference**: See [`Act 3 Dialogue — Final Deduction War Room`](../dialogue/act3-final-deduction-war-room.md) for scripted briefing beats and branch conditions.
 
 ---
 
@@ -99,73 +100,63 @@
 
 #### Objectives
 
-**Based on M3.1 choice, different objectives:**
+Automation Hooks: `QuestManager` tracks stance commitment via `act3:stance_committed` and locks branch progress with `act3:gathering_support:milestone` (branch- and milestone-scoped payloads). Branch dialogues emit those events automatically; shared beats rely on `area:entered` summaries.
 
-#### If "Opposition" (Stop Morrow):
+- **Stance Commitment** — `obj_commit_act3_stance`
+  - Event: `act3:stance_committed` with chosen stance metadata.
+  - Dialogue Source: War Room follow-up (`dialogue_act3_final_deduction_war_room` continuation) records the player’s plan flag.
 
-1. **Recruit Dr. Chen for corporate backdoor**
-   - She has access codes to NeuroSync's broadcast infrastructure
-   - Convince her this is right path (dialogue challenge)
-   - She's conflicted: Wants justice but fears chaos
+#### Opposition Path — Stop the Broadcast
 
-2. **Gain Soren's reluctant support**
-   - Soren wants truth revealed, opposes stopping Morrow
-   - Must convince him trauma outweighs transparency
-   - Requires high relationship or masterful persuasion
-   - Alternative: Soren remains opposed, makes Act 3 harder
+1. **Convince Dr. Chen** — `obj_opposition_recruit_dr_chen`
+   - Dialogue: `dialogue_act3_opposition_dr_chen`
+   - Outcome: Earns `act3_opposition_dr_chen_committed` flag; unlocks NeuroSync backdoor credentials.
 
-3. **Obtain MCD resources**
-   - Approach Captain Reese (if not completely burned bridge)
-   - Or infiltrate MCD to steal security codes
-   - Need law enforcement override for Archive access
+2. **Sway Soren** — `obj_opposition_confront_soren`
+   - Dialogue: `dialogue_act3_opposition_soren`
+   - Outcome: Resistance stands down instead of sabotaging the op; earns `act3_opposition_soren_committed`.
 
-#### If "Support" (Help Morrow):
+3. **Secure MCD Overrides** — `obj_opposition_secure_mcd_override`
+   - Dialogue: `dialogue_act3_opposition_captain_reese`
+   - Outcome: Provides clearance badges and pulse-jammer authorizations (`act3_opposition_mcd_override_secured`).
 
-1. **Upgrade broadcast infrastructure**
-   - Zara assists with technical preparation
-   - Ensure broadcast reaches entire population
-   - Hack additional network nodes
+#### Support Path — Amplify the Truth
 
-2. **Prepare resistance for aftermath**
-   - Soren enthusiastically supports
-   - Set up trauma response centers
-   - Organize resistance to handle chaos
+1. **Upgrade Broadcast Grid** — `obj_support_upgrade_broadcast_grid`
+   - Dialogue: `dialogue_act3_support_zara`
+   - Outcome: Zara boosts relay capacity (`act3_support_broadcast_grid_upgraded`).
 
-3. **Dr. Chen's ethical struggle**
-   - She may refuse to help
-   - Dialogue: Convince her or lose her support
-   - Her choice: Enable broadcast or sabotage it
+2. **Prime Resistance Response** — `obj_support_prepare_resistance_response`
+   - Dialogue: `dialogue_act3_support_soren`
+   - Outcome: Trauma triage hubs go live (`act3_support_resistance_response_ready`).
 
-#### If "Alternative" (Middle Ground):
+3. **Resolve Chen’s Ultimatum** — `obj_support_dr_chen_ethics`
+   - Dialogue: `dialogue_act3_support_dr_chen`
+   - Outcome: Neural dampeners calibrated (`act3_support_dr_chen_resolved`).
 
-1. **Gather evidence for controlled disclosure**
-   - Visit all allies for their evidence caches
-   - Dr. Chen: Corporate documents
-   - Soren: Witness testimonies
-   - Resistance: Historical archives
-   - Compile comprehensive, undeniable dossier
+#### Alternative Path — Controlled Disclosure
 
-2. **Build coalition**
-   - Recruit journalists, activists, reformers
-   - Requires visiting all districts
-   - Social challenges: Convince various NPCs to support truth campaign
+1. **Compile the Archive Dossier** — `obj_alternative_collect_dossier`
+   - Dialogue: `dialogue_act3_alternative_zara`
+   - Outcome: Sanitised evidence packet prepared (`act3_alternative_dossier_compiled`).
 
-3. **Prepare for gradual revelation**
-   - Zara builds secure distribution network
-   - Plan systematic disclosure over time
-   - Coordinate with all factions
+2. **Secure Coalition Sign-Off** — `obj_alternative_build_coalition`
+   - Dialogue: `dialogue_act3_alternative_elena_coalition`
+   - Outcome: Civic coalition endorses staggered release (`act3_alternative_coalition_committed`).
 
-#### Shared Objectives (All Paths):
+3. **Stage Distribution Network** — `obj_alternative_stage_distribution`
+   - Dialogue: `dialogue_act3_alternative_iris`
+   - Outcome: City intranet relays primed (`act3_alternative_distribution_staged`).
 
-4. **Visit Dmitri's hollow body** (emotional beat)
-   - Pay respects at care facility
-   - Reminder of stakes: This is what Morrow fights against
-   - Strengthens Kira's resolve
+#### Shared Objectives
 
-5. **Final equipment preparation**
-   - Upgrade gear for Archive infiltration
-   - Stock resources (if combat-focused)
-   - Save game prompt (point of no return approaching)
+4. **Visit Dmitri in Hospice** — `obj_visit_dmitri`
+   - Trigger: `area:entered` `archive_care_facility_dmitri`
+   - Emotional beat reinforcing The Hollow tragedy (`act3_shared_dmitri_visited`).
+
+5. **Archive Loadout Finalization** — `obj_prepare_archive_loadout`
+   - Dialogue: `dialogue_act3_shared_loadout`
+   - Outcome: Gear manifests locked, telemetry failsafes synced (`act3_shared_loadout_prepared`).
 
 #### Evidence Collected
 
@@ -241,6 +232,34 @@
 - **Spare or expose executives?**:
   - Spare: They become post-ending reformers (affects epilogue)
   - Expose/punish: Satisfying but removes potential allies
+
+#### Implementation Notes (Session 210)
+
+- Quest scaffold `main-act3-zenith-infiltration` now drives staged progression through `act3:zenith_infiltration:stage` events produced by the Zenith trigger layout (`src/game/scenes/Act3ZenithInfiltrationScene.js`).
+- Shared stages and success flags:
+  - `obj_zenith_sector_entry` → `act3_zenith_sector_perimeter_breached`
+  - `obj_zenith_tower_ascent` → `act3_zenith_government_towers_secured`
+  - `obj_zenith_archive_elevator` → `act3_zenith_archive_elevator_secured`
+- Stance-specific routings align with Act 3 support milestones:
+  - **Opposition** (`approachId: stealth`):
+    - `obj_zenith_opposition_disable_grid` → `act3_zenith_opposition_grid_disabled`
+    - `obj_zenith_opposition_calibrate_dampeners` → `act3_zenith_opposition_dampeners_calibrated`
+    - `obj_zenith_opposition_resistance_diversion` → `act3_zenith_opposition_resistance_diverted`
+  - **Support** (`approachId: assault`):
+    - `obj_zenith_support_overclock_relays` → `act3_zenith_support_relays_overclocked`
+    - `obj_zenith_support_stage_response` → `act3_zenith_support_response_staged`
+    - `obj_zenith_support_calibrate_dampeners` → `act3_zenith_support_dampeners_calibrated`
+  - **Alternative** (`approachId: social`):
+    - `obj_zenith_alternative_dossier_upload` → `act3_zenith_alternative_dossier_uploaded`
+    - `obj_zenith_alternative_forum_security` → `act3_zenith_alternative_forum_secured`
+    - `obj_zenith_alternative_beacons_sync` → `act3_zenith_alternative_beacons_synchronized`
+- Trigger metadata now injects branch/approach telemetry (`act3_zenith_*` tags) so QuestManager records stance context while tests guard shared and branch stage flows (`tests/game/managers/QuestManager.act3.test.js`, `tests/game/systems/QuestSystem.trigger.test.js`).
+
+#### Implementation Notes (Session 211)
+
+- `Act3FinaleCinematicSequencer` listens for the `act3_zenith_infiltration_complete` story flag and surfaces the correct finale cinematic from the Act 3 epilogue library once the player’s stance flag is active. The sequencer emits `narrative:finale_cinematic_ready` with cinematic ID, stance metadata, and beat summaries so playback systems can queue the finale without duplicating exporter data (`src/game/narrative/Act3FinaleCinematicSequencer.js`).
+- `Act3FinaleCinematicController` consumes the sequencer payload, directs the new `FinaleCinematicOverlay`, and emits lifecycle telemetry (`narrative:finale_cinematic_begin|beat_advanced|completed|skipped`) while driving adaptive music cues. The overlay renders stance summaries, epilogue beats, and input prompts so finale playback can move forward even before bespoke cinematics land (`src/game/narrative/Act3FinaleCinematicController.js`, `src/game/ui/FinaleCinematicOverlay.js`).
+- Added coverage in `tests/game/narrative/Act3FinaleCinematicSequencer.test.js` verifying that infiltration completion gates dispatch, pre-set flags dispatch on init, and toggling the completion flag re-queues the payload.
 
 #### Rewards
 

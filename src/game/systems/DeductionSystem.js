@@ -179,12 +179,25 @@ export class DeductionSystem extends System {
     // Use CaseManager to validate theory
     const result = this.caseManager.validateTheory(this.currentCase.id, theory);
 
-    // Emit validation event
-    this.eventBus.emit('theory:validated', {
-      caseId: this.currentCase.id,
-      accuracy: result.accuracy,
-      valid: result.valid
-    });
+    if (this.eventBus) {
+      this.eventBus.emit('theory:validated', {
+        caseId: this.currentCase.id,
+        accuracy: result.accuracy,
+        valid: result.valid,
+        hints: result.hints,
+        missingConnections: result.missingConnections,
+        extraConnections: result.extraConnections,
+        invalidConnections: result.invalidConnections
+      });
+
+      if (Array.isArray(result.hints) && result.hints.length > 0) {
+        this.eventBus.emit('deduction_board:hints', {
+          caseId: this.currentCase.id,
+          hints: result.hints,
+          accuracy: result.accuracy
+        });
+      }
+    }
 
     if (result.valid) {
       console.log(`[DeductionSystem] Theory validated! Accuracy: ${(result.accuracy * 100).toFixed(0)}%`);

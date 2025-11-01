@@ -285,6 +285,22 @@ describe('DeductionBoard', () => {
 
       expect(board.theoryAccuracy).toBe(0.75);
       expect(board.validationFeedback).toBe('Good theory');
+      expect(board.validationMessages).toEqual(['Good theory']);
+    });
+
+    it('should append hints to validation messages', () => {
+      board.onValidate = () => ({
+        accuracy: 0.4,
+        feedback: 'Missing pieces',
+        hints: ['Connect clue_1 to clue_2']
+      });
+
+      const validateBtn = board.validateButton;
+      board.onMouseDown(validateBtn.x + 5, validateBtn.y + 5);
+
+      expect(board.validationMessages).toEqual(['Missing pieces', 'Connect clue_1 to clue_2']);
+      expect(board.validationFeedback).toContain('Missing pieces');
+      expect(board.validationFeedback).toContain('Connect clue_1 to clue_2');
     });
 
     it('should clear connections when clear button clicked', () => {

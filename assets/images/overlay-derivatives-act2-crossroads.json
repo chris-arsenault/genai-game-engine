@@ -172,6 +172,32 @@
       }
     },
     {
+      "id": "image-memory-parlor-neon-001",
+      "sourceUrl": "file://assets/generated/ar-050/image-memory-parlor-neon-001.png",
+      "output": "memory_parlor_neon_001.png",
+      "operations": {
+        "resize": {
+          "width": 1920
+        },
+        "centerCropWidth": null,
+        "normalize": true,
+        "desaturate": 0,
+        "brightness": 0.6,
+        "contrast": 0.4,
+        "tint": {
+          "color": "#6a44ff",
+          "amount": 40
+        },
+        "alphaFromLuma": {
+          "threshold": 12,
+          "softness": 70,
+          "floor": 0,
+          "ceiling": 240
+        },
+        "opacity": 0.88
+      }
+    },
+    {
       "id": "image-ar-050-crossroads-selection-pad",
       "openverseId": "67a16c30-eb3c-4b8e-88f5-f1e31bfddb5a",
       "sourceUrl": "https://live.staticflickr.com/65535/52845556684_5e179a56aa_b.jpg",

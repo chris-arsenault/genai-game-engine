@@ -20,15 +20,54 @@
 
 | AR ID | Scope | Request IDs | Notes |
 | ----- | ----- | ----------- | ----- |
-| AR-001 | Deduction board UI | `image-ar-001-deduction-board-bg`, `image-ar-001-clue-node-pack`, `image-ar-001-evidence-icon-set`, `image-ar-001-ui-button-pack` | Prioritise cohesive neon-noir styling; hover/pressed states to support tactile investigation feel. |
+| AR-001 | Deduction board UI | `image-ar-001-deduction-board-bg`, `image-ar-001-clue-node-pack`, `image-ar-001-evidence-icon-set`, `image-ar-001-ui-button-pack` | ✅ Session 200 regenerated the full suite via GPT-Image; assets staged under `assets/generated/images/ar-001/`. |
 | AR-002 | Evidence sprites | `image-ar-002-generic-marker`, `image-ar-002-fingerprint`, `image-ar-002-document`, `image-ar-002-neural-extractor`, `image-ar-002-blood-spatter` | Session 186 AI-generated the full evidence sprite set; wire into tutorial tooltips and runtime evidence palette logs. |
 | AR-003 | Player sprite | `image-ar-003-player-kira-sprite`, `image-ar-003-kira-evasion-pack` | Directional placeholder (`image-ar-003-kira-core-pack-normalized`) now powers idle/walk/run while the normalized dash/slide rows replace the generated evasion pack; bespoke swap still needed to lock trench-coat silhouette for the final art pass. Session 180 added `scripts/art/updateKiraAnimationConfig.js` so normalized manifests drive runtime animation frames the moment bespoke art lands. |
-| AR-004 | NPC sprites | `image-ar-004-npc-civilian-pack`, `image-ar-004-npc-guard-pack` | Civilian palette must hint at faction allegiance; guards need visor glow to visualize detection state. |
-| AR-005 | District tilesets | `image-ar-005-tileset-neon-district`, `image-ar-005-tileset-corporate-spires`, `image-ar-005-tileset-archive-undercity`, `image-ar-005-tileset-zenith-sector` | Tilesets must ship with collision metadata once sourced/generated. |
+| AR-004 | NPC sprites | `image-ar-004-npc-civilian-pack`, `image-ar-004-npc-guard-pack` | ✅ Session 200 GPT-Image run delivered civilian + guard packs (assets/generated/images/ar-004/); wire into animation pipeline. |
+| AR-005 | District tilesets | `image-ar-005-tileset-neon-district` (ai-generated Session 197), `image-ar-005-tileset-corporate-spires`, `image-ar-005-tileset-archive-undercity`, `image-ar-005-tileset-zenith-sector` | ✅ Session 200 generated Corporate Spires, Archive Undercity, and Zenith Sector atlases; Session 201 promoted the Neon District seam warnings into `assets/manifests/tilesets/image-ar-005-tileset-neon-district-metadata.json`. |
 | AR-007 | Particle/overlay FX | `image-ar-007-particles-rain` (ai-generated), `image-ar-007-particles-neon-glow` (ai-generated), `image-ar-007-particles-memory-fragment` (ai-generated), `image-ar-007-screen-effects-pack` (ai-generated) | Sprite sheets integrated into ParticleEmitterRuntime with detective vision cue emissions; automated Jest harness keeps composite bursts within 60 FPS budgets (Playwright coverage still pending). |
-| AR-050 | Act 2 Crossroads art bundle | All `image-ar-050-*` entries | Map one-to-one with `act2_crossroads_*` assetIds for the bespoke scene lighting revamp. Session 172 generated the safehouse floor texture, briefing pad overlay, and branch walkway strip (all ai-generated). |
+| AR-050 | Act 2 Crossroads art bundle | All `image-ar-050-*` entries | Map one-to-one with `act2_crossroads_*` assetIds for the bespoke scene lighting revamp. Session 172 generated the safehouse floor texture, briefing pad overlay, and branch walkway strip (all ai-generated). Session 219 exported the Memory Parlor neon infiltration plate derivative and captured fresh luminance metrics for the overlay suite. |
+| AR-060 | Act 3 finale shared panel | `image-ar-060-shared-memory-well` | ✅ Session 227 generated the shared finale memory well overlay via GPT-Image-1 and staged the transparent panel under `assets/overlays/act3-finale/shared/` to bridge stance epilogues before the credits roll. |
 
+## Session 219 Updates
+- Added `image-memory-parlor-neon-001` to `assets/images/overlay-derivatives-act2-crossroads.json` and exported the derivative overlay to `assets/overlays/act2-crossroads/memory_parlor_neon_001.png` via `npm run art:generate-crossroads-overlays -- --filter image-memory-parlor-neon-001`.
+- Logged overlay luminance stats with `node scripts/art/analyzeCrossroadsOverlays.js --dir assets/generated/ar-050`, confirming `avgLuma 37.3`, `avgAlpha 85.3`, and `peakAlpha 240` for the Memory Parlor plate.
+- Refreshed the luminance snapshot (`reports/art/luminance-snapshots/act2-crossroads/act2-crossroads-luminance-2025-11-01T04-38-24-648Z.{json,md}`) to keep tolerance reporting aligned with the new derivative output.
+- Promoted `image-memory-parlor-neon-001` in `assets/images/requests.json` to `derivative-generated`, recording the automation metadata for future sessions.
+- Integrated the Memory Parlor infiltration composite with runtime loading for `memory_parlor_neon_001.png`, including a tinted fallback path and dedicated Jest coverage (`tests/game/scenes/MemoryParlorScene.overlay.test.js`) to guard the overlay hook.
+- Re-ran `npm run art:export-crossroads-luminance` post-integration, yielding `reports/art/luminance-snapshots/act2-crossroads/act2-crossroads-luminance-2025-11-01T04-56-28-934Z.{json,md}` with all 12 tracked segments still within tolerance.
+
+## Session 221 Updates
+- Promoted the Memory Parlor infiltration composite into the shared scene-art manifests by introducing a `questHighlights` tier covering entry, firewall, and escape beats with quest trigger metadata (`assets/manifests/act2-crossroads-art.json`, `src/game/data/sceneArt/Act2CrossroadsArtConfig.js`).
+- Authored dedicated lighting presets for each Memory Parlor beat (`memory_parlor_entry_tension`, `memory_parlor_firewall_alert`, `memory_parlor_escape_release`) and calibrated their target luminance/alpha expectations to align with the neon plate analysis (`src/game/data/sceneArt/LightingPresetCatalog.js`).
+- Regenerated the Crossroads luminance export after wiring the new segments; latest snapshot `reports/art/luminance-snapshots/act2-crossroads/act2-crossroads-luminance-2025-11-01T05-12-53-881Z.{json,md}` tracks all 15 segments as within tolerance.
+- Extended the automated validation harness to cover the new quest highlight category, keeping the Act 2 art bundle Jest suite (`npm test -- Act2CrossroadsArtValidator`) green so the pipeline guards both legacy and Memory Parlor overlays.
+
+## Session 222 Updates
+- Ran the full art automation regression bundle (`npm run art:track-bespoke`, `npm run art:package-renderops`, `npm run art:export-crossroads-luminance`), refreshing week-one bespoke stats (`reports/art/week1-bespoke-progress.json` now shows 5/5 updates applied with three approvals, one pending, one in review).
+- Packaged RenderOps packet `reports/art/renderops-packets/act2-crossroads-2025-11-01T05-19-21-549Z` (12/12 segments ok, zero actionable drift) with ZIP, share/delivery manifests, and neon glow approval attachments for hand-off.
+- Staged RenderOps approval queue job `reports/telemetry/renderops-approvals/act2-crossroads/2025-11-01T05:19:21.571Z-af361a7d-b05a-46f4-bf06-996e877f3dc5.json` in `ready_for_ack`, including checksum and instructions for the art ops channel.
+- Captured the refreshed 15-segment luminance snapshot `reports/art/luminance-snapshots/act2-crossroads/act2-crossroads-luminance-2025-11-01T05-19-26-847Z.{json,md}`, confirming Memory Parlor quest highlights remain within configured tolerances.
+
+## Session 223 Updates
+- Mirrored the latest RenderOps packet into `deliveries/renderops/act2-crossroads/act2-crossroads-2025-11-01T05-19-21-549Z/` via `node scripts/art/stageRenderOpsDelivery.js --packet-dir reports/art/renderops-packets/act2-crossroads-2025-11-01T05-19-21-549Z`, bundling ZIP, manifests, PACKET_README, and lighting summary for the secure art handoff channel.
+- Completed approval job `reports/telemetry/renderops-approvals/act2-crossroads/2025-11-01T05:19:21.571Z-af361a7d-b05a-46f4-bf06-996e877f3dc5.json` (status `completed`, acked by Codex Session 223) with a note pointing RenderOps to the staged delivery directory.
+- Regenerated RenderOps approval summary artifacts (`reports/art/renderops-approval-summary.{json,md}`) via `node scripts/art/monitorRenderOpsApprovals.js --markdown` so telemetry captures the acknowledged packet state.
+
+## Session 227 Updates
+- Generated `image-ar-060-shared-memory-well` through `mcp__generate-image__generate_image`, storing the AI plate at `assets/generated/act3-finale/act3_finale_shared_memory_well.png` and copying the overlay derivative to `assets/overlays/act3-finale/shared/act3_finale_shared_memory_well.png` for FinaleCinematicOverlay use.
+- Updated `assets/images/requests.json` and this inventory to track the new Act 3 finale shared panel under `AR-060`, keeping the stance epilogue bundle reflected in manifests.
+
+## Session 217 Updates
+- Generated `image-memory-parlor-neon-001` via GPT-Image-1, staging the overlay at `assets/generated/ar-050/image-memory-parlor-neon-001.png` and updating `assets/images/requests.json` to `ai-generated` so Memory Parlor infiltration beats have a dedicated neon lighting plate.
 - Integrated the safehouse floor, briefing pad, and branch walkway derivatives into `assets/overlays/act2-crossroads/` via `node scripts/art/generateOverlayDerivatives.js --filter image-ar-050-crossroads-floor-safehouse,image-ar-050-crossroads-branch-walkway,image-ar-050-crossroads-briefing-pad`, then reran `node scripts/art/previewCrossroadsLighting.js --tolerance=0.03 --out=reports/art/act2-crossroads-lighting-preview.json` to confirm all 12 tracked segments land within tolerance.
+- Session 197 generated `image-ar-005-tileset-neon-district` via GPT-Image-1 and staged the atlas under `assets/generated/images/ar-005/`; subsequent sessions extended seam analysis to support metadata authoring.
+- 2025-11-01: Session 200 generated Corporate Spires, Archive Undercity, and Zenith Sector tilesets via GPT-Image-1, updated `assets/images/requests.json` to `ai-generated`, and marked the legacy generation queue entries complete.
+- 2025-10-31: Ran `npm run art:analyze-tileset -- --image=assets/generated/images/ar-005/image-ar-005-tileset-neon-district.png`, generating `reports/art/neon-district-tileset-analysis.json` (4096 tiles scanned, 108 seam/collision warnings) to drive automated metadata authoring.
+- 2025-11-04: Session 201 executed `node scripts/art/promoteTilesetSeams.js --analysis=reports/art/neon-district-tileset-analysis.json`, outputting seam metadata for all 108 warnings to `assets/manifests/tilesets/image-ar-005-tileset-neon-district-metadata.json`; next step is wiring the manifest into the tileset preview harness.
+- 2025-11-05: Session 202 generated the seam preview report (`reports/art/tileset-previews/image-ar-005-tileset-neon-district-preview.json`) via `npm run art:preview-tileset -- --manifest=assets/manifests/tilesets/image-ar-005-tileset-neon-district-metadata.json --sample=6 --clusters=8` and validated corridor readiness with `npm run art:validate-tileset -- --manifest=assets/manifests/tilesets/image-ar-005-tileset-neon-district-metadata.json` (52 doorway clusters, longest span 19 tiles).
+- 2025-11-06: Session 203 published the `neonDistrictSeamPreview` catalog (`src/game/procedural/templates/neonDistrictSeamPreview.js`), embedding doorway clusters into template metadata, DistrictGenerator placements, and corridor seam painter summaries so tooling can query Neon District seam coverage without rereading the raw preview JSON.
+- 2025-11-07: Session 204 ran the seam automation stack for Corporate Spires, Archive Undercity, and Zenith Sector, outputting promoted manifests under `assets/manifests/tilesets/` and preview summaries in `reports/art/tileset-previews/` (doorway clusters: 153 / 30 / 2, longest spans: 14 / 8 / 41 tiles).
 
 ## Sourcing Plan
 - Phase 1 (today): Complete inventory (done) and shortlist inspirational references via `web_search` starting with AR-050 lighting overlays (for prompt guidance only).
@@ -186,6 +225,23 @@
 ## Session 191 Updates
 - Shared the staged Act 2 Crossroads RenderOps bundle (`deliveries/renderops/act2-crossroads/act2-crossroads-2025-10-31T20-26-00-520Z/act2-crossroads-2025-10-31T20-26-00-520Z.zip`), recording acknowledgement in `reports/telemetry/renderops-approvals/act2-crossroads/2025-10-31T20:26:00.543Z-c488a1c4-4834-4a83-9b33-57510d68c396.json` (status `completed`) and marking the earlier `2025-10-31T16:03:38.036Z-f426b509-8894-4e32-8af6-3ac278a3bdb8.json` queue entry as `superseded`.
 - Regenerated `reports/art/renderops-approval-summary.(json|md)` via `node scripts/art/monitorRenderOpsApprovals.js --markdown`, confirming zero pending actionable segments post-share.
+
+## Session 204 Updates
+- Executed `npm run art:analyze-tileset` for Corporate Spires, Archive Undercity, and Zenith Sector, producing `reports/art/corporate-spires-tileset-analysis.json`, `reports/art/archive-undercity-tileset-analysis.json`, and `reports/art/zenith-sector-tileset-analysis.json` to capture 4096-tile scans ahead of metadata promotion.
+- Promoted seam warnings with `node scripts/art/promoteTilesetSeams.js`, generating `assets/manifests/tilesets/image-ar-005-tileset-{corporate-spires,archive-undercity,zenith-sector}-metadata.json` (annotations: 196 / 61 / 61) and locking doorway metadata for corridor tooling.
+- Generated preview summaries via `node scripts/art/previewTilesetSeams.js --out=reports/art/tileset-previews/image-ar-005-tileset-*-preview.json`; results surface doorway cluster coverage (Corporate Spires 153 clusters, Archive Undercity 30 clusters, Zenith Sector 2 mega-corridors with a 41-tile span).
+- Validated each manifest with `node scripts/art/validateTilesetSeams.js --manifest=...`, confirming zero warnings and recording stats for backlog reporting.
+- Added automated guard `tests/art/ar005TilesetSeamManifests.test.js` to assert manifest/preview stats stay consistent and keep future promotions honest.
+
+## Session 205 Updates
+- Frozen seam preview catalogs for Corporate Spires, Archive Undercity, and Zenith Sector (`src/game/procedural/templates/*SeamPreview.js`), aligning their cluster stats with the existing Neon District module and enabling TemplateVariantResolver to propagate multi-atlas metadata.
+- Introduced `tilesetSeamPreviewCatalog` to aggregate all AR-005 attachments, wiring the helper through `authoredTemplates.js` so corridor tooling receives catalog + active tileset identifiers alongside seam previews.
+- Extended the runtime debug overlay with a Tileset Seam Catalog panel (`index.html`, `src/main.js`) summarising annotations, cluster counts, longest spans, and orientation/open-edge distributions for each atlas using the new catalog feed.
+
+## Session 215 Updates
+- Generated Act 3 finale cinematic stills (3 stance hero panels + 9 beat panels) via `mcp__generate-image__generate_image`, publishing transparent PNGs under `assets/overlays/act3-finale/{opposition,support,alternative}/`.
+- Authored manifest `assets/manifests/act3-finale-cinematics.json` and mirrored runtime data in `src/game/data/narrative/act3FinaleCinematicManifestData.js` so the cinematic asset manager can resolve stance/beat art.
+- Wired the overlay/controller to surface hero thumbnails and beat previews using the new art bundle with automated coverage in `tests/game/narrative/Act3FinaleCinematic{Controller,AssetManager}.test.js`.
 
 ## Next Actions
 1. Monitor RenderOps feedback channels and import notes into `reports/art/renderops-feedback.json` if follow-up arrives for the 2025-10-31 packet.

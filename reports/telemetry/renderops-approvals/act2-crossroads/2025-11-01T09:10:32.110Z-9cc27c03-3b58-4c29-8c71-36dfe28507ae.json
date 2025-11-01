@@ -1,0 +1,43 @@
+{
+  "jobId": "9cc27c03-3b58-4c29-8c71-36dfe28507ae",
+  "queue": "renderops-lighting",
+  "status": "completed",
+  "createdAt": "2025-11-01T09:10:32.110Z",
+  "processedAt": "2025-11-01T19:32:07Z",
+  "acknowledgedAt": "2025-11-01T19:32:07Z",
+  "acknowledgedBy": "Codex Session 237 lighting QA",
+  "ackMethod": "deliveries/renderops internal staging",
+  "ackNote": "Lighting QA recorded in reports/art/lighting-qa/act2-crossroads-2025-11-22.md; packet cleared with 12/12 segments within tolerance and no actionable items.",
+  "packet": {
+    "id": "64a06a8e-7c87-4dcb-b234-c521e95be721",
+    "label": "act2-crossroads",
+    "packetDir": "/home/tsonu/src/genai-game-engine/reports/art/renderops-packets/act2-crossroads-2025-11-01T09-10-32-089Z",
+    "shareManifestPath": "/home/tsonu/src/genai-game-engine/reports/art/renderops-packets/act2-crossroads-2025-11-01T09-10-32-089Z/share-manifest.json",
+    "deliveryManifestPath": "/home/tsonu/src/genai-game-engine/reports/art/renderops-packets/act2-crossroads-2025-11-01T09-10-32-089Z-delivery.json",
+    "instructions": [
+      "Share the generated ZIP bundle with the RenderOps team via the secure art handoff channel.",
+      "Include PACKET_README.md in the communication so context and actionable segments are visible up front.",
+      "After RenderOps responds, update the placeholder audit and regenerate the packet if art tweaks were requested.",
+      "Flag the `attachments/` directory when sharing so supplemental references are reviewed alongside the metrics."
+    ],
+    "summary": {
+      "total": 12,
+      "statusCounts": {
+        "ok": 12
+      },
+      "metadataDriftCount": 0,
+      "skippedCount": 0
+    }
+  },
+  "actionableSegments": [],
+  "delivery": {
+    "bundle": {
+      "format": "zip",
+      "fileName": "act2-crossroads-2025-11-01T09-10-32-089Z.zip",
+      "absolutePath": "/home/tsonu/src/genai-game-engine/reports/art/renderops-packets/act2-crossroads-2025-11-01T09-10-32-089Z.zip",
+      "checksumSha256": "a082116dc330a4f8094dbb306b1320bcd711ca20aa477c2e92c11f148bbf0152",
+      "sizeBytes": 12053
+    },
+    "attachmentCount": 2
+  }
+}

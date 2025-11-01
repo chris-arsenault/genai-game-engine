@@ -85,6 +85,33 @@ export const LightingPresetCatalog = Object.freeze({
     maxLuminance: 0.12,
     colorTemperature: 5400,
   }),
+  memory_parlor_entry_tension: Object.freeze({
+    id: 'memory_parlor_entry_tension',
+    description:
+      'Guides players through the Memory Parlor entry lane with a restrained neon wash that keeps infiltration stealth cues readable.',
+    targetLuminance: 0.05,
+    maxDeviation: 0.04,
+    maxLuminance: 0.12,
+    colorTemperature: 5200,
+  }),
+  memory_parlor_firewall_alert: Object.freeze({
+    id: 'memory_parlor_firewall_alert',
+    description:
+      'Firewall core illumination signalling active scrambler pulses; intentionally brighter to expose hazard silhouettes without exceeding bloom thresholds.',
+    targetLuminance: 0.06,
+    maxDeviation: 0.05,
+    maxLuminance: 0.15,
+    colorTemperature: 5600,
+  }),
+  memory_parlor_escape_release: Object.freeze({
+    id: 'memory_parlor_escape_release',
+    description:
+      'Escape route glow easing tension as players exit the Memory Parlor, keeping alpha low enough to preserve downstream street signage readability.',
+    targetLuminance: 0.05,
+    maxDeviation: 0.04,
+    maxLuminance: 0.14,
+    colorTemperature: 5100,
+  }),
 });
 
 /**

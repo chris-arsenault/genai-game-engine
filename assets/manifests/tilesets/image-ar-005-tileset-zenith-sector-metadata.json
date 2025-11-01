@@ -1,0 +1,1355 @@
+{
+  "tilesetId": "image-ar-005-tileset-zenith-sector",
+  "sourceImage": "assets/generated/images/ar-005/image-ar-005-tileset-zenith-sector.png",
+  "tileSize": 16,
+  "promotedAt": "2025-11-01T01:19:16.321Z",
+  "sourceAnalysis": "reports/art/zenith-sector-tileset-analysis.json",
+  "totals": {
+    "warnings": 61,
+    "promoted": 61
+  },
+  "seamAnnotations": [
+    {
+      "tileIndex": 3841,
+      "row": 60,
+      "column": 1,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3842,
+      "row": 60,
+      "column": 2,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3843,
+      "row": 60,
+      "column": 3,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3844,
+      "row": 60,
+      "column": 4,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3845,
+      "row": 60,
+      "column": 5,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3846,
+      "row": 60,
+      "column": 6,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3847,
+      "row": 60,
+      "column": 7,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3848,
+      "row": 60,
+      "column": 8,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3849,
+      "row": 60,
+      "column": 9,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3850,
+      "row": 60,
+      "column": 10,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3851,
+      "row": 60,
+      "column": 11,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3852,
+      "row": 60,
+      "column": 12,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3853,
+      "row": 60,
+      "column": 13,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3854,
+      "row": 60,
+      "column": 14,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3855,
+      "row": 60,
+      "column": 15,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3856,
+      "row": 60,
+      "column": 16,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3857,
+      "row": 60,
+      "column": 17,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3858,
+      "row": 60,
+      "column": 18,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3859,
+      "row": 60,
+      "column": 19,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3860,
+      "row": 60,
+      "column": 20,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3861,
+      "row": 60,
+      "column": 21,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3862,
+      "row": 60,
+      "column": 22,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3863,
+      "row": 60,
+      "column": 23,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3864,
+      "row": 60,
+      "column": 24,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3865,
+      "row": 60,
+      "column": 25,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3866,
+      "row": 60,
+      "column": 26,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3867,
+      "row": 60,
+      "column": 27,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3868,
+      "row": 60,
+      "column": 28,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3869,
+      "row": 60,
+      "column": 29,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3870,
+      "row": 60,
+      "column": 30,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3871,
+      "row": 60,
+      "column": 31,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3872,
+      "row": 60,
+      "column": 32,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3873,
+      "row": 60,
+      "column": 33,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3874,
+      "row": 60,
+      "column": 34,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3875,
+      "row": 60,
+      "column": 35,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3876,
+      "row": 60,
+      "column": 36,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3877,
+      "row": 60,
+      "column": 37,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3878,
+      "row": 60,
+      "column": 38,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3879,
+      "row": 60,
+      "column": 39,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3880,
+      "row": 60,
+      "column": 40,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3881,
+      "row": 60,
+      "column": 41,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3883,
+      "row": 60,
+      "column": 43,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3884,
+      "row": 60,
+      "column": 44,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3885,
+      "row": 60,
+      "column": 45,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3886,
+      "row": 60,
+      "column": 46,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3887,
+      "row": 60,
+      "column": 47,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3888,
+      "row": 60,
+      "column": 48,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3889,
+      "row": 60,
+      "column": 49,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3890,
+      "row": 60,
+      "column": 50,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3891,
+      "row": 60,
+      "column": 51,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3892,
+      "row": 60,
+      "column": 52,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3893,
+      "row": 60,
+      "column": 53,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3894,
+      "row": 60,
+      "column": 54,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3895,
+      "row": 60,
+      "column": 55,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3896,
+      "row": 60,
+      "column": 56,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3897,
+      "row": 60,
+      "column": 57,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3898,
+      "row": 60,
+      "column": 58,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3899,
+      "row": 60,
+      "column": 59,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3900,
+      "row": 60,
+      "column": 60,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3901,
+      "row": 60,
+      "column": 61,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "tileIndex": 3902,
+      "row": 60,
+      "column": 62,
+      "openEdge": "south",
+      "blockingEdges": [
+        "north",
+        "east",
+        "west"
+      ],
+      "mixedEdges": [],
+      "tileClassification": "solid",
+      "collision": "block",
+      "solidCoverage": 0.875,
+      "warningType": "potential-door",
+      "warningMessage": "Solid tile contains open edges; likely needs seam metadata for doorway or transition.",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    }
+  ]
+}

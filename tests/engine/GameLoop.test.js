@@ -315,6 +315,43 @@ describe('GameLoop', () => {
       }
     });
 
+    it('should run multiple fixed-step updates when delta exceeds target frame time', () => {
+      const originalRAF = global.requestAnimationFrame;
+      const originalCAF = global.cancelAnimationFrame;
+      global.requestAnimationFrame = jest.fn(() => 123);
+      global.cancelAnimationFrame = jest.fn();
+
+      const targetFPS = 10;
+      const maxCatchUpSteps = 5;
+      gameLoop = new GameLoop(systemManager, {
+        targetFPS,
+        maxCatchUpSteps,
+      });
+      const updateSpy = jest.spyOn(systemManager, 'update');
+
+      try {
+        gameLoop.running = true;
+        gameLoop.paused = false;
+        gameLoop.lastFrameTime = 0;
+        gameLoop.accumulator = 0;
+
+        const targetMs = gameLoop.targetFrameTime;
+        gameLoop._loop(targetMs * maxCatchUpSteps);
+
+        expect(updateSpy).toHaveBeenCalledTimes(maxCatchUpSteps);
+        expect(gameLoop.getDeltaTime()).toBeCloseTo((1 / targetFPS) * maxCatchUpSteps, 5);
+
+        gameLoop.running = false;
+      } finally {
+        if (gameLoop) {
+          gameLoop.running = false;
+        }
+        updateSpy.mockRestore();
+        global.requestAnimationFrame = originalRAF;
+        global.cancelAnimationFrame = originalCAF;
+      }
+    });
+
     it('should update delta time each frame', async () => {
       const deltas = [];
       const onFrame = jest.fn((metrics) => {
@@ -328,8 +365,9 @@ describe('GameLoop', () => {
       gameLoop.stop();
 
       expect(deltas.length).toBeGreaterThanOrEqual(4);
+      expect(deltas.some((delta) => delta > 0)).toBe(true);
       for (const delta of deltas) {
-        expect(delta).toBeGreaterThan(0);
+        expect(delta).toBeGreaterThanOrEqual(0);
       }
     });
   });
@@ -527,6 +565,11 @@ describe('GameLoop', () => {
       expect(lastCall).toHaveProperty('deltaTime');
       expect(lastCall).toHaveProperty('frameTime');
       expect(lastCall).toHaveProperty('paused');
+      expect(lastCall).toHaveProperty('stepCount');
+      expect(lastCall).toHaveProperty('lag');
+      expect(lastCall.stepCount).toBeGreaterThanOrEqual(0);
+      expect(lastCall.lag).toBeGreaterThanOrEqual(0);
+      expect(lastCall.lag).toBeLessThan(1.01);
     });
 
     it('should indicate paused state in callback', async () => {

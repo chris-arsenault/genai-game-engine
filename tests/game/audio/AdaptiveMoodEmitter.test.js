@@ -36,6 +36,7 @@ describe('AdaptiveMoodEmitter', () => {
     const eventBus = new EventBus();
     const moodHandler = jest.fn();
     eventBus.on('audio:adaptive:set_mood', moodHandler);
+    eventBus.on('audio:adaptive:emitter_event', jest.fn());
 
     const nowSpy = jest
       .spyOn(Date, 'now')

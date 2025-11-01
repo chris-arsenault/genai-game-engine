@@ -129,6 +129,9 @@ export class SaveManager {
         // Case state
         cases: this.game.caseManager?.serialize() || {},
 
+        // NPC memory state
+        npcMemory: this.game?.gameSystems?.npcMemory?.serialize?.() || null,
+
         // Investigation state
         investigation: this.game.investigationSystem?.serialize?.() || {},
 
@@ -246,6 +249,11 @@ export class SaveManager {
         this.game.caseManager.deserialize(saveData.cases);
       }
 
+      const npcMemorySystem = this.game?.gameSystems?.npcMemory;
+      if (npcMemorySystem && saveData.npcMemory && typeof npcMemorySystem.deserialize === 'function') {
+        npcMemorySystem.deserialize(saveData.npcMemory);
+      }
+
       if (this.game.investigationSystem && saveData.investigation && this.game.investigationSystem.deserialize) {
         this.game.investigationSystem.deserialize(saveData.investigation);
       }
@@ -274,9 +282,12 @@ export class SaveManager {
   /**
    * Serialize player state
    * @returns {Object}
-   */
+  */
   serializePlayer() {
-    const playerEntities = this.game.componentRegistry?.queryEntities(['Player', 'Transform']);
+    let playerEntities = this.game.componentRegistry?.queryEntities(['Player', 'Transform']);
+    if (!playerEntities || playerEntities.length === 0) {
+      playerEntities = this.game.componentRegistry?.queryEntities(['PlayerController', 'Transform']);
+    }
     if (!playerEntities || playerEntities.length === 0) {
       return {};
     }
@@ -284,13 +295,15 @@ export class SaveManager {
     const playerEntity = playerEntities[0];
     const transform = this.game.componentRegistry.getComponent(playerEntity, 'Transform');
     const player = this.game.componentRegistry.getComponent(playerEntity, 'Player');
+    const factionMember = this.game.componentRegistry.getComponent(playerEntity, 'FactionMember');
 
     return {
       position: { x: transform?.x || 0, y: transform?.y || 0 },
       abilities: player?.abilities || [],
       health: player?.health || 100,
       energy: player?.energy || 100,
-      inventory: player?.inventory || []
+      inventory: player?.inventory || [],
+      knownBy: factionMember ? Array.from(factionMember.knownBy) : []
     };
   }
 
@@ -301,8 +314,11 @@ export class SaveManager {
   deserializePlayer(data) {
     if (!data || !this.game.componentRegistry) return;
 
-    const playerEntities = this.game.componentRegistry.queryEntities(['Player', 'Transform']);
-    if (playerEntities.length === 0) return;
+    let playerEntities = this.game.componentRegistry.queryEntities(['Player', 'Transform']);
+    if (!playerEntities || playerEntities.length === 0) {
+      playerEntities = this.game.componentRegistry.queryEntities(['PlayerController', 'Transform']);
+    }
+    if (!playerEntities || playerEntities.length === 0) return;
 
     const playerEntity = playerEntities[0];
 
@@ -322,6 +338,15 @@ export class SaveManager {
       if (data.health !== undefined) player.health = data.health;
       if (data.energy !== undefined) player.energy = data.energy;
       if (data.inventory) player.inventory = [...data.inventory];
+    }
+
+    if (Array.isArray(data.knownBy)) {
+      const factionMember = this.game.componentRegistry.getComponent(playerEntity, 'FactionMember');
+      if (factionMember?.setKnownBy) {
+        factionMember.setKnownBy(data.knownBy);
+      } else if (factionMember) {
+        factionMember.knownBy = new Set(data.knownBy);
+      }
     }
   }
 
