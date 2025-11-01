@@ -111,4 +111,13 @@ export const ACT3_FINALE_CINEMATIC_MANIFEST = Object.freeze({
       tags: ['act3', 'finale', 'beat', 'allies'],
     },
   ],
+  sharedPanels: [
+    {
+      assetId: 'act3_finale_shared_memory_well_v1',
+      file: '/overlays/act3-finale/shared/act3_finale_shared_memory_well.png',
+      alt: 'Kira stands within a circular archive dais as three streams of teal, magenta, and gold memory light spiral out toward citizens on tiered terraces.',
+      tags: ['act3', 'finale', 'shared', 'memory'],
+      palette: ['teal', 'magenta', 'gold'],
+    },
+  ],
 });

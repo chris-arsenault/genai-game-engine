@@ -150,6 +150,7 @@ export class FinaleCinematicOverlay {
     this.revealedBeats = 0;
     this.status = 'idle';
     this.visuals = {
+      shared: null,
       hero: null,
       beats: {},
     };
@@ -158,8 +159,8 @@ export class FinaleCinematicOverlay {
     this._offCancel = null;
   }
 
-  _renderHeroPanel(ctx, descriptor, x, y, width, maxHeight) {
-    if (!descriptor || !Number.isFinite(width) || width <= 0) {
+  _renderHeroPanel(ctx, descriptor, x, y, width, maxHeight, sharedDescriptor) {
+    if (!Number.isFinite(width) || width <= 0) {
       return 0;
     }
 
@@ -168,13 +169,39 @@ export class FinaleCinematicOverlay {
       return 0;
     }
 
-    const status = typeof descriptor.status === 'string' ? descriptor.status : 'unknown';
-    const image = descriptor.image ?? null;
+    const heroStatus =
+      typeof descriptor?.status === 'string'
+        ? descriptor.status
+        : descriptor
+          ? 'unknown'
+          : 'missing';
+    const heroImage = descriptor?.image ?? null;
+    const hasHeroImage =
+      heroStatus === 'ready' && heroImage && heroImage.width > 0 && heroImage.height > 0;
+
+    const sharedStatus =
+      typeof sharedDescriptor?.status === 'string'
+        ? sharedDescriptor.status
+        : sharedDescriptor
+          ? 'unknown'
+          : 'absent';
+    const sharedImage = sharedDescriptor?.image ?? null;
+    const hasSharedImage =
+      sharedStatus === 'ready' && sharedImage && sharedImage.width > 0 && sharedImage.height > 0;
+
+    if (!hasHeroImage && !hasSharedImage && heroStatus === 'missing' && sharedStatus === 'absent') {
+      return 0;
+    }
+
     let drawWidth = width;
     let drawHeight = height;
 
-    if (status === 'ready' && image && image.width > 0 && image.height > 0) {
-      const ratio = image.height / image.width;
+    if (hasHeroImage) {
+      const ratio = heroImage.height / heroImage.width;
+      drawHeight = Math.min(height, drawWidth * ratio);
+      drawWidth = Math.min(width, drawHeight / ratio);
+    } else if (hasSharedImage) {
+      const ratio = sharedImage.height / sharedImage.width;
       drawHeight = Math.min(height, drawWidth * ratio);
       drawWidth = Math.min(width, drawHeight / ratio);
     } else {
@@ -190,14 +217,32 @@ export class FinaleCinematicOverlay {
     ctx.rect(x, y, width, height);
     ctx.clip();
 
-    if (status === 'ready' && image && image.width > 0) {
-      ctx.globalAlpha = 0.95;
-      ctx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
-    } else {
+    if (hasSharedImage) {
+      const coverScale = Math.max(width / sharedImage.width, height / sharedImage.height);
+      const sharedDrawWidth = sharedImage.width * coverScale;
+      const sharedDrawHeight = sharedImage.height * coverScale;
+      const sharedOffsetX = x + (width - sharedDrawWidth) / 2;
+      const sharedOffsetY = y + (height - sharedDrawHeight) / 2;
+      ctx.globalAlpha = 0.55;
+      ctx.drawImage(sharedImage, sharedOffsetX, sharedOffsetY, sharedDrawWidth, sharedDrawHeight);
+
+      ctx.globalAlpha = 0.65;
+      const gradient = ctx.createLinearGradient(x, y, x, y + height);
+      gradient.addColorStop(0, 'rgba(6, 18, 32, 0.25)');
+      gradient.addColorStop(0.6, 'rgba(6, 18, 32, 0.35)');
+      gradient.addColorStop(1, 'rgba(6, 18, 32, 0.55)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(x, y, width, height);
+    } else if (!hasHeroImage) {
       ctx.globalAlpha = 0.65;
       ctx.fillStyle = 'rgba(10, 24, 40, 0.72)';
       ctx.fillRect(x, y, width, height);
+    }
 
+    if (hasHeroImage) {
+      ctx.globalAlpha = 0.95;
+      ctx.drawImage(heroImage, offsetX, offsetY, drawWidth, drawHeight);
+    } else {
       ctx.lineWidth = 2;
       ctx.setLineDash([6, 6]);
       ctx.strokeStyle = 'rgba(91, 201, 255, 0.42)';
@@ -209,9 +254,9 @@ export class FinaleCinematicOverlay {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       const message =
-        status === 'loading'
+        heroStatus === 'loading' || sharedStatus === 'loading'
           ? 'Loading cinematic artwork…'
-          : status === 'unsupported'
+          : heroStatus === 'unsupported' || sharedStatus === 'unsupported'
             ? 'Cinematic artwork unavailable in this build'
             : 'Cinematic artwork pending';
       ctx.fillText(message, x + width / 2, y + height / 2);
@@ -247,6 +292,7 @@ export class FinaleCinematicOverlay {
     this.status = 'idle';
     this.callbacks = { onAdvance: null, onSkip: null };
     this.visuals = {
+      shared: null,
       hero: null,
       beats: {},
     };
@@ -470,15 +516,18 @@ export class FinaleCinematicOverlay {
     const maxHeight = Math.max(0, height);
     let cursorY = y;
 
+    const sharedDescriptor = this.visuals?.shared ?? null;
     const heroDescriptor = this.visuals?.hero ?? null;
-    if (heroDescriptor && maxHeight > 40) {
+    const shouldRenderHeroPanel = (heroDescriptor || sharedDescriptor) && maxHeight > 40;
+    if (shouldRenderHeroPanel) {
       const heroHeight = this._renderHeroPanel(
         ctx,
         heroDescriptor,
         x,
         cursorY,
         width,
-        Math.max(120, Math.min(maxHeight * 0.55, width * 0.75))
+        Math.max(120, Math.min(maxHeight * 0.55, width * 0.75)),
+        sharedDescriptor
       );
       cursorY += heroHeight;
       if (heroHeight > 0) {
@@ -783,12 +832,17 @@ export class FinaleCinematicOverlay {
 
   _sanitizeVisuals(input) {
     const result = {
+      shared: null,
       hero: null,
       beats: {},
     };
 
     if (!input || typeof input !== 'object') {
       return result;
+    }
+
+    if (input.shared && typeof input.shared === 'object') {
+      result.shared = input.shared;
     }
 
     if (input.hero && typeof input.hero === 'object') {

@@ -172,6 +172,11 @@ const STANCE_MUSIC_CUES = {
   alternative: 'track-ending-alternative',
 };
 
+const SHARED_OVERLAY = {
+  assetId: 'act3_finale_shared_memory_well_v1',
+  src: '/overlays/act3-finale/shared/act3_finale_shared_memory_well.png',
+};
+
 async function runFinaleScenario(page, stance) {
   await waitForGameLoad(page);
 
@@ -374,6 +379,13 @@ async function runFinaleScenario(page, stance) {
 
     const overlayVisuals = overlay
       ? {
+          shared: overlay.visuals?.shared
+            ? {
+                assetId: overlay.visuals.shared.assetId ?? null,
+                src: overlay.visuals.shared.src ?? null,
+                status: overlay.visuals.shared.status ?? null,
+              }
+            : null,
           hero: overlay.visuals?.hero
             ? {
                 assetId: overlay.visuals.hero.assetId ?? null,
@@ -489,6 +501,16 @@ test.describe('Act 3 finale readiness', () => {
       expect(stateAfterReady.controllerState?.payload?.stanceId).toBe(stance.id);
       expect(stateAfterReady.overlayState?.visible).toBe(true);
       expect(stateAfterReady.overlayState?.activeBeatIndex).toBeGreaterThanOrEqual(0);
+
+      const sharedVisual = stateAfterReady.overlayVisuals?.shared;
+      expect(sharedVisual?.src).toBe(SHARED_OVERLAY.src);
+      expect(sharedVisual?.assetId).toBe(SHARED_OVERLAY.assetId);
+
+      const sharedSummary = stateAfterReady.controllerState?.assets?.shared ?? null;
+      if (sharedSummary) {
+        expect(sharedSummary.src).toBe(SHARED_OVERLAY.src);
+        expect(sharedSummary.assetId).toBe(SHARED_OVERLAY.assetId);
+      }
 
       const heroVisual = stateAfterReady.overlayVisuals?.hero;
       expect(heroVisual?.src).toBe(stance.hero.src);

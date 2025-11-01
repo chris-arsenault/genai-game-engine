@@ -1,6 +1,7 @@
 import {
   getAct3FinaleBeatAsset,
   getAct3FinaleHeroAsset,
+  getAct3FinaleSharedPanel,
 } from '../data/narrative/Act3FinaleCinematicAssets.js';
 
 const STATUS_PENDING = 'pending';
@@ -62,6 +63,7 @@ export class Act3FinaleCinematicAssetManager {
       : [];
 
     const heroMeta = stanceId ? getAct3FinaleHeroAsset(stanceId) : null;
+    const sharedMeta = getAct3FinaleSharedPanel();
     const heroDescriptor = heroMeta
       ? this._ensureDescriptor(heroMeta, { type: 'hero', stanceId, cinematicId })
       : null;
@@ -80,7 +82,16 @@ export class Act3FinaleCinematicAssetManager {
       });
     }
 
+    const sharedDescriptor = sharedMeta
+      ? this._ensureDescriptor(sharedMeta, {
+          type: 'shared',
+          stanceId,
+          cinematicId,
+        })
+      : null;
+
     return {
+      shared: sharedDescriptor,
       hero: heroDescriptor,
       beats: beatDescriptors,
     };
@@ -113,6 +124,7 @@ export class Act3FinaleCinematicAssetManager {
         stanceId: sanitised.stanceId ?? context.stanceId ?? null,
         beatId: sanitised.beatId ?? context.beatId ?? null,
         cinematicId: context.cinematicId ?? null,
+        layer: context.type ?? null,
         status: STATUS_PENDING,
         image: null,
         error: null,
@@ -123,6 +135,7 @@ export class Act3FinaleCinematicAssetManager {
       descriptor.stanceId = descriptor.stanceId || context.stanceId || sanitised.stanceId || null;
       descriptor.beatId = descriptor.beatId || context.beatId || sanitised.beatId || null;
       descriptor.cinematicId = descriptor.cinematicId || context.cinematicId || null;
+      descriptor.layer = descriptor.layer || context.type || null;
     }
 
     this._kickoffLoad(descriptor);

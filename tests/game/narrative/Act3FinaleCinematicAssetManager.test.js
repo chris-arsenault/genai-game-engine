@@ -22,11 +22,13 @@ describe('Act3FinaleCinematicAssetManager', () => {
     const manager = new Act3FinaleCinematicAssetManager({ loader });
     const assets = manager.prepareAssets(SUPPORT_PAYLOAD);
 
+    expect(assets.shared).toBeDefined();
     expect(assets.hero).toBeDefined();
     expect(Object.keys(assets.beats)).toContain('support_city_aftermath');
-    expect(loader.loadImage).toHaveBeenCalledTimes(3);
+    expect(loader.loadImage).toHaveBeenCalledTimes(4);
     expect(loadedImages).toEqual(
       expect.arrayContaining([
+        '/overlays/act3-finale/shared/act3_finale_shared_memory_well.png',
         '/overlays/act3-finale/support/act3_finale_support_hero.png',
         '/overlays/act3-finale/support/act3_finale_support_city_aftermath.png',
         '/overlays/act3-finale/support/act3_finale_support_morrow_signal.png',
@@ -34,10 +36,12 @@ describe('Act3FinaleCinematicAssetManager', () => {
     );
 
     await Promise.all([
+      assets.shared?.promise,
       assets.hero?.promise,
       ...Object.values(assets.beats).map((descriptor) => descriptor?.promise),
     ]);
 
+    expect(assets.shared.status).toBe('ready');
     expect(assets.hero.status).toBe('ready');
     expect(assets.beats.support_city_aftermath.status).toBe('ready');
     expect(assets.hero.image).toEqual(
@@ -54,6 +58,7 @@ describe('Act3FinaleCinematicAssetManager', () => {
     const manager = new Act3FinaleCinematicAssetManager({});
     const assets = manager.prepareAssets(SUPPORT_PAYLOAD);
 
+    expect(assets.shared.status).toBe('unsupported');
     expect(assets.hero.status).toBe('unsupported');
     expect(Object.values(assets.beats)[0].status).toBe('unsupported');
 

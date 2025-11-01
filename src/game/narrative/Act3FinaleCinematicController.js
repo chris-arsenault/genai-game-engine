@@ -562,6 +562,7 @@ export class Act3FinaleCinematicController {
     if (!assets || typeof assets !== 'object') {
       return null;
     }
+    const shared = assets.shared ? this._serializeDescriptor(assets.shared) : null;
     const hero = assets.hero ? this._serializeDescriptor(assets.hero) : null;
     const beats = {};
     if (assets.beats && typeof assets.beats === 'object') {
@@ -569,7 +570,7 @@ export class Act3FinaleCinematicController {
         beats[beatId] = this._serializeDescriptor(descriptor);
       }
     }
-    return { hero, beats };
+    return { shared, hero, beats };
   }
 
   _serializeDescriptor(descriptor) {

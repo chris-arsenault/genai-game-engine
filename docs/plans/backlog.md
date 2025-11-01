@@ -23,14 +23,14 @@
 
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
-| Act 3 Narrative | P0 | In Progress | Finale storyline sequencing is staged with the shared memory well overlay in manifests and inventories; remaining scope is scripting the overlay into FinaleCinematicOverlay with automated validation. | Integrate the overlay through FinaleCinematicOverlay updates and cover the beat with `npm test` plus `npx playwright test tests/e2e/finale-cinematic.spec.js`. |
+| Act 3 Narrative | P0 | In Progress | Finale cinematic overlay now renders the shared memory well panel across all stances with automated coverage; finale scripting/VO polish remains. | Finalize Act 3 finale scripting/VO against the shared overlay and rerun `npx playwright test tests/e2e/act3-zenith-finale.spec.js`; continue monitoring finale adaptive audio automation passes for stability. |
 | AR-050 | P1 | In Progress | Act 2 visual pipeline automation delivers RenderOps packets, inventories, and ai-generated overlays (Memory Parlor neon set) with luminance/tolerance snapshots tracked across reports. | Run `npm run art:stage-renderops -- --packet-dir reports/art/renderops-packets/act2-crossroads-2025-11-01T05-19-21-549Z` and schedule the weekly automation sweep (`npm run art:track-bespoke`, `npm run art:package-renderops`, `npm run art:export-crossroads-luminance`) to close job `af361a7d-b05a-46f4-bf06-996e877f3dc5` without manual follow-up. |
 | CORE-303 | P1 | Pending | Minimal investigative loop remains blocked on CORE-301/302 quest plumbing; scope captures evidence intake unlocking Detective Vision and advancing witness beats. | Break down implementation tasks once dependencies are ready and pre-wire quest/evidence validation via existing automation harnesses. |
 | M3-003 | P1 | Pending | ECS faction system components, systems, and Jest scaffolding are outlined but paused, awaiting upstream faction data contracts. | Resume after M3-002 readiness and keep validation inside scripted faction behaviour suites—no manual QA loops. |
 | M2-005 | P1 | Pending | Deduction board UI foundations (nodes, drag/drop, connection rendering) are still queued behind M2-004, with automated regression requirements documented. | Spin up the UI shell once M2-004 lands, ensuring drag/connect workflows ship with Jest coverage and zero manual acceptance steps. |
 
 **Next Session Focus**:
-- Script the Act 3 Finale memory well overlay integration and queue automated Jest/Playwright coverage (`npm test`, `npx playwright test tests/e2e/finale-cinematic.spec.js`).
+- Finalize Act 3 finale scripting/VO against the shared overlay and rerun `npx playwright test tests/e2e/act3-zenith-finale.spec.js` to validate narrative playback.
 - Re-run the art automation bundle (`npm run art:track-bespoke`, `npm run art:package-renderops`, `npm run art:export-crossroads-luminance`) to close RenderOps job `af361a7d-b05a-46f4-bf06-996e877f3dc5` without manual approvals.
 - Break down CORE-303 investigative loop tasks so dependencies (CORE-301/302) and faction prerequisites stay aligned with automation-first delivery.
 
@@ -38,6 +38,14 @@
 
 - Normalized AR-050, BUG-201, and QA-330 backlog entries to strip manual follow-ups and point entirely to scripted automation.
 - Refreshed high-priority focus and Next Session Focus so MCP and documentation stay in sync around Act 3, art automation, and investigative loop planning.
+
+### Session #229 Backlog Updates
+
+#### Act 3 Narrative (415b4bd3-2053-400e-92a5-1f1fceccc632)
+- Integrated the shared `act3_finale_shared_memory_well_v1` panel into the finale overlay flow, extending manifest accessors, the asset manager/controller summaries, and `FinaleCinematicOverlay` so every stance renders the shared memory well backdrop with layered hero art.
+- Updated automation (`tests/game/narrative/Act3FinaleCinematic{AssetManager,Controller}.test.js`, `tests/e2e/act3-zenith-finale.spec.js`) to assert shared overlay descriptors hydrate and persist through Playwright-driven finale playback.
+- Verification: `npm test`, `npx playwright test tests/e2e/act3-zenith-finale.spec.js`.
+- Next steps: finalize Act 3 finale scripting/VO against the shared overlay, then rerun the Playwright finale suite; continue monitoring finale adaptive audio automation passes for stability.
 
 ### Session #173 Backlog Maintenance
 

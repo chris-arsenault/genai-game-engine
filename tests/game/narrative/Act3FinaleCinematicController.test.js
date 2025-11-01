@@ -27,6 +27,11 @@ function createOverlayStub() {
 function createAssetManagerStub() {
   return {
     prepareAssets: jest.fn(() => ({
+      shared: {
+        assetId: 'shared_asset',
+        status: 'ready',
+        image: null,
+      },
       hero: {
         assetId: 'hero_asset',
         status: 'ready',
@@ -96,7 +101,9 @@ describe('Act3FinaleCinematicController', () => {
     expect(assetManager.prepareAssets).toHaveBeenCalledTimes(1);
     const options = overlay.setCinematic.mock.calls[0][1];
     expect(options.visuals).toBeDefined();
+    expect(options.visuals.shared.assetId).toBe('shared_asset');
     expect(options.visuals.hero.assetId).toBe('hero_asset');
+    expect(controller.getState().assets.shared.assetId).toBe('shared_asset');
     expect(controller.getState().assets.hero.assetId).toBe('hero_asset');
     expect(overlay.show).toHaveBeenCalledTimes(1);
     expect(begins).toHaveLength(1);
@@ -234,6 +241,9 @@ describe('Act3FinaleCinematicController', () => {
     expect(restoredState.beatIndex).toBe(snapshot.beatIndex);
     expect(restoredState.revealedBeats).toBe(snapshot.revealedBeats);
     expect(restoredState.status).toBe(snapshot.status);
+    expect(restoredState.assets.shared).toEqual(
+      expect.objectContaining({ assetId: 'shared_asset' })
+    );
     expect(restoredState.assets.hero).toEqual(expect.objectContaining({ assetId: 'hero_asset' }));
     restoredController.dispose();
   });

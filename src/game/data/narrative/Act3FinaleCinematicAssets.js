@@ -2,6 +2,8 @@ import { ACT3_FINALE_CINEMATIC_MANIFEST as manifest } from './act3FinaleCinemati
 
 const heroByStance = new Map();
 const beatById = new Map();
+const sharedById = new Map();
+let defaultSharedPanelId = null;
 
 if (Array.isArray(manifest?.heroPanels)) {
   for (const entry of manifest.heroPanels) {
@@ -35,6 +37,25 @@ if (Array.isArray(manifest?.beatPanels)) {
   }
 }
 
+if (Array.isArray(manifest?.sharedPanels)) {
+  for (const entry of manifest.sharedPanels) {
+    if (!entry || typeof entry !== 'object') {
+      continue;
+    }
+    const assetId =
+      typeof entry.assetId === 'string' && entry.assetId.trim().length > 0
+        ? entry.assetId.trim()
+        : null;
+    if (!assetId) {
+      continue;
+    }
+    if (!defaultSharedPanelId) {
+      defaultSharedPanelId = assetId;
+    }
+    sharedById.set(assetId, Object.freeze({ ...entry }));
+  }
+}
+
 /**
  * Frozen view of the raw manifest for documentation/debugging.
  */
@@ -45,6 +66,7 @@ export const ACT3_FINALE_CINEMATIC_ASSET_MANIFEST = Object.freeze({
   licensing: manifest?.licensing ? { ...manifest.licensing } : null,
   heroPanels: Array.isArray(manifest?.heroPanels) ? [...manifest.heroPanels] : [],
   beatPanels: Array.isArray(manifest?.beatPanels) ? [...manifest.beatPanels] : [],
+  sharedPanels: Array.isArray(manifest?.sharedPanels) ? [...manifest.sharedPanels] : [],
 });
 
 /**
@@ -69,6 +91,25 @@ export function getAct3FinaleBeatAsset(beatId) {
     return null;
   }
   return beatById.get(beatId.trim()) ?? null;
+}
+
+/**
+ * Resolve the shared finale overlay panel. Defaults to the first manifest entry
+ * when an explicit assetId is not provided.
+ * @param {string|null} [assetId]
+ * @returns {object|null}
+ */
+export function getAct3FinaleSharedPanel(assetId = null) {
+  if (typeof assetId === 'string' && assetId.trim().length > 0) {
+    const entry = sharedById.get(assetId.trim());
+    if (entry) {
+      return entry;
+    }
+  }
+  if (defaultSharedPanelId) {
+    return sharedById.get(defaultSharedPanelId) ?? null;
+  }
+  return null;
 }
 
 /**
@@ -104,4 +145,12 @@ export function listAct3FinaleHeroStances() {
  */
 export function listAct3FinaleBeatIds() {
   return Array.from(beatById.keys());
+}
+
+/**
+ * Provide the asset IDs present in the shared panel manifest.
+ * @returns {string[]}
+ */
+export function listAct3FinaleSharedPanelIds() {
+  return Array.from(sharedById.keys());
 }
