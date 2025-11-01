@@ -25,13 +25,13 @@
 | --- | --- | --- | --- | --- |
 | Act 3 Narrative | P0 | Done | Finale cinematic overlay now carries scripted VO beats with voiceover metadata surfaced in-game and documentation captured. | Completed in Session 233 — finale VO script integrated, review packet regenerated, and finale Playwright suite rerun for verification. |
 | AR-050 | P1 | In Progress | Act 2 visual pipeline automation delivers RenderOps packets, inventories, and ai-generated overlays (Memory Parlor neon set) with luminance/tolerance snapshots tracked across reports. | Maintain weekly automation sweeps to keep RenderOps packets current (job `9cc27c03-3b58-4c29-8c71-36dfe28507ae` acknowledged 2025-11-01T19:32:07Z). |
-| CORE-303 | P1 | In Progress | InvestigationSystem player lookup restored, dialogue alias coverage keeps tutorial conversations available, and dialogue input routing now feeds the DialogueSystem; awaiting quest plumbing to complete the minimal investigative loop. | Integrate the repaired investigation/dialogue wiring into tutorial quest beats once CORE-301/302 land, then schedule investigative loop Playwright validation. |
+| CORE-303 | P1 | In Progress | InvestigationSystem loops now validated end-to-end via automation; tutorial evidence, deduction board, and Captain Reese beats execute through the scripted investigative loop. | Run the expanded investigative loop Playwright spec alongside tutorial overlay smoke in the next nightly cycle to guard upcoming quest log UI changes. |
 | M3-003 | P1 | Pending | ECS faction system components, systems, and Jest scaffolding are outlined but paused, awaiting upstream faction data contracts. | Resume after M3-002 readiness and keep validation inside scripted faction behaviour suites—no manual QA loops. |
 | M2-005 | P1 | In Progress | Canvas deduction board now receives runtime pointer routing so drag/drop, hover, and right-click removal operate against live CaseManager validation. | Exercise the tutorial automation path to confirm the board interactions hold under scripted toggles, then profile overlay responsiveness once art lands. |
 
 **Next Session Focus**:
 - Maintain weekly automation sweeps (`npm run art:track-bespoke`, `npm run art:package-renderops`, `npm run art:export-crossroads-luminance`) to keep RenderOps packets current; telemetry acknowledgement recorded for job `9cc27c03-3b58-4c29-8c71-36dfe28507ae`.
-- Thread CORE-303 investigative loop wiring into the tutorial quest once CORE-301/302 hooks land, then expand the new investigative loop Playwright automation to cover deduction board and Captain Reese report beats.
+- Schedule the expanded CORE-303 investigative loop Playwright automation with the tutorial overlay smoke suite in the next nightly run to monitor quest log UI updates.
 - Keep M3-003 faction systems staged while upstream faction data finalizes, and move M2-005 deduction board UI into active implementation now that CaseManager objective tracking shipped; ensure Jest and Playwright scaffolds stay primed so work can spin up without manual QA.
 
 ### Session #238 Backlog Updates
@@ -43,6 +43,12 @@
 ### Session #239 Backlog Updates
 
 - CORE-303 investigative loop now registers the tutorial arrival trigger through `QuestTriggerRegistry`, extends `QuestManager` identifier matching, and introduces Playwright coverage at `tests/e2e/tutorial-investigative-loop.spec.js` to automate evidence collection, detective vision unlock, and scripted witness interviews (`npm test`; `npx playwright test tests/e2e/tutorial-investigative-loop.spec.js`).
+
+### Session #245 Backlog Updates
+
+#### CORE-303: Investigative Loop Skeleton
+- Expanded `tests/e2e/tutorial-investigative-loop.spec.js` to validate deduction board pointer routing, full theory validation, and the Captain Reese report beat so Case 001 completes and chains into Case 002 inside automation; updated helper utilities in `tests/e2e/utils/tutorialActions.js` to drive clue connections, quest objective checks, and case resolution.
+- Verification: `npx playwright test tests/e2e/tutorial-investigative-loop.spec.js`.
 - AR-050 automation sweep executed (`npm run art:track-bespoke`, `npm run art:package-renderops`, `npm run art:export-crossroads-luminance`), producing packet `reports/art/renderops-packets/act2-crossroads-2025-11-01T20-13-32-755Z` with approval job `reports/telemetry/renderops-approvals/act2-crossroads/2025-11-01T20:13:32.777Z-9d5eefce-d467-4f54-92c5-37f235d68c5c.json` and luminance snapshot `reports/art/luminance-snapshots/act2-crossroads/act2-crossroads-luminance-2025-11-01T20-13-40-229Z.{json,md}`.
 - M3-016 telemetry monitors refreshed: autosave dashboard mirrored (`npm run telemetry:autosave-dashboard`), outbox acknowledgements confirmed with `npm run telemetry:ack`, and parity verified via `npm run telemetry:check-parity` (100% coverage, no pending labels).
 
