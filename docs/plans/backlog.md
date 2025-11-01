@@ -1598,6 +1598,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Priority**: P0
 - **Tags**: `engine`, `rendering`
 - **Effort**: 4 hours
+- **Status**: Completed (Session #246 – 2025-11-01)
 - **Dependencies**: M1-007
 - **Description**: Viewport and camera controls
 - **Files**:
@@ -1615,6 +1616,8 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Zoom operations smooth
   - Camera bounds enforced correctly
   - Unit tests pass with >80% coverage
+- **Verification**: `npm test -- --runTestsByPath tests/engine/renderer/Camera.test.js`
+- **Latest Update**: Added world-bounds clamping for follow/move/zoom paths and expanded Jest coverage to lock in the acceptance criteria.
 
 #### M1-009: Layered Renderer Implementation
 - **Priority**: P1
