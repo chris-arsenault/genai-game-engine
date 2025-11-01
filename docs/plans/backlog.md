@@ -204,6 +204,14 @@
 - Verification: `npm test -- --runTestsByPath tests/game/narrative/Act3FinaleCinematicController.test.js tests/game/narrative/Act3FinaleCinematicAssetManager.test.js`.
 - Next steps: exercise the finale cinematic flow in the next Playwright run to confirm layered art presentation and continue monitoring the known `tests/game/systems/ForensicSystem.test.js` performance flake.
 
+### Session #216 Backlog Updates
+
+#### Act 3 Narrative (415b4bd3-2053-400e-92a5-1f1fceccc632)
+- Exercised the Act 3 finale Playwright scenario after asset integration, updated the cinematic manifest URLs to use root-served `/overlays/...` paths, and re-ran the spec to confirm narration/art sync without Vite publicDir warnings.
+- Re-validated `tests/game/systems/ForensicSystem.test.js` to keep the <6 ms guard under observation; the suite passed cleanly without timing regressions.
+- Verification: `npm run test:e2e -- tests/e2e/act3-zenith-finale.spec.js`, `npm test -- --runTestsByPath tests/game/systems/ForensicSystem.test.js`.
+- Next steps: audit other static asset manifests for lingering `/assets/` URL prefixes so Vite publicDir warnings do not recur, and extend Playwright coverage to assert finale hero/beat art swaps correctly for support and alternative stance branches.
+
 ### Session #151 Backlog Updates
 
 #### M3-022: District Access Evaluation Utilities

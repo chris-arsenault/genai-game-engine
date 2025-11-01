@@ -15,7 +15,7 @@
     {
       "stanceId": "opposition",
       "assetId": "act3_finale_opposition_hero_v1",
-      "file": "assets/overlays/act3-finale/opposition/act3_finale_opposition_hero.png",
+      "file": "/overlays/act3-finale/opposition/act3_finale_opposition_hero.png",
       "alt": "Kira severs a glowing broadcast array inside a dark control chamber, teal currents whipping across machinery.",
       "tags": ["act3", "finale", "hero", "opposition"],
       "palette": ["teal", "navy", "amber"]
@@ -23,7 +23,7 @@
     {
       "stanceId": "support",
       "assetId": "act3_finale_support_hero_v1",
-      "file": "assets/overlays/act3-finale/support/act3_finale_support_hero.png",
+      "file": "/overlays/act3-finale/support/act3_finale_support_hero.png",
       "alt": "Kira amplifies a truth signal atop a tower as gold energy cascades toward gathered citizens.",
       "tags": ["act3", "finale", "hero", "support"],
       "palette": ["gold", "magenta", "cyan"]
@@ -31,7 +31,7 @@
     {
       "stanceId": "alternative",
       "assetId": "act3_finale_alternative_hero_v1",
-      "file": "assets/overlays/act3-finale/alternative/act3_finale_alternative_hero.png",
+      "file": "/overlays/act3-finale/alternative/act3_finale_alternative_hero.png",
       "alt": "Kira orchestrates a civic archive plaza where memory panels arc gently above community storytellers.",
       "tags": ["act3", "finale", "hero", "alternative"],
       "palette": ["turquoise", "violet", "brass"]
@@ -42,7 +42,7 @@
       "beatId": "opposition_city_morning",
       "stanceId": "opposition",
       "assetId": "act3_finale_opposition_city_morning_v1",
-      "file": "assets/overlays/act3-finale/opposition/act3_finale_opposition_city_morning.png",
+      "file": "/overlays/act3-finale/opposition/act3_finale_opposition_city_morning.png",
       "alt": "Neon city at dawn with citizens reading curated dossiers projected midair.",
       "tags": ["act3", "finale", "beat", "city"]
     },
@@ -50,7 +50,7 @@
       "beatId": "opposition_morrow_confronted",
       "stanceId": "opposition",
       "assetId": "act3_finale_opposition_morrow_confronted_v1",
-      "file": "assets/overlays/act3-finale/opposition/act3_finale_opposition_morrow_confronted.png",
+      "file": "/overlays/act3-finale/opposition/act3_finale_opposition_morrow_confronted.png",
       "alt": "Dr. Morrow contained in a vault chamber bathed in teal diagnostics while the resistance observes.",
       "tags": ["act3", "finale", "beat", "morrow"]
     },
@@ -58,7 +58,7 @@
       "beatId": "opposition_team_outlook",
       "stanceId": "opposition",
       "assetId": "act3_finale_opposition_team_outlook_v1",
-      "file": "assets/overlays/act3-finale/opposition/act3_finale_opposition_team_outlook.png",
+      "file": "/overlays/act3-finale/opposition/act3_finale_opposition_team_outlook.png",
       "alt": "Resistance allies study tactical projections inside a dim safehouse lit by neon monitors.",
       "tags": ["act3", "finale", "beat", "allies"]
     },
@@ -66,7 +66,7 @@
       "beatId": "support_city_aftermath",
       "stanceId": "support",
       "assetId": "act3_finale_support_city_aftermath_v1",
-      "file": "assets/overlays/act3-finale/support/act3_finale_support_city_aftermath.png",
+      "file": "/overlays/act3-finale/support/act3_finale_support_city_aftermath.png",
       "alt": "Citizens gather on rooftops beneath warm emergency lights as counselors provide comfort.",
       "tags": ["act3", "finale", "beat", "city"]
     },
@@ -74,7 +74,7 @@
       "beatId": "support_morrow_signal",
       "stanceId": "support",
       "assetId": "act3_finale_support_morrow_signal_v1",
-      "file": "assets/overlays/act3-finale/support/act3_finale_support_morrow_signal.png",
+      "file": "/overlays/act3-finale/support/act3_finale_support_morrow_signal.png",
       "alt": "Dr. Morrow addresses the city through towering holograms with resonance graphs floating nearby.",
       "tags": ["act3", "finale", "beat", "broadcast"]
     },
@@ -82,7 +82,7 @@
       "beatId": "support_team_resolve",
       "stanceId": "support",
       "assetId": "act3_finale_support_team_resolve_v1",
-      "file": "assets/overlays/act3-finale/support/act3_finale_support_team_resolve.png",
+      "file": "/overlays/act3-finale/support/act3_finale_support_team_resolve.png",
       "alt": "Resistance team coordinates trauma response hubs across a glowing holo-map.",
       "tags": ["act3", "finale", "beat", "allies"]
     },
@@ -90,7 +90,7 @@
       "beatId": "alternative_city_commons",
       "stanceId": "alternative",
       "assetId": "act3_finale_alternative_city_commons_v1",
-      "file": "assets/overlays/act3-finale/alternative/act3_finale_alternative_city_commons.png",
+      "file": "/overlays/act3-finale/alternative/act3_finale_alternative_city_commons.png",
       "alt": "Citizens experience curated memories inside modular story pods beneath aurora-like light.",
       "tags": ["act3", "finale", "beat", "city"]
     },
@@ -98,7 +98,7 @@
       "beatId": "alternative_morrow_mentor",
       "stanceId": "alternative",
       "assetId": "act3_finale_alternative_morrow_mentor_v1",
-      "file": "assets/overlays/act3-finale/alternative/act3_finale_alternative_morrow_mentor.png",
+      "file": "/overlays/act3-finale/alternative/act3_finale_alternative_morrow_mentor.png",
       "alt": "Dr. Morrow mentors archivists in a glass lab while oversight members observe.",
       "tags": ["act3", "finale", "beat", "morrow"]
     },
@@ -106,7 +106,7 @@
       "beatId": "alternative_team_legacy",
       "stanceId": "alternative",
       "assetId": "act3_finale_alternative_team_legacy_v1",
-      "file": "assets/overlays/act3-finale/alternative/act3_finale_alternative_team_legacy.png",
+      "file": "/overlays/act3-finale/alternative/act3_finale_alternative_team_legacy.png",
       "alt": "Zara, Iris, and Soren coordinate a legacy network through luminous data lattices.",
       "tags": ["act3", "finale", "beat", "allies"]
     }

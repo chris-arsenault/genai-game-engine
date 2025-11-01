@@ -27,9 +27,9 @@ describe('Act3FinaleCinematicAssetManager', () => {
     expect(loader.loadImage).toHaveBeenCalledTimes(3);
     expect(loadedImages).toEqual(
       expect.arrayContaining([
-        'assets/overlays/act3-finale/support/act3_finale_support_hero.png',
-        'assets/overlays/act3-finale/support/act3_finale_support_city_aftermath.png',
-        'assets/overlays/act3-finale/support/act3_finale_support_morrow_signal.png',
+        '/overlays/act3-finale/support/act3_finale_support_hero.png',
+        '/overlays/act3-finale/support/act3_finale_support_city_aftermath.png',
+        '/overlays/act3-finale/support/act3_finale_support_morrow_signal.png',
       ])
     );
 
