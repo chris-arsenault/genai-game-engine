@@ -149,9 +149,76 @@ export class FinaleCinematicOverlay {
     this.activeBeatIndex = -1;
     this.revealedBeats = 0;
     this.status = 'idle';
+    this.visuals = {
+      hero: null,
+      beats: {},
+    };
 
     this._offConfirm = null;
     this._offCancel = null;
+  }
+
+  _renderHeroPanel(ctx, descriptor, x, y, width, maxHeight) {
+    if (!descriptor || !Number.isFinite(width) || width <= 0) {
+      return 0;
+    }
+
+    const height = Math.max(0, maxHeight ?? 0);
+    if (height === 0) {
+      return 0;
+    }
+
+    const status = typeof descriptor.status === 'string' ? descriptor.status : 'unknown';
+    const image = descriptor.image ?? null;
+    let drawWidth = width;
+    let drawHeight = height;
+
+    if (status === 'ready' && image && image.width > 0 && image.height > 0) {
+      const ratio = image.height / image.width;
+      drawHeight = Math.min(height, drawWidth * ratio);
+      drawWidth = Math.min(width, drawHeight / ratio);
+    } else {
+      drawHeight = Math.min(height, Math.max(140, Math.min(width * 0.62, height)));
+      drawWidth = Math.min(width, drawHeight * 1.6);
+    }
+
+    const offsetX = x + Math.max(0, (width - drawWidth) / 2);
+    const offsetY = y + Math.max(0, (height - drawHeight) / 2);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, width, height);
+    ctx.clip();
+
+    if (status === 'ready' && image && image.width > 0) {
+      ctx.globalAlpha = 0.95;
+      ctx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
+    } else {
+      ctx.globalAlpha = 0.65;
+      ctx.fillStyle = 'rgba(10, 24, 40, 0.72)';
+      ctx.fillRect(x, y, width, height);
+
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 6]);
+      ctx.strokeStyle = 'rgba(91, 201, 255, 0.42)';
+      ctx.strokeRect(x + 6, y + 6, width - 12, height - 12);
+      ctx.setLineDash([]);
+
+      ctx.font = this.style.title.subtitleFont;
+      ctx.fillStyle = this.style.title.subtitleColor;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const message =
+        status === 'loading'
+          ? 'Loading cinematic artwork…'
+          : status === 'unsupported'
+            ? 'Cinematic artwork unavailable in this build'
+            : 'Cinematic artwork pending';
+      ctx.fillText(message, x + width / 2, y + height / 2);
+    }
+
+    ctx.restore();
+    return height;
   }
 
   init() {
@@ -179,6 +246,10 @@ export class FinaleCinematicOverlay {
     this.revealedBeats = 0;
     this.status = 'idle';
     this.callbacks = { onAdvance: null, onSkip: null };
+    this.visuals = {
+      hero: null,
+      beats: {},
+    };
 
     if (typeof this._offConfirm === 'function') {
       this._offConfirm();
@@ -207,6 +278,7 @@ export class FinaleCinematicOverlay {
     this.activeBeatIndex = -1;
     this.revealedBeats = 0;
     this.status = 'queued';
+    this.visuals = this._sanitizeVisuals(options.visuals);
 
     if (options.progress) {
       this.setProgress(options.progress);
@@ -388,12 +460,31 @@ export class FinaleCinematicOverlay {
     ctx.restore();
   }
 
-  _renderSummary(ctx, x, y, width) {
+  _renderSummary(ctx, x, y, width, height) {
     const summary = this.cinematic?.summary ?? '';
     const beats = Array.isArray(this.cinematic?.epilogueBeats)
       ? this.cinematic.epilogueBeats.length
       : 0;
     const statusLine = `${Math.min(this.revealedBeats, beats)}/${beats} beats surfaced`;
+
+    const maxHeight = Math.max(0, height);
+    let cursorY = y;
+
+    const heroDescriptor = this.visuals?.hero ?? null;
+    if (heroDescriptor && maxHeight > 40) {
+      const heroHeight = this._renderHeroPanel(
+        ctx,
+        heroDescriptor,
+        x,
+        cursorY,
+        width,
+        Math.max(120, Math.min(maxHeight * 0.55, width * 0.75))
+      );
+      cursorY += heroHeight;
+      if (heroHeight > 0) {
+        cursorY += 16;
+      }
+    }
 
     ctx.save();
     ctx.textBaseline = 'top';
@@ -401,10 +492,18 @@ export class FinaleCinematicOverlay {
     ctx.font = this.style.summary.font;
     ctx.fillStyle = this.style.summary.color;
 
-    const lines = this._wrapText(ctx, summary || 'The finale cinematic sequence is ready. Press Confirm to advance through each epilogue beat.', width);
-    let cursorY = y;
+    const lines = this._wrapText(
+      ctx,
+      summary ||
+        'The finale cinematic sequence is ready. Press Confirm to advance through each epilogue beat.',
+      width
+    );
     const lineHeight = this.style.summary.lineHeight;
+    const maxY = y + maxHeight - 28;
     for (const line of lines.slice(0, 6)) {
+      if (cursorY + lineHeight > maxY) {
+        break;
+      }
       ctx.fillText(line, x, cursorY);
       cursorY += lineHeight;
     }
@@ -412,7 +511,7 @@ export class FinaleCinematicOverlay {
     cursorY += 12;
     ctx.font = this.style.title.subtitleFont;
     ctx.fillStyle = this.style.title.subtitleColor;
-    ctx.fillText(statusLine, x, cursorY);
+    ctx.fillText(statusLine, x, Math.min(cursorY, y + maxHeight - 16));
 
     ctx.restore();
   }
@@ -439,17 +538,24 @@ export class FinaleCinematicOverlay {
       const revealed = index < this.revealedBeats;
       const active = index === this.activeBeatIndex;
       const completed = revealed && index < this.activeBeatIndex;
+      const beatId = typeof beat?.id === 'string' ? beat.id : null;
+      const visual =
+        beatId && this.visuals?.beats && typeof this.visuals.beats === 'object'
+          ? this.visuals.beats[beatId] ?? null
+          : null;
 
       const blockTop = cursorY;
       const blockHeight = this._renderBeat(ctx, {
         x,
         y: cursorY,
         width,
+        maxHeight: Math.max(0, maxY - cursorY),
         beat,
         index,
         revealed,
         active,
         completed,
+        visual,
       });
       cursorY = blockTop + blockHeight + gap;
     }
@@ -457,7 +563,7 @@ export class FinaleCinematicOverlay {
     ctx.restore();
   }
 
-  _renderBeat(ctx, { x, y, width, beat, index, revealed, active, completed }) {
+  _renderBeat(ctx, { x, y, width, maxHeight, beat, index, revealed, active, completed, visual }) {
     const title = beat?.title ?? `Beat ${index + 1}`;
     const description = beat?.description ?? '';
     const titleColor = active
@@ -468,37 +574,156 @@ export class FinaleCinematicOverlay {
           ? this.style.beats.color
           : this.style.beats.lockedColor;
 
-    if (active) {
-      ctx.save();
-      ctx.fillStyle = this.style.beats.haloColor;
-      ctx.fillRect(x - 10, y - 6, width + 20, 68);
-      ctx.restore();
+    const descriptionColor = revealed
+      ? this.style.summary.color
+      : this.style.beats.lockedColor;
+
+    const { width: thumbWidth, height: thumbHeight, status: thumbStatus } =
+      this._measureBeatThumbnail(visual, Math.min(96, width * 0.34), Math.min(88, maxHeight || 88));
+    const textOffset = thumbWidth > 0 ? thumbWidth + 14 : 0;
+    const textWidth = Math.max(60, width - textOffset);
+
+    ctx.save();
+    ctx.font = this.style.beats.descriptionFont;
+    const text =
+      revealed && description.length ? description : 'Awaiting playback…';
+    const lines = this._wrapText(ctx, text, textWidth);
+    ctx.restore();
+
+    const lineHeight = 16;
+    const renderedLines = Math.min(lines.length, 3);
+    const textHeight = 22 + renderedLines * lineHeight;
+    const contentHeight = Math.max(textHeight, thumbHeight, 54);
+    let constrainedHeight =
+      maxHeight && maxHeight > 0 ? Math.min(contentHeight, maxHeight) : contentHeight;
+    constrainedHeight = Math.max(32, constrainedHeight);
+
+    if (thumbWidth > 0 && constrainedHeight > 0) {
+      const thumbY = y + Math.max(0, (constrainedHeight - thumbHeight) / 2);
+      this._drawBeatThumbnail(
+        ctx,
+        visual,
+        x,
+        thumbY,
+        thumbWidth,
+        Math.min(thumbHeight, constrainedHeight),
+        thumbStatus
+      );
     }
 
     ctx.save();
     ctx.fillStyle = titleColor;
     ctx.font = this.style.beats.titleFont;
-    ctx.fillText(`${index + 1}. ${title}`, x, y);
+    ctx.fillText(`${index + 1}. ${title}`, x + textOffset, y);
 
     ctx.font = this.style.beats.descriptionFont;
-    let cursorY = y + 22;
-    const descriptionColor = revealed
-      ? this.style.summary.color
-      : this.style.beats.lockedColor;
     ctx.fillStyle = descriptionColor;
+    let textY = y + 22;
+    for (let i = 0; i < renderedLines; i++) {
+      const line = lines[i];
+      if (!line) {
+        break;
+      }
+      if (textY + lineHeight > y + constrainedHeight) {
+        break;
+      }
+      ctx.fillText(line, x + textOffset, textY);
+      textY += lineHeight;
+    }
+    ctx.restore();
 
-    const text = revealed && description.length
-      ? description
-      : 'Awaiting playback…';
-    const lines = this._wrapText(ctx, text, width);
+    if (active) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'destination-over';
+      ctx.fillStyle = this.style.beats.haloColor;
+      ctx.fillRect(x - 10, y - 6, width + 20, constrainedHeight + 12);
+      ctx.restore();
+    }
 
-    for (const line of lines.slice(0, 3)) {
-      ctx.fillText(line, x, cursorY);
-      cursorY += 16;
+    return constrainedHeight;
+  }
+
+  _measureBeatThumbnail(descriptor, maxWidth, maxHeight) {
+    if (!descriptor || !Number.isFinite(maxWidth) || maxWidth <= 0) {
+      return { width: 0, height: 0, status: null };
+    }
+
+    const status = typeof descriptor.status === 'string' ? descriptor.status : 'unknown';
+    const image = descriptor.image ?? null;
+
+    if (status === 'ready' && image && image.width > 0 && image.height > 0) {
+      let width = Math.max(56, Math.min(maxWidth, image.width));
+      let height = (image.height / image.width) * width;
+      const limit = Math.max(48, maxHeight || height);
+      if (height > limit) {
+        height = limit;
+        width = (image.width / image.height) * height;
+      }
+      return {
+        width,
+        height,
+        status,
+      };
+    }
+
+    if (status === 'unsupported') {
+      return {
+        width: 0,
+        height: 0,
+        status,
+      };
+    }
+
+    return {
+      width: Math.max(0, Math.min(maxWidth, 78)),
+      height: Math.max(0, Math.min(maxHeight || 64, 64)),
+      status,
+    };
+  }
+
+  _drawBeatThumbnail(ctx, descriptor, x, y, width, height, status) {
+    if (width <= 0 || height <= 0) {
+      return;
+    }
+    ctx.save();
+    ctx.beginPath();
+    drawRoundedRect(ctx, x, y, width, height, 10);
+    ctx.clip();
+
+    if (status === 'ready' && descriptor?.image) {
+      const image = descriptor.image;
+      const ratio = image.height / image.width;
+      let drawWidth = width;
+      let drawHeight = drawWidth * ratio;
+      if (drawHeight > height) {
+        drawHeight = height;
+        drawWidth = drawHeight / ratio;
+      }
+      const offsetX = x + (width - drawWidth) / 2;
+      const offsetY = y + (height - drawHeight) / 2;
+      ctx.globalAlpha = 0.95;
+      ctx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
+    } else {
+      ctx.globalAlpha = 0.65;
+      ctx.fillStyle = 'rgba(9, 20, 34, 0.8)';
+      ctx.fillRect(x, y, width, height);
+
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = 'rgba(91, 201, 255, 0.38)';
+      ctx.strokeRect(x + 3, y + 3, width - 6, height - 6);
+      ctx.setLineDash([]);
+
+      if (status === 'loading') {
+        ctx.font = this.style.prompt.font;
+        ctx.fillStyle = this.style.prompt.color;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Loading…', x + width / 2, y + height / 2);
+      }
     }
 
     ctx.restore();
-    return cursorY - y;
   }
 
   _renderPrompts(ctx, x, baselineY, width) {
@@ -554,6 +779,34 @@ export class FinaleCinematicOverlay {
     }
 
     return lines;
+  }
+
+  _sanitizeVisuals(input) {
+    const result = {
+      hero: null,
+      beats: {},
+    };
+
+    if (!input || typeof input !== 'object') {
+      return result;
+    }
+
+    if (input.hero && typeof input.hero === 'object') {
+      result.hero = input.hero;
+    }
+
+    if (input.beats && typeof input.beats === 'object') {
+      const beatMap = {};
+      for (const [beatId, descriptor] of Object.entries(input.beats)) {
+        if (!descriptor || typeof descriptor !== 'object') {
+          continue;
+        }
+        beatMap[beatId] = descriptor;
+      }
+      result.beats = beatMap;
+    }
+
+    return result;
   }
 
   _sanitizeCinematic(payload = {}) {

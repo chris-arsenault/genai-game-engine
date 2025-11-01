@@ -195,6 +195,15 @@
 - Verification: `npm test -- --runTestsByPath tests/game/data/dialogues/Act3ZenithInfiltrationDialogues.test.js` (full `npm test` run hit the known `tests/game/systems/ForensicSystem.test.js` <8 ms performance flake at ~9.06 ms).
 - Next steps: hook bespoke finale cinematic assets into the controller/overlay pipeline once renders land.
 
+### Session #215 Backlog Updates
+
+#### Act 3 Narrative (415b4bd3-2053-400e-92a5-1f1fceccc632)
+- Generated the Act 3 finale cinematic hero and beat panels (12 total) via GPT-Image-1, tracked them in `assets/manifests/act3-finale-cinematics.json`, and staged transparent overlays under `assets/overlays/act3-finale/`.
+- Introduced the `Act3FinaleCinematicAssetManager`, updated `Act3FinaleCinematicController`, and refreshed `FinaleCinematicOverlay` so finale payloads surface stance hero art plus beat thumbnails at runtime with associated telemetry/state snapshots.
+- Added targeted Jest coverage for the controller and new asset manager (`tests/game/narrative/Act3FinaleCinematic{Controller,AssetManager}.test.js`) ensuring visuals hydrate correctly and callbacks behave as expected.
+- Verification: `npm test -- --runTestsByPath tests/game/narrative/Act3FinaleCinematicController.test.js tests/game/narrative/Act3FinaleCinematicAssetManager.test.js`.
+- Next steps: exercise the finale cinematic flow in the next Playwright run to confirm layered art presentation and continue monitoring the known `tests/game/systems/ForensicSystem.test.js` performance flake.
+
 ### Session #151 Backlog Updates
 
 #### M3-022: District Access Evaluation Utilities

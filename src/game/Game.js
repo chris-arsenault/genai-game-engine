@@ -69,6 +69,7 @@ import { CrossroadsPromptController } from './narrative/CrossroadsPromptControll
 import { CrossroadsBranchTransitionController } from './narrative/CrossroadsBranchTransitionController.js';
 import { Act3FinaleCinematicSequencer } from './narrative/Act3FinaleCinematicSequencer.js';
 import { Act3FinaleCinematicController } from './narrative/Act3FinaleCinematicController.js';
+import { Act3FinaleCinematicAssetManager } from './narrative/Act3FinaleCinematicAssetManager.js';
 import { NavigationMeshService } from './navigation/NavigationMeshService.js';
 
 // Managers
@@ -255,6 +256,7 @@ export class Game {
     this.saveLoadOverlay = null;
     this.saveInspectorOverlay = null;
     this.finaleCinematicOverlay = null;
+    this.finaleCinematicAssetManager = null;
     this.crossroadsPromptController = null;
     this.crossroadsBranchTransitionController = null;
     this.act3FinaleCinematicSequencer = null;
@@ -1171,10 +1173,21 @@ export class Game {
       this.act3FinaleCinematicSequencer.init();
     }
 
+    if (!this.finaleCinematicAssetManager) {
+      const runtimeAssetManager =
+        (typeof this.engine?.getAssetManager === 'function' && this.engine.getAssetManager()) ||
+        this.engine?.assetManager ||
+        null;
+      this.finaleCinematicAssetManager = new Act3FinaleCinematicAssetManager({
+        loader: runtimeAssetManager?.loader ?? null,
+      });
+    }
+
     if (this.eventBus && this.finaleCinematicOverlay) {
       this.act3FinaleCinematicController = new Act3FinaleCinematicController({
         eventBus: this.eventBus,
         overlay: this.finaleCinematicOverlay,
+        assetManager: this.finaleCinematicAssetManager,
       });
       this.act3FinaleCinematicController.init();
     }
@@ -3584,6 +3597,13 @@ export class Game {
       this.finaleCinematicOverlay.cleanup();
       this.finaleCinematicOverlay = null;
     }
+    if (
+      this.finaleCinematicAssetManager &&
+      typeof this.finaleCinematicAssetManager.dispose === 'function'
+    ) {
+      this.finaleCinematicAssetManager.dispose();
+    }
+    this.finaleCinematicAssetManager = null;
     if (this.saveInspectorOverlay && this.saveInspectorOverlay.cleanup) {
       this.saveInspectorOverlay.cleanup();
     }

@@ -206,6 +206,11 @@
 - Introduced `tilesetSeamPreviewCatalog` to aggregate all AR-005 attachments, wiring the helper through `authoredTemplates.js` so corridor tooling receives catalog + active tileset identifiers alongside seam previews.
 - Extended the runtime debug overlay with a Tileset Seam Catalog panel (`index.html`, `src/main.js`) summarising annotations, cluster counts, longest spans, and orientation/open-edge distributions for each atlas using the new catalog feed.
 
+## Session 215 Updates
+- Generated Act 3 finale cinematic stills (3 stance hero panels + 9 beat panels) via `mcp__generate-image__generate_image`, publishing transparent PNGs under `assets/overlays/act3-finale/{opposition,support,alternative}/`.
+- Authored manifest `assets/manifests/act3-finale-cinematics.json` and mirrored runtime data in `src/game/data/narrative/act3FinaleCinematicManifestData.js` so the cinematic asset manager can resolve stance/beat art.
+- Wired the overlay/controller to surface hero thumbnails and beat previews using the new art bundle with automated coverage in `tests/game/narrative/Act3FinaleCinematic{Controller,AssetManager}.test.js`.
+
 ## Next Actions
 1. Monitor RenderOps feedback channels and import notes into `reports/art/renderops-feedback.json` if follow-up arrives for the 2025-10-31 packet.
 2. Follow `reports/art/placeholder-replacement-schedule.md` to drive weekly bespoke assignments and annotate `assets/images/requests.json` with source/licensing updates upon completion.

@@ -11,10 +11,12 @@ export class Act3FinaleCinematicController {
    * @param {object} options
    * @param {import('../../engine/events/EventBus.js').EventBus} options.eventBus
    * @param {import('../ui/FinaleCinematicOverlay.js').FinaleCinematicOverlay} options.overlay
+   * @param {import('./Act3FinaleCinematicAssetManager.js').Act3FinaleCinematicAssetManager} [options.assetManager]
    */
-  constructor({ eventBus, overlay } = {}) {
+  constructor({ eventBus, overlay, assetManager } = {}) {
     this.eventBus = eventBus ?? null;
     this.overlay = overlay ?? null;
+    this.assetManager = assetManager ?? null;
 
     this._unsubscribes = [];
     this._active = false;
@@ -22,6 +24,7 @@ export class Act3FinaleCinematicController {
     this._currentBeats = [];
     this._beatIndex = -1;
     this._revealedBeats = 0;
+    this._currentAssets = null;
   }
 
   init() {
@@ -97,6 +100,7 @@ export class Act3FinaleCinematicController {
     this._currentBeats = [];
     this._beatIndex = -1;
     this._revealedBeats = 0;
+    this._currentAssets = null;
   }
 
   getState() {
@@ -105,6 +109,7 @@ export class Act3FinaleCinematicController {
       beatIndex: this._beatIndex,
       revealedBeats: this._revealedBeats,
       payload: this._currentPayload ? { ...this._currentPayload } : null,
+      assets: this._currentAssets ? this._summarizeAssets(this._currentAssets) : null,
     };
   }
 
@@ -118,6 +123,8 @@ export class Act3FinaleCinematicController {
       this._resetState('superseded', { emit: true, event: 'narrative:finale_cinematic_abandoned' });
     }
 
+    const visuals = this.assetManager ? this.assetManager.prepareAssets(sanitized) : null;
+
     this._currentPayload = sanitized;
     this._currentBeats = Array.isArray(sanitized.epilogueBeats) ? sanitized.epilogueBeats : [];
 
@@ -130,6 +137,12 @@ export class Act3FinaleCinematicController {
     }
 
     this._active = true;
+    this._currentAssets = visuals;
+    if (this._currentPayload) {
+      this._currentPayload.assets = this._currentAssets
+        ? this._summarizeAssets(this._currentAssets)
+        : null;
+    }
 
     if (typeof this.overlay.setCinematic === 'function') {
       this.overlay.setCinematic(sanitized, {
@@ -138,6 +151,7 @@ export class Act3FinaleCinematicController {
           revealedCount: this._revealedBeats,
           status: 'playing',
         },
+        visuals,
       });
     }
 
@@ -273,6 +287,7 @@ export class Act3FinaleCinematicController {
     this._currentBeats = [];
     this._beatIndex = -1;
     this._revealedBeats = 0;
+    this._currentAssets = null;
 
     if (emit && payload) {
       this.eventBus.emit(event, {
@@ -349,6 +364,38 @@ export class Act3FinaleCinematicController {
           : 'Act3FinaleCinematicSequencer',
       dispatchedAt: Number.isFinite(payload.dispatchedAt) ? payload.dispatchedAt : Date.now(),
       epilogueBeats: mapped,
+    };
+  }
+
+  _summarizeAssets(assets) {
+    if (!assets || typeof assets !== 'object') {
+      return null;
+    }
+    const hero = assets.hero ? this._serializeDescriptor(assets.hero) : null;
+    const beats = {};
+    if (assets.beats && typeof assets.beats === 'object') {
+      for (const [beatId, descriptor] of Object.entries(assets.beats)) {
+        beats[beatId] = this._serializeDescriptor(descriptor);
+      }
+    }
+    return { hero, beats };
+  }
+
+  _serializeDescriptor(descriptor) {
+    if (!descriptor || typeof descriptor !== 'object') {
+      return null;
+    }
+    return {
+      assetId: descriptor.assetId ?? null,
+      src: descriptor.src ?? null,
+      alt: descriptor.alt ?? '',
+      stanceId: descriptor.stanceId ?? null,
+      beatId: descriptor.beatId ?? null,
+      cinematicId: descriptor.cinematicId ?? null,
+      status: descriptor.status ?? null,
+      tags: Array.isArray(descriptor.tags) ? [...descriptor.tags] : [],
+      metadata: descriptor.metadata ? { ...descriptor.metadata } : {},
+      palette: Array.isArray(descriptor.palette) ? [...descriptor.palette] : [],
     };
   }
 

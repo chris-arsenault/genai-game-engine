@@ -23,6 +23,25 @@ function createOverlayStub() {
   return overlay;
 }
 
+function createAssetManagerStub() {
+  return {
+    prepareAssets: jest.fn(() => ({
+      hero: {
+        assetId: 'hero_asset',
+        status: 'ready',
+        image: null,
+      },
+      beats: {
+        beat1: {
+          assetId: 'beat1_asset',
+          status: 'loading',
+          image: null,
+        },
+      },
+    })),
+  };
+}
+
 function buildPayload(overrides = {}) {
   return {
     cinematicId: 'cinematic_test',
@@ -41,18 +60,21 @@ function buildPayload(overrides = {}) {
 describe('Act3FinaleCinematicController', () => {
   let eventBus;
   let overlay;
+  let assetManager;
   let controller;
 
   beforeEach(() => {
     eventBus = new EventBus();
     overlay = createOverlayStub();
-    controller = new Act3FinaleCinematicController({ eventBus, overlay });
+    assetManager = createAssetManagerStub();
+    controller = new Act3FinaleCinematicController({ eventBus, overlay, assetManager });
   });
 
   afterEach(() => {
     controller.dispose();
     eventBus = null;
     overlay = null;
+    assetManager = null;
     controller = null;
   });
 
@@ -68,6 +90,11 @@ describe('Act3FinaleCinematicController', () => {
     eventBus.emit('narrative:finale_cinematic_ready', buildPayload());
 
     expect(overlay.setCinematic).toHaveBeenCalledTimes(1);
+    expect(assetManager.prepareAssets).toHaveBeenCalledTimes(1);
+    const options = overlay.setCinematic.mock.calls[0][1];
+    expect(options.visuals).toBeDefined();
+    expect(options.visuals.hero.assetId).toBe('hero_asset');
+    expect(controller.getState().assets.hero.assetId).toBe('hero_asset');
     expect(overlay.show).toHaveBeenCalledTimes(1);
     expect(begins).toHaveLength(1);
     expect(moods).toHaveLength(1);
