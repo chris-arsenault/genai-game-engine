@@ -160,6 +160,14 @@
 - Added `docs/narrative/dialogue/act3-final-deduction-war-room.md` and linked it into `docs/narrative/quests/act-3-quests.md` so narrative production can reference the scripted beats.
 - Next steps: expand dialogue coverage into `main-act3-gathering-support` missions and draft ending-specific epilogue sequences for each stance.
 
+### Session #210 Backlog Updates
+
+#### Act 3 Narrative (415b4bd3-2053-400e-92a5-1f1fceccc632)
+- Implemented `main-act3-zenith-infiltration` quest scaffolding with shared and stance-specific stage objectives gated by Act 3 preparation flags (`src/game/data/quests/act3ZenithInfiltrationQuest.js`, `src/game/config/GameConfig.js`).
+- Seeded Zenith Sector trigger geometry and automated event bridging so quest progression emits `act3:zenith_infiltration:stage` payloads with stance context (`src/game/scenes/Act3ZenithInfiltrationScene.js`, `src/game/systems/QuestSystem.js`).
+- Expanded QuestManager coverage to guard shared vs. branch stage completion and verified trigger metadata emission via new Jest suites (`tests/game/managers/QuestManager.act3.test.js`, `tests/game/systems/QuestSystem.trigger.test.js`).
+- Next steps: hook finale cinematic sequencer to Act 3 epilogue payloads and stage infiltration-specific dialogue once staging layouts are finalized.
+
 ### Session #151 Backlog Updates
 
 #### M3-022: District Access Evaluation Utilities

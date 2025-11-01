@@ -481,6 +481,182 @@ export const GameConfig = {
           },
         },
       },
+      zenithInfiltration: {
+        questId: 'main-act3-zenith-infiltration',
+        stageEvent: 'act3:zenith_infiltration:stage',
+        telemetryTag: 'act3_zenith_infiltration',
+        prerequisites: {
+          storyFlags: ['act3_gathering_support_complete'],
+        },
+        sharedStages: [
+          {
+            stageId: 'shared_sector_entry',
+            objectiveId: 'obj_zenith_sector_entry',
+            areaId: 'zenith_sector_checkpoint',
+            description: 'Breach the Zenith Sector perimeter using your chosen stance assets.',
+            telemetryTag: 'act3_zenith_sector_entry',
+            successFlag: 'act3_zenith_sector_perimeter_breached',
+            branchId: 'shared',
+            requirements: {
+              storyFlags: ['act3_plan_committed'],
+            },
+          },
+          {
+            stageId: 'shared_tower_ascent',
+            objectiveId: 'obj_zenith_tower_ascent',
+            areaId: 'zenith_government_towers',
+            description: 'Ascend the government towers while evading elite Zenith security.',
+            telemetryTag: 'act3_zenith_tower_ascent',
+            successFlag: 'act3_zenith_government_towers_secured',
+            branchId: 'shared',
+            requirements: {
+              storyFlags: ['act3_shared_loadout_prepared'],
+            },
+          },
+          {
+            stageId: 'shared_archive_elevator',
+            objectiveId: 'obj_zenith_archive_elevator',
+            areaId: 'zenith_archive_elevator',
+            description: 'Reach the concealed Archive elevator beneath Zenith Plaza.',
+            telemetryTag: 'act3_zenith_archive_elevator',
+            successFlag: 'act3_zenith_archive_elevator_secured',
+            branchId: 'shared',
+            requirements: null,
+          },
+        ],
+        stances: [
+          {
+            id: 'opposition',
+            stanceFlag: 'act3_stance_opposition',
+            worldFlags: ['act3_branch_opposition'],
+            telemetryTag: 'act3_zenith_opposition_route',
+            approachId: 'stealth',
+            stages: [
+              {
+                stageId: 'opposition_disable_grid',
+                objectiveId: 'obj_zenith_opposition_disable_grid',
+                areaId: 'zenith_security_control',
+                description: 'Disable Zenith security grid nodes using municipal override codes.',
+                telemetryTag: 'act3_zenith_opposition_grid',
+                successFlag: 'act3_zenith_opposition_grid_disabled',
+                requirements: {
+                  storyFlags: ['act3_opposition_mcd_override_secured'],
+                },
+              },
+              {
+                stageId: 'opposition_calibrate_dampeners',
+                objectiveId: 'obj_zenith_opposition_calibrate_dampeners',
+                areaId: 'zenith_dampener_labs',
+                description: 'Apply Dr. Chen\'s dampener calibrations to mask the infiltration.',
+                telemetryTag: 'act3_zenith_opposition_dampeners',
+                successFlag: 'act3_zenith_opposition_dampeners_calibrated',
+                requirements: {
+                  storyFlags: ['act3_opposition_dr_chen_committed'],
+                },
+              },
+              {
+                stageId: 'opposition_resistance_diversion',
+                objectiveId: 'obj_zenith_opposition_resistance_diversion',
+                areaId: 'zenith_resistance_overwatch',
+                description: 'Coordinate Soren\'s resistance teams to create a silent diversion.',
+                telemetryTag: 'act3_zenith_opposition_diversion',
+                successFlag: 'act3_zenith_opposition_resistance_diverted',
+                requirements: {
+                  storyFlags: ['act3_opposition_soren_committed'],
+                },
+              },
+            ],
+          },
+          {
+            id: 'support',
+            stanceFlag: 'act3_stance_support',
+            worldFlags: ['act3_branch_support'],
+            telemetryTag: 'act3_zenith_support_route',
+            approachId: 'assault',
+            stages: [
+              {
+                stageId: 'support_overclock_relays',
+                objectiveId: 'obj_zenith_support_overclock_relays',
+                areaId: 'zenith_broadcast_spire',
+                description: 'Overclock the broadcast relays to amplify the Archive signal.',
+                telemetryTag: 'act3_zenith_support_relays',
+                successFlag: 'act3_zenith_support_relays_overclocked',
+                requirements: {
+                  storyFlags: ['act3_support_broadcast_grid_upgraded'],
+                },
+              },
+              {
+                stageId: 'support_stage_response',
+                objectiveId: 'obj_zenith_support_stage_response',
+                areaId: 'zenith_response_staging',
+                description: 'Stage resistance trauma-response teams throughout Zenith Plaza.',
+                telemetryTag: 'act3_zenith_support_response',
+                successFlag: 'act3_zenith_support_response_staged',
+                requirements: {
+                  storyFlags: ['act3_support_resistance_response_ready'],
+                },
+              },
+              {
+                stageId: 'support_calibrate_dampeners',
+                objectiveId: 'obj_zenith_support_calibrate_dampeners',
+                areaId: 'zenith_neural_dampeners',
+                description: 'Calibrate citywide neural dampeners with Dr. Chen\'s assistance.',
+                telemetryTag: 'act3_zenith_support_dampeners',
+                successFlag: 'act3_zenith_support_dampeners_calibrated',
+                requirements: {
+                  storyFlags: ['act3_support_dr_chen_resolved'],
+                },
+              },
+            ],
+          },
+          {
+            id: 'alternative',
+            stanceFlag: 'act3_stance_alternative',
+            worldFlags: ['act3_branch_alternative'],
+            telemetryTag: 'act3_zenith_alternative_route',
+            approachId: 'social',
+            stages: [
+              {
+                stageId: 'alternative_dossier_upload',
+                objectiveId: 'obj_zenith_alternative_dossier_upload',
+                areaId: 'zenith_dossier_upload',
+                description: 'Seed the curated Archive dossier across Zenith\'s secure servers.',
+                telemetryTag: 'act3_zenith_alternative_dossier',
+                successFlag: 'act3_zenith_alternative_dossier_uploaded',
+                requirements: {
+                  storyFlags: ['act3_alternative_dossier_compiled'],
+                },
+              },
+              {
+                stageId: 'alternative_forum_security',
+                objectiveId: 'obj_zenith_alternative_forum_security',
+                areaId: 'zenith_coalition_forum',
+                description: 'Secure coalition oversight on the Zenith executive forum.',
+                telemetryTag: 'act3_zenith_alternative_forum',
+                successFlag: 'act3_zenith_alternative_forum_secured',
+                requirements: {
+                  storyFlags: ['act3_alternative_coalition_committed'],
+                },
+              },
+              {
+                stageId: 'alternative_beacons_sync',
+                objectiveId: 'obj_zenith_alternative_beacons_sync',
+                areaId: 'zenith_distribution_beacons',
+                description: 'Synchronise distribution beacons for the controlled disclosure plan.',
+                telemetryTag: 'act3_zenith_alternative_beacons',
+                successFlag: 'act3_zenith_alternative_beacons_synchronized',
+                requirements: {
+                  storyFlags: ['act3_alternative_distribution_staged'],
+                },
+              },
+            ],
+          },
+        ],
+        rewards: {
+          storyFlags: ['act3_zenith_infiltration_complete'],
+          knowledgeIds: ['act3_zenith_sector_mapping'],
+        },
+      },
     },
   },
 

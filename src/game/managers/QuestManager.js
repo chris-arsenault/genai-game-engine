@@ -60,7 +60,8 @@ export class QuestManager {
       this.eventBus.on('narrative:crossroads_prompt', (data) => this.onCrossroadsPrompt(data)),
       this.eventBus.on('crossroads:thread_selected', (data) => this.onCrossroadsThreadSelected(data)),
       this.eventBus.on('act3:stance_committed', (data) => this.onAct3StanceCommitted(data)),
-      this.eventBus.on('act3:gathering_support:milestone', (data) => this.onAct3GatheringSupportMilestone(data))
+      this.eventBus.on('act3:gathering_support:milestone', (data) => this.onAct3GatheringSupportMilestone(data)),
+      this.eventBus.on('act3:zenith_infiltration:stage', (data) => this.onAct3ZenithInfiltrationStage(data))
     ];
 
     console.log('[QuestManager] Initialized');
@@ -896,6 +897,47 @@ export class QuestManager {
     }
 
     this.updateObjectives('act3:gathering_support:milestone', data);
+  }
+
+  onAct3ZenithInfiltrationStage(data) {
+    if (this.storyFlags && data) {
+      const aggregatedFlags = new Set();
+
+      if (Array.isArray(data?.worldFlags)) {
+        for (const flagId of data.worldFlags) {
+          if (typeof flagId === 'string' && flagId.trim().length > 0) {
+            aggregatedFlags.add(flagId);
+          }
+        }
+      }
+
+      if (Array.isArray(data?.storyFlags)) {
+        for (const flagId of data.storyFlags) {
+          if (typeof flagId === 'string' && flagId.trim().length > 0) {
+            aggregatedFlags.add(flagId);
+          }
+        }
+      }
+
+      if (typeof data?.successFlag === 'string' && data.successFlag.trim().length > 0) {
+        aggregatedFlags.add(data.successFlag);
+      }
+
+      if (typeof data?.stanceFlag === 'string' && data.stanceFlag.trim().length > 0) {
+        aggregatedFlags.add(data.stanceFlag);
+      }
+
+      for (const flagId of aggregatedFlags) {
+        this.storyFlags.setFlag(flagId, true, {
+          source: 'act3_zenith_infiltration_stage',
+          branchId: data?.branchId ?? null,
+          stageId: data?.stageId ?? null,
+          approachId: data?.approachId ?? null,
+        });
+      }
+    }
+
+    this.updateObjectives('act3:zenith_infiltration:stage', data);
   }
 
   /**

@@ -2,6 +2,7 @@ import { EventBus } from '../../../src/engine/events/EventBus.js';
 import { QuestManager } from '../../../src/game/managers/QuestManager.js';
 import { StoryFlagManager } from '../../../src/game/managers/StoryFlagManager.js';
 import { registerAct3GatheringSupportQuest } from '../../../src/game/data/quests/act3GatheringSupportQuest.js';
+import { registerAct3ZenithInfiltrationQuest } from '../../../src/game/data/quests/act3ZenithInfiltrationQuest.js';
 
 class StubFactionManager {
   getReputation() {
@@ -96,5 +97,72 @@ describe('QuestManager Act 3 Gathering Support integration', () => {
     const loadoutState = getObjectiveState('obj_prepare_archive_loadout');
     expect(loadoutState.status).toBe('completed');
     expect(storyFlags.getFlag('act3_shared_loadout_prepared')).toBe(true);
+  });
+});
+
+describe('QuestManager Act 3 Zenith Infiltration integration', () => {
+  let eventBus;
+  let storyFlags;
+  let questManager;
+
+  beforeEach(() => {
+    eventBus = new EventBus();
+    storyFlags = new StoryFlagManager(eventBus);
+    storyFlags.init();
+    questManager = new QuestManager(eventBus, new StubFactionManager(), storyFlags);
+    questManager.init();
+
+    registerAct3ZenithInfiltrationQuest(questManager);
+    storyFlags.setFlag('act3_plan_committed', true);
+    storyFlags.setFlag('act3_gathering_support_complete', true);
+    questManager.startQuest('main-act3-zenith-infiltration');
+  });
+
+  function getObjectiveState(objectiveId) {
+    const quest = questManager.quests.get('main-act3-zenith-infiltration');
+    return quest?.objectiveStates?.get(objectiveId);
+  }
+
+  test('shared stage completion propagates success flag', () => {
+    const beforeState = getObjectiveState('obj_zenith_sector_entry');
+    expect(beforeState.status).toBe('pending');
+
+    eventBus.emit('act3:zenith_infiltration:stage', {
+      questId: 'main-act3-zenith-infiltration',
+      branchId: 'shared',
+      stageId: 'shared_sector_entry',
+      objectiveId: 'obj_zenith_sector_entry',
+      successFlag: 'act3_zenith_sector_perimeter_breached',
+    });
+
+    const afterState = getObjectiveState('obj_zenith_sector_entry');
+    expect(afterState.status).toBe('completed');
+    expect(storyFlags.getFlag('act3_zenith_sector_perimeter_breached')).toBe(true);
+  });
+
+  test('branch stage only advances matching stance objective', () => {
+    storyFlags.setFlag('act3_stance_opposition', true);
+    storyFlags.setFlag('act3_opposition_mcd_override_secured', true);
+
+    const oppositionBefore = getObjectiveState('obj_zenith_opposition_disable_grid');
+    const supportBefore = getObjectiveState('obj_zenith_support_overclock_relays');
+    expect(oppositionBefore.status).toBe('pending');
+    expect(supportBefore.status).toBe('pending');
+
+    eventBus.emit('act3:zenith_infiltration:stage', {
+      questId: 'main-act3-zenith-infiltration',
+      branchId: 'opposition',
+      stanceId: 'opposition',
+      stanceFlag: 'act3_stance_opposition',
+      stageId: 'opposition_disable_grid',
+      objectiveId: 'obj_zenith_opposition_disable_grid',
+      successFlag: 'act3_zenith_opposition_grid_disabled',
+    });
+
+    const oppositionAfter = getObjectiveState('obj_zenith_opposition_disable_grid');
+    const supportAfter = getObjectiveState('obj_zenith_support_overclock_relays');
+    expect(oppositionAfter.status).toBe('completed');
+    expect(storyFlags.getFlag('act3_zenith_opposition_grid_disabled')).toBe(true);
+    expect(supportAfter.status).toBe('pending');
   });
 });

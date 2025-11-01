@@ -81,6 +81,7 @@ import { ControlBindingsObservationLog } from './telemetry/ControlBindingsObserv
 import { registerAct1Quests } from './data/quests/act1Quests.js';
 import { registerAct2CrossroadsQuest } from './data/quests/act2CrossroadsQuest.js';
 import { registerAct3GatheringSupportQuest } from './data/quests/act3GatheringSupportQuest.js';
+import { registerAct3ZenithInfiltrationQuest } from './data/quests/act3ZenithInfiltrationQuest.js';
 import { registerAct2NeuroSyncQuest } from './data/quests/act2NeuroSyncQuest.js';
 import { registerAct2ResistanceQuest } from './data/quests/act2ResistanceQuest.js';
 import { registerAct2PersonalInvestigationQuest } from './data/quests/act2PersonalInvestigationQuest.js';
@@ -397,6 +398,8 @@ export class Game {
     // Register Act 3 stance preparation quest scaffolding
     registerAct3GatheringSupportQuest(this.questManager);
     console.log('[Game] Act 3 Gathering Support quest registered');
+    registerAct3ZenithInfiltrationQuest(this.questManager);
+    console.log('[Game] Act 3 Zenith Infiltration quest registered');
 
     // Initialize TutorialTranscriptRecorder prior to SaveManager wiring
     this.tutorialTranscriptRecorder = new TutorialTranscriptRecorder(this.eventBus);

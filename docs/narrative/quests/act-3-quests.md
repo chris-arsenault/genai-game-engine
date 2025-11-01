@@ -233,6 +233,28 @@ Automation Hooks: `QuestManager` tracks stance commitment via `act3:stance_commi
   - Spare: They become post-ending reformers (affects epilogue)
   - Expose/punish: Satisfying but removes potential allies
 
+#### Implementation Notes (Session 210)
+
+- Quest scaffold `main-act3-zenith-infiltration` now drives staged progression through `act3:zenith_infiltration:stage` events produced by the Zenith trigger layout (`src/game/scenes/Act3ZenithInfiltrationScene.js`).
+- Shared stages and success flags:
+  - `obj_zenith_sector_entry` → `act3_zenith_sector_perimeter_breached`
+  - `obj_zenith_tower_ascent` → `act3_zenith_government_towers_secured`
+  - `obj_zenith_archive_elevator` → `act3_zenith_archive_elevator_secured`
+- Stance-specific routings align with Act 3 support milestones:
+  - **Opposition** (`approachId: stealth`):
+    - `obj_zenith_opposition_disable_grid` → `act3_zenith_opposition_grid_disabled`
+    - `obj_zenith_opposition_calibrate_dampeners` → `act3_zenith_opposition_dampeners_calibrated`
+    - `obj_zenith_opposition_resistance_diversion` → `act3_zenith_opposition_resistance_diverted`
+  - **Support** (`approachId: assault`):
+    - `obj_zenith_support_overclock_relays` → `act3_zenith_support_relays_overclocked`
+    - `obj_zenith_support_stage_response` → `act3_zenith_support_response_staged`
+    - `obj_zenith_support_calibrate_dampeners` → `act3_zenith_support_dampeners_calibrated`
+  - **Alternative** (`approachId: social`):
+    - `obj_zenith_alternative_dossier_upload` → `act3_zenith_alternative_dossier_uploaded`
+    - `obj_zenith_alternative_forum_security` → `act3_zenith_alternative_forum_secured`
+    - `obj_zenith_alternative_beacons_sync` → `act3_zenith_alternative_beacons_synchronized`
+- Trigger metadata now injects branch/approach telemetry (`act3_zenith_*` tags) so QuestManager records stance context while tests guard shared and branch stage flows (`tests/game/managers/QuestManager.act3.test.js`, `tests/game/systems/QuestSystem.trigger.test.js`).
+
 #### Rewards
 
 - Access to Archive's heart
