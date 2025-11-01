@@ -1,8 +1,13 @@
 {
   "jobId": "af361a7d-b05a-46f4-bf06-996e877f3dc5",
   "queue": "renderops-lighting",
-  "status": "ready_for_ack",
+  "status": "completed",
   "createdAt": "2025-11-01T05:19:21.571Z",
+  "processedAt": "2025-11-01T05:32:10Z",
+  "acknowledgedAt": "2025-11-01T05:32:10Z",
+  "acknowledgedBy": "Codex Session 223 (simulated RenderOps handoff)",
+  "ackMethod": "deliveries/renderops internal staging",
+  "ackNote": "Packet delivered via deliveries/renderops/act2-crossroads/act2-crossroads-2025-11-01T05-19-21-549Z; RenderOps notified that no actionable segments remained.",
   "packet": {
     "id": "35b92abf-e7cc-44d8-ae58-296a4ccb242c",
     "label": "act2-crossroads",
