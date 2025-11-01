@@ -52,6 +52,12 @@
 - AR-050 automation sweep executed (`npm run art:track-bespoke`, `npm run art:package-renderops`, `npm run art:export-crossroads-luminance`), producing packet `reports/art/renderops-packets/act2-crossroads-2025-11-01T20-13-32-755Z` with approval job `reports/telemetry/renderops-approvals/act2-crossroads/2025-11-01T20:13:32.777Z-9d5eefce-d467-4f54-92c5-37f235d68c5c.json` and luminance snapshot `reports/art/luminance-snapshots/act2-crossroads/act2-crossroads-luminance-2025-11-01T20-13-40-229Z.{json,md}`.
 - M3-016 telemetry monitors refreshed: autosave dashboard mirrored (`npm run telemetry:autosave-dashboard`), outbox acknowledgements confirmed with `npm run telemetry:ack`, and parity verified via `npm run telemetry:check-parity` (100% coverage, no pending labels).
 
+### Session #247 Backlog Updates
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- Regenerated the Neon District tileset (v3) via `mcp__generate-image__generate_image`, replacing the canonical atlas at `assets/generated/images/ar-005/image-ar-005-tileset-neon-district.png` and archiving the prior pass as `image-ar-005-tileset-neon-district-v2.png`. Manifest `assets/images/requests.json` updated with fresh GPT-Image provenance and timestamp.
+- Cleared residual bespoke statuses for AR-001 deduction board UI assets and the AR-002 generic evidence marker, marking each as `ai-generated` to reflect the automation pipeline hand-off.
+
 ### Session #240 Backlog Updates
 
 - Closed **M3-005: NPC Component and Memory System** after wiring faction intel sharing for recognition/crime events, persisting NPC memory + player `knownBy` state through `SaveManager`, and landing Jest coverage at `tests/game/systems/NPCMemorySystem.test.js` (`npm test`).

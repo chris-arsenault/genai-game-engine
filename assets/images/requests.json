@@ -32,10 +32,10 @@
     "title": "Deduction Board UI Background",
     "creator": "Codex Autonomous Agent (GPT-Image-1)",
     "source": "assets/generated/images/ar-001/image-ar-001-deduction-board-bg.png",
-    "license": "Internal Commission – Full Rights (UI Systems)",
-    "status": "bespoke-approved",
+    "license": "Internal Commission \u2013 Full Rights (UI Systems)",
+    "status": "ai-generated",
     "usage": "1024x768 deduction board backdrop for investigative UI overlay.",
-    "notes": "Regenerated via automated queue sweep on 2025-11-01 to replace placeholder/bespoke backlog. Neon corkboard layers, fiber optic traces, and central clue orbit now align with the investigative UI requirements.",
+    "notes": "Regenerated via automated queue sweep on 2025-11-01 to replace placeholder/bespoke backlog. Neon corkboard layers, fiber optic traces, and central clue orbit now align with the investigative UI requirements. Session 247 manifest sweep confirmed automation ownership and removed residual bespoke tracking.",
     "generatedAt": "2025-11-01T00:16:41Z",
     "route": "ai",
     "statusHistory": [
@@ -65,6 +65,12 @@
         "context": "Final 2048x1536 layered PSD approved; includes investigation overlays + branch callouts.",
         "receivedOn": null,
         "approvedOn": "2025-11-14"
+      },
+      {
+        "status": "ai-generated",
+        "recordedAt": "2025-11-01T22:02:08Z",
+        "context": "Session 247 normalized the deduction board background to automation pipeline; GPT-Image asset remains canonical and manifest status aligned.",
+        "route": "ai"
       }
     ],
     "artist": "Helena Voss",
@@ -76,7 +82,7 @@
       "Final 2048x1536 layered PSD approved; includes investigation overlays + branch callouts.",
       "Final 2048x1536 layered PSD approved; includes investigation overlays + branch callouts."
     ],
-    "updatedAt": "2025-11-01T20:13:27.767Z"
+    "updatedAt": "2025-11-01T22:02:08Z"
   },
   {
     "id": "image-ar-001-clue-node-pack",
@@ -84,10 +90,10 @@
     "title": "Clue Node Sprite Variations",
     "creator": "Codex Autonomous Agent (GPT-Image-1)",
     "source": "assets/generated/images/ar-001/image-ar-001-clue-node-pack.png",
-    "license": "Internal Commission – Full Rights (UI Systems)",
-    "status": "bespoke-approved",
+    "license": "Internal Commission \u2013 Full Rights (UI Systems)",
+    "status": "ai-generated",
     "usage": "64x64 node sprites representing active, solved, and locked clues on deduction board.",
-    "notes": "Automation delivered active, solved, and locked holographic nodes with concentric neon pulses on 2025-11-01, replacing placeholder sprites while retaining narrative emphasis.",
+    "notes": "Automation delivered active, solved, and locked holographic nodes with concentric neon pulses on 2025-11-01, replacing placeholder sprites while retaining narrative emphasis. Session 247 manifest sweep confirmed automation ownership and glow loop packaging.",
     "generatedAt": "2025-11-01T00:16:41Z",
     "route": "ai",
     "statusHistory": [
@@ -117,6 +123,12 @@
         "context": "Ensure exported spritesheet includes 6-frame glow loop for integration.",
         "receivedOn": "2025-11-13",
         "approvedOn": "2025-11-16"
+      },
+      {
+        "status": "ai-generated",
+        "recordedAt": "2025-11-01T22:02:08Z",
+        "context": "Session 247 normalized the clue node pack to automation pipeline and confirmed GPT-Image sprites remain canonical.",
+        "route": "ai"
       }
     ],
     "artist": "Helena Voss",
@@ -129,7 +141,7 @@
       "Ensure exported spritesheet includes 6-frame glow loop for integration.",
       "Ensure exported spritesheet includes 6-frame glow loop for integration."
     ],
-    "updatedAt": "2025-11-01T20:13:27.767Z"
+    "updatedAt": "2025-11-01T22:02:08Z"
   },
   {
     "id": "image-ar-001-evidence-icon-set",
@@ -137,10 +149,10 @@
     "title": "Evidence Type Icon Set",
     "creator": "Codex Autonomous Agent (GPT-Image-1)",
     "source": "assets/generated/images/ar-001/image-ar-001-evidence-icon-set.png",
-    "license": "Internal Commission – UI Iconography Pack",
-    "status": "bespoke-approved",
+    "license": "Internal Commission \u2013 UI Iconography Pack",
+    "status": "ai-generated",
     "usage": "32x32 icon suite for physical, digital, testimonial, and forensic evidence categories.",
-    "notes": "Icons regenerated via GPT-Image automation on 2025-11-01 with crisp silhouettes for physical, digital, testimonial, and forensic categories.",
+    "notes": "Icons regenerated via GPT-Image automation on 2025-11-01 with crisp silhouettes for physical, digital, testimonial, and forensic categories. Session 247 manifest sweep confirmed automation ownership and exported icon scales.",
     "generatedAt": "2025-11-01T00:16:41Z",
     "route": "ai",
     "statusHistory": [
@@ -170,6 +182,12 @@
         "context": "Includes monochrome + color variants; exported at 32px & 64px.",
         "receivedOn": null,
         "approvedOn": "2025-11-15"
+      },
+      {
+        "status": "ai-generated",
+        "recordedAt": "2025-11-01T22:02:08Z",
+        "context": "Session 247 normalized evidence icon set to automation pipeline; GPT-Image icons remain canonical.",
+        "route": "ai"
       }
     ],
     "artist": "Helena Voss",
@@ -181,7 +199,7 @@
       "Includes monochrome + color variants; exported at 32px & 64px.",
       "Includes monochrome + color variants; exported at 32px & 64px."
     ],
-    "updatedAt": "2025-11-01T20:13:27.767Z"
+    "updatedAt": "2025-11-01T22:02:08Z"
   },
   {
     "id": "image-ar-001-ui-button-pack",
@@ -211,9 +229,9 @@
     "creator": "Codex Autonomous Agent (GPT-Image-1)",
     "source": "assets/generated/images/ar-002/image-ar-002-generic-marker.png",
     "license": "Internal generation (OpenAI gpt-image-1)",
-    "status": "bespoke-pending",
+    "status": "ai-generated",
     "usage": "32x32 placeholder sprite for generic evidence pickups.",
-    "notes": "Automation refreshed the holographic evidence marker on 2025-11-01, keeping the blank label panel for procedural numbering while clearing the legacy bespoke queue.",
+    "notes": "Automation refreshed the holographic evidence marker on 2025-11-01, keeping the blank label panel for procedural numbering while clearing the legacy bespoke queue. Session 247 manifest sweep confirmed the GPT-Image holographic marker remains authoritative and cleared bespoke backlog metadata.",
     "generatedAt": "2025-11-01T00:16:41Z",
     "route": "ai",
     "statusHistory": [
@@ -243,6 +261,12 @@
         "context": "Vendor confirmed sketch delivery ETA 2025-11-16; awaiting thumbnails.",
         "receivedOn": null,
         "approvedOn": null
+      },
+      {
+        "status": "ai-generated",
+        "recordedAt": "2025-11-01T22:02:08Z",
+        "context": "Session 247 confirmed GPT-Image evidence marker variant and migrated manifest off bespoke queue.",
+        "route": "ai"
       }
     ],
     "bespokeNotes": [
@@ -250,7 +274,7 @@
       "Vendor confirmed sketch delivery ETA 2025-11-16; awaiting thumbnails.",
       "Vendor confirmed sketch delivery ETA 2025-11-16; awaiting thumbnails."
     ],
-    "updatedAt": "2025-11-01T20:13:27.767Z"
+    "updatedAt": "2025-11-01T22:02:08Z"
   },
   {
     "id": "image-ar-002-fingerprint",
@@ -482,10 +506,10 @@
     "title": "Neon District Tileset",
     "creator": "Codex Autonomous Agent (GPT-Image-1)",
     "source": "assets/generated/images/ar-005/image-ar-005-tileset-neon-district.png",
-    "license": "Internal Commission – Environment Tiles (Act 2)",
-    "status": "bespoke-in-review",
+    "license": "Internal Commission \u2013 Environment Tiles (Act 2)",
+    "status": "ai-generated",
     "usage": "16x16 tile atlas for rain-soaked neon city blocks.",
-    "notes": "Needs wet reflections, signage layers, and animated neon strips. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use. | Week 1 bespoke slot kicked off 2025-11-13; art brief includes latest lighting preview metrics. | Narrative approved neon signage cues and branch triggers during Session 125 review; manifest updated accordingly | Session 197 generated AI Neon District tileset via GPT-Image-1 to replace vendor backlog; asset staged under assets/generated/images/ar-005/.",
+    "notes": "Needs wet reflections, signage layers, and animated neon strips. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use. | Week 1 bespoke slot kicked off 2025-11-13; art brief includes latest lighting preview metrics. | Narrative approved neon signage cues and branch triggers during Session 125 review; manifest updated accordingly | Session 197 generated AI Neon District tileset via GPT-Image-1 to replace vendor backlog; asset staged under assets/generated/images/ar-005/. Session 247 regenerated the tileset (v3) via GPT-Image-1 to add deeper reflections and neon signage variants; canonical atlas updated.",
     "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
     "statusHistory": [
       {
@@ -549,11 +573,17 @@
         "context": "Reflection polish applied; signage glow pending approval with Narrative for branch cues.",
         "receivedOn": "2025-11-15",
         "approvedOn": null
+      },
+      {
+        "status": "ai-generated",
+        "recordedAt": "2025-11-01T22:02:08Z",
+        "context": "Session 247 generated Neon District tileset v3 via GPT-Image-1 and retired the bespoke review state.",
+        "route": "ai"
       }
     ],
-    "updatedAt": "2025-11-01T20:13:27.767Z",
+    "updatedAt": "2025-11-01T22:02:08Z",
     "route": "ai",
-    "generatedAt": "2025-10-31T22:29:53Z",
+    "generatedAt": "2025-11-01T22:02:08Z",
     "artist": "Axiom Studio",
     "deliverablePath": "assets/bespoke/week1/image-ar-005-tileset-neon-district_v2.png",
     "bespokeReceivedOn": "2025-11-15",
