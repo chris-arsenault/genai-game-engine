@@ -1439,6 +1439,12 @@ export class Game {
     try {
       this._destroySceneEntities();
 
+      const runtimeAssetManager =
+        (typeof this.engine?.getAssetManager === 'function' && this.engine.getAssetManager()) ||
+        this.engine?.assetManager ||
+        null;
+      const fallbackAssetLoader = runtimeAssetManager?.loader ?? null;
+
       const sceneData = await loadMemoryParlorScene(
         this.entityManager,
         this.componentRegistry,
@@ -1446,6 +1452,7 @@ export class Game {
         {
           ...options,
           audioManager: this.audioManager,
+          assetLoader: options.assetLoader ?? fallbackAssetLoader,
         }
       );
 

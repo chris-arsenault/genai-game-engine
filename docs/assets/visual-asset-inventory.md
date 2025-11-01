@@ -33,6 +33,8 @@
 - Logged overlay luminance stats with `node scripts/art/analyzeCrossroadsOverlays.js --dir assets/generated/ar-050`, confirming `avgLuma 37.3`, `avgAlpha 85.3`, and `peakAlpha 240` for the Memory Parlor plate.
 - Refreshed the luminance snapshot (`reports/art/luminance-snapshots/act2-crossroads/act2-crossroads-luminance-2025-11-01T04-38-24-648Z.{json,md}`) to keep tolerance reporting aligned with the new derivative output.
 - Promoted `image-memory-parlor-neon-001` in `assets/images/requests.json` to `derivative-generated`, recording the automation metadata for future sessions.
+- Integrated the Memory Parlor infiltration composite with runtime loading for `memory_parlor_neon_001.png`, including a tinted fallback path and dedicated Jest coverage (`tests/game/scenes/MemoryParlorScene.overlay.test.js`) to guard the overlay hook.
+- Re-ran `npm run art:export-crossroads-luminance` post-integration, yielding `reports/art/luminance-snapshots/act2-crossroads/act2-crossroads-luminance-2025-11-01T04-56-28-934Z.{json,md}` with all 12 tracked segments still within tolerance.
 
 ## Session 217 Updates
 - Generated `image-memory-parlor-neon-001` via GPT-Image-1, staging the overlay at `assets/generated/ar-050/image-memory-parlor-neon-001.png` and updating `assets/images/requests.json` to `ai-generated` so Memory Parlor infiltration beats have a dedicated neon lighting plate.
