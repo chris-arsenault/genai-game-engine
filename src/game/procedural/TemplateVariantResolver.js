@@ -39,21 +39,23 @@ export class TemplateVariantResolver {
     return this.manifest;
   }
 
-  /**
-   * Resolve a variant for the given room/template context.
-   * @param {object} context
-   * @param {object} context.room - Room instance metadata
-   * @param {object} context.template - Template data containing a TileMap
-   * @param {number} context.rotation - Desired rotation (degrees)
-   * @returns {{
-   *   tilemap: import('./TileMap.js').default|null,
-   *   rotation: number,
-   *   variantId: string|null,
-   *   metadata: object,
-   *   seams: Array<object>,
-   *   strategy: 'variant'|'rotate'
-   * }}
-   */
+ /**
+  * Resolve a variant for the given room/template context.
+  * @param {object} context
+  * @param {object} context.room - Room instance metadata
+  * @param {object} context.template - Template data containing a TileMap
+  * @param {number} context.rotation - Desired rotation (degrees)
+  * @returns {{
+  *   tilemap: import('./TileMap.js').default|null,
+  *   rotation: number,
+  *   variantId: string|null,
+  *   metadata: object,
+  *   seams: Array<object>,
+   *   seamPreview: object|null,
+   *   seamClusters: Array<object>,
+  *   strategy: 'variant'|'rotate'
+  * }}
+  */
   resolve(context = {}) {
     const { room = {}, template = {}, rotation = 0 } = context;
     const normalizedRotation = TileRotationMatrix.normalizeRotation(rotation ?? 0);
@@ -125,6 +127,8 @@ export class TemplateVariantResolver {
       variant.rotation != null ? variant.rotation : 0
     );
     const tilemap = variant.tilemap ?? baseTilemap ?? null;
+    const seamPreview = this._extractSeamPreview(entry, variant);
+    const seamClusters = Array.isArray(seamPreview?.clusters) ? seamPreview.clusters : [];
 
     const seams = this._resolveSeams({
       entry,
@@ -148,12 +152,16 @@ export class TemplateVariantResolver {
         templateId,
       }),
       seams,
+      seamPreview,
+      seamClusters,
       strategy: 'variant',
     };
   }
 
   _buildRotationResult(entry, { rotation, room, templateId, baseTilemap }) {
     const tilemap = baseTilemap ?? null;
+    const seamPreview = this._extractSeamPreview(entry, null);
+    const seamClusters = Array.isArray(seamPreview?.clusters) ? seamPreview.clusters : [];
     return {
       tilemap,
       rotation,
@@ -174,6 +182,8 @@ export class TemplateVariantResolver {
         appliedRotation: rotation,
         tilemap,
       }),
+      seamPreview,
+      seamClusters,
       strategy: 'rotate',
     };
   }
@@ -192,6 +202,8 @@ export class TemplateVariantResolver {
         strategy: 'rotate',
       },
       seams: [],
+      seamPreview: null,
+      seamClusters: [],
       strategy: 'rotate',
     };
   }
@@ -213,6 +225,14 @@ export class TemplateVariantResolver {
       ...variantMetadata,
       ...baseMetadata,
     };
+  }
+
+  _extractSeamPreview(entry, variant) {
+    const variantPreview = variant?.metadata?.tileset?.seamPreview ?? null;
+    if (variantPreview) {
+      return variantPreview;
+    }
+    return entry?.metadata?.tileset?.seamPreview ?? null;
   }
 
   _resolveSeams({ entry, variant, requestedRotation, appliedRotation, tilemap }) {
@@ -316,6 +336,29 @@ export class TemplateVariantResolver {
     };
   }
 
+  _cloneSeamCluster(cluster) {
+    if (!cluster || typeof cluster !== 'object') {
+      return {
+        id: null,
+        length: 0,
+        orientation: null,
+        openEdges: [],
+        tags: [],
+        tileIndices: [],
+        start: null,
+        end: null,
+      };
+    }
+    return {
+      ...cluster,
+      start: cluster.start ? { ...cluster.start } : null,
+      end: cluster.end ? { ...cluster.end } : null,
+      openEdges: Array.isArray(cluster.openEdges) ? [...cluster.openEdges] : [],
+      tags: Array.isArray(cluster.tags) ? [...cluster.tags] : [],
+      tileIndices: Array.isArray(cluster.tileIndices) ? [...cluster.tileIndices] : [],
+    };
+  }
+
   _cloneResult(result) {
     if (!result || typeof result !== 'object') {
       return result;
@@ -326,6 +369,10 @@ export class TemplateVariantResolver {
       variantId: result.variantId ?? null,
       metadata: this._clone(result.metadata),
       seams: Array.isArray(result.seams) ? result.seams.map((seam) => this._cloneSeam(seam)) : [],
+      seamPreview: result.seamPreview ?? null,
+      seamClusters: Array.isArray(result.seamClusters)
+        ? result.seamClusters.map((cluster) => this._cloneSeamCluster(cluster))
+        : [],
       strategy: result.strategy || 'rotate',
     };
   }

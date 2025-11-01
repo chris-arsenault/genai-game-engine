@@ -2917,10 +2917,10 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Archive Undercity: Dark, ancient tech (16x16 tiles)
   - Zenith Sector: Futuristic, imposing (16x16 tiles)
 - **File**: `assets/images/requests.json`
-- **Status**: All four AR-005 atlases (Neon District, Corporate Spires, Archive Undercity, Zenith Sector) are now `ai-generated` and staged under `assets/generated/images/ar-005/`; Neon District seam metadata plus preview/validation outputs (`reports/art/tileset-previews/image-ar-005-tileset-neon-district-preview.json`) are live while the remaining atlases still await analysis.
+- **Status**: All four AR-005 atlases (Neon District, Corporate Spires, Archive Undercity, Zenith Sector) are now `ai-generated` and staged under `assets/generated/images/ar-005/`; Neon District seam metadata plus preview/validation outputs are live and wired into the authored template manifest (`neonDistrictSeamPreview`), DistrictGenerator placements, and CorridorSeamPainter summaries so tooling can consume doorway cluster metadata. Remaining atlases still await analysis.
 - **Next Steps**:
-  - Run the analyze → promote → preview → validate pipeline for Corporate Spires, Archive Undercity, and Zenith Sector once their tileset analysis reports land so each atlas ships with seam manifests and corridor-ready preview summaries.
-  - Hook Neon District seam preview clusters into the tileset preview UI/DistrictGenerator template authoring so runtime corridor painters can consume the metadata before enabling player-facing previews.
+  - Run the analyze -> promote -> preview -> validate pipeline for Corporate Spires, Archive Undercity, and Zenith Sector once their tileset analysis reports land so each atlas ships with seam manifests and corridor-ready preview summaries.
+  - Surface the shared seam preview catalog inside the runtime tileset preview UI once that layer comes online, and replicate the manifest/catalog wiring for the remaining atlases after their seam promotions complete.
 
 #### AR-006: UI Sound Effects (M2-M6)
 - **Type**: Audio

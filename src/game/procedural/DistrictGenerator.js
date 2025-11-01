@@ -939,6 +939,8 @@ export class DistrictGenerator {
         seams: Array.isArray(variantSummary?.seams)
           ? variantSummary.seams.map((seam) => ({ ...seam }))
           : [],
+        seamPreview: variantSummary?.seamPreview ?? null,
+        seamClusters: cloneSeamClusters(variantSummary?.seamClusters),
       });
     }
 
@@ -1033,4 +1035,19 @@ export class DistrictGenerator {
       warnings,
     };
   }
+}
+
+function cloneSeamClusters(clusters) {
+  if (!Array.isArray(clusters)) {
+    return [];
+  }
+
+  return clusters.map((cluster) => ({
+    ...cluster,
+    start: cluster?.start ? { ...cluster.start } : null,
+    end: cluster?.end ? { ...cluster.end } : null,
+    openEdges: Array.isArray(cluster?.openEdges) ? [...cluster.openEdges] : [],
+    tags: Array.isArray(cluster?.tags) ? [...cluster.tags] : [],
+    tileIndices: Array.isArray(cluster?.tileIndices) ? [...cluster.tileIndices] : [],
+  }));
 }

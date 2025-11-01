@@ -137,6 +137,11 @@ describe('Procedural tilemap infrastructure', () => {
       expect(result.seams).toEqual(
         expect.arrayContaining([expect.objectContaining({ edge: 'east', tile: TileType.DOOR })])
       );
+      expect(result.seamPreview).toEqual(
+        expect.objectContaining({ tilesetId: 'image-ar-005-tileset-neon-district' })
+      );
+      expect(Array.isArray(result.seamClusters)).toBe(true);
+      expect(result.seamClusters.length).toBeGreaterThan(0);
     });
 
     it('provides vendor stall seam metadata for 270° rotation', () => {
@@ -384,6 +389,9 @@ describe('Procedural tilemap infrastructure', () => {
           placementsWithSeams: 0,
           seamsApplied: 0,
           skippedOutOfBounds: 0,
+          seamClustersSeen: 0,
+          seamClusterTiles: 0,
+          seamClusterOrientations: {},
         })
       );
       expect(tilemap.getTile(1, 1)).toBe(TileType.FLOOR);
@@ -408,7 +416,48 @@ describe('Procedural tilemap infrastructure', () => {
 
       expect(summary.applied).toBe(true);
       expect(summary.seamsApplied).toBe(1);
+      expect(summary.seamClustersSeen).toBe(0);
+      expect(summary.seamClusterTiles).toBe(0);
       expect(tilemap.getTile(3, 2)).toBe(TileType.DOOR);
+    });
+
+    it('tracks seam clusters sourced from placement metadata', () => {
+      const seamPainter = new CorridorSeamPainter();
+      const tilemap = new TileMap(4, 4);
+
+      const summary = seamPainter.apply(tilemap, {
+        corridors: [],
+        placements: [
+          {
+            roomId: 'room-99',
+            seamClusters: [
+              {
+                id: 'cluster-a',
+                orientation: 'vertical',
+                start: { row: 10, column: 12 },
+                end: { row: 10, column: 14 },
+                openEdges: ['north'],
+                tags: ['doorway'],
+                tileIndices: [100, 101, 102],
+              },
+              {
+                id: 'cluster-b',
+                orientation: 'horizontal',
+                start: { row: 20, column: 5 },
+                end: { row: 22, column: 5 },
+                openEdges: ['east'],
+                tags: ['doorway'],
+                tileIndices: [200, 264],
+              },
+            ],
+          },
+        ],
+      });
+
+      expect(summary.applied).toBe(false);
+      expect(summary.seamClustersSeen).toBe(2);
+      expect(summary.seamClusterTiles).toBe(5);
+      expect(summary.seamClusterOrientations).toEqual({ vertical: 1, horizontal: 1 });
     });
   });
 
@@ -435,8 +484,27 @@ describe('Procedural tilemap infrastructure', () => {
       expect(placement.metadata).toEqual(
         expect.objectContaining({ moodHint: 'investigation_peak' })
       );
+      expect(placement.metadata.tileset).toEqual(
+        expect.objectContaining({
+          id: 'image-ar-005-tileset-neon-district',
+          seamPreview: expect.objectContaining({
+            stats: expect.objectContaining({ clusterCount: expect.any(Number) }),
+          }),
+        })
+      );
       expect(placement.seams).toEqual(
         expect.arrayContaining([expect.objectContaining({ edge: 'east' })])
+      );
+      expect(placement.seamPreview).toEqual(
+        expect.objectContaining({ tilesetId: 'image-ar-005-tileset-neon-district' })
+      );
+      expect(Array.isArray(placement.seamClusters)).toBe(true);
+      expect(placement.seamClusters.length).toBeGreaterThan(0);
+      expect(placement.seamClusters[0]).toEqual(
+        expect.objectContaining({
+          orientation: expect.any(String),
+          tileIndices: expect.any(Array),
+        })
       );
     });
   });
