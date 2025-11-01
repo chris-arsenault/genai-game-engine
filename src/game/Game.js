@@ -94,6 +94,7 @@ import { tutorialCase } from './data/cases/tutorialCase.js';
 import { registerAct1Dialogues } from './data/dialogues/Act1Dialogues.js';
 import { registerAct2CrossroadsDialogues } from './data/dialogues/Act2CrossroadsDialogue.js';
 import { registerAct3GatheringSupportDialogues } from './data/dialogues/Act3GatheringSupportDialogues.js';
+import { registerAct3ZenithInfiltrationDialogues } from './data/dialogues/Act3ZenithInfiltrationDialogues.js';
 import { registerAct2BranchObjectiveDialogues } from './data/dialogues/Act2BranchObjectiveDialogues.js';
 
 // Entity factories
@@ -507,6 +508,10 @@ export class Game {
     // Register Act 3 gathering support dialogues
     registerAct3GatheringSupportDialogues(this.gameSystems.dialogue);
     console.log('[Game] Act 3 Gathering Support dialogues registered');
+
+    // Register Act 3 Zenith infiltration dialogues
+    registerAct3ZenithInfiltrationDialogues(this.gameSystems.dialogue);
+    console.log('[Game] Act 3 Zenith Infiltration dialogues registered');
 
     // Create camera follow system
     this.gameSystems.cameraFollow = new CameraFollowSystem(

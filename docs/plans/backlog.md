@@ -166,7 +166,7 @@
 - Implemented `main-act3-zenith-infiltration` quest scaffolding with shared and stance-specific stage objectives gated by Act 3 preparation flags (`src/game/data/quests/act3ZenithInfiltrationQuest.js`, `src/game/config/GameConfig.js`).
 - Seeded Zenith Sector trigger geometry and automated event bridging so quest progression emits `act3:zenith_infiltration:stage` payloads with stance context (`src/game/scenes/Act3ZenithInfiltrationScene.js`, `src/game/systems/QuestSystem.js`).
 - Expanded QuestManager coverage to guard shared vs. branch stage completion and verified trigger metadata emission via new Jest suites (`tests/game/managers/QuestManager.act3.test.js`, `tests/game/systems/QuestSystem.trigger.test.js`).
-- Next steps: stage infiltration-specific dialogue once layouts are finalized.
+- Next steps: hook bespoke finale cinematic assets into the controller/overlay pipeline once renders land.
 
 ### Session #211 Backlog Updates
 
@@ -176,7 +176,7 @@
 - Authored Jest coverage confirming gating semantics and re-dispatch behaviour when infiltration completion toggles (`tests/game/narrative/Act3FinaleCinematicSequencer.test.js`).
 - Implemented `Act3FinaleCinematicController` alongside the `FinaleCinematicOverlay` so the readiness payload now drives beat progression UI, emits lifecycle telemetry, and kicks adaptive finale music (`src/game/narrative/Act3FinaleCinematicController.js`, `src/game/ui/FinaleCinematicOverlay.js`, `src/game/Game.js`).
 - Added dedicated Jest coverage for the controller covering readiness handling, beat advancement, skip flows, and adaptive mood emission (`tests/game/narrative/Act3FinaleCinematicController.test.js`).
-- Next steps: author stance-specific Zenith infiltration dialogue beats and hook bespoke finale cinematic assets into the new controller pipeline once renders land.
+- Next steps: hook bespoke finale cinematic assets into the new controller pipeline once renders land.
 
 ### Session #213 Backlog Updates
 
@@ -184,7 +184,16 @@
 - Authored Playwright coverage (`tests/e2e/act3-zenith-finale.spec.js`) that drives shared and stance-specific Zenith infiltration stage payloads to confirm quest completion, finale readiness dispatch, and overlay/controller beat progression.
 - Registered a stub Archive Heart quest target inside the test harness so branching evaluation no longer emits QuestManager errors once the finale quest completes.
 - Verification: `./run_playwright.sh test tests/e2e/act3-zenith-finale.spec.js`.
-- Next steps: author stance-specific Zenith infiltration dialogue beats and hook bespoke finale cinematic assets into the controller/overlay pipeline once renders land.
+- Next steps: hook bespoke finale cinematic assets into the controller/overlay pipeline once renders land.
+
+### Session #214 Backlog Updates
+
+#### Act 3 Narrative (415b4bd3-2053-400e-92a5-1f1fceccc632)
+- Authored `Act3ZenithInfiltrationDialogues` so every shared and stance-specific stage is voiced through mission-control comms, dispatching `act3:zenith_infiltration:stage` payloads with the exact quest metadata and flag sequencing (`src/game/data/dialogues/Act3ZenithInfiltrationDialogues.js`).
+- Registered the new dialogues during game bootstrap to keep Act 3 infiltration beats available in runtime dialogue manifests (`src/game/Game.js`).
+- Added Jest coverage ensuring each dialogue tree emits the correct quest payloads and branch metadata (`tests/game/data/dialogues/Act3ZenithInfiltrationDialogues.test.js`).
+- Verification: `npm test -- --runTestsByPath tests/game/data/dialogues/Act3ZenithInfiltrationDialogues.test.js` (full `npm test` run hit the known `tests/game/systems/ForensicSystem.test.js` <8 ms performance flake at ~9.06 ms).
+- Next steps: hook bespoke finale cinematic assets into the controller/overlay pipeline once renders land.
 
 ### Session #151 Backlog Updates
 
