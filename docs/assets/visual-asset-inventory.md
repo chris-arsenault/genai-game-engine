@@ -35,6 +35,7 @@
 - 2025-11-04: Session 201 executed `node scripts/art/promoteTilesetSeams.js --analysis=reports/art/neon-district-tileset-analysis.json`, outputting seam metadata for all 108 warnings to `assets/manifests/tilesets/image-ar-005-tileset-neon-district-metadata.json`; next step is wiring the manifest into the tileset preview harness.
 - 2025-11-05: Session 202 generated the seam preview report (`reports/art/tileset-previews/image-ar-005-tileset-neon-district-preview.json`) via `npm run art:preview-tileset -- --manifest=assets/manifests/tilesets/image-ar-005-tileset-neon-district-metadata.json --sample=6 --clusters=8` and validated corridor readiness with `npm run art:validate-tileset -- --manifest=assets/manifests/tilesets/image-ar-005-tileset-neon-district-metadata.json` (52 doorway clusters, longest span 19 tiles).
 - 2025-11-06: Session 203 published the `neonDistrictSeamPreview` catalog (`src/game/procedural/templates/neonDistrictSeamPreview.js`), embedding doorway clusters into template metadata, DistrictGenerator placements, and corridor seam painter summaries so tooling can query Neon District seam coverage without rereading the raw preview JSON.
+- 2025-11-07: Session 204 ran the seam automation stack for Corporate Spires, Archive Undercity, and Zenith Sector, outputting promoted manifests under `assets/manifests/tilesets/` and preview summaries in `reports/art/tileset-previews/` (doorway clusters: 153 / 30 / 2, longest spans: 14 / 8 / 41 tiles).
 
 ## Sourcing Plan
 - Phase 1 (today): Complete inventory (done) and shortlist inspirational references via `web_search` starting with AR-050 lighting overlays (for prompt guidance only).
@@ -192,6 +193,13 @@
 ## Session 191 Updates
 - Shared the staged Act 2 Crossroads RenderOps bundle (`deliveries/renderops/act2-crossroads/act2-crossroads-2025-10-31T20-26-00-520Z/act2-crossroads-2025-10-31T20-26-00-520Z.zip`), recording acknowledgement in `reports/telemetry/renderops-approvals/act2-crossroads/2025-10-31T20:26:00.543Z-c488a1c4-4834-4a83-9b33-57510d68c396.json` (status `completed`) and marking the earlier `2025-10-31T16:03:38.036Z-f426b509-8894-4e32-8af6-3ac278a3bdb8.json` queue entry as `superseded`.
 - Regenerated `reports/art/renderops-approval-summary.(json|md)` via `node scripts/art/monitorRenderOpsApprovals.js --markdown`, confirming zero pending actionable segments post-share.
+
+## Session 204 Updates
+- Executed `npm run art:analyze-tileset` for Corporate Spires, Archive Undercity, and Zenith Sector, producing `reports/art/corporate-spires-tileset-analysis.json`, `reports/art/archive-undercity-tileset-analysis.json`, and `reports/art/zenith-sector-tileset-analysis.json` to capture 4096-tile scans ahead of metadata promotion.
+- Promoted seam warnings with `node scripts/art/promoteTilesetSeams.js`, generating `assets/manifests/tilesets/image-ar-005-tileset-{corporate-spires,archive-undercity,zenith-sector}-metadata.json` (annotations: 196 / 61 / 61) and locking doorway metadata for corridor tooling.
+- Generated preview summaries via `node scripts/art/previewTilesetSeams.js --out=reports/art/tileset-previews/image-ar-005-tileset-*-preview.json`; results surface doorway cluster coverage (Corporate Spires 153 clusters, Archive Undercity 30 clusters, Zenith Sector 2 mega-corridors with a 41-tile span).
+- Validated each manifest with `node scripts/art/validateTilesetSeams.js --manifest=...`, confirming zero warnings and recording stats for backlog reporting.
+- Added automated guard `tests/art/ar005TilesetSeamManifests.test.js` to assert manifest/preview stats stay consistent and keep future promotions honest.
 
 ## Next Actions
 1. Monitor RenderOps feedback channels and import notes into `reports/art/renderops-feedback.json` if follow-up arrives for the 2025-10-31 packet.
