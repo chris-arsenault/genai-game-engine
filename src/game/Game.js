@@ -558,10 +558,7 @@ export class Game {
     // Broad-phase collision instrumentation (metrics only for stealth tuning)
     this.gameSystems.collision = new CollisionSystem(
       this.componentRegistry,
-      this.eventBus,
-      {
-        resolveCollisions: false,
-      }
+      this.eventBus
     );
     if (this.saveManager?.registerSpatialMetricsProvider) {
       this.saveManager.registerSpatialMetricsProvider(() => {
@@ -1032,7 +1029,9 @@ export class Game {
     this.fxOverlay = new FxOverlay(
       this.engine.canvas,
       this.eventBus,
-      {}
+      {
+        camera: this.camera,
+      }
     );
     this.fxOverlay.init();
 

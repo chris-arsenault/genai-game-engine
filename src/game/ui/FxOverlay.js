@@ -16,6 +16,7 @@ export class FxOverlay {
   constructor(canvas, eventBus, options = {}) {
     this.canvas = canvas;
     this.eventBus = eventBus;
+    this.camera = options.camera || null;
     this.effects = [];
     this._unbindFx = null;
     this.maxConcurrentEffects = Math.max(1, Number(options.maxConcurrentEffects) || 10);
@@ -322,14 +323,129 @@ export class FxOverlay {
     this._spawnScreenEffect(screenVariant, payload);
   }
 
-  _enqueueEffect(effect) {
+  _enqueueEffect(effect, payload = {}) {
     if (!effect) {
       return;
     }
     if (this.effects.length >= this.maxConcurrentEffects) {
       this.effects.shift();
     }
+    effect.anchor = this._resolveAnchor(payload);
+    effect.payload = payload;
     this.effects.push(effect);
+  }
+
+  _resolveAnchor(payload = {}) {
+    const world = this._extractWorldPosition(payload);
+    if (world) {
+      return { type: 'world', x: world.x, y: world.y };
+    }
+
+    const screen = this._extractScreenPosition(payload);
+    if (screen) {
+      return { type: 'screen', x: screen.x, y: screen.y };
+    }
+
+    const normalized = this._extractNormalizedAnchor(payload);
+    if (normalized) {
+      return { type: 'normalized', x: normalized.x, y: normalized.y };
+    }
+
+    return null;
+  }
+
+  _extractWorldPosition(payload = {}) {
+    const candidates = [
+      payload.worldPosition,
+      payload.context?.worldPosition,
+    ];
+
+    for (const candidate of candidates) {
+      const point = this._normalizePoint(candidate);
+      if (point) {
+        return point;
+      }
+    }
+    return null;
+  }
+
+  _extractScreenPosition(payload = {}) {
+    const candidates = [
+      payload.screenPosition,
+      payload.context?.screenPosition,
+    ];
+
+    for (const candidate of candidates) {
+      const point = this._normalizePoint(candidate);
+      if (point) {
+        return point;
+      }
+    }
+    return null;
+  }
+
+  _extractNormalizedAnchor(payload = {}) {
+    const candidates = [
+      payload.anchor,
+      payload.context?.anchor,
+    ];
+
+    for (const candidate of candidates) {
+      const norm = this._normalizePoint(candidate);
+      if (norm) {
+        return {
+          x: Math.min(Math.max(norm.x, 0), 1),
+          y: Math.min(Math.max(norm.y, 0), 1),
+        };
+      }
+    }
+    return null;
+  }
+
+  _normalizePoint(candidate) {
+    if (!candidate || typeof candidate !== 'object') {
+      return null;
+    }
+    const x = Number(candidate.x);
+    const y = Number(candidate.y);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      return null;
+    }
+    return { x, y };
+  }
+
+  _getEffectCenter(effect, canvas, fallback) {
+    if (effect?.anchor) {
+      if (effect.anchor.type === 'world' && this.camera?.worldToScreen) {
+        const worldPoint = this.camera.worldToScreen(effect.anchor.x, effect.anchor.y);
+        const clamped = this._normalizePoint(worldPoint);
+        if (clamped) {
+          const { x, y } = this._clampScreenPoint(clamped.x, clamped.y, canvas);
+          return { cx: x, cy: y, anchored: true };
+        }
+      } else if (effect.anchor.type === 'screen') {
+        const { x, y } = this._clampScreenPoint(effect.anchor.x, effect.anchor.y, canvas);
+        return { cx: x, cy: y, anchored: true };
+      } else if (effect.anchor.type === 'normalized') {
+        return {
+          cx: canvas.width * effect.anchor.x,
+          cy: canvas.height * effect.anchor.y,
+          anchored: true,
+        };
+      }
+    }
+
+    return {
+      cx: fallback.cx,
+      cy: fallback.cy,
+      anchored: false,
+    };
+  }
+
+  _clampScreenPoint(x, y, canvas) {
+    const clampedX = Math.min(Math.max(x, 0), canvas.width);
+    const clampedY = Math.min(Math.max(y, 0), canvas.height);
+    return { x: clampedX, y: clampedY };
   }
 
   _spawnActivationEffect(payload) {
@@ -339,7 +455,7 @@ export class FxOverlay {
       elapsed: 0,
       duration,
       render: this._renderActivation.bind(this),
-    });
+    }, payload);
   }
 
   _spawnDeactivationEffect(payload) {
@@ -349,7 +465,7 @@ export class FxOverlay {
       elapsed: 0,
       duration,
       render: this._renderDeactivation.bind(this),
-    });
+    }, payload);
   }
 
   _spawnQuestMilestoneEffect(payload) {
@@ -359,7 +475,7 @@ export class FxOverlay {
       elapsed: 0,
       duration,
       render: this._renderQuestMilestone.bind(this),
-    });
+    }, payload);
   }
 
   _spawnQuestCompleteEffect(payload) {
@@ -369,7 +485,7 @@ export class FxOverlay {
       elapsed: 0,
       duration,
       render: this._renderQuestComplete.bind(this),
-    });
+    }, payload);
   }
 
   _spawnForensicPulseEffect(payload) {
@@ -379,7 +495,7 @@ export class FxOverlay {
       elapsed: 0,
       duration,
       render: this._renderForensicPulse.bind(this),
-    });
+    }, payload);
   }
 
   _spawnForensicRevealEffect(payload) {
@@ -389,7 +505,7 @@ export class FxOverlay {
       elapsed: 0,
       duration,
       render: this._renderForensicReveal.bind(this),
-    });
+    }, payload);
   }
 
   _spawnDialogueStartEffect(payload) {
@@ -399,7 +515,7 @@ export class FxOverlay {
       elapsed: 0,
       duration,
       render: this._renderDialogueStart.bind(this),
-    });
+    }, payload);
   }
 
   _spawnDialogueBeatEffect(payload) {
@@ -411,7 +527,7 @@ export class FxOverlay {
       elapsed: 0,
       duration,
       render: this._renderDialogueBeat.bind(this),
-    });
+    }, payload);
   }
 
   _spawnDialogueCompleteEffect(payload) {
@@ -421,7 +537,7 @@ export class FxOverlay {
       elapsed: 0,
       duration,
       render: this._renderDialogueComplete.bind(this),
-    });
+    }, payload);
   }
 
   _spawnCaseProgressEffect(payload) {
@@ -433,7 +549,7 @@ export class FxOverlay {
       elapsed: 0,
       duration,
       render: this._renderCaseProgress.bind(this),
-    });
+    }, payload);
   }
 
   _spawnCaseObjectiveEffect(payload) {
@@ -444,7 +560,7 @@ export class FxOverlay {
       elapsed: 0,
       duration,
       render: this._renderCaseProgress.bind(this),
-    });
+    }, payload);
   }
 
   _spawnCaseSolvedEffect(payload) {
@@ -454,7 +570,7 @@ export class FxOverlay {
       elapsed: 0,
       duration,
       render: this._renderCaseSolved.bind(this),
-    });
+    }, payload);
   }
 
   _spawnScreenEffect(variant, payload = {}) {
@@ -490,7 +606,7 @@ export class FxOverlay {
       elapsed: 0,
       duration,
       render: this._renderScreenEffect.bind(this),
-    });
+    }, payload);
   }
 
   _renderActivation(ctx, effect, canvas, theme) {
@@ -590,35 +706,47 @@ export class FxOverlay {
   _renderCaseProgress(ctx, effect, canvas, theme) {
     const progress = Math.min(1, effect.elapsed / effect.duration);
     const eased = 1 - Math.pow(progress, 1.5);
-    let cx = canvas.width * 0.25;
-    let cy = canvas.height * 0.82;
+
+    let fallback = {
+      cx: canvas.width * 0.25,
+      cy: canvas.height * 0.82,
+    };
     let inner = theme.caseEvidenceInner;
     let outer = theme.caseEvidenceOuter;
 
     if (effect.variant === 'caseCluePulse') {
-      cx = canvas.width * 0.75;
+      fallback = {
+        cx: canvas.width * 0.75,
+        cy: canvas.height * 0.82,
+      };
       inner = theme.caseClueInner;
       outer = theme.caseClueOuter;
     } else if (effect.variant === 'caseObjectivePulse') {
-      cx = canvas.width * 0.5;
-      cy = canvas.height * 0.88;
+      fallback = {
+        cx: canvas.width * 0.5,
+        cy: canvas.height * 0.88,
+      };
       inner = theme.caseObjectiveInner;
       outer = theme.caseObjectiveOuter;
     }
 
-    const radius = Math.min(canvas.width, canvas.height) * 0.22;
+    const { cx, cy, anchored } = this._getEffectCenter(effect, canvas, fallback);
+    const baseRadius = anchored
+      ? Math.min(canvas.width, canvas.height) * 0.12
+      : Math.min(canvas.width, canvas.height) * 0.22;
+    const innerRadius = Math.max(0, baseRadius * (anchored ? 0.35 : 0.2));
 
     ctx.save();
     ctx.globalAlpha = Math.max(0, eased);
 
-    const gradient = ctx.createRadialGradient(cx, cy, Math.max(0, radius * 0.2), cx, cy, radius);
+    const gradient = ctx.createRadialGradient(cx, cy, innerRadius, cx, cy, baseRadius);
     gradient.addColorStop(0, inner);
     gradient.addColorStop(0.8, outer);
     gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
     ctx.fillStyle = gradient;
     ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.arc(cx, cy, baseRadius, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
@@ -721,25 +849,54 @@ export class FxOverlay {
   _renderQuestMilestone(ctx, effect, canvas, theme) {
     const progress = Math.min(1, effect.elapsed / effect.duration);
     const intensity = Math.pow(1 - progress, 1.4);
-    const bandHeight = Math.max(canvas.height * 0.28 * intensity, 40);
+
+    const fallback = {
+      cx: canvas.width * 0.5,
+      cy: canvas.height * 0.16,
+    };
+    const { cx, cy, anchored } = this._getEffectCenter(effect, canvas, fallback);
 
     ctx.save();
-    ctx.globalAlpha = intensity;
 
-    const gradient = ctx.createLinearGradient(0, 0, 0, bandHeight);
-    gradient.addColorStop(0, theme.questPulseTop);
-    gradient.addColorStop(1, theme.questPulseBottom);
+    if (anchored) {
+      ctx.globalAlpha = intensity;
+      const maxRadius = Math.min(canvas.width, canvas.height) * 0.18;
+      const innerRadius = Math.max(0, maxRadius * 0.2);
+      const gradient = ctx.createRadialGradient(cx, cy, innerRadius, cx, cy, maxRadius);
+      gradient.addColorStop(0, theme.questPulseTop);
+      gradient.addColorStop(1, theme.questPulseBottom);
 
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, bandHeight);
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(cx, cy, maxRadius, 0, Math.PI * 2);
+      ctx.fill();
 
-    ctx.strokeStyle = theme.questPulseRim;
-    ctx.lineWidth = Math.max(3, bandHeight * 0.12);
-    ctx.globalAlpha = intensity * 0.85;
-    ctx.beginPath();
-    ctx.moveTo(0, bandHeight);
-    ctx.lineTo(canvas.width, bandHeight);
-    ctx.stroke();
+      ctx.strokeStyle = theme.questPulseRim;
+      ctx.lineWidth = Math.max(3, maxRadius * 0.25);
+      ctx.globalAlpha = intensity * 0.8;
+      ctx.beginPath();
+      ctx.arc(cx, cy, maxRadius * 0.8, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      const bandHeight = Math.max(canvas.height * 0.28 * intensity, 40);
+      ctx.globalAlpha = intensity;
+
+      const gradient = ctx.createLinearGradient(0, 0, 0, bandHeight);
+      gradient.addColorStop(0, theme.questPulseTop);
+      gradient.addColorStop(1, theme.questPulseBottom);
+
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, bandHeight);
+
+      ctx.strokeStyle = theme.questPulseRim;
+      ctx.lineWidth = Math.max(3, bandHeight * 0.12);
+      ctx.globalAlpha = intensity * 0.85;
+      ctx.beginPath();
+      ctx.moveTo(0, bandHeight);
+      ctx.lineTo(canvas.width, bandHeight);
+      ctx.stroke();
+    }
+
     ctx.restore();
   }
 
@@ -778,10 +935,15 @@ export class FxOverlay {
   _renderForensicPulse(ctx, effect, canvas, theme) {
     const progress = Math.min(1, effect.elapsed / effect.duration);
     const fade = 1 - progress;
-    const cx = canvas.width / 2;
-    const cy = canvas.height / 2;
-    const baseRadius = Math.min(canvas.width, canvas.height) * 0.15;
-    const radius = baseRadius + baseRadius * progress * 2.5;
+    const fallback = {
+      cx: canvas.width / 2,
+      cy: canvas.height / 2,
+    };
+    const { cx, cy, anchored } = this._getEffectCenter(effect, canvas, fallback);
+    const baseRadius = anchored
+      ? Math.min(canvas.width, canvas.height) * 0.08
+      : Math.min(canvas.width, canvas.height) * 0.15;
+    const radius = baseRadius + baseRadius * progress * (anchored ? 1.6 : 2.5);
 
     ctx.save();
     ctx.globalAlpha = fade;
@@ -806,9 +968,14 @@ export class FxOverlay {
   _renderForensicReveal(ctx, effect, canvas, theme) {
     const progress = Math.min(1, effect.elapsed / effect.duration);
     const eased = Math.pow(1 - progress, 1.1);
-    const cx = canvas.width / 2;
-    const cy = canvas.height / 2;
-    const outer = Math.max(canvas.width, canvas.height) * 0.45;
+    const fallback = {
+      cx: canvas.width / 2,
+      cy: canvas.height / 2,
+    };
+    const { cx, cy, anchored } = this._getEffectCenter(effect, canvas, fallback);
+    const outer = anchored
+      ? Math.min(canvas.width, canvas.height) * 0.2
+      : Math.max(canvas.width, canvas.height) * 0.45;
 
     ctx.save();
     ctx.globalAlpha = eased;

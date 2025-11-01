@@ -46,10 +46,12 @@ describe('MovementIndicatorOverlay FX cues', () => {
     expect(fxCalls).toHaveLength(1);
     expect(fxCalls[0][1]).toMatchObject({
       effectId: 'movementIndicatorPulse',
+      worldPosition: { x: 12, y: 18 },
       context: expect.objectContaining({
         source: 'player:moving',
         hasDirection: true,
         speed: 2.5,
+        worldPosition: { x: 12, y: 18 },
       }),
     });
   });
@@ -76,5 +78,6 @@ describe('MovementIndicatorOverlay FX cues', () => {
     expect(eventBus.emit).toHaveBeenCalledTimes(2);
     const [, payload] = eventBus.emit.mock.calls[eventBus.emit.mock.calls.length - 1];
     expect(payload.context.hasDirection).toBe(true);
+    expect(payload.worldPosition).toEqual({ x: 18, y: 24 });
   });
 });

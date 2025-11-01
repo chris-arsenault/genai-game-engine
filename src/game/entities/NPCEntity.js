@@ -120,8 +120,7 @@ export function createNPCEntity(entityManager, componentRegistry, npcData) {
         dialogueId
       }
     });
-    interactionZone.type = 'InteractionZone';
-    componentRegistry.addComponent(entityId, interactionZone);
+    componentRegistry.addComponent(entityId, 'InteractionZone', interactionZone);
   }
 
   if (npcData?.navigationAgent) {

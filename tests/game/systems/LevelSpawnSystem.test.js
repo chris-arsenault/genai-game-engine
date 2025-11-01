@@ -227,6 +227,12 @@ describe('LevelSpawnSystem', () => {
       expect(componentRegistry.hasComponent(entityId, 'Sprite')).toBe(true);
       expect(componentRegistry.hasComponent(entityId, 'FactionMember')).toBe(true);
       expect(componentRegistry.hasComponent(entityId, 'NPC')).toBe(true);
+      expect(componentRegistry.hasComponent(entityId, 'InteractionZone')).toBe(true);
+
+      const zone = componentRegistry.getComponent(entityId, 'InteractionZone');
+      expect(zone).toBeDefined();
+      expect(zone.type).toBe('dialogue');
+      expect(componentRegistry.getComponent(entityId, 'dialogue')).toBeUndefined();
     });
 
     it('should insert NPC into spatial hash', () => {
@@ -322,6 +328,10 @@ describe('LevelSpawnSystem', () => {
       expect(componentRegistry.hasComponent(entityId, 'Sprite')).toBe(true);
       expect(componentRegistry.hasComponent(entityId, 'Collider')).toBe(true);
       expect(componentRegistry.hasComponent(entityId, 'InteractionZone')).toBe(true);
+
+      const zone = componentRegistry.getComponent(entityId, 'InteractionZone');
+      expect(zone).toBeDefined();
+      expect(zone.type).toBe('container');
     });
 
     it('should spawn furniture without interaction zone', () => {

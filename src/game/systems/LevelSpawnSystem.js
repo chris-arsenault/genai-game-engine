@@ -283,8 +283,7 @@ export class LevelSpawnSystem extends System {
             contents: objectData.contents || [],
           },
         });
-        interactionZone.type = 'InteractionZone';
-        this.componentRegistry.addComponent(entityId, interactionZone);
+        this.componentRegistry.addComponent(entityId, 'InteractionZone', interactionZone);
       }
 
       // Update spatial hash if available

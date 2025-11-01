@@ -188,14 +188,20 @@ export class MovementIndicatorOverlay {
     const direction = context.direction ?? { x: 0, y: 0 };
     const hasDirection = Math.abs(direction.x) > 0.01 || Math.abs(direction.y) > 0.01;
     const speed = this._resolveSpeed(context);
+    const worldPosition = this.indicator?.worldPosition || context.position;
+    const anchor = worldPosition && typeof worldPosition.x === 'number' && typeof worldPosition.y === 'number'
+      ? { x: worldPosition.x, y: worldPosition.y }
+      : null;
 
     this.eventBus.emit('fx:overlay_cue', {
       effectId: 'movementIndicatorPulse',
       source: 'MovementIndicatorOverlay',
+      worldPosition: anchor,
       context: {
         source: context.source ?? 'player:moving',
         hasDirection,
         speed,
+        worldPosition: anchor,
       },
     });
   }

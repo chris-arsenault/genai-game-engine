@@ -317,10 +317,23 @@ export class InteractionPromptOverlay {
       return;
     }
 
+    const activeWorldPosition = this.prompt?.worldPosition;
+    const contextWorldPosition = context?.worldPosition;
+    const worldPosition = activeWorldPosition || contextWorldPosition || null;
+    const normalizedWorldPosition = worldPosition
+      ? { x: worldPosition.x, y: worldPosition.y }
+      : null;
+
+    const mergedContext = {
+      ...context,
+      worldPosition: normalizedWorldPosition,
+    };
+
     this.eventBus.emit('fx:overlay_cue', {
       effectId,
       source: 'InteractionPromptOverlay',
-      context,
+      worldPosition: normalizedWorldPosition,
+      context: mergedContext,
     });
   }
 }
