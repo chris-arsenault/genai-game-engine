@@ -496,14 +496,20 @@
     {
       "id": "image-memory-parlor-neon-001",
       "title": "Futuristic chamber with glowing energy beam",
-      "status": "reference-selected",
+      "status": "ai-generated",
       "arId": "AR-050",
       "scheduledWeek": null,
-      "deliverablePath": null,
-      "statusHistory": [],
-      "notes": "Capture neon bevel edges and volumetric beam cues for future environment illustration pass.",
-      "latestContext": null,
-      "lastUpdated": null,
+      "deliverablePath": "assets/generated/ar-050/image-memory-parlor-neon-001.png",
+      "statusHistory": [
+        {
+          "status": "ai-generated",
+          "recordedAt": "2025-11-01T04:19:25Z",
+          "context": "Session 217 automation delivered neon memory parlor overlay via mcp__generate-image__generate_image."
+        }
+      ],
+      "notes": "Session 217 GPT-Image run captured volumetric cyan/magenta beams, firewall arcs, and modular cover lanes aligned with infiltration encounter beats.",
+      "latestContext": "Session 217 GPT-Image run delivered neon infiltration overlay.",
+      "lastUpdated": "2025-11-01T04:19:25Z",
       "needsNarrativeApproval": false,
       "needsRenderOpsApproval": false,
       "approvalsDetected": {

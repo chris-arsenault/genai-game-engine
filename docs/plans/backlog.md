@@ -60,6 +60,12 @@
 - Converted AR-008 adaptive music, QUEST-610 trigger migration, and UX-410 overlay feedback to **review-approved**, documenting the automation-first follow-ups so no manual approvals remain outstanding.
 - Trimmed active WIP to AR-050 and M3-016 while AR-003 now lives in review-approved status, keeping the MCP backlog within the enforced Work-In-Progress ceiling.
 
+### Session #217 Backlog Updates
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- Executed a GPT-Image-1 run for `image-memory-parlor-neon-001`, staging the Memory Parlor infiltration plate at `assets/generated/ar-050/image-memory-parlor-neon-001.png` and updating manifests/docs (`assets/images/requests.json`, `reports/art/neon-glow-approval-status.{json,md}`, `docs/assets/visual-asset-inventory.md`) to reflect its ai-generated status.
+- Verification: Asset generation only (`mcp__generate-image__generate_image`); derivative overlay metadata remains a future follow-up.
+
 ### Session #174 Backlog Updates
 
 #### AR-007: Particle Effects (M7)

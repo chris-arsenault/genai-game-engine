@@ -2,13 +2,23 @@
   {
     "id": "image-memory-parlor-neon-001",
     "arId": "AR-050",
-    "title": "Futuristic chamber with glowing energy beam",
-    "creator": "itsiken",
-    "source": "https://unsplash.com/photos/futuristic-chamber-with-glowing-energy-beam-8ZsBU6LBfO0",
-    "license": "Unsplash License",
-    "status": "reference-selected",
+    "title": "Memory Parlor Neon Infiltration Plate",
+    "creator": "Codex Autonomous Agent (GPT-Image-1)",
+    "source": "assets/generated/ar-050/image-memory-parlor-neon-001.png",
+    "license": "Internal generation (OpenAI gpt-image-1)",
+    "status": "ai-generated",
     "usage": "Memory Parlor stealth lighting reference for cover blocks and firewall glow.",
-    "notes": "Capture neon bevel edges and volumetric beam cues for future environment illustration pass."
+    "notes": "Session 217 GPT-Image run captured volumetric cyan/magenta beams, firewall arcs, and modular cover lanes aligned with infiltration encounter beats. Based on prior reference itsiken/Unsplash 8ZsBU6LBfO0 for palette cues.",
+    "generatedAt": "2025-11-01T04:19:25Z",
+    "route": "ai",
+    "statusHistory": [
+      {
+        "status": "ai-generated",
+        "recordedAt": "2025-11-01T04:19:25Z",
+        "context": "Session 217 automation delivered neon memory parlor overlay via mcp__generate-image__generate_image.",
+        "route": "ai"
+      }
+    ]
   },
   {
     "id": "image-ar-001-deduction-board-bg",
