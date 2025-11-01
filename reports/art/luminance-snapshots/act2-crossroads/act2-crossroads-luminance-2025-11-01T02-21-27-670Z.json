@@ -1,0 +1,13 @@
+{
+  "generatedAt": 1761963687670,
+  "generatedIso": "2025-11-01T02:21:27.670Z",
+  "overlayDir": "assets/overlays/act2-crossroads",
+  "tolerance": null,
+  "totalSegments": 12,
+  "statusCounts": {
+    "ok": 12
+  },
+  "metadataDrift": [],
+  "highlights": [],
+  "links": {}
+}

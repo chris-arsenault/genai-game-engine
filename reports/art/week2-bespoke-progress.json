@@ -1,0 +1,11 @@
+{
+  "weekNumber": 2,
+  "generatedAt": "2025-11-01T02:21:13.551Z",
+  "updatesApplied": 0,
+  "plannedCount": 5,
+  "statusBreakdown": {
+    "ai-generated": 5
+  },
+  "applied": [],
+  "skipped": []
+}

@@ -80,6 +80,7 @@ import { ControlBindingsObservationLog } from './telemetry/ControlBindingsObserv
 // Quest data
 import { registerAct1Quests } from './data/quests/act1Quests.js';
 import { registerAct2CrossroadsQuest } from './data/quests/act2CrossroadsQuest.js';
+import { registerAct3GatheringSupportQuest } from './data/quests/act3GatheringSupportQuest.js';
 import { registerAct2NeuroSyncQuest } from './data/quests/act2NeuroSyncQuest.js';
 import { registerAct2ResistanceQuest } from './data/quests/act2ResistanceQuest.js';
 import { registerAct2PersonalInvestigationQuest } from './data/quests/act2PersonalInvestigationQuest.js';
@@ -88,6 +89,7 @@ import { tutorialCase } from './data/cases/tutorialCase.js';
 // Dialogue data
 import { registerAct1Dialogues } from './data/dialogues/Act1Dialogues.js';
 import { registerAct2CrossroadsDialogues } from './data/dialogues/Act2CrossroadsDialogue.js';
+import { registerAct3GatheringSupportDialogues } from './data/dialogues/Act3GatheringSupportDialogues.js';
 import { registerAct2BranchObjectiveDialogues } from './data/dialogues/Act2BranchObjectiveDialogues.js';
 
 // Entity factories
@@ -392,6 +394,10 @@ export class Game {
     registerAct2CrossroadsQuest(this.questManager);
     console.log('[Game] Act 2 Crossroads quest registered');
 
+    // Register Act 3 stance preparation quest scaffolding
+    registerAct3GatheringSupportQuest(this.questManager);
+    console.log('[Game] Act 3 Gathering Support quest registered');
+
     // Initialize TutorialTranscriptRecorder prior to SaveManager wiring
     this.tutorialTranscriptRecorder = new TutorialTranscriptRecorder(this.eventBus);
     console.log('[Game] TutorialTranscriptRecorder initialized');
@@ -488,6 +494,10 @@ export class Game {
     // Register Act 2 branch objective dialogues
     registerAct2BranchObjectiveDialogues(this.gameSystems.dialogue);
     console.log('[Game] Act 2 branch objective dialogues registered');
+
+    // Register Act 3 gathering support dialogues
+    registerAct3GatheringSupportDialogues(this.gameSystems.dialogue);
+    console.log('[Game] Act 3 Gathering Support dialogues registered');
 
     // Create camera follow system
     this.gameSystems.cameraFollow = new CameraFollowSystem(

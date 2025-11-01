@@ -31,9 +31,9 @@
 | UX-173 | P1 | Completed | Debug audio overlay now fully keyboard navigable with Shift+Alt+A shortcut, focus trap, and Playwright coverage. | Continue watching the automated Playwright spec for regressions during future overlay changes. |
 
 **Next Session Focus**:
-- Extend Act 3 narrative coverage to the `main-act3-gathering-support` questline with branch-specific objectives and dialogue beats wired through the existing automation checks.
-- Author ending-specific epilogues that map stance outcomes to finale cinematics while keeping narrative exports validated by the scripted pipelines.
-- Execute the 2025-11-07 AR-050 bespoke automation sweep (`npm run art:track-bespoke -- --week=2` → `npm run art:export-crossroads-luminance`) and archive the generated tolerance report.
+- **Completed – Session 209** Extend Act 3 narrative coverage to the `main-act3-gathering-support` questline with branch-specific objectives and dialogue beats wired through the existing automation checks. → Follow-up: scaffold `main-act3-zenith-infiltration` using the new stance flags and success markers.
+- **Completed – Session 209** Author ending-specific epilogues that map stance outcomes to finale cinematics while keeping narrative exports validated by the scripted pipelines. → Follow-up: integrate exporter outputs with finale cinematic sequencing scripts.
+- **Completed – Session 209** Execute the 2025-11-07 AR-050 bespoke automation sweep (`npm run art:track-bespoke -- --week=2` → `npm run art:export-crossroads-luminance`) and archive the generated tolerance report. → Follow-up: ingest vendor payloads once week-two updates land and rerun progress tally.
 - Sync manifests and metadata for the newly generated AR-005 tilesets (Corporate Spires, Archive Undercity, Zenith Sector) using the art tooling so seam/collision annotations ship alongside the Neon District analysis.
 - Translate the Neon District seam/collision analysis (`npm run art:analyze-tileset`) into metadata by triaging the 108 automated warnings before enabling in-engine previews.
 - Keep the backlog aligned with the performance freeze; do not schedule new profiling, benchmarking, or telemetry initiatives.
