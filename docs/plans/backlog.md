@@ -215,6 +215,14 @@
 - Verification: `npm run test:e2e -- tests/e2e/act3-zenith-finale.spec.js`, `npm test -- --runTestsByPath tests/game/systems/ForensicSystem.test.js`.
 - Next steps: audit other static asset manifests for lingering `/assets/` URL prefixes so Vite publicDir warnings do not recur, and extend Playwright coverage to assert finale hero/beat art swaps correctly for support and alternative stance branches.
 
+### Session #224 Backlog Updates
+
+#### Act 3 Narrative (415b4bd3-2053-400e-92a5-1f1fceccc632)
+- Audited finale cinematic manifests and runtime asset plumbing to confirm no `/assets/` URL prefixes remain in stance hero/beat descriptors, keeping Vite publicDir warnings suppressed.
+- Expanded `tests/e2e/act3-zenith-finale.spec.js` to exercise opposition, support, and alternative finales, asserting the overlay/controller surface the correct stance-specific hero and beat artwork paths.
+- Verification: `./run_playwright.sh test tests/e2e/act3-zenith-finale.spec.js`.
+- Next steps: re-run the finale cinematic E2E once the adaptive audio mix lands to validate mood transitions and telemetry hand-offs; smoke test Act 3 finale save/load continuity to ensure stance-specific art descriptors persist across sessions.
+
 ### Session #151 Backlog Updates
 
 #### M3-022: District Access Evaluation Utilities

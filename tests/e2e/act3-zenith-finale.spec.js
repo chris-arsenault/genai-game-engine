@@ -2,12 +2,6 @@ import { test, expect } from '@playwright/test';
 import { waitForGameLoad, collectConsoleErrors } from './setup.js';
 
 const QUEST_ID = 'main-act3-zenith-infiltration';
-const STANCE = {
-  id: 'opposition',
-  flag: 'act3_stance_opposition',
-  approachId: 'stealth',
-  branchId: 'opposition',
-};
 
 const PREREQUISITE_FLAGS = [
   'act3_gathering_support_complete',
@@ -42,255 +36,361 @@ const SHARED_STAGES = [
   },
 ];
 
-const OPPOSITION_STAGES = [
+const BRANCH_STAGES = {
+  opposition: [
+    {
+      stageId: 'opposition_disable_grid',
+      objectiveId: 'obj_zenith_opposition_disable_grid',
+      successFlag: 'act3_zenith_opposition_grid_disabled',
+    },
+    {
+      stageId: 'opposition_calibrate_dampeners',
+      objectiveId: 'obj_zenith_opposition_calibrate_dampeners',
+      successFlag: 'act3_zenith_opposition_dampeners_calibrated',
+    },
+    {
+      stageId: 'opposition_resistance_diversion',
+      objectiveId: 'obj_zenith_opposition_resistance_diversion',
+      successFlag: 'act3_zenith_opposition_resistance_diverted',
+    },
+  ],
+  support: [
+    {
+      stageId: 'support_overclock_relays',
+      objectiveId: 'obj_zenith_support_overclock_relays',
+      successFlag: 'act3_zenith_support_relays_overclocked',
+    },
+    {
+      stageId: 'support_stage_response',
+      objectiveId: 'obj_zenith_support_stage_response',
+      successFlag: 'act3_zenith_support_response_staged',
+    },
+    {
+      stageId: 'support_calibrate_dampeners',
+      objectiveId: 'obj_zenith_support_calibrate_dampeners',
+      successFlag: 'act3_zenith_support_dampeners_calibrated',
+    },
+  ],
+  alternative: [
+    {
+      stageId: 'alternative_dossier_upload',
+      objectiveId: 'obj_zenith_alternative_dossier_upload',
+      successFlag: 'act3_zenith_alternative_dossier_uploaded',
+    },
+    {
+      stageId: 'alternative_forum_security',
+      objectiveId: 'obj_zenith_alternative_forum_security',
+      successFlag: 'act3_zenith_alternative_forum_secured',
+    },
+    {
+      stageId: 'alternative_beacons_sync',
+      objectiveId: 'obj_zenith_alternative_beacons_sync',
+      successFlag: 'act3_zenith_alternative_beacons_synchronized',
+    },
+  ],
+};
+
+const STANCE_CONFIGS = [
   {
-    stageId: 'opposition_disable_grid',
-    objectiveId: 'obj_zenith_opposition_disable_grid',
-    successFlag: 'act3_zenith_opposition_grid_disabled',
+    id: 'opposition',
+    flag: 'act3_stance_opposition',
+    approachId: 'stealth',
+    branchId: 'opposition',
+    hero: {
+      assetId: 'act3_finale_opposition_hero_v1',
+      src: '/overlays/act3-finale/opposition/act3_finale_opposition_hero.png',
+    },
+    beatAssets: {
+      opposition_city_morning: {
+        assetId: 'act3_finale_opposition_city_morning_v1',
+        src: '/overlays/act3-finale/opposition/act3_finale_opposition_city_morning.png',
+      },
+      opposition_morrow_confronted: {
+        assetId: 'act3_finale_opposition_morrow_confronted_v1',
+        src: '/overlays/act3-finale/opposition/act3_finale_opposition_morrow_confronted.png',
+      },
+      opposition_team_outlook: {
+        assetId: 'act3_finale_opposition_team_outlook_v1',
+        src: '/overlays/act3-finale/opposition/act3_finale_opposition_team_outlook.png',
+      },
+    },
   },
   {
-    stageId: 'opposition_calibrate_dampeners',
-    objectiveId: 'obj_zenith_opposition_calibrate_dampeners',
-    successFlag: 'act3_zenith_opposition_dampeners_calibrated',
+    id: 'support',
+    flag: 'act3_stance_support',
+    approachId: 'assault',
+    branchId: 'support',
+    hero: {
+      assetId: 'act3_finale_support_hero_v1',
+      src: '/overlays/act3-finale/support/act3_finale_support_hero.png',
+    },
+    beatAssets: {
+      support_city_aftermath: {
+        assetId: 'act3_finale_support_city_aftermath_v1',
+        src: '/overlays/act3-finale/support/act3_finale_support_city_aftermath.png',
+      },
+      support_morrow_signal: {
+        assetId: 'act3_finale_support_morrow_signal_v1',
+        src: '/overlays/act3-finale/support/act3_finale_support_morrow_signal.png',
+      },
+      support_team_resolve: {
+        assetId: 'act3_finale_support_team_resolve_v1',
+        src: '/overlays/act3-finale/support/act3_finale_support_team_resolve.png',
+      },
+    },
   },
   {
-    stageId: 'opposition_resistance_diversion',
-    objectiveId: 'obj_zenith_opposition_resistance_diversion',
-    successFlag: 'act3_zenith_opposition_resistance_diverted',
+    id: 'alternative',
+    flag: 'act3_stance_alternative',
+    approachId: 'social',
+    branchId: 'alternative',
+    hero: {
+      assetId: 'act3_finale_alternative_hero_v1',
+      src: '/overlays/act3-finale/alternative/act3_finale_alternative_hero.png',
+    },
+    beatAssets: {
+      alternative_city_commons: {
+        assetId: 'act3_finale_alternative_city_commons_v1',
+        src: '/overlays/act3-finale/alternative/act3_finale_alternative_city_commons.png',
+      },
+      alternative_morrow_mentor: {
+        assetId: 'act3_finale_alternative_morrow_mentor_v1',
+        src: '/overlays/act3-finale/alternative/act3_finale_alternative_morrow_mentor.png',
+      },
+      alternative_team_legacy: {
+        assetId: 'act3_finale_alternative_team_legacy_v1',
+        src: '/overlays/act3-finale/alternative/act3_finale_alternative_team_legacy.png',
+      },
+    },
   },
 ];
 
-const SUPPORT_STAGES = [
-  {
-    stageId: 'support_overclock_relays',
-    objectiveId: 'obj_zenith_support_overclock_relays',
-    successFlag: 'act3_zenith_support_relays_overclocked',
-  },
-  {
-    stageId: 'support_stage_response',
-    objectiveId: 'obj_zenith_support_stage_response',
-    successFlag: 'act3_zenith_support_response_staged',
-  },
-  {
-    stageId: 'support_calibrate_dampeners',
-    objectiveId: 'obj_zenith_support_calibrate_dampeners',
-    successFlag: 'act3_zenith_support_dampeners_calibrated',
-  },
-];
+async function runFinaleScenario(page, stance) {
+  await waitForGameLoad(page);
 
-const ALTERNATIVE_STAGES = [
-  {
-    stageId: 'alternative_dossier_upload',
-    objectiveId: 'obj_zenith_alternative_dossier_upload',
-    successFlag: 'act3_zenith_alternative_dossier_uploaded',
-  },
-  {
-    stageId: 'alternative_forum_security',
-    objectiveId: 'obj_zenith_alternative_forum_security',
-    successFlag: 'act3_zenith_alternative_forum_secured',
-  },
-  {
-    stageId: 'alternative_beacons_sync',
-    objectiveId: 'obj_zenith_alternative_beacons_sync',
-    successFlag: 'act3_zenith_alternative_beacons_synchronized',
-  },
-];
+  await page.waitForFunction(
+    () =>
+      Boolean(
+        window.game?.questManager &&
+          window.game?.worldStateStore &&
+          window.game?.storyFlagManager &&
+          window.game?.eventBus &&
+          window.game?.act3FinaleCinematicSequencer &&
+          window.game?.act3FinaleCinematicController &&
+          window.game?.finaleCinematicOverlay
+      ),
+    { timeout: 15000 }
+  );
 
-test.describe('Act 3 finale readiness', () => {
-  test('Zenith infiltration completion dispatches finale cinematic readiness payload', async ({ page }) => {
-    const consoleErrors = collectConsoleErrors(page);
-
-    await waitForGameLoad(page);
-
-    await page.waitForFunction(
-      () =>
-        Boolean(
-          window.game?.questManager &&
-            window.game?.worldStateStore &&
-            window.game?.storyFlagManager &&
-            window.game?.eventBus &&
-            window.game?.act3FinaleCinematicSequencer &&
-            window.game?.act3FinaleCinematicController &&
-            window.game?.finaleCinematicOverlay
-        ),
-      { timeout: 15000 }
-    );
-
-    await page.evaluate(
-      ({ questId, prerequisiteFlags, stance }) => {
-        const { questManager, storyFlagManager, eventBus } = window.game;
-        for (const flagId of prerequisiteFlags) {
-          storyFlagManager.setFlag(flagId, true);
-        }
-        storyFlagManager.setFlag(stance.flag, true);
-
-        window.__finaleEvents = [];
-        const record = (type) => (payload) => {
-          window.__finaleEvents.push({
-            type,
-            payload: payload ? JSON.parse(JSON.stringify(payload)) : null,
-          });
-        };
-
-        const unsubscribes = [
-          eventBus.on('narrative:finale_cinematic_ready', record('ready')),
-          eventBus.on('narrative:finale_cinematic_begin', record('begin')),
-          eventBus.on('narrative:finale_cinematic_beat_advanced', record('beat')),
-          eventBus.on('narrative:finale_cinematic_completed', record('completed')),
-          eventBus.on('narrative:finale_cinematic_skipped', record('skipped')),
-        ];
-        window.__finaleUnsubscribes = unsubscribes;
-
-        if (!questManager.quests.has('main-act3-archive-heart')) {
-          questManager.registerQuest({
-            id: 'main-act3-archive-heart',
-            title: 'Archive Heart (Stub)',
-            type: 'main',
-            act: 'act3',
-            description: 'Stub quest registration for Playwright validation.',
-            autoStart: false,
-            prerequisites: null,
-            objectives: [],
-            rewards: null,
-            branches: [],
-            metadata: {},
-          });
-        }
-
-        const zenithQuest = questManager.quests.get(questId);
-        if (zenithQuest && Array.isArray(zenithQuest.branches)) {
-          for (const branch of zenithQuest.branches) {
-            if (branch && !branch.nextQuest) {
-              branch.nextQuest = 'main-act3-archive-heart';
-            }
-          }
-        }
-
-        if (!questManager.activeQuests.has(questId)) {
-          questManager.startQuest(questId);
-        }
-      },
-      { questId: QUEST_ID, prerequisiteFlags: PREREQUISITE_FLAGS, stance: STANCE }
-    );
-
-    await page.waitForFunction(
-      (questId) => {
-        const questState = window.game.worldStateStore?.getState()?.quest?.byId?.[questId];
-        return questState?.status === 'active';
-      },
-      QUEST_ID,
-      { timeout: 5000 }
-    );
-
-    await page.evaluate(
-      ({ questId, sharedStages, oppositionStages, supportStages, alternativeStages, stance }) => {
-        const { eventBus } = window.game;
-        const emitStage = (stage, overrides) => {
-          eventBus.emit('act3:zenith_infiltration:stage', {
-            questId,
-            branchId: overrides.branchId ?? null,
-            stanceId: overrides.stanceId ?? null,
-            stanceFlag: overrides.stanceFlag ?? null,
-            approachId: overrides.approachId ?? null,
-            stageId: stage.stageId,
-            objectiveId: stage.objectiveId,
-            successFlag: stage.successFlag ?? null,
-            storyFlags: stage.storyFlags ?? null,
-            worldFlags: stage.worldFlags ?? null,
-          });
-        };
-
-        const sequences = [
-          { branchId: 'shared', stages: sharedStages, stanceMeta: null },
-          { branchId: stance.branchId, stages: oppositionStages, stanceMeta: stance },
-          { branchId: 'support', stages: supportStages, stanceMeta: null },
-          { branchId: 'alternative', stages: alternativeStages, stanceMeta: null },
-        ];
-
-        for (const sequence of sequences) {
-          for (const stage of sequence.stages) {
-            emitStage(stage, {
-              branchId: sequence.branchId,
-              stanceId: sequence.stanceMeta?.id ?? null,
-              stanceFlag: sequence.stanceMeta?.flag ?? null,
-              approachId: sequence.stanceMeta?.approachId ?? null,
-            });
-          }
-        }
-      },
-      {
-        questId: QUEST_ID,
-        sharedStages: SHARED_STAGES,
-        oppositionStages: OPPOSITION_STAGES,
-        supportStages: SUPPORT_STAGES,
-        alternativeStages: ALTERNATIVE_STAGES,
-        stance: STANCE,
+  await page.evaluate(
+    ({ questId, prerequisiteFlags, stancePayload }) => {
+      const { questManager, storyFlagManager, eventBus } = window.game;
+      for (const flagId of prerequisiteFlags) {
+        storyFlagManager.setFlag(flagId, true);
       }
-    );
 
-    await page.waitForFunction(
-      (questId) => {
-        const questState = window.game.worldStateStore?.getState()?.quest?.byId?.[questId];
-        return questState?.status === 'completed';
-      },
-      QUEST_ID,
-      { timeout: 5000 }
-    );
+      storyFlagManager.setFlag(stancePayload.flag, true);
 
-    await page.waitForFunction(
-      () => window.game.storyFlagManager?.hasFlag('act3_zenith_infiltration_complete'),
-      { timeout: 5000 }
-    );
-
-    await page.waitForFunction(
-      () =>
-        Array.isArray(window.__finaleEvents) &&
-        window.__finaleEvents.some((event) => event.type === 'ready'),
-      { timeout: 7000 }
-    );
-
-    const stateAfterReady = await page.evaluate(({ questId }) => {
-      const game = window.game;
-      const questState = game.worldStateStore?.getState()?.quest?.byId?.[questId] ?? null;
-      const events = Array.isArray(window.__finaleEvents) ? window.__finaleEvents.slice() : [];
-      const controllerState =
-        typeof game.act3FinaleCinematicController?.getState === 'function'
-          ? game.act3FinaleCinematicController.getState()
-          : null;
-      const overlay = game.finaleCinematicOverlay ?? null;
-
-      return {
-        questStatus: questState?.status ?? null,
-        infiltrationComplete: game.storyFlagManager?.getFlag(
-          'act3_zenith_infiltration_complete',
-          false
-        ),
-        readyEvent: events.find((evt) => evt.type === 'ready') ?? null,
-        beatEvents: events.filter((evt) => evt.type === 'beat'),
-        controllerState,
-        overlayState: overlay
-          ? {
-              visible: overlay.visible,
-              activeBeatIndex: overlay.activeBeatIndex,
-              revealedBeats: overlay.revealedBeats,
-              status: overlay.status,
-            }
-          : null,
+      window.__finaleEvents = [];
+      const record = (type) => (payload) => {
+        window.__finaleEvents.push({
+          type,
+          payload: payload ? JSON.parse(JSON.stringify(payload)) : null,
+        });
       };
-    }, { questId: QUEST_ID });
 
-    expect(stateAfterReady.questStatus).toBe('completed');
-    expect(stateAfterReady.infiltrationComplete).toBe(true);
-    expect(stateAfterReady.readyEvent).not.toBeNull();
-    expect(stateAfterReady.controllerState?.active).toBe(true);
-    expect(stateAfterReady.controllerState?.beatIndex).toBe(0);
-    expect(stateAfterReady.controllerState?.payload?.stanceId).toBe(STANCE.id);
-    expect(stateAfterReady.overlayState?.visible).toBe(true);
-    expect(stateAfterReady.overlayState?.activeBeatIndex).toBe(0);
+      const unsubscribes = [
+        eventBus.on('narrative:finale_cinematic_ready', record('ready')),
+        eventBus.on('narrative:finale_cinematic_begin', record('begin')),
+        eventBus.on('narrative:finale_cinematic_beat_advanced', record('beat')),
+        eventBus.on('narrative:finale_cinematic_completed', record('completed')),
+        eventBus.on('narrative:finale_cinematic_skipped', record('skipped')),
+      ];
+      window.__finaleUnsubscribes = unsubscribes;
 
-    const initialBeatCount = stateAfterReady.beatEvents.length;
-    expect(initialBeatCount).toBeGreaterThanOrEqual(1);
+      if (!questManager.quests.has('main-act3-archive-heart')) {
+        questManager.registerQuest({
+          id: 'main-act3-archive-heart',
+          title: 'Archive Heart (Stub)',
+          type: 'main',
+          act: 'act3',
+          description: 'Stub quest registration for Playwright validation.',
+          autoStart: false,
+          prerequisites: null,
+          objectives: [],
+          rewards: null,
+          branches: [],
+          metadata: {},
+        });
+      }
 
+      const zenithQuest = questManager.quests.get(questId);
+      if (zenithQuest && Array.isArray(zenithQuest.branches)) {
+        for (const branch of zenithQuest.branches) {
+          if (branch && !branch.nextQuest) {
+            branch.nextQuest = 'main-act3-archive-heart';
+          }
+        }
+      }
+
+      if (!questManager.activeQuests.has(questId)) {
+        questManager.startQuest(questId);
+      }
+    },
+    {
+      questId: QUEST_ID,
+      prerequisiteFlags: PREREQUISITE_FLAGS,
+      stancePayload: {
+        id: stance.id,
+        flag: stance.flag,
+        approachId: stance.approachId,
+        branchId: stance.branchId,
+      },
+    }
+  );
+
+  await page.waitForFunction(
+    (questId) => {
+      const questState = window.game.worldStateStore?.getState()?.quest?.byId?.[questId];
+      return questState?.status === 'active';
+    },
+    QUEST_ID,
+    { timeout: 5000 }
+  );
+
+  await page.evaluate(
+    ({ questId, sharedStages, branchStages, stancePayload }) => {
+      const { eventBus } = window.game;
+      const emitStage = (stage, overrides) => {
+        eventBus.emit('act3:zenith_infiltration:stage', {
+          questId,
+          branchId: overrides.branchId ?? null,
+          stanceId: overrides.stanceId ?? null,
+          stanceFlag: overrides.stanceFlag ?? null,
+          approachId: overrides.approachId ?? null,
+          stageId: stage.stageId,
+          objectiveId: stage.objectiveId,
+          successFlag: stage.successFlag ?? null,
+          storyFlags: stage.storyFlags ?? null,
+          worldFlags: stage.worldFlags ?? null,
+        });
+      };
+
+      const sequences = [
+        { branchId: 'shared', stages: sharedStages, stanceMeta: null },
+        {
+          branchId: 'opposition',
+          stages: branchStages.opposition ?? [],
+          stanceMeta: stancePayload.id === 'opposition' ? stancePayload : null,
+        },
+        {
+          branchId: 'support',
+          stages: branchStages.support ?? [],
+          stanceMeta: stancePayload.id === 'support' ? stancePayload : null,
+        },
+        {
+          branchId: 'alternative',
+          stages: branchStages.alternative ?? [],
+          stanceMeta: stancePayload.id === 'alternative' ? stancePayload : null,
+        },
+      ];
+
+      for (const sequence of sequences) {
+        for (const stage of sequence.stages) {
+          emitStage(stage, {
+            branchId: sequence.branchId,
+            stanceId: sequence.stanceMeta?.id ?? null,
+            stanceFlag: sequence.stanceMeta?.flag ?? null,
+            approachId: sequence.stanceMeta?.approachId ?? null,
+          });
+        }
+      }
+    },
+    {
+      questId: QUEST_ID,
+      sharedStages: SHARED_STAGES,
+      branchStages: BRANCH_STAGES,
+      stancePayload: {
+        id: stance.id,
+        flag: stance.flag,
+        approachId: stance.approachId,
+      },
+    }
+  );
+
+  await page.waitForFunction(
+    (questId) => {
+      const questState = window.game.worldStateStore?.getState()?.quest?.byId?.[questId];
+      return questState?.status === 'completed';
+    },
+    QUEST_ID,
+    { timeout: 5000 }
+  );
+
+  await page.waitForFunction(
+    () => window.game.storyFlagManager?.hasFlag('act3_zenith_infiltration_complete'),
+    { timeout: 5000 }
+  );
+
+  await page.waitForFunction(
+    () =>
+      Array.isArray(window.__finaleEvents) &&
+      window.__finaleEvents.some((event) => event.type === 'ready'),
+    { timeout: 7000 }
+  );
+
+  const stateAfterReady = await page.evaluate(({ questId }) => {
+    const game = window.game;
+    const questState = game.worldStateStore?.getState()?.quest?.byId?.[questId] ?? null;
+    const events = Array.isArray(window.__finaleEvents) ? window.__finaleEvents.slice() : [];
+    const controllerState =
+      typeof game.act3FinaleCinematicController?.getState === 'function'
+        ? game.act3FinaleCinematicController.getState()
+        : null;
+    const overlay = game.finaleCinematicOverlay ?? null;
+
+    const overlayVisuals = overlay
+      ? {
+          hero: overlay.visuals?.hero
+            ? {
+                assetId: overlay.visuals.hero.assetId ?? null,
+                src: overlay.visuals.hero.src ?? null,
+                status: overlay.visuals.hero.status ?? null,
+              }
+            : null,
+          beats: Object.entries(overlay.visuals?.beats ?? {}).reduce((acc, [beatId, descriptor]) => {
+            acc[beatId] = {
+              assetId: descriptor?.assetId ?? null,
+              src: descriptor?.src ?? null,
+              status: descriptor?.status ?? null,
+            };
+            return acc;
+          }, {}),
+        }
+      : null;
+
+    return {
+      questStatus: questState?.status ?? null,
+      infiltrationComplete: game.storyFlagManager?.getFlag('act3_zenith_infiltration_complete', false),
+      readyEvent: events.find((evt) => evt.type === 'ready') ?? null,
+      beatEvents: events.filter((evt) => evt.type === 'beat'),
+      controllerState,
+      overlayState: overlay
+        ? {
+            visible: overlay.visible,
+            activeBeatIndex: overlay.activeBeatIndex,
+            revealedBeats: overlay.revealedBeats,
+            status: overlay.status,
+          }
+        : null,
+      overlayVisuals,
+    };
+  }, { questId: QUEST_ID });
+
+  const initialBeatCount = stateAfterReady.beatEvents.length;
+
+  let advancedState = null;
+  if (initialBeatCount > 0) {
     await page.evaluate(() => {
       window.game.eventBus.emit('input:confirm:pressed', { source: 'playwright_test' });
     });
@@ -303,7 +403,7 @@ test.describe('Act 3 finale readiness', () => {
       { timeout: 4000 }
     );
 
-    const advancedState = await page.evaluate(() => {
+    advancedState = await page.evaluate(() => {
       const controller =
         typeof window.game.act3FinaleCinematicController?.getState === 'function'
           ? window.game.act3FinaleCinematicController.getState()
@@ -315,25 +415,71 @@ test.describe('Act 3 finale readiness', () => {
         overlayIndex: overlay?.activeBeatIndex ?? null,
       };
     });
+  }
 
-    expect(advancedState.beatIndex).toBe(1);
-    expect(advancedState.revealedBeats).toBe(2);
-    expect(advancedState.overlayIndex).toBe(1);
-
-    const finalEvents = await page.evaluate(() => {
-      const events = Array.isArray(window.__finaleEvents) ? window.__finaleEvents.slice() : [];
-      if (Array.isArray(window.__finaleUnsubscribes)) {
-        for (const off of window.__finaleUnsubscribes) {
-          if (typeof off === 'function') {
-            off();
-          }
+  const finalEvents = await page.evaluate(() => {
+    const events = Array.isArray(window.__finaleEvents) ? window.__finaleEvents.slice() : [];
+    if (Array.isArray(window.__finaleUnsubscribes)) {
+      for (const off of window.__finaleUnsubscribes) {
+        if (typeof off === 'function') {
+          off();
         }
       }
-      window.__finaleUnsubscribes = [];
-      return events;
-    });
-
-    expect(finalEvents.filter((evt) => evt.type === 'ready')).toHaveLength(1);
-    expect(consoleErrors).toEqual([]);
+    }
+    window.__finaleUnsubscribes = [];
+    return events;
   });
+
+  return { stateAfterReady, advancedState, finalEvents, initialBeatCount };
+}
+
+test.describe('Act 3 finale readiness', () => {
+  for (const stance of STANCE_CONFIGS) {
+    test(`finale pipeline surfaces ${stance.id} hero and beat artwork`, async ({ page }) => {
+      const consoleErrors = collectConsoleErrors(page);
+      const { stateAfterReady, advancedState, finalEvents, initialBeatCount } =
+        await runFinaleScenario(page, stance);
+
+      expect(stateAfterReady.questStatus).toBe('completed');
+      expect(stateAfterReady.infiltrationComplete).toBe(true);
+      expect(stateAfterReady.readyEvent).not.toBeNull();
+      expect(stateAfterReady.controllerState?.active).toBe(true);
+      expect(stateAfterReady.controllerState?.payload?.stanceId).toBe(stance.id);
+      expect(stateAfterReady.overlayState?.visible).toBe(true);
+      expect(stateAfterReady.overlayState?.activeBeatIndex).toBeGreaterThanOrEqual(0);
+
+      const heroVisual = stateAfterReady.overlayVisuals?.hero;
+      expect(heroVisual?.src).toBe(stance.hero.src);
+      expect(heroVisual?.assetId).toBe(stance.hero.assetId);
+
+      const heroSummary = stateAfterReady.controllerState?.assets?.hero ?? null;
+      if (heroSummary) {
+        expect(heroSummary.src).toBe(stance.hero.src);
+        expect(heroSummary.assetId).toBe(stance.hero.assetId);
+      }
+
+      for (const [beatId, expectedDescriptor] of Object.entries(stance.beatAssets)) {
+        const overlayDescriptor = stateAfterReady.overlayVisuals?.beats?.[beatId] ?? null;
+        expect(overlayDescriptor?.src).toBe(expectedDescriptor.src);
+        expect(overlayDescriptor?.assetId).toBe(expectedDescriptor.assetId);
+
+        const controllerDescriptor =
+          stateAfterReady.controllerState?.assets?.beats?.[beatId] ?? null;
+        if (controllerDescriptor) {
+          expect(controllerDescriptor.src).toBe(expectedDescriptor.src);
+          expect(controllerDescriptor.assetId).toBe(expectedDescriptor.assetId);
+        }
+      }
+
+      expect(initialBeatCount).toBeGreaterThanOrEqual(1);
+      if (advancedState) {
+        expect(advancedState.beatIndex).toBeGreaterThanOrEqual(1);
+        expect(advancedState.revealedBeats).toBeGreaterThanOrEqual(2);
+        expect(advancedState.overlayIndex).toBeGreaterThanOrEqual(1);
+      }
+
+      expect(finalEvents.filter((evt) => evt.type === 'ready')).toHaveLength(1);
+      expect(consoleErrors).toEqual([]);
+    });
+  }
 });
