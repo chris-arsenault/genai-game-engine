@@ -1,0 +1,354 @@
+{
+  "tilesetId": "image-ar-005-tileset-neon-district",
+  "sourceImage": "assets/generated/images/ar-005/image-ar-005-tileset-neon-district.png",
+  "tileSize": 16,
+  "promotedAt": "2025-10-31T22:54:40.354Z",
+  "sourceAnalysis": "reports/art/neon-district-tileset-analysis.json",
+  "totals": {
+    "warnings": 108,
+    "promoted": 108
+  },
+  "stats": {
+    "annotations": 108,
+    "rowsCovered": 39,
+    "columnsCovered": 37,
+    "orientation": {
+      "horizontal": 58,
+      "vertical": 50
+    },
+    "openEdge": {
+      "east": 45,
+      "south": 31,
+      "north": 19,
+      "west": 13
+    },
+    "tags": {
+      "doorway": 108,
+      "horizontal": 58,
+      "vertical": 50
+    },
+    "collisions": {
+      "block": 108
+    },
+    "classifications": {
+      "solid": 108
+    },
+    "clusterCount": 52,
+    "averageClusterLength": 2.08,
+    "longestClusterLength": 19
+  },
+  "coverage": {
+    "minRow": 1,
+    "maxRow": 61,
+    "minColumn": 13,
+    "maxColumn": 59
+  },
+  "clusters": [
+    {
+      "length": 19,
+      "start": {
+        "row": 33,
+        "column": 32
+      },
+      "end": {
+        "row": 33,
+        "column": 50
+      },
+      "tileIndices": [
+        2144,
+        2145,
+        2146,
+        2147,
+        2148,
+        2149,
+        2150,
+        2151,
+        2152,
+        2153,
+        2154,
+        2155,
+        2156,
+        2157,
+        2158,
+        2159,
+        2160,
+        2161,
+        2162
+      ],
+      "orientation": "vertical",
+      "openEdges": [
+        "south"
+      ],
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "length": 9,
+      "start": {
+        "row": 33,
+        "column": 22
+      },
+      "end": {
+        "row": 33,
+        "column": 30
+      },
+      "tileIndices": [
+        2134,
+        2135,
+        2136,
+        2137,
+        2138,
+        2139,
+        2140,
+        2141,
+        2142
+      ],
+      "orientation": "vertical",
+      "openEdges": [
+        "south"
+      ],
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "length": 7,
+      "start": {
+        "row": 1,
+        "column": 34
+      },
+      "end": {
+        "row": 1,
+        "column": 40
+      },
+      "tileIndices": [
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104
+      ],
+      "orientation": "vertical",
+      "openEdges": [
+        "north"
+      ],
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "length": 7,
+      "start": {
+        "row": 1,
+        "column": 45
+      },
+      "end": {
+        "row": 1,
+        "column": 51
+      },
+      "tileIndices": [
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115
+      ],
+      "orientation": "vertical",
+      "openEdges": [
+        "north"
+      ],
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "length": 5,
+      "start": {
+        "row": 17,
+        "column": 31
+      },
+      "end": {
+        "row": 21,
+        "column": 31
+      },
+      "tileIndices": [
+        1119,
+        1183,
+        1247,
+        1311,
+        1375
+      ],
+      "orientation": "horizontal",
+      "openEdges": [
+        "east"
+      ],
+      "tags": [
+        "doorway",
+        "horizontal"
+      ]
+    },
+    {
+      "length": 4,
+      "start": {
+        "row": 1,
+        "column": 55
+      },
+      "end": {
+        "row": 1,
+        "column": 58
+      },
+      "tileIndices": [
+        119,
+        120,
+        121,
+        122
+      ],
+      "orientation": "vertical",
+      "openEdges": [
+        "north"
+      ],
+      "tags": [
+        "doorway",
+        "vertical"
+      ]
+    },
+    {
+      "length": 4,
+      "start": {
+        "row": 58,
+        "column": 30
+      },
+      "end": {
+        "row": 61,
+        "column": 30
+      },
+      "tileIndices": [
+        3742,
+        3806,
+        3870,
+        3934
+      ],
+      "orientation": "horizontal",
+      "openEdges": [
+        "east"
+      ],
+      "tags": [
+        "doorway",
+        "horizontal"
+      ]
+    },
+    {
+      "length": 3,
+      "start": {
+        "row": 8,
+        "column": 59
+      },
+      "end": {
+        "row": 10,
+        "column": 59
+      },
+      "tileIndices": [
+        571,
+        635,
+        699
+      ],
+      "orientation": "horizontal",
+      "openEdges": [
+        "east"
+      ],
+      "tags": [
+        "doorway",
+        "horizontal"
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "tileIndex": 98,
+      "row": 1,
+      "column": 34,
+      "openEdge": "north",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ],
+      "collision": "block",
+      "warningType": "potential-door"
+    },
+    {
+      "tileIndex": 99,
+      "row": 1,
+      "column": 35,
+      "openEdge": "north",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ],
+      "collision": "block",
+      "warningType": "potential-door"
+    },
+    {
+      "tileIndex": 100,
+      "row": 1,
+      "column": 36,
+      "openEdge": "north",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ],
+      "collision": "block",
+      "warningType": "potential-door"
+    },
+    {
+      "tileIndex": 101,
+      "row": 1,
+      "column": 37,
+      "openEdge": "north",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ],
+      "collision": "block",
+      "warningType": "potential-door"
+    },
+    {
+      "tileIndex": 102,
+      "row": 1,
+      "column": 38,
+      "openEdge": "north",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ],
+      "collision": "block",
+      "warningType": "potential-door"
+    },
+    {
+      "tileIndex": 103,
+      "row": 1,
+      "column": 39,
+      "openEdge": "north",
+      "orientation": "vertical",
+      "tags": [
+        "doorway",
+        "vertical"
+      ],
+      "collision": "block",
+      "warningType": "potential-door"
+    }
+  ]
+}

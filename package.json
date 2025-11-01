@@ -27,6 +27,8 @@
     "art:summarize-neon-glow": "node scripts/art/summarizeNeonGlowApprovals.js",
     "art:decide-asset-route": "node scripts/art/decideAssetRouting.js",
     "art:analyze-tileset": "node scripts/art/analyzeTilesetSeams.js",
+    "art:preview-tileset": "node scripts/art/previewTilesetSeams.js",
+    "art:validate-tileset": "node scripts/art/validateTilesetSeams.js",
     "art:capture-locomotion": "node scripts/art/capturePlayerLocomotionFrames.js",
     "art:export-crossroads-luminance": "node scripts/art/exportCrossroadsLuminanceSnapshot.js",
     "benchmark:layout-graph": "node scripts/benchmarks/runLayoutGraphBenchmark.js",
