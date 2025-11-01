@@ -272,3 +272,186 @@ export async function reachForensicStep(page) {
     { timeout: 5000 }
   );
 }
+
+export async function exerciseDeductionBoardPointerInteractions(page) {
+  await page.evaluate(() => {
+    const game = window.game;
+    if (!game) {
+      throw new Error('Game instance unavailable for deduction board automation');
+    }
+
+    const deductionSystem = game.gameSystems?.deduction;
+    if (!deductionSystem) {
+      throw new Error('Deduction system unavailable while exercising pointer interactions');
+    }
+
+    const caseManager = game.caseManager;
+    if (!caseManager) {
+      throw new Error('CaseManager unavailable for deduction board automation');
+    }
+
+    if (!caseManager.getActiveCase()) {
+      const fallbackCaseId = 'case_001_hollow_case';
+      if (caseManager.getCase(fallbackCaseId)) {
+        caseManager.setActiveCase(fallbackCaseId);
+      }
+    }
+
+    deductionSystem.openBoard('playwright-automation');
+  });
+
+  await page.waitForFunction(
+    () => window.game?.deductionBoard?.visible === true,
+    null,
+    { timeout: 5000 }
+  );
+
+  const pointerSetup = await page.evaluate(() => {
+    const canvas = document.getElementById('game-canvas');
+    if (!canvas) {
+      return { error: 'Primary game canvas unavailable for pointer automation' };
+    }
+    const ctxRect = canvas.getBoundingClientRect();
+    const board = window.game?.deductionBoard;
+    if (!board || !board.visible) {
+      return { error: 'Deduction board failed to open for pointer automation' };
+    }
+
+    const nodes = Array.from(board.nodes.values());
+    if (nodes.length < 2) {
+      return { error: 'Insufficient clue nodes available to exercise pointer interactions' };
+    }
+
+    const [firstNode, secondNode] = nodes;
+    const sourceNode = secondNode || firstNode;
+    const targetNode = firstNode;
+    const sourceCenter = sourceNode.getCenter();
+    const targetCenter = targetNode.getCenter();
+
+    return {
+      error: null,
+      canvasWidth: canvas.width,
+      canvasHeight: canvas.height,
+      rect: {
+        left: ctxRect.left,
+        top: ctxRect.top,
+        width: ctxRect.width,
+        height: ctxRect.height,
+      },
+      source: {
+        id: sourceNode.id,
+        x: sourceNode.x,
+        y: sourceNode.y,
+        width: sourceNode.width,
+        height: sourceNode.height,
+        center: sourceCenter,
+      },
+      target: {
+        id: targetNode.id,
+        x: targetNode.x,
+        y: targetNode.y,
+        width: targetNode.width,
+        height: targetNode.height,
+        center: targetCenter,
+      },
+      initialConnections: board.connections.map((conn) => ({ from: conn.from, to: conn.to })),
+      clearButton: {
+        x: board.clearButton.x,
+        y: board.clearButton.y,
+        width: board.clearButton.width,
+        height: board.clearButton.height,
+      },
+    };
+  });
+
+  if (pointerSetup.error) {
+    throw new Error(pointerSetup.error);
+  }
+
+  const {
+    canvasWidth,
+    canvasHeight,
+    rect,
+    source,
+    target,
+    initialConnections,
+    clearButton,
+  } = pointerSetup;
+
+  const initialConnectionCount = initialConnections.length;
+
+  const toViewportCoordinates = (point) => ({
+    x: rect.left + (point.x / canvasWidth) * rect.width,
+    y: rect.top + (point.y / canvasHeight) * rect.height,
+  });
+
+  const sourceStartPoint = {
+    x: source.x + Math.min(12, source.width / 3),
+    y: source.y + source.height / 2,
+  };
+
+  const dragStart = toViewportCoordinates(sourceStartPoint);
+  const dragEnd = toViewportCoordinates(target.center);
+
+  await page.mouse.move(dragStart.x, dragStart.y);
+  await page.mouse.down();
+  await page.mouse.move(dragEnd.x, dragEnd.y, { steps: 8 });
+  await page.mouse.up();
+
+  const postDragConnections = await page.evaluate(() => {
+    const board = window.game?.deductionBoard;
+    if (!board) {
+      return [];
+    }
+    return board.connections.map((conn) => ({ from: conn.from, to: conn.to }));
+  });
+
+  const clearButtonCenter = toViewportCoordinates({
+    x: clearButton.x + clearButton.width / 2,
+    y: clearButton.y + clearButton.height / 2,
+  });
+
+  await page.mouse.click(clearButtonCenter.x, clearButtonCenter.y);
+
+  await page.waitForFunction(
+    (expectedCount) => {
+      const board = window.game?.deductionBoard;
+      if (!board) {
+        return false;
+      }
+      return board.connections.length === expectedCount;
+    },
+    initialConnectionCount,
+    { timeout: 2000 }
+  );
+
+  const finalConnections = await page.evaluate(() => {
+    const board = window.game?.deductionBoard;
+    if (!board) {
+      return [];
+    }
+    return board.connections.map((conn) => ({ from: conn.from, to: conn.to }));
+  });
+
+  await page.evaluate(() => {
+    const deductionSystem = window.game?.gameSystems?.deduction;
+    if (deductionSystem && deductionSystem.isOpen) {
+      deductionSystem.closeBoard('playwright-automation');
+    }
+  });
+
+  const createdConnection = postDragConnections.find(
+    (conn) => conn.from === source.id && conn.to === target.id
+  );
+
+  return {
+    initialConnectionCount,
+    postDragConnections,
+    finalConnectionCount: finalConnections.length,
+    connectionAdded: createdConnection != null,
+    connectionRemoved: finalConnections.length === initialConnectionCount,
+    sourceNodeId: source.id,
+    targetNodeId: target.id,
+    clearedViaButton: true,
+  };
+}

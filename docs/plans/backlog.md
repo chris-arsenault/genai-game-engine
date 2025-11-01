@@ -2158,6 +2158,8 @@ _Progress 2025-11-26 (Session #242 objective tracking pass): Implemented CaseMan
 
 _Progress 2025-11-26 (Session #243 pointer routing): Introduced a canvas pointer controller that normalises coordinates and forwards pointer events to the board so the live overlay supports dragging, hovering, and right-click removal without manual wiring. Added targeted Jest coverage for the controller to keep regression checks automated._
 
+_Progress 2025-11-27 (Session #244 automation validation): Extended the tutorial investigative loop Playwright spec and helper utilities to drive deduction board drag/drop and board clearing via the pointer controller. End-to-end automation now confirms live interactions stay stable; profiling work remains queued for asset integration._
+
 #### M2-006: Deduction System and Theory Validation
 - **Priority**: P0
 - **Tags**: `gameplay`, `investigation`

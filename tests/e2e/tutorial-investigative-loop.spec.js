@@ -4,6 +4,7 @@ import {
   prepareTutorial,
   collectEvidenceById,
   activateDetectiveVisionFlow,
+  exerciseDeductionBoardPointerInteractions,
 } from './utils/tutorialActions.js';
 
 async function waitForObjectiveStatus(page, objectiveId, expectedStatus, timeout = 10000) {
@@ -146,6 +147,14 @@ test.describe('Tutorial investigative loop integration', () => {
     );
     expect(questSnapshot.objectives.obj_unlock_detective_vision.status).toBe('completed');
     expect(questSnapshot.objectives.obj_interview_witness.status).toBe('completed');
+
+    const pointerResult = await exerciseDeductionBoardPointerInteractions(page);
+    expect(pointerResult.connectionAdded).toBe(true);
+    expect(pointerResult.connectionRemoved).toBe(true);
+    expect(pointerResult.postDragConnections.some(
+      (conn) => conn.from === pointerResult.sourceNodeId && conn.to === pointerResult.targetNodeId
+    )).toBe(true);
+    expect(pointerResult.clearedViaButton).toBe(true);
 
     expect(consoleErrors).toEqual([]);
   });
