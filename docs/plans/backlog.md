@@ -17,7 +17,7 @@
 - A strict WIP ceiling of ten active items (statuses `in-progress`, `blocked`, `ready-for-review`) is enforced; defer pulls or escalate conflicts instead of breaching the cap.
 - New backlog entries are only created when the work is critical to delivering committed roadmap functionality or sprint objectives.
 - Tangential initiatives—such as net-new systems, auxiliary tooling, narrative review suites, or analytics dashboards—remain out of scope until roadmap deliverables ship.
-- Telemetry and performance testing initiatives are closed; do not schedule or create new work in these areas per the 2025-10-31 directive.
+- Telemetry and performance management/testing initiatives are cancelled; do not schedule or create new work in these areas per the 2025-11-04 directive.
 
 ### Current High-Priority Focus (Groomed 2025-10-29)
 
@@ -27,14 +27,14 @@
 | AR-050 | P0 | In Progress | Visual asset sourcing pipeline now covers Act 2 Crossroads selection conduit/pad, checkpoint glow/plaza, safehouse arc, boundary walls, and column beam overlays with CC0/CC-BY references captured in manifests; Session 112 calibrated tint/alpha parameters (~0.13 columns/conduits, ~0.75 boundaries), Session 113 added a lighting preview harness plus queued the AR-001–AR-005 generation batch, Session 114 boosted conduit/glow/column luminance so previewed segments meet thresholds, Session 115 delivered placeholder atlases for AR-001–AR-005, Session 116 layered RenderOps packet/placeholder audit automation, Session 117 shipped prioritized replacement plans, Session 118 produced a four-week bespoke art sprint schedule plus delivery staging CLI, Session 121 automated week-one bespoke status ingestion with licensing approvals recorded in manifests/reports, Session 171 added TRACK_BESPOKE_ROOT overrides plus Jest coverage to keep `scripts/art/trackBespokeDeliverables.js` ingest sweeps reproducible, Session 172 generated safehouse floor, briefing pad, and branch walkway textures via GPT-Image-1 with manifests flipped to `ai-generated`, Session 175 reran `scripts/art/packageRenderOpsLighting.js` to ship `reports/art/renderops-packets/act2-crossroads-2025-10-31T16-03-38-011Z` alongside a ready_for_ack approval job, Session 189 refreshed the bespoke cadence (track-bespoke → package-renderops → export-crossroads-luminance) yielding packet `act2-crossroads-2025-10-31T20-26-00-520Z` with zero actionable segments and approval queue `2025-10-31T20:26:00.543Z-c488a1c4-4834-4a83-9b33-57510d68c396.json`, and Session 191 captured RenderOps acknowledgement while regenerating the approval summary (0 pending actionable segments). | Run `npm run art:track-bespoke -- --week=2` on 2025-11-07 to generate the week-two packet automatically, then execute `npm run art:export-crossroads-luminance` to capture the script-driven tolerance report. |
 | TUT-201 | P0 | Completed | Tutorial case blocked at step 3 (`evidence_detection`) because legacy scene entities bypassed ECS detection events. | ECS-aligned tutorial scene entities shipped Session #51; re-run tutorial smoke tests after combat audio validation. |
 | AUDIO-351 | P0 | Completed | Validate live combat/disguise trigger routing through `AmbientSceneAudioController` using real combat loop events. | Adaptive audio routing now responds to gameplay emits; telemetry verified by Jest/Playwright suites and new infiltration benchmark. |
-| PERF-214 | P1 | Completed | Profiling harness restored; `npm run profile` runs without module errors and captures infiltration telemetry. | Monitor profiling harness results in CI and schedule the next performance sweep after overlay integration lands. |
+| PERF-214 | P1 | Completed | Profiling harness restored; `npm run profile` runs without module errors and captures infiltration telemetry. | No further follow-up; profiling harness remains static per the 2025-11-04 performance freeze. |
 | UX-173 | P1 | Completed | Debug audio overlay now fully keyboard navigable with Shift+Alt+A shortcut, focus trap, and Playwright coverage. | Continue watching the automated Playwright spec for regressions during future overlay changes. |
 
 **Next Session Focus**:
-- Monitor the AR-005 tileset queue (`assets/images/generation-queue/2025-10-31T22-51-38-840Z-ar-005.jsonl`) and rerun the manifest sync once GPT generation completes so Corporate Spires, Archive Undercity, and Zenith Sector atlases land automatically.
+- Sync manifests and metadata for the newly generated AR-005 tilesets (Corporate Spires, Archive Undercity, Zenith Sector) and stage seam/collision annotations alongside the existing Neon District analysis.
 - Translate the Neon District seam/collision analysis (`npm run art:analyze-tileset`) into authored metadata by triaging the 108 warnings in `reports/art/neon-district-tileset-analysis.json`; integrate priority seams before enabling in-engine previews.
 - Execute the 2025-11-07 AR-050 bespoke sweep (`npm run art:track-bespoke -- --week=2` → `npm run art:export-crossroads-luminance`) and archive the scripted tolerance report.
-- Trend LayoutGraph benchmark + investigation profiling outputs (`npm run benchmark:layout-graph`, `npm run profile -- --scenario=investigation`) so M2-020 perf monitoring stays automated.
+- Keep the backlog aligned with the performance freeze; do not schedule new profiling, benchmarking, or telemetry initiatives.
 
 ### Session #173 Backlog Maintenance
 
@@ -263,6 +263,7 @@
 #### FX-238: FxCue Performance Sampling
 - Authored `FxCueMetricsSampler` to capture coordinator throughput, maintain rolling averages/peaks, and emit warning payloads when the FX load approaches frame budget risk.
 - Registered the sampler inside `Game.update`, emitting `fx:metrics_sample`/`fx:metrics_warning` events for future HUD integration, and exercised the logic with dedicated Jest tests.
+- **Note (2025-11-04)**: Further HUD/performance overlay work is paused; sampler remains in maintenance-only mode.
 
 #### FX-239: Narrative Overlay Secondary Cues
 - CaseFileUI now emits `fx:overlay_cue` events for overlay open/close and new evidence/clue/objective updates, aligning HUD beats with case progression (`src/game/ui/CaseFileUI.js`).
@@ -276,6 +277,7 @@
 - `CaseManager` broadcasts evidence/clue/objective/case completion cues (`caseEvidencePulse`, `caseCluePulse`, `caseObjectivePulse`, `caseSolvedBurst`), paired with updated Jest assertions to guarantee narrative milestones trigger FX.
 - Added `FxCueCoordinator` to gate `fx:overlay_cue` throughput, rebroadcast `fx:composite_cue` with concurrency metrics, and capped `FxOverlay` active effects while introducing dialogue/case renderers to prevent HUD overload.
 - Verification: `npm test -- --runTestsByPath tests/game/ui/FxOverlay.test.js tests/game/systems/DialogueSystem.test.js tests/game/managers/CaseManager.test.js tests/game/fx/FxCueCoordinator.test.js`.
+- **Note (2025-11-04)**: Performance freeze prohibits new throughput monitoring; existing automation remains maintenance-only.
 
 ### Session #129 Backlog Updates
 
@@ -782,6 +784,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Benchmark script records spawn time across 5 runs with averages and variance.
   - CI perf threshold updated (or code optimized) so baseline stays <50 ms on target hardware.
   - Root cause and mitigations summarized in performance notes.
+- **Status**: Cancelled — 2025-11-04 directive to halt performance management; no telemetry or benchmarking follow-up will be pursued.
 
 #### PERF-119: Procedural Guardrail Monitoring
 - **Priority**: P3
@@ -1269,6 +1272,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Profiling script loads representative scenes (vendor transactions + dialogue gating) and outputs V8 log for inspection.
   - Documentation updated with usage instructions and expected output location.
   - Latest run captures vendor purchase scenarios and writes JSON summaries under `benchmark-results/`.
+- **Note (2025-11-04)**: Profiling harness is frozen; no additional sweeps, alerting, or enhancements will be scheduled.
 
 ---
 
@@ -1773,6 +1777,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - District assets load next
   - Optional assets don't block gameplay
   - Progress events emit correctly
+- **Status**: Cancelled — 2025-11-04 performance freeze removes priority loading optimization from scope.
 
 #### M1-023: Game Loop Implementation
 - **Priority**: P0
@@ -1834,6 +1839,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Hotspots identified and documented
   - Optimization opportunities prioritized
   - Baseline performance metrics recorded
+- **Status**: Cancelled — 2025-11-04 directive eliminates dedicated performance profiling tasks.
 
 #### M1-026: Engine Documentation Pass
 - **Priority**: P2
@@ -2306,12 +2312,13 @@ _Progress 2025-11-09 (Session #139 audio/perf polish): Augmented performanceSnap
   - 60 FPS maintained with investigation UI open
   - No critical bugs
   - Memory usage stable
-- **Status**: In Progress — LayoutGraph guardrails refreshed and automated monitoring in place.
+- **Status**: Cancelled — 2025-11-04 directive ends performance management work; retain existing automation but stop future sweeps.
 - **Latest Update**:
   - Stabilized LayoutGraph performance regression by sampling multiple runs and enforcing frame-budget aligned thresholds to eliminate sub-1ms flakes.
   - 2025-10-31: Added `npm run benchmark:layout-graph` (see `reports/perf/layout-graph-benchmark-2025-10-31.json`) with 60/120/180 node passes all well under the 16 ms budget.
   - 2025-10-31: Captured investigation profiling via `npm run profile -- --scenario=investigation`, archived at `benchmark-results/m1-profile-1761951451560.json` for trend comparison.
-- Remaining follow-up: automate regression alerting from benchmark/profile outputs and investigate any benchmarks exceeding 8 ms mean or 12 ms worst-case in future runs.
+  - 2025-11-04: Work concluded under performance freeze; benchmark/profile tooling left in maintenance mode only.
+- Remaining follow-up: None — task closed without additional monitoring.
 
 ---
 
@@ -2742,6 +2749,7 @@ _Progress 2025-11-09 (Session #139 audio/perf polish): Augmented performanceSnap
   - No critical bugs
   - 60 FPS maintained
   - UI polished and clear
+- **Status**: Cancelled — 2025-11-04 directive removes performance-driven polish from scope.
 
 ---
 
@@ -2854,9 +2862,9 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Deduction board background (1024x768)
   - Clue node sprite (64x64, variations)
   - Evidence type icons (32x32 each: physical, digital, testimonial, forensic)
-  - UI buttons (play, pause, settings, etc.)
+- UI buttons (play, pause, settings, etc.)
 - **File**: `assets/images/requests.json`
-- **Status**: Prompt briefs packaged via `art:package-generation-prompts` into `assets/images/generation-payloads/ar-001-005.json`; OpenAI run + QA pending.
+- **Status**: Session 200 regenerated the full AR-001 UI asset suite via GPT-Image; manifests now list all four requests (`image-ar-001-*`) as `ai-generated` and ready for integration.
 
 #### AR-002: Evidence Placeholder Sprites (M2)
 - **Type**: Images
@@ -2880,9 +2888,9 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
 - **Specifications**:
   - Idle, walk, run animations (32x32 sprite sheet)
   - Detective coat, distinctive look
-  - 4-direction or 8-direction movement
+- 4-direction or 8-direction movement
 - **File**: `assets/images/requests.json`
-- **Status**: Review Approved — bespoke idle/walk/run sheet validated end-to-end by normalization/config automation, locomotion capture scripts, and Playwright/Jest regression suites.
+- **Status**: Session 200 refreshed the `image-ar-003-player-kira-sprite` sheet via GPT-Image; normalization/config automation and locomotion capture scripts remain ready for the runtime swap.
 
 ### High Priority Assets (P1 - Required for M3-M6)
 
@@ -2894,9 +2902,9 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
 - **Specifications**:
   - Civilian NPCs (5 variations, 32x32)
   - Guard NPCs (3 variations, 32x32)
-  - Faction-specific clothing/colors
+- Faction-specific clothing/colors
 - **File**: `assets/images/requests.json`
-- **Status**: Prompt briefs packaged via `art:package-generation-prompts` for civilian/guard packs (`assets/images/generation-payloads/ar-001-005.json`); generation QA pending.
+- **Status**: Civilian and guard NPC packs AI-generated in Session 200; sprites staged under `assets/generated/images/ar-004/` awaiting animation hookup.
 
 #### AR-005: District Tilesets (M4)
 - **Type**: Images
@@ -2909,10 +2917,10 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Archive Undercity: Dark, ancient tech (16x16 tiles)
   - Zenith Sector: Futuristic, imposing (16x16 tiles)
 - **File**: `assets/images/requests.json`
-- **Status**: Neon District atlas generated via automation and logged in manifests; Corporate Spires, Archive Undercity, and Zenith Sector queued on 2025-10-31 (`assets/images/generation-queue/2025-10-31T22-51-38-840Z-ar-005.jsonl`) with seam/collision analysis staged through `npm run art:analyze-tileset`.
+- **Status**: All four AR-005 atlases (Neon District, Corporate Spires, Archive Undercity, Zenith Sector) are now `ai-generated` and staged under `assets/generated/images/ar-005/`; seam/collision analysis remains pending.
 - **Next Steps**:
-  - Monitor GPT Image fulfillment and rerun the manifest sync (same script without `--dry-run`) once outputs complete so `assets/images/requests.json` captures completion automatically.
-  - Triage the 108 seam/collision warnings in `reports/art/neon-district-tileset-analysis.json` and promote confirmed seams into authored metadata before Neon District tile integration preview.
+  - Rerun the manifest sync without `--dry-run` so `assets/images/requests.json` and downstream docs reflect the new tileset outputs.
+  - Triage the 108 seam/collision warnings in `reports/art/neon-district-tileset-analysis.json` (extend coverage to the new tilesets) and promote confirmed seams into authored metadata before integration previews.
 
 #### AR-006: UI Sound Effects (M2-M6)
 - **Type**: Audio

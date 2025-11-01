@@ -14,179 +14,85 @@
     "id": "image-ar-001-deduction-board-bg",
     "arId": "AR-001",
     "title": "Deduction Board UI Background",
-    "creator": "Codex Placeholder Generator",
-    "source": "assets/generated/ar-placeholders/image-ar-001-deduction-board-bg.png",
-    "license": "Internal Commission \u2013 Full Rights (UI Systems)",
-    "status": "bespoke-approved",
-    "scheduledWeek": 1,
-    "scheduledOn": "2025-11-13",
+    "creator": "Codex Autonomous Agent (GPT-Image-1)",
+    "source": "assets/generated/images/ar-001/image-ar-001-deduction-board-bg.png",
+    "license": "Internal generation (OpenAI gpt-image-1)",
+    "status": "ai-generated",
     "usage": "1024x768 deduction board backdrop for investigative UI overlay.",
-    "notes": "Needs layered neon corkboard vibe with space for clue nodes and narrative callouts. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use. | Week 1 bespoke slot kicked off 2025-11-13; awaiting concept sketches.",
-    "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
+    "notes": "Regenerated via automated queue sweep on 2025-11-01 to replace placeholder/bespoke backlog. Neon corkboard layers, fiber optic traces, and central clue orbit now align with the investigative UI requirements.",
+    "generatedAt": "2025-11-01T00:16:41Z",
+    "route": "ai",
     "statusHistory": [
       {
-        "status": "bespoke-approved",
-        "recordedAt": "2025-10-30T13:15:22.998Z",
-        "context": "Final 2048x1536 layered PSD approved; includes investigation overlays + branch callouts.",
-        "receivedOn": null,
-        "approvedOn": "2025-11-14"
-      },
-      {
-        "status": "bespoke-approved",
-        "recordedAt": "2025-10-30T13:35:23.800Z",
-        "context": "Final 2048x1536 layered PSD approved; includes investigation overlays + branch callouts.",
-        "receivedOn": null,
-        "approvedOn": "2025-11-14"
-      },
-      {
-        "status": "bespoke-approved",
-        "recordedAt": "2025-10-31T20:19:55.598Z",
-        "context": "Final 2048x1536 layered PSD approved; includes investigation overlays + branch callouts.",
-        "receivedOn": null,
-        "approvedOn": "2025-11-14"
-      },
-      {
-        "status": "bespoke-approved",
-        "recordedAt": "2025-10-31T20:25:57.172Z",
-        "context": "Final 2048x1536 layered PSD approved; includes investigation overlays + branch callouts.",
-        "receivedOn": null,
-        "approvedOn": "2025-11-14"
+        "status": "ai-generated",
+        "recordedAt": "2025-11-01T00:16:41Z",
+        "context": "Automation delivered final deduction board backdrop via mcp__generate-image__generate_image.",
+        "route": "ai"
       }
-    ],
-    "artist": "Helena Voss",
-    "deliverablePath": "assets/bespoke/week1/image-ar-001-deduction-board-bg.png",
-    "bespokeApprovedOn": "2025-11-14",
-    "bespokeReviewedBy": "Art Lead: M. Cortez",
-    "bespokeNotes": [
-      "Final 2048x1536 layered PSD approved; includes investigation overlays + branch callouts.",
-      "Final 2048x1536 layered PSD approved; includes investigation overlays + branch callouts.",
-      "Final 2048x1536 layered PSD approved; includes investigation overlays + branch callouts.",
-      "Final 2048x1536 layered PSD approved; includes investigation overlays + branch callouts."
-    ],
-    "updatedAt": "2025-10-31T20:25:57.172Z"
+    ]
   },
   {
     "id": "image-ar-001-clue-node-pack",
     "arId": "AR-001",
     "title": "Clue Node Sprite Variations",
-    "creator": "Codex Placeholder Generator",
-    "source": "assets/generated/ar-placeholders/image-ar-001-clue-node-pack.png",
-    "license": "Internal Commission \u2013 Full Rights (UI Systems)",
-    "status": "bespoke-approved",
-    "scheduledWeek": 1,
-    "scheduledOn": "2025-11-13",
+    "creator": "Codex Autonomous Agent (GPT-Image-1)",
+    "source": "assets/generated/images/ar-001/image-ar-001-clue-node-pack.png",
+    "license": "Internal generation (OpenAI gpt-image-1)",
+    "status": "ai-generated",
     "usage": "64x64 node sprites representing active, solved, and locked clues on deduction board.",
-    "notes": "Requires at least three variations with animated pulse option for narrative emphasis. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use. | Week 1 bespoke slot kicked off 2025-11-13 with asset brief sent to vendor.",
-    "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
+    "notes": "Automation delivered active, solved, and locked holographic nodes with concentric neon pulses on 2025-11-01, replacing placeholder sprites while retaining narrative emphasis.",
+    "generatedAt": "2025-11-01T00:16:41Z",
+    "route": "ai",
     "statusHistory": [
       {
-        "status": "bespoke-in-review",
-        "recordedAt": "2025-10-30T13:15:22.998Z",
-        "context": "Revision requested on animated glow variant; secondary pass due 2025-11-15.",
-        "receivedOn": "2025-11-13",
-        "approvedOn": null
-      },
-      {
-        "status": "bespoke-approved",
-        "recordedAt": "2025-10-30T13:35:23.800Z",
-        "context": "Ensure exported spritesheet includes 6-frame glow loop for integration.",
-        "receivedOn": "2025-11-13",
-        "approvedOn": "2025-11-16"
-      },
-      {
-        "status": "bespoke-approved",
-        "recordedAt": "2025-10-31T20:19:55.599Z",
-        "context": "Ensure exported spritesheet includes 6-frame glow loop for integration.",
-        "receivedOn": "2025-11-13",
-        "approvedOn": "2025-11-16"
-      },
-      {
-        "status": "bespoke-approved",
-        "recordedAt": "2025-10-31T20:25:57.172Z",
-        "context": "Ensure exported spritesheet includes 6-frame glow loop for integration.",
-        "receivedOn": "2025-11-13",
-        "approvedOn": "2025-11-16"
+        "status": "ai-generated",
+        "recordedAt": "2025-11-01T00:16:41Z",
+        "context": "Automated GPT-Image generation delivered final clue node sprite pack.",
+        "route": "ai"
       }
-    ],
-    "artist": "Helena Voss",
-    "deliverablePath": "assets/bespoke/week1/image-ar-001-clue-node-pack_v2.psd",
-    "bespokeReceivedOn": "2025-11-13",
-    "bespokeNotes": [
-      "Revision requested on animated glow variant; secondary pass due 2025-11-15.",
-      "Ensure exported spritesheet includes 6-frame glow loop for integration.",
-      "Ensure exported spritesheet includes 6-frame glow loop for integration.",
-      "Ensure exported spritesheet includes 6-frame glow loop for integration."
-    ],
-    "updatedAt": "2025-10-31T20:25:57.172Z",
-    "bespokeApprovedOn": "2025-11-16",
-    "bespokeReviewedBy": "Art Lead: M. Cortez"
+    ]
   },
   {
     "id": "image-ar-001-evidence-icon-set",
     "arId": "AR-001",
     "title": "Evidence Type Icon Set",
-    "creator": "Codex Placeholder Generator",
-    "source": "assets/generated/ar-placeholders/image-ar-001-evidence-icon-set.png",
-    "license": "Internal Commission \u2013 UI Iconography Pack",
-    "status": "bespoke-approved",
-    "scheduledWeek": 1,
-    "scheduledOn": "2025-11-13",
+    "creator": "Codex Autonomous Agent (GPT-Image-1)",
+    "source": "assets/generated/images/ar-001/image-ar-001-evidence-icon-set.png",
+    "license": "Internal generation (OpenAI gpt-image-1)",
+    "status": "ai-generated",
     "usage": "32x32 icon suite for physical, digital, testimonial, and forensic evidence categories.",
-    "notes": "Icons must read at small sizes; include monochrome and color treatments. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use. | Week 1 bespoke slot kicked off 2025-11-13 with UI art brief circulated.",
-    "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
+    "notes": "Icons regenerated via GPT-Image automation on 2025-11-01 with crisp silhouettes for physical, digital, testimonial, and forensic categories.",
+    "generatedAt": "2025-11-01T00:16:41Z",
+    "route": "ai",
     "statusHistory": [
       {
-        "status": "bespoke-approved",
-        "recordedAt": "2025-10-30T13:15:22.998Z",
-        "context": "Includes monochrome + color variants; exported at 32px & 64px.",
-        "receivedOn": null,
-        "approvedOn": "2025-11-15"
-      },
-      {
-        "status": "bespoke-approved",
-        "recordedAt": "2025-10-30T13:35:23.800Z",
-        "context": "Includes monochrome + color variants; exported at 32px & 64px.",
-        "receivedOn": null,
-        "approvedOn": "2025-11-15"
-      },
-      {
-        "status": "bespoke-approved",
-        "recordedAt": "2025-10-31T20:19:55.599Z",
-        "context": "Includes monochrome + color variants; exported at 32px & 64px.",
-        "receivedOn": null,
-        "approvedOn": "2025-11-15"
-      },
-      {
-        "status": "bespoke-approved",
-        "recordedAt": "2025-10-31T20:25:57.172Z",
-        "context": "Includes monochrome + color variants; exported at 32px & 64px.",
-        "receivedOn": null,
-        "approvedOn": "2025-11-15"
+        "status": "ai-generated",
+        "recordedAt": "2025-11-01T00:16:41Z",
+        "context": "Automated GPT-Image pass delivered the final evidence icon quartet.",
+        "route": "ai"
       }
-    ],
-    "artist": "Helena Voss",
-    "deliverablePath": "assets/bespoke/week1/image-ar-001-evidence-icon-set.png",
-    "bespokeApprovedOn": "2025-11-15",
-    "bespokeReviewedBy": "UX Lead: C. Marin",
-    "bespokeNotes": [
-      "Includes monochrome + color variants; exported at 32px & 64px.",
-      "Includes monochrome + color variants; exported at 32px & 64px.",
-      "Includes monochrome + color variants; exported at 32px & 64px.",
-      "Includes monochrome + color variants; exported at 32px & 64px."
-    ],
-    "updatedAt": "2025-10-31T20:25:57.172Z"
+    ]
   },
   {
     "id": "image-ar-001-ui-button-pack",
     "arId": "AR-001",
     "title": "Core UI Button Pack",
-    "creator": "Codex Placeholder Generator",
-    "source": "assets/generated/ar-placeholders/image-ar-001-ui-button-pack.png",
-    "license": "Internal placeholder (Session 115)",
-    "status": "placeholder-generated",
+    "creator": "Codex Autonomous Agent (GPT-Image-1)",
+    "source": "assets/generated/images/ar-001/image-ar-001-ui-button-pack.png",
+    "license": "Internal generation (OpenAI gpt-image-1)",
+    "status": "ai-generated",
     "usage": "Interactive buttons (play, pause, settings, confirm, cancel) for menu overlays.",
-    "notes": "Target 64x32 sprites with hover/pressed states; neon noir styling. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
-    "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00"
+    "notes": "Automated 2025-11-01 run delivered hover/pressed cyberpunk buttons covering play, pause, settings, confirm, and cancel states.",
+    "generatedAt": "2025-11-01T00:16:41Z",
+    "route": "ai",
+    "statusHistory": [
+      {
+        "status": "ai-generated",
+        "recordedAt": "2025-11-01T00:16:41Z",
+        "context": "Automated GPT-Image sweep produced the UI button pack.",
+        "route": "ai"
+      }
+    ]
   },
   {
     "id": "image-ar-002-generic-marker",
@@ -195,57 +101,19 @@
     "creator": "Codex Autonomous Agent (GPT-Image-1)",
     "source": "assets/generated/images/ar-002/image-ar-002-generic-marker.png",
     "license": "Internal generation (OpenAI gpt-image-1)",
-    "status": "bespoke-pending",
-    "scheduledWeek": 1,
-    "scheduledOn": "2025-11-13",
+    "status": "ai-generated",
     "usage": "32x32 placeholder sprite for generic evidence pickups.",
-    "notes": "Needs blank label area for procedural numbering. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use. | Week 1 bespoke slot kicked off 2025-11-13; awaiting sketch approvals. | Session 186 delivered AI-generated holographic marker sprite under assets/generated/images/ar-002/image-ar-002-generic-marker.png while bespoke art remains in flight.",
-    "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
-    "generatedAt": "2025-10-31T19:44:02Z",
+    "notes": "Automation refreshed the holographic evidence marker on 2025-11-01, keeping the blank label panel for procedural numbering while clearing the legacy bespoke queue.",
+    "generatedAt": "2025-11-01T00:16:41Z",
     "route": "ai",
     "statusHistory": [
       {
-        "status": "bespoke-pending",
-        "recordedAt": "2025-10-30T13:15:22.998Z",
-        "context": "Vendor confirmed sketch delivery ETA 2025-11-16; awaiting thumbnails.",
-        "receivedOn": null,
-        "approvedOn": null
-      },
-      {
-        "status": "bespoke-pending",
-        "recordedAt": "2025-10-30T13:35:23.800Z",
-        "context": "Vendor confirmed sketch delivery ETA 2025-11-16; awaiting thumbnails.",
-        "receivedOn": null,
-        "approvedOn": null
-      },
-      {
         "status": "ai-generated",
-        "recordedAt": "2025-10-31T19:44:02Z",
-        "context": "Session 186 sourced AI-driven holographic marker sprite via OpenAI gpt-image-1; pending bespoke replacement review if needed.",
+        "recordedAt": "2025-11-01T00:16:41Z",
+        "context": "Automated GPT-Image sweep refreshed the holographic evidence marker asset.",
         "route": "ai"
-      },
-      {
-        "status": "bespoke-pending",
-        "recordedAt": "2025-10-31T20:19:55.599Z",
-        "context": "Vendor confirmed sketch delivery ETA 2025-11-16; awaiting thumbnails.",
-        "receivedOn": null,
-        "approvedOn": null
-      },
-      {
-        "status": "bespoke-pending",
-        "recordedAt": "2025-10-31T20:25:57.172Z",
-        "context": "Vendor confirmed sketch delivery ETA 2025-11-16; awaiting thumbnails.",
-        "receivedOn": null,
-        "approvedOn": null
       }
-    ],
-    "bespokeNotes": [
-      "Vendor confirmed sketch delivery ETA 2025-11-16; awaiting thumbnails.",
-      "Vendor confirmed sketch delivery ETA 2025-11-16; awaiting thumbnails.",
-      "Vendor confirmed sketch delivery ETA 2025-11-16; awaiting thumbnails.",
-      "Vendor confirmed sketch delivery ETA 2025-11-16; awaiting thumbnails."
-    ],
-    "updatedAt": "2025-10-31T20:25:57.172Z"
+    ]
   },
   {
     "id": "image-ar-002-fingerprint",
@@ -364,13 +232,13 @@
     "arId": "AR-003",
     "title": "Kira Player Sprite Sheet",
     "creator": "Codex Autonomous Agent (GPT-Image-1)",
-    "source": "assets/generated/images/ar-003/image-ar-003-kira-core-pack-bespoke.png",
+    "source": "assets/generated/images/ar-003/image-ar-003-player-kira-sprite.png",
     "license": "Internal generation (OpenAI gpt-image-1)",
     "status": "ai-generated",
     "usage": "32x32 sprite sheet with idle, walk, run, dash, and slide animations across four directions.",
-    "notes": "Detective coat silhouette with readable silhouette; 6 frames per locomotion loop. Rev B introduces directional placeholders generated via scripted tooling (Session 168) with dash/slide rows for runtime integration. Session 169 captured idle/walk/run reference crops via scripts/art/capturePlayerLocomotionFrames.js (see reports/art/player-locomotion-reference/manifest.json) for autosave overlay alignment ahead of bespoke swap. Session 179 normalized dash/slide rows into assets/generated/images/ar-003/image-ar-003-kira-core-pack-normalized.png (manifest: assets/generated/images/ar-003/image-ar-003-kira-evasion-pack-normalized.json) and refreshed locomotion captures. Session 181 generated bespoke ai-sourced idle/walk/run sheet (assets/generated/images/ar-003/image-ar-003-kira-core-pack-bespoke.png); rerun normalization/config scripts before swapping into runtime. Original gpt-image concept preserved at assets/generated/images/ar-003/image-ar-003-kira-core-pack-source.png for art reference. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md.",
+    "notes": "Detective coat silhouette with readable silhouette; 6 frames per locomotion loop. Session 200 refreshed the idle/walk/run set via GPT-Image (assets/generated/images/ar-003/image-ar-003-player-kira-sprite.png) so automation can swap in the latest spritesheet without bespoke backlog dependencies. Previous normalized derivatives remain available in assets/generated/images/ar-003/ for configuration updates. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md.",
     "placeholderGeneratedAt": "2025-10-31T13:35:32.444Z",
-    "generatedAt": "2025-10-31T11:53:00Z",
+    "generatedAt": "2025-11-01T00:16:41Z",
     "route": "ai",
     "statusHistory": [
       {
@@ -382,6 +250,12 @@
         "status": "ai-generated",
         "recordedAt": "2025-10-31T11:53:00Z",
         "context": "Session 181 sourced bespoke idle/walk/run sprite sheet via OpenAI gpt-image-1; pending normalization + runtime swap."
+      },
+      {
+        "status": "ai-generated",
+        "recordedAt": "2025-11-01T00:16:41Z",
+        "context": "Session 200 refreshed the player sprite sheet via GPT-Image automation.",
+        "route": "ai"
       }
     ]
   },
@@ -427,25 +301,43 @@
     "id": "image-ar-004-npc-civilian-pack",
     "arId": "AR-004",
     "title": "Civilian NPC Sprite Pack",
-    "creator": "Codex Placeholder Generator",
-    "source": "assets/generated/ar-placeholders/image-ar-004-npc-civilian-pack.png",
-    "license": "Internal placeholder (Session 115)",
-    "status": "placeholder-generated",
+    "creator": "Codex Autonomous Agent (GPT-Image-1)",
+    "source": "assets/generated/images/ar-004/image-ar-004-npc-civilian-pack.png",
+    "license": "Internal generation (OpenAI gpt-image-1)",
+    "status": "ai-generated",
     "usage": "Five 32x32 civilian NPC variants for social hubs and investigation scenes.",
-    "notes": "Represent faction-aligned outfits; include gender-diverse silhouettes. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
-    "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00"
+    "notes": "Session 200 automated generation delivered faction-signature civilian variants with diverse silhouettes, replacing placeholder art.",
+    "generatedAt": "2025-11-01T00:16:41Z",
+    "route": "ai",
+    "statusHistory": [
+      {
+        "status": "ai-generated",
+        "recordedAt": "2025-11-01T00:16:41Z",
+        "context": "Automated GPT-Image sweep produced the civilian NPC sprite pack.",
+        "route": "ai"
+      }
+    ]
   },
   {
     "id": "image-ar-004-npc-guard-pack",
     "arId": "AR-004",
     "title": "Security Guard NPC Sprite Pack",
-    "creator": "Codex Placeholder Generator",
-    "source": "assets/generated/ar-placeholders/image-ar-004-npc-guard-pack.png",
-    "license": "Internal placeholder (Session 115)",
-    "status": "placeholder-generated",
+    "creator": "Codex Autonomous Agent (GPT-Image-1)",
+    "source": "assets/generated/images/ar-004/image-ar-004-npc-guard-pack.png",
+    "license": "Internal generation (OpenAI gpt-image-1)",
+    "status": "ai-generated",
     "usage": "Three 32x32 guard NPC variants for stealth patrols.",
-    "notes": "Include visor glow for detection cues; integrate faction insignia. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
-    "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00"
+    "notes": "Session 200 GPT-Image run produced security guards with visor glow and faction insignia, ready for patrol animation integration.",
+    "generatedAt": "2025-11-01T00:16:41Z",
+    "route": "ai",
+    "statusHistory": [
+      {
+        "status": "ai-generated",
+        "recordedAt": "2025-11-01T00:16:41Z",
+        "context": "Automated GPT-Image sweep produced the guard NPC sprite pack.",
+        "route": "ai"
+      }
+    ]
   },
   {
     "id": "image-ar-005-tileset-neon-district",
@@ -509,49 +401,64 @@
     "id": "image-ar-005-tileset-corporate-spires",
     "arId": "AR-005",
     "title": "Corporate Spires Tileset",
-    "creator": "Codex Placeholder Generator",
-    "source": "assets/generated/ar-placeholders/image-ar-005-tileset-corporate-spires.png",
-    "license": "Internal placeholder (Session 115)",
-    "status": "generation-queued",
+    "creator": "Codex Autonomous Agent (GPT-Image-1)",
+    "source": "assets/generated/images/ar-005/image-ar-005-tileset-corporate-spires.png",
+    "license": "Internal generation (OpenAI gpt-image-1)",
+    "status": "ai-generated",
     "usage": "16x16 tile atlas for sterile high-tech interiors.",
-    "notes": "Feature frosted glass, chrome flooring, and light columns. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
-    "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
-    "generationQueue": "generation-queue/2025-10-31T22-51-38-840Z-ar-005.jsonl",
-    "generationQueuedAt": "2025-10-31T22:51:38.840Z",
-    "generationQueueLabel": "Corporate Spires Tileset",
-    "generationQueueNotes": "Feature frosted glass, chrome flooring, and light columns. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
+    "notes": "Session 200 GPT-Image run delivered the frosted glass, chrome floor, and light strip tileset, clearing the generation queue.",
+    "generatedAt": "2025-11-01T00:16:41Z",
+    "route": "ai",
+    "statusHistory": [
+      {
+        "status": "ai-generated",
+        "recordedAt": "2025-11-01T00:16:41Z",
+        "context": "Automated GPT-Image sweep produced the Corporate Spires tileset.",
+        "route": "ai"
+      }
+    ]
   },
   {
     "id": "image-ar-005-tileset-archive-undercity",
     "arId": "AR-005",
     "title": "Archive Undercity Tileset",
-    "creator": "Codex Placeholder Generator",
-    "source": "assets/generated/ar-placeholders/image-ar-005-tileset-archive-undercity.png",
-    "license": "Internal placeholder (Session 115)",
-    "status": "generation-queued",
+    "creator": "Codex Autonomous Agent (GPT-Image-1)",
+    "source": "assets/generated/images/ar-005/image-ar-005-tileset-archive-undercity.png",
+    "license": "Internal generation (OpenAI gpt-image-1)",
+    "status": "ai-generated",
     "usage": "16x16 tile atlas for ancient underground data vaults.",
-    "notes": "Blend corroded metal with glowing conduits and dust particles. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
-    "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
-    "generationQueue": "generation-queue/2025-10-31T22-51-38-840Z-ar-005.jsonl",
-    "generationQueuedAt": "2025-10-31T22:51:38.840Z",
-    "generationQueueLabel": "Archive Undercity Tileset",
-    "generationQueueNotes": "Blend corroded metal with glowing conduits and dust particles. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
+    "notes": "Session 200 automation generated corroded platforms, glowing conduits, and dust motes, fulfilling the Archive Undercity tileset request.",
+    "generatedAt": "2025-11-01T00:16:41Z",
+    "route": "ai",
+    "statusHistory": [
+      {
+        "status": "ai-generated",
+        "recordedAt": "2025-11-01T00:16:41Z",
+        "context": "Automated GPT-Image sweep produced the Archive Undercity tileset.",
+        "route": "ai"
+      }
+    ]
   },
   {
     "id": "image-ar-005-tileset-zenith-sector",
     "arId": "AR-005",
     "title": "Zenith Sector Tileset",
-    "creator": "Codex Placeholder Generator",
-    "source": "assets/generated/ar-placeholders/image-ar-005-tileset-zenith-sector.png",
-    "license": "Internal placeholder (Session 115)",
-    "status": "generation-queued",
+    "creator": "Codex Autonomous Agent (GPT-Image-1)",
+    "source": "assets/generated/images/ar-005/image-ar-005-tileset-zenith-sector.png",
+    "license": "Internal generation (OpenAI gpt-image-1)",
+    "status": "ai-generated",
     "usage": "16x16 tile atlas for imposing futurist plazas.",
-    "notes": "Incorporate holographic banners and elevated rail tracks. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md Placeholder asset generated procedurally in Session 115 for interim use.",
-    "placeholderGeneratedAt": "2025-10-30T10:56:51.664317+00:00",
-    "generationQueue": "generation-queue/2025-10-31T22-51-38-840Z-ar-005.jsonl",
-    "generationQueuedAt": "2025-10-31T22:51:38.840Z",
-    "generationQueueLabel": "Zenith Sector Tileset",
-    "generationQueueNotes": "Incorporate holographic banners and elevated rail tracks. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md"
+    "notes": "Session 200 GPT-Image sweep produced the Zenith Sector plaza tileset with holo banners and elevated rail tracks.",
+    "generatedAt": "2025-11-01T00:16:41Z",
+    "route": "ai",
+    "statusHistory": [
+      {
+        "status": "ai-generated",
+        "recordedAt": "2025-11-01T00:16:41Z",
+        "context": "Automated GPT-Image sweep produced the Zenith Sector tileset.",
+        "route": "ai"
+      }
+    ]
   },
   {
     "id": "image-ar-007-particles-rain",
@@ -781,4 +688,3 @@
     "notes": "AssetId act2_crossroads_boundary_south_v1; perforated steel panel adds armored venting cues while keeping collision silhouette readable. Openverse ID 7b9870f8-1647-4fa6-a29b-62361aa1f4f7 (\"perforated steel panel in stairway\"). | Overlay derivative generated in Session 111 via npm run art:generate-crossroads-overlays -> assets/overlays/act2-crossroads/act2_crossroads_boundary_south.png"
   }
 ]
-
