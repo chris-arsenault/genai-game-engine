@@ -105,14 +105,23 @@ export class InvestigationSystem extends System {
     this.playerEntityId = null;
     this.playerInvestigation = null;
 
-    // Find player entity
-    const player = entities.find((id) => {
-      const tag =
-        this.componentRegistry.entityManager.getTag(id) ??
-        this.componentRegistry.entityManager.getEntity(id)?.tag ??
-        null;
-      return tag === 'player';
-    });
+    const entityManager = this.componentRegistry?.entityManager;
+    let player = null;
+
+    if (entityManager?.getEntitiesByTag) {
+      const candidates = entityManager.getEntitiesByTag('player') || [];
+      player =
+        candidates.find((id) => this.hasComponent(id, 'Transform')) ?? null;
+    }
+
+    if (!player && entityManager?.getTag) {
+      for (const id of entities) {
+        if (entityManager.getTag(id) === 'player') {
+          player = id;
+          break;
+        }
+      }
+    }
 
     if (!player) return;
     this.playerEntityId = player;

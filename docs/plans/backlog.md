@@ -25,13 +25,13 @@
 | --- | --- | --- | --- | --- |
 | Act 3 Narrative | P0 | Done | Finale cinematic overlay now carries scripted VO beats with voiceover metadata surfaced in-game and documentation captured. | Completed in Session 233 — finale VO script integrated, review packet regenerated, and finale Playwright suite rerun for verification. |
 | AR-050 | P1 | In Progress | Act 2 visual pipeline automation delivers RenderOps packets, inventories, and ai-generated overlays (Memory Parlor neon set) with luminance/tolerance snapshots tracked across reports. | Acknowledge RenderOps approval packet `reports/telemetry/renderops-approvals/act2-crossroads/2025-11-01T09:10:32.110Z-9cc27c03-3b58-4c29-8c71-36dfe28507ae.json` once lighting QA signs off. |
-| CORE-303 | P1 | Pending | Minimal investigative loop remains blocked on CORE-301/302 quest plumbing; scope captures evidence intake unlocking Detective Vision and advancing witness beats. | Break down implementation tasks once dependencies are ready and pre-wire quest/evidence validation via existing automation harnesses. |
+| CORE-303 | P1 | In Progress | InvestigationSystem player lookup restored, dialogue alias coverage keeps tutorial conversations available, and dialogue input routing now feeds the DialogueSystem; awaiting quest plumbing to complete the minimal investigative loop. | Integrate the repaired investigation/dialogue wiring into tutorial quest beats once CORE-301/302 land, then schedule investigative loop Playwright validation. |
 | M3-003 | P1 | Pending | ECS faction system components, systems, and Jest scaffolding are outlined but paused, awaiting upstream faction data contracts. | Resume after M3-002 readiness and keep validation inside scripted faction behaviour suites—no manual QA loops. |
 | M2-005 | P1 | Pending | Deduction board UI foundations (nodes, drag/drop, connection rendering) are still queued behind M2-004, with automated regression requirements documented. | Spin up the UI shell once M2-004 lands, ensuring drag/connect workflows ship with Jest coverage and zero manual acceptance steps. |
 
 **Next Session Focus**:
 - Acknowledge RenderOps approval packet `reports/telemetry/renderops-approvals/act2-crossroads/2025-11-01T09:10:32.110Z-9cc27c03-3b58-4c29-8c71-36dfe28507ae.json` after lighting QA review.
-- Break down CORE-303 investigative loop tasks so dependencies (CORE-301/302) and faction prerequisites stay aligned with automation-first delivery.
+- Continue CORE-303 investigative loop bring-up once CORE-301/302 deliver quest hooks, now that dialogue alignment and input routing are restored, and run automated tutorial validations.
 
 ### Session #228 Backlog Maintenance
 
@@ -1141,11 +1141,15 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Tags**: `gameplay`, `narrative`
 - **Effort**: 6 hours
 - **Dependencies**: CORE-301, CORE-302
+- **Status**: In Progress — InvestigationSystem now resolves the player via tag queries (with Transform guard) so evidence scans execute again; awaiting quest plumbing to string the full loop together.
+- **Progress (Session #234)**: Patched `src/game/systems/InvestigationSystem.js` to use `entityManager.getEntitiesByTag('player')` with a Transform fallback, added regression coverage in `tests/game/systems/InvestigationSystem.test.js`, and ran `npm test -- --runTestsByPath tests/game/systems/InvestigationSystem.test.js`.
+- **Progress (Session #235)**: Added DialogueSystem alias resolution plus CaseManager injection fix to unblock tutorial Captain Reese and witness dialogues, registered Act 1 aliases, and ran `npm test -- --runTestsByPath tests/game/systems/DialogueSystem.test.js tests/game/scenes/TutorialScene.triggers.test.js`.
+- **Progress (Session #236)**: Hooked DialogueSystem into dialogue UI `choice/advance/close` events, suppressed pause toggles while dialogue overlays are active, and reran `npm test -- --runTestsByPath tests/game/systems/DialogueSystem.test.js tests/game/ui/DialogueBox.test.js tests/game/scenes/TutorialScene.triggers.test.js`.
 - **Description**: Implement the minimal investigative loop—collect evidence, unlock Detective Vision, interview witness—to prove the hybrid narrative/mechanics hook.
 - **Acceptance Criteria**:
   - Collecting three evidence items unlocks Detective Vision and advances tutorial/quest state.
   - Witness NPC interaction triggers dialogue from Act 1 and logs progression in the quest tracker.
-- Quest log reflects these milestones, and world state updates are visible via overlays or UI.
+  - Quest log reflects these milestones, and world state updates are visible via overlays or UI.
 
 ---
 

@@ -498,7 +498,7 @@ export class Game {
     this.gameSystems.dialogue = new DialogueSystem(
       this.componentRegistry,
       this.eventBus,
-      this.gameSystems.investigation,
+      this.caseManager,
       this.factionManager,
       this.worldStateStore
     );
@@ -2694,7 +2694,9 @@ export class Game {
 
     // Check for pause input
     if (this.inputState.wasJustPressed('pause')) {
-      this.togglePause();
+      if (!(this.dialogueBox && this.dialogueBox.visible)) {
+        this.togglePause();
+      }
     }
 
     // Toggle reputation UI with 'R' key

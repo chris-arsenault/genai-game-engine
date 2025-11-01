@@ -196,6 +196,30 @@ describe('InvestigationSystem', () => {
     });
   });
 
+  describe('Update Loop', () => {
+    it('locates the player via entity tag lookup', () => {
+      const playerTransform = new Transform(0, 0);
+      mockComponentRegistry._components.set('1:Transform', playerTransform);
+
+      system.update(0.016, [1, 2]);
+
+      expect(mockEntityManager.getEntitiesByTag).toHaveBeenCalledWith('player');
+      expect(system.playerEntityId).toBe(1);
+    });
+
+    it('falls back to scanning entities when tag query returns no results', () => {
+      mockEntityManager.getEntitiesByTag.mockImplementationOnce(() => []);
+
+      const playerTransform = new Transform(0, 0);
+      mockComponentRegistry._components.set('1:Transform', playerTransform);
+
+      system.update(0.016, [1, 2]);
+
+      expect(mockEntityManager.getTag).toHaveBeenCalledWith(1);
+      expect(system.playerEntityId).toBe(1);
+    });
+  });
+
   describe('Evidence Detection', () => {
     it('should detect visible evidence in observation radius', () => {
       // Setup player
