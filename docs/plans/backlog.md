@@ -5,8 +5,8 @@
 
 ## Document Overview
 
-**Version**: 1.5
-**Last Updated**: 2025-11-22 (Session 231 backlog updates)
+**Version**: 1.6
+**Last Updated**: 2025-11-23 (Session 238 backlog cleanup)
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
@@ -31,7 +31,14 @@
 
 **Next Session Focus**:
 - Maintain weekly automation sweeps (`npm run art:track-bespoke`, `npm run art:package-renderops`, `npm run art:export-crossroads-luminance`) to keep RenderOps packets current; telemetry acknowledgement recorded for job `9cc27c03-3b58-4c29-8c71-36dfe28507ae`.
-- Continue CORE-303 investigative loop bring-up once CORE-301/302 deliver quest hooks, now that dialogue alignment and input routing are restored, and run automated tutorial validations.
+- Thread CORE-303 investigative loop wiring into the tutorial quest once CORE-301/302 hooks land, then immediately run the investigative loop Playwright automation to validate dialogue inputs, evidence gating, and rewards.
+- Keep M3-003 faction systems and M2-005 deduction board UI on deck while dependencies unblock; ensure their Jest and Playwright scaffolds stay primed so work can spin up without manual QA.
+
+### Session #238 Backlog Updates
+
+- Closed M2-006, M1-027, QA-202, and AR-003 as `done` after confirming their automation coverage remains green (`npm run lint`, `npm test`, and existing investigation suites); MCP backlog entries now reflect automation-only follow-ups.
+- Wrapped CORE-301 and UX-410 with `done` status, leaving the paired Jest/Playwright suites and telemetry exporters as the sole guardrails; review-approved queue is clear.
+- Revalidated active WIP (AR-050, CORE-303, and automation-gated dependencies) to ensure next steps reference only scripted sweeps and Playwright scenarios, keeping manual checkpoints out of the backlog.
 
 ### Session #228 Backlog Maintenance
 
