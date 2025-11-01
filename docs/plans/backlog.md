@@ -2917,10 +2917,10 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Archive Undercity: Dark, ancient tech (16x16 tiles)
   - Zenith Sector: Futuristic, imposing (16x16 tiles)
 - **File**: `assets/images/requests.json`
-- **Status**: All four AR-005 atlases (Neon District, Corporate Spires, Archive Undercity, Zenith Sector) are now `ai-generated` and staged under `assets/generated/images/ar-005/`; seam preview catalogs for every atlas live under `src/game/procedural/templates/*SeamPreview.js`, aggregated by `tilesetSeamPreviewCatalog`, and flow through TemplateVariantResolver, CorridorSeamPainter, and the runtime tileset preview UI for cluster/annotation reporting.
+- **Status**: All four AR-005 atlases (Neon District, Corporate Spires, Archive Undercity, Zenith Sector) are now `ai-generated` and staged under `assets/generated/images/ar-005/`; seam preview catalogs for every atlas live under `src/game/procedural/templates/*SeamPreview.js`, aggregated by `tilesetSeamPreviewCatalog`, and flow through TemplateVariantResolver, CorridorSeamPainter, and the runtime tileset preview UI for cluster/annotation reporting. Session 206 mapped DistrictGenerator/TemplateVariantResolver metadata to district-specific active tilesets with Jest coverage guarding atlas selection per district type.
 - **Next Steps**:
-  - Drive `activeTilesetId` selection through DistrictGenerator/template config so TemplateVariantResolver and corridor tooling reference the correct atlas metadata per district rather than defaulting to Neon District.
-  - Integrate the catalog stats into downstream corridor validation dashboards (e.g. TemplateVariantResolver consumers, tooling overlays) to highlight mismatches once district-specific atlas selection is wired.
+  - Feed seam catalog stats into corridor validation dashboards so placements surface atlas mismatches automatically.
+  - Instrument the dashboards to consume placement metadata (`activeTilesetId`, seam previews) and alert when catalog entries drift from promoted manifests.
 
 #### AR-006: UI Sound Effects (M2-M6)
 - **Type**: Audio

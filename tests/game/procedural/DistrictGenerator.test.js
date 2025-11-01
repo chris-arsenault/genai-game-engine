@@ -685,4 +685,54 @@ describe('DistrictGenerator', () => {
       }
     });
   });
+
+  describe('Tileset metadata wiring', () => {
+    it('defaults to Neon District tileset metadata for mixed districts', () => {
+      const result = generator.generate(12345, DistrictTypes.MIXED);
+      const activeId = result.metadata.tileset.activeTilesetId;
+      expect(activeId).toBe('image-ar-005-tileset-neon-district');
+
+      const placementWithMetadata = result.metadata.placements.find(
+        (placement) => placement?.metadata?.activeTilesetId === activeId
+      );
+      expect(placementWithMetadata).toBeDefined();
+    });
+
+    it('selects Corporate Spires tileset for commercial districts', () => {
+      const result = generator.generate(12345, DistrictTypes.COMMERCIAL);
+      const activeId = result.metadata.tileset.activeTilesetId;
+      expect(activeId).toBe('image-ar-005-tileset-corporate-spires');
+
+      const hasPlacement = result.metadata.placements.some(
+        (placement) => placement?.metadata?.activeTilesetId === activeId
+      );
+      expect(hasPlacement).toBe(true);
+    });
+
+    it('selects Archive Undercity tileset for industrial districts', () => {
+      const result = generator.generate(12345, DistrictTypes.INDUSTRIAL);
+      const activeId = result.metadata.tileset.activeTilesetId;
+      expect(activeId).toBe('image-ar-005-tileset-archive-undercity');
+
+      const hasPlacement = result.metadata.placements.some(
+        (placement) => placement?.metadata?.activeTilesetId === activeId
+      );
+      expect(hasPlacement).toBe(true);
+    });
+
+    it('allows overriding the active tileset in configuration', () => {
+      const zenithId = 'image-ar-005-tileset-zenith-sector';
+      const customGenerator = new DistrictGenerator({
+        activeTilesetId: zenithId,
+        corridorWidth: 3,
+      });
+      const result = customGenerator.generate(54321, DistrictTypes.RESIDENTIAL);
+
+      expect(result.metadata.tileset.activeTilesetId).toBe(zenithId);
+      const placementWithOverride = result.metadata.placements.find(
+        (placement) => placement?.metadata?.activeTilesetId === zenithId
+      );
+      expect(placementWithOverride).toBeDefined();
+    });
+  });
 });
