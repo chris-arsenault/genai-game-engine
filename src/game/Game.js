@@ -66,6 +66,7 @@ import { SaveInspectorOverlay } from './ui/SaveInspectorOverlay.js';
 import { SaveLoadOverlay } from './ui/SaveLoadOverlay.js';
 import { CrossroadsPromptController } from './narrative/CrossroadsPromptController.js';
 import { CrossroadsBranchTransitionController } from './narrative/CrossroadsBranchTransitionController.js';
+import { Act3FinaleCinematicSequencer } from './narrative/Act3FinaleCinematicSequencer.js';
 import { NavigationMeshService } from './navigation/NavigationMeshService.js';
 
 // Managers
@@ -252,6 +253,7 @@ export class Game {
     this.saveInspectorOverlay = null;
     this.crossroadsPromptController = null;
     this.crossroadsBranchTransitionController = null;
+    this.act3FinaleCinematicSequencer = null;
     this.navigationMeshService = null;
 
     // Forensic prompt plumbing
@@ -1101,6 +1103,14 @@ export class Game {
       this.crossroadsBranchTransitionController.dispose();
     }
 
+    if (
+      this.act3FinaleCinematicSequencer &&
+      typeof this.act3FinaleCinematicSequencer.dispose === 'function'
+    ) {
+      this.act3FinaleCinematicSequencer.dispose();
+      this.act3FinaleCinematicSequencer = null;
+    }
+
     this.crossroadsPromptController = new CrossroadsPromptController({
       eventBus: this.eventBus,
       dialogueSystem: this.gameSystems.dialogue,
@@ -1127,6 +1137,14 @@ export class Game {
       typeof this.crossroadsBranchTransitionController.init === 'function'
     ) {
       this.crossroadsBranchTransitionController.init();
+    }
+
+    if (this.eventBus && this.storyFlagManager) {
+      this.act3FinaleCinematicSequencer = new Act3FinaleCinematicSequencer({
+        eventBus: this.eventBus,
+        storyFlagManager: this.storyFlagManager,
+      });
+      this.act3FinaleCinematicSequencer.init();
     }
 
     this._ensureQuestTriggerTelemetryBridge();
@@ -3505,6 +3523,13 @@ export class Game {
     }
     if (this.crossroadsBranchOverlay && this.crossroadsBranchOverlay.cleanup) {
       this.crossroadsBranchOverlay.cleanup();
+    }
+    if (
+      this.act3FinaleCinematicSequencer &&
+      typeof this.act3FinaleCinematicSequencer.dispose === 'function'
+    ) {
+      this.act3FinaleCinematicSequencer.dispose();
+      this.act3FinaleCinematicSequencer = null;
     }
     if (this.saveLoadOverlay && this.saveLoadOverlay.cleanup) {
       this.saveLoadOverlay.cleanup();

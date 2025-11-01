@@ -255,6 +255,11 @@ Automation Hooks: `QuestManager` tracks stance commitment via `act3:stance_commi
     - `obj_zenith_alternative_beacons_sync` → `act3_zenith_alternative_beacons_synchronized`
 - Trigger metadata now injects branch/approach telemetry (`act3_zenith_*` tags) so QuestManager records stance context while tests guard shared and branch stage flows (`tests/game/managers/QuestManager.act3.test.js`, `tests/game/systems/QuestSystem.trigger.test.js`).
 
+#### Implementation Notes (Session 211)
+
+- `Act3FinaleCinematicSequencer` listens for the `act3_zenith_infiltration_complete` story flag and surfaces the correct finale cinematic from the Act 3 epilogue library once the player’s stance flag is active. The sequencer emits `narrative:finale_cinematic_ready` with cinematic ID, stance metadata, and beat summaries so playback systems can queue the finale without duplicating exporter data (`src/game/narrative/Act3FinaleCinematicSequencer.js`).
+- Added coverage in `tests/game/narrative/Act3FinaleCinematicSequencer.test.js` verifying that infiltration completion gates dispatch, pre-set flags dispatch on init, and toggling the completion flag re-queues the payload.
+
 #### Rewards
 
 - Access to Archive's heart

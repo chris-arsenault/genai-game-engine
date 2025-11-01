@@ -166,7 +166,15 @@
 - Implemented `main-act3-zenith-infiltration` quest scaffolding with shared and stance-specific stage objectives gated by Act 3 preparation flags (`src/game/data/quests/act3ZenithInfiltrationQuest.js`, `src/game/config/GameConfig.js`).
 - Seeded Zenith Sector trigger geometry and automated event bridging so quest progression emits `act3:zenith_infiltration:stage` payloads with stance context (`src/game/scenes/Act3ZenithInfiltrationScene.js`, `src/game/systems/QuestSystem.js`).
 - Expanded QuestManager coverage to guard shared vs. branch stage completion and verified trigger metadata emission via new Jest suites (`tests/game/managers/QuestManager.act3.test.js`, `tests/game/systems/QuestSystem.trigger.test.js`).
-- Next steps: hook finale cinematic sequencer to Act 3 epilogue payloads and stage infiltration-specific dialogue once staging layouts are finalized.
+- Next steps: stage infiltration-specific dialogue once layouts are finalized and schedule Playwright coverage for Zenith trigger sequencing.
+
+### Session #211 Backlog Updates
+
+#### Act 3 Narrative (415b4bd3-2053-400e-92a5-1f1fceccc632)
+- Added `Act3FinaleCinematicSequencer` to surface finale cinematics from the Act 3 epilogue library once `act3_zenith_infiltration_complete` fires, emitting `narrative:finale_cinematic_ready` with stance and beat metadata (`src/game/narrative/Act3FinaleCinematicSequencer.js`, `src/game/Game.js`).
+- Registered the sequencer during game initialization and ensured cleanup paths dispose subscriptions to avoid duplicate dispatches (`src/game/Game.js`).
+- Authored Jest coverage confirming gating semantics and re-dispatch behaviour when infiltration completion toggles (`tests/game/narrative/Act3FinaleCinematicSequencer.test.js`).
+- Next steps: author stance-specific Zenith infiltration dialogue beats, integrate the finale cinematic playback layer once assets land, and queue Playwright coverage validating trigger flow through cinematic readiness.
 
 ### Session #151 Backlog Updates
 
