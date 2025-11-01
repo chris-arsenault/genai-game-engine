@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Playwright investigative loop automation (`tests/e2e/tutorial-investigative-loop.spec.js`) validating tutorial evidence collection, detective vision unlock, and witness interview progression.
+- Shared tutorial automation helpers (`tests/e2e/utils/tutorialActions.js`) consolidating evidence collection, forensic, and detective vision routines for e2e reuse.
 - Adaptive music layering stack (`AdaptiveMusicLayerController`) powering Memory Parlor scrambler transitions with ambient/alert/combat mixes.
 - Declarative SFX catalog bootstrap with CC0 Kenney UI cues and automated preload via `SFXCatalogLoader`.
 - Procedural tension/combat stems for Memory Parlor infiltration (`goodnightmare-tension.wav`, `goodnightmare-combat.wav`) with manifest wiring and loop metadata.
@@ -26,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Quest telemetry parity checker ingests sample log batches (`--samples=...`) and prints schema coverage summaries to catch analytics drift before warehouse ingestion.
 
 ### Changed
+- Tutorial arrival quest trigger now registered via `QuestTriggerRegistry`, and QuestManager identifier matching accepts multi-ID arrays so tutorial NPC interviews satisfy Act 1 objectives.
+- Tutorial investigative flow documentation updated to note the new registry trigger and automation path.
 - Migrated gameplay systems, managers, and UI overlays to use `EventBus.on`/`off` with stored unsubscribe handles, eliminating deprecated API warnings and ensuring clean teardown during `Game.cleanup`.
 - AmbientSceneAudioController now orchestrates adaptive states instead of direct bus fades, with graceful fallback when Web Audio is unavailable.
 - Game initialization preloads SFX catalog entries so AudioFeedbackController plays real cues instead of logging stubs.
@@ -41,6 +45,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed tutorial progression hang at step 3 by spawning evidence entities through the ECS factory so investigation detection events fire and prompts advance correctly.
 
 ### Testing
+- Extended tutorial trigger migration coverage to assert circular arrival collider metadata and new quest trigger behavior.
+- Added QuestManager regression covering array-based objective triggers.
+- Augmented AdaptiveMoodEmitter test harness to account for telemetry listeners during debounce validation.
 - Added unit coverage for adaptive music layering controller, catalog loader, and refreshed ambient controller integration.
 - Added coverage for Game audio telemetry stream + SFX preview controls (`tests/game/audio/GameAudioTelemetry.test.js`, extended `Game.uiOverlays.test.js`).
 - Added EventBus regression coverage for the deprecated `subscribe` shim and new QuestManager cleanup behavior.

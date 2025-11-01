@@ -20,6 +20,25 @@ import {
   currencyDeltaToInventoryUpdate,
 } from '../state/inventory/inventoryEvents.js';
 
+function matchesIdentifier(triggerValue, candidate) {
+  if (triggerValue == null) {
+    return true;
+  }
+
+  if (Array.isArray(triggerValue)) {
+    if (!triggerValue.length) {
+      return true;
+    }
+    return candidate != null && triggerValue.includes(candidate);
+  }
+
+  if (triggerValue instanceof Set) {
+    return candidate != null && triggerValue.has(candidate);
+  }
+
+  return candidate === triggerValue;
+}
+
 export class QuestManager {
   constructor(eventBus, factionManager, storyFlagManager) {
     this.eventBus = eventBus;
@@ -311,16 +330,21 @@ export class QuestManager {
     if (trigger.event !== eventType) return { matched: false };
 
     // Check additional conditions
-    if (trigger.caseId && payload.caseId !== trigger.caseId) return { matched: false };
-    if (trigger.theoryId && payload.theoryId !== trigger.theoryId) return { matched: false };
-    if (trigger.npcId && payload.npcId !== trigger.npcId) return { matched: false };
-    if (trigger.areaId && payload.areaId !== trigger.areaId) return { matched: false };
-    if (trigger.abilityId && payload.abilityId !== trigger.abilityId) return { matched: false };
-    if (trigger.questId && payload.questId && payload.questId !== trigger.questId) return { matched: false };
-    if (trigger.branchId && payload.branchId !== trigger.branchId) return { matched: false };
-    if (trigger.stanceId && payload.stanceId !== trigger.stanceId) return { matched: false };
-    if (trigger.milestoneId && payload.milestoneId !== trigger.milestoneId) return { matched: false };
-    if (trigger.objectiveId && payload.objectiveId !== trigger.objectiveId) return { matched: false };
+    if (!matchesIdentifier(trigger.caseId, payload.caseId)) return { matched: false };
+    if (!matchesIdentifier(trigger.theoryId, payload.theoryId)) return { matched: false };
+    if (!matchesIdentifier(trigger.npcId, payload.npcId)) return { matched: false };
+    if (!matchesIdentifier(trigger.areaId, payload.areaId)) return { matched: false };
+    if (!matchesIdentifier(trigger.abilityId, payload.abilityId)) return { matched: false };
+    if (trigger.questId) {
+      const candidateQuestId = payload.questId;
+      if (candidateQuestId != null && !matchesIdentifier(trigger.questId, candidateQuestId)) {
+        return { matched: false };
+      }
+    }
+    if (!matchesIdentifier(trigger.branchId, payload.branchId)) return { matched: false };
+    if (!matchesIdentifier(trigger.stanceId, payload.stanceId)) return { matched: false };
+    if (!matchesIdentifier(trigger.milestoneId, payload.milestoneId)) return { matched: false };
+    if (!matchesIdentifier(trigger.objectiveId, payload.objectiveId)) return { matched: false };
 
     const requirementResult = this.evaluateObjectiveRequirements(objective.requirements, payload);
     if (!requirementResult.met) {
@@ -962,7 +986,10 @@ export class QuestManager {
           if (!objective?.trigger || objective.trigger.event !== 'npc:interviewed') {
             continue;
           }
-          if (objective.trigger.npcId !== narrative.npcId) {
+          if (objective.trigger.npcId == null) {
+            continue;
+          }
+          if (!matchesIdentifier(objective.trigger.npcId, narrative.npcId)) {
             continue;
           }
 

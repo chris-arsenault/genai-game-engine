@@ -31,7 +31,7 @@
 
 **Next Session Focus**:
 - Maintain weekly automation sweeps (`npm run art:track-bespoke`, `npm run art:package-renderops`, `npm run art:export-crossroads-luminance`) to keep RenderOps packets current; telemetry acknowledgement recorded for job `9cc27c03-3b58-4c29-8c71-36dfe28507ae`.
-- Thread CORE-303 investigative loop wiring into the tutorial quest once CORE-301/302 hooks land, then immediately run the investigative loop Playwright automation to validate dialogue inputs, evidence gating, and rewards.
+- Thread CORE-303 investigative loop wiring into the tutorial quest once CORE-301/302 hooks land, then expand the new investigative loop Playwright automation to cover deduction board and Captain Reese report beats.
 - Keep M3-003 faction systems and M2-005 deduction board UI on deck while dependencies unblock; ensure their Jest and Playwright scaffolds stay primed so work can spin up without manual QA.
 
 ### Session #238 Backlog Updates
@@ -39,6 +39,12 @@
 - Closed M2-006, M1-027, QA-202, and AR-003 as `done` after confirming their automation coverage remains green (`npm run lint`, `npm test`, and existing investigation suites); MCP backlog entries now reflect automation-only follow-ups.
 - Wrapped CORE-301 and UX-410 with `done` status, leaving the paired Jest/Playwright suites and telemetry exporters as the sole guardrails; review-approved queue is clear.
 - Revalidated active WIP (AR-050, CORE-303, and automation-gated dependencies) to ensure next steps reference only scripted sweeps and Playwright scenarios, keeping manual checkpoints out of the backlog.
+
+### Session #239 Backlog Updates
+
+- CORE-303 investigative loop now registers the tutorial arrival trigger through `QuestTriggerRegistry`, extends `QuestManager` identifier matching, and introduces Playwright coverage at `tests/e2e/tutorial-investigative-loop.spec.js` to automate evidence collection, detective vision unlock, and scripted witness interviews (`npm test`; `npx playwright test tests/e2e/tutorial-investigative-loop.spec.js`).
+- AR-050 automation sweep executed (`npm run art:track-bespoke`, `npm run art:package-renderops`, `npm run art:export-crossroads-luminance`), producing packet `reports/art/renderops-packets/act2-crossroads-2025-11-01T20-13-32-755Z` with approval job `reports/telemetry/renderops-approvals/act2-crossroads/2025-11-01T20:13:32.777Z-9d5eefce-d467-4f54-92c5-37f235d68c5c.json` and luminance snapshot `reports/art/luminance-snapshots/act2-crossroads/act2-crossroads-luminance-2025-11-01T20-13-40-229Z.{json,md}`.
+- M3-016 telemetry monitors refreshed: autosave dashboard mirrored (`npm run telemetry:autosave-dashboard`), outbox acknowledgements confirmed with `npm run telemetry:ack`, and parity verified via `npm run telemetry:check-parity` (100% coverage, no pending labels).
 
 ### Session #228 Backlog Maintenance
 

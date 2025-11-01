@@ -254,6 +254,40 @@ describe('QuestManager', () => {
     });
   });
 
+  describe('Objective trigger matching', () => {
+    test('matches npc objectives when trigger uses an array of NPC ids', () => {
+      const quest = {
+        id: 'array_npc_quest',
+        title: 'Connect with witnesses',
+        type: 'main',
+        objectives: [
+          {
+            id: 'speak_with_contact',
+            description: 'Interview any primary witness',
+            trigger: { event: 'npc:interviewed', npcId: ['npc_alpha', 'npc_beta'] },
+            optional: false,
+          },
+        ],
+      };
+
+      questManager.registerQuest(quest);
+      questManager.startQuest(quest.id);
+
+      const completionListener = jest.fn();
+      eventBus.on('objective:completed', completionListener);
+
+      eventBus.emit('npc:interviewed', { npcId: 'npc_beta' });
+
+      expect(completionListener).toHaveBeenCalledWith({
+        questId: 'array_npc_quest',
+        objectiveId: 'speak_with_contact',
+      });
+
+      expect(questManager.completedQuests.has('array_npc_quest')).toBe(true);
+      expect(questManager.activeQuests.has('array_npc_quest')).toBe(false);
+    });
+  });
+
   describe('Entity destruction handling', () => {
     test('marks objectives blocked when quest-critical NPC despawns', () => {
       const quest = {

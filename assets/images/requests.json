@@ -58,6 +58,13 @@
         "context": "Final 2048x1536 layered PSD approved; includes investigation overlays + branch callouts.",
         "receivedOn": null,
         "approvedOn": "2025-11-14"
+      },
+      {
+        "status": "bespoke-approved",
+        "recordedAt": "2025-11-01T20:13:27.767Z",
+        "context": "Final 2048x1536 layered PSD approved; includes investigation overlays + branch callouts.",
+        "receivedOn": null,
+        "approvedOn": "2025-11-14"
       }
     ],
     "artist": "Helena Voss",
@@ -66,9 +73,10 @@
     "bespokeReviewedBy": "Art Lead: M. Cortez",
     "bespokeNotes": [
       "Final 2048x1536 layered PSD approved; includes investigation overlays + branch callouts.",
+      "Final 2048x1536 layered PSD approved; includes investigation overlays + branch callouts.",
       "Final 2048x1536 layered PSD approved; includes investigation overlays + branch callouts."
     ],
-    "updatedAt": "2025-11-01T09:10:21.240Z"
+    "updatedAt": "2025-11-01T20:13:27.767Z"
   },
   {
     "id": "image-ar-001-clue-node-pack",
@@ -102,6 +110,13 @@
         "context": "Ensure exported spritesheet includes 6-frame glow loop for integration.",
         "receivedOn": "2025-11-13",
         "approvedOn": "2025-11-16"
+      },
+      {
+        "status": "bespoke-approved",
+        "recordedAt": "2025-11-01T20:13:27.767Z",
+        "context": "Ensure exported spritesheet includes 6-frame glow loop for integration.",
+        "receivedOn": "2025-11-13",
+        "approvedOn": "2025-11-16"
       }
     ],
     "artist": "Helena Voss",
@@ -111,9 +126,10 @@
     "bespokeReviewedBy": "Art Lead: M. Cortez",
     "bespokeNotes": [
       "Ensure exported spritesheet includes 6-frame glow loop for integration.",
+      "Ensure exported spritesheet includes 6-frame glow loop for integration.",
       "Ensure exported spritesheet includes 6-frame glow loop for integration."
     ],
-    "updatedAt": "2025-11-01T09:10:21.240Z"
+    "updatedAt": "2025-11-01T20:13:27.767Z"
   },
   {
     "id": "image-ar-001-evidence-icon-set",
@@ -147,6 +163,13 @@
         "context": "Includes monochrome + color variants; exported at 32px & 64px.",
         "receivedOn": null,
         "approvedOn": "2025-11-15"
+      },
+      {
+        "status": "bespoke-approved",
+        "recordedAt": "2025-11-01T20:13:27.767Z",
+        "context": "Includes monochrome + color variants; exported at 32px & 64px.",
+        "receivedOn": null,
+        "approvedOn": "2025-11-15"
       }
     ],
     "artist": "Helena Voss",
@@ -155,9 +178,10 @@
     "bespokeReviewedBy": "UX Lead: C. Marin",
     "bespokeNotes": [
       "Includes monochrome + color variants; exported at 32px & 64px.",
+      "Includes monochrome + color variants; exported at 32px & 64px.",
       "Includes monochrome + color variants; exported at 32px & 64px."
     ],
-    "updatedAt": "2025-11-01T09:10:21.241Z"
+    "updatedAt": "2025-11-01T20:13:27.767Z"
   },
   {
     "id": "image-ar-001-ui-button-pack",
@@ -212,13 +236,21 @@
         "context": "Vendor confirmed sketch delivery ETA 2025-11-16; awaiting thumbnails.",
         "receivedOn": null,
         "approvedOn": null
+      },
+      {
+        "status": "bespoke-pending",
+        "recordedAt": "2025-11-01T20:13:27.767Z",
+        "context": "Vendor confirmed sketch delivery ETA 2025-11-16; awaiting thumbnails.",
+        "receivedOn": null,
+        "approvedOn": null
       }
     ],
     "bespokeNotes": [
       "Vendor confirmed sketch delivery ETA 2025-11-16; awaiting thumbnails.",
+      "Vendor confirmed sketch delivery ETA 2025-11-16; awaiting thumbnails.",
       "Vendor confirmed sketch delivery ETA 2025-11-16; awaiting thumbnails."
     ],
-    "updatedAt": "2025-11-01T09:10:21.241Z"
+    "updatedAt": "2025-11-01T20:13:27.767Z"
   },
   {
     "id": "image-ar-002-fingerprint",
@@ -510,15 +542,23 @@
         "context": "Reflection polish applied; signage glow pending approval with Narrative for branch cues.",
         "receivedOn": "2025-11-15",
         "approvedOn": null
+      },
+      {
+        "status": "bespoke-in-review",
+        "recordedAt": "2025-11-01T20:13:27.767Z",
+        "context": "Reflection polish applied; signage glow pending approval with Narrative for branch cues.",
+        "receivedOn": "2025-11-15",
+        "approvedOn": null
       }
     ],
-    "updatedAt": "2025-11-01T09:10:21.241Z",
+    "updatedAt": "2025-11-01T20:13:27.767Z",
     "route": "ai",
     "generatedAt": "2025-10-31T22:29:53Z",
     "artist": "Axiom Studio",
     "deliverablePath": "assets/bespoke/week1/image-ar-005-tileset-neon-district_v2.png",
     "bespokeReceivedOn": "2025-11-15",
     "bespokeNotes": [
+      "Reflection polish applied; signage glow pending approval with Narrative for branch cues.",
       "Reflection polish applied; signage glow pending approval with Narrative for branch cues.",
       "Reflection polish applied; signage glow pending approval with Narrative for branch cues."
     ]
