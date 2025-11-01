@@ -27,7 +27,7 @@
 | AR-050 | P1 | In Progress | Act 2 visual pipeline automation delivers RenderOps packets, inventories, and ai-generated overlays (Memory Parlor neon set) with luminance/tolerance snapshots tracked across reports. | Maintain weekly automation sweeps to keep RenderOps packets current (job `9cc27c03-3b58-4c29-8c71-36dfe28507ae` acknowledged 2025-11-01T19:32:07Z). |
 | CORE-303 | P1 | In Progress | InvestigationSystem player lookup restored, dialogue alias coverage keeps tutorial conversations available, and dialogue input routing now feeds the DialogueSystem; awaiting quest plumbing to complete the minimal investigative loop. | Integrate the repaired investigation/dialogue wiring into tutorial quest beats once CORE-301/302 land, then schedule investigative loop Playwright validation. |
 | M3-003 | P1 | Pending | ECS faction system components, systems, and Jest scaffolding are outlined but paused, awaiting upstream faction data contracts. | Resume after M3-002 readiness and keep validation inside scripted faction behaviour suites—no manual QA loops. |
-| M2-005 | P1 | Pending | Deduction board UI foundations (nodes, drag/drop, connection rendering) can start now that the CaseManager objective layer is live; automated regression requirements remain queued. | Spin up the UI shell immediately, wiring node interactions to the updated CaseManager events and ship drag/connect workflows with Jest coverage and zero manual acceptance steps. |
+| M2-005 | P1 | In Progress | Canvas deduction board now receives runtime pointer routing so drag/drop, hover, and right-click removal operate against live CaseManager validation. | Exercise the tutorial automation path to confirm the board interactions hold under scripted toggles, then profile overlay responsiveness once art lands. |
 
 **Next Session Focus**:
 - Maintain weekly automation sweeps (`npm run art:track-bespoke`, `npm run art:package-renderops`, `npm run art:export-crossroads-luminance`) to keep RenderOps packets current; telemetry acknowledgement recorded for job `9cc27c03-3b58-4c29-8c71-36dfe28507ae`.
@@ -2154,6 +2154,9 @@ _Progress 2025-11-26 (Session #242 objective tracking pass): Implemented CaseMan
   - Drag-and-drop works smoothly
   - Connections visualized
   - UI responsive (<16ms input lag)
+- **Status**: 🚧 In Progress — Session #243 routed canvas pointer events into the DeductionBoard, unlocking drag/drop, hover, and right-click removal with Jest coverage (`npm test -- DeductionBoardPointerController`).
+
+_Progress 2025-11-26 (Session #243 pointer routing): Introduced a canvas pointer controller that normalises coordinates and forwards pointer events to the board so the live overlay supports dragging, hovering, and right-click removal without manual wiring. Added targeted Jest coverage for the controller to keep regression checks automated._
 
 #### M2-006: Deduction System and Theory Validation
 - **Priority**: P0

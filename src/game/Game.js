@@ -74,6 +74,7 @@ import { Act3FinaleCinematicSequencer } from './narrative/Act3FinaleCinematicSeq
 import { Act3FinaleCinematicController } from './narrative/Act3FinaleCinematicController.js';
 import { Act3FinaleCinematicAssetManager } from './narrative/Act3FinaleCinematicAssetManager.js';
 import { NavigationMeshService } from './navigation/NavigationMeshService.js';
+import { DeductionBoardPointerController } from './ui/helpers/deductionBoardPointerController.js';
 
 // Managers
 import { FactionManager } from './managers/FactionManager.js';
@@ -260,6 +261,7 @@ export class Game {
     this.districtTravelOverlay = null;
     this.caseFileUI = null;
     this.deductionBoard = null;
+    this.deductionBoardPointerController = null;
     this.audioFeedback = null;
     this.saveLoadOverlay = null;
     this.saveInspectorOverlay = null;
@@ -954,6 +956,18 @@ export class Game {
         }
       }
     });
+    if (!this.deductionBoardPointerController) {
+      try {
+        this.deductionBoardPointerController = new DeductionBoardPointerController(
+          this.engine.canvas,
+          this.deductionBoard
+        );
+      } catch (error) {
+        console.warn('[Game] Unable to init deduction board pointer controller', error);
+      }
+    } else {
+      this.deductionBoardPointerController.setBoard(this.deductionBoard);
+    }
     if (this.gameSystems.deduction) {
       this.gameSystems.deduction.setDeductionBoard(this.deductionBoard);
     }
@@ -3603,6 +3617,10 @@ export class Game {
     }
     if (this.deductionBoard) {
       this.deductionBoard.hide('cleanup');
+    }
+    if (this.deductionBoardPointerController) {
+      this.deductionBoardPointerController.destroy();
+      this.deductionBoardPointerController = null;
     }
     if (this.gameSystems.deduction && typeof this.gameSystems.deduction.setDeductionBoard === 'function') {
       this.gameSystems.deduction.setDeductionBoard(null);
