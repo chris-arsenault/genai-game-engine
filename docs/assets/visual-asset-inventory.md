@@ -27,6 +27,7 @@
 | AR-005 | District tilesets | `image-ar-005-tileset-neon-district` (ai-generated Session 197), `image-ar-005-tileset-corporate-spires`, `image-ar-005-tileset-archive-undercity`, `image-ar-005-tileset-zenith-sector` | ✅ Session 200 generated Corporate Spires, Archive Undercity, and Zenith Sector atlases; Session 201 promoted the Neon District seam warnings into `assets/manifests/tilesets/image-ar-005-tileset-neon-district-metadata.json`. |
 | AR-007 | Particle/overlay FX | `image-ar-007-particles-rain` (ai-generated), `image-ar-007-particles-neon-glow` (ai-generated), `image-ar-007-particles-memory-fragment` (ai-generated), `image-ar-007-screen-effects-pack` (ai-generated) | Sprite sheets integrated into ParticleEmitterRuntime with detective vision cue emissions; automated Jest harness keeps composite bursts within 60 FPS budgets (Playwright coverage still pending). |
 | AR-050 | Act 2 Crossroads art bundle | All `image-ar-050-*` entries | Map one-to-one with `act2_crossroads_*` assetIds for the bespoke scene lighting revamp. Session 172 generated the safehouse floor texture, briefing pad overlay, and branch walkway strip (all ai-generated). Session 219 exported the Memory Parlor neon infiltration plate derivative and captured fresh luminance metrics for the overlay suite. |
+| AR-060 | Act 3 finale shared panel | `image-ar-060-shared-memory-well` | ✅ Session 227 generated the shared finale memory well overlay via GPT-Image-1 and staged the transparent panel under `assets/overlays/act3-finale/shared/` to bridge stance epilogues before the credits roll. |
 
 ## Session 219 Updates
 - Added `image-memory-parlor-neon-001` to `assets/images/overlay-derivatives-act2-crossroads.json` and exported the derivative overlay to `assets/overlays/act2-crossroads/memory_parlor_neon_001.png` via `npm run art:generate-crossroads-overlays -- --filter image-memory-parlor-neon-001`.
@@ -52,6 +53,10 @@
 - Mirrored the latest RenderOps packet into `deliveries/renderops/act2-crossroads/act2-crossroads-2025-11-01T05-19-21-549Z/` via `node scripts/art/stageRenderOpsDelivery.js --packet-dir reports/art/renderops-packets/act2-crossroads-2025-11-01T05-19-21-549Z`, bundling ZIP, manifests, PACKET_README, and lighting summary for the secure art handoff channel.
 - Completed approval job `reports/telemetry/renderops-approvals/act2-crossroads/2025-11-01T05:19:21.571Z-af361a7d-b05a-46f4-bf06-996e877f3dc5.json` (status `completed`, acked by Codex Session 223) with a note pointing RenderOps to the staged delivery directory.
 - Regenerated RenderOps approval summary artifacts (`reports/art/renderops-approval-summary.{json,md}`) via `node scripts/art/monitorRenderOpsApprovals.js --markdown` so telemetry captures the acknowledged packet state.
+
+## Session 227 Updates
+- Generated `image-ar-060-shared-memory-well` through `mcp__generate-image__generate_image`, storing the AI plate at `assets/generated/act3-finale/act3_finale_shared_memory_well.png` and copying the overlay derivative to `assets/overlays/act3-finale/shared/act3_finale_shared_memory_well.png` for FinaleCinematicOverlay use.
+- Updated `assets/images/requests.json` and this inventory to track the new Act 3 finale shared panel under `AR-060`, keeping the stance epilogue bundle reflected in manifests.
 
 ## Session 217 Updates
 - Generated `image-memory-parlor-neon-001` via GPT-Image-1, staging the overlay at `assets/generated/ar-050/image-memory-parlor-neon-001.png` and updating `assets/images/requests.json` to `ai-generated` so Memory Parlor infiltration beats have a dedicated neon lighting plate.

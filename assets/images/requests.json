@@ -772,5 +772,32 @@
     "status": "derivative-generated",
     "usage": "Boundary wall texture for south perimeter.",
     "notes": "AssetId act2_crossroads_boundary_south_v1; perforated steel panel adds armored venting cues while keeping collision silhouette readable. Openverse ID 7b9870f8-1647-4fa6-a29b-62361aa1f4f7 (\"perforated steel panel in stairway\"). | Overlay derivative generated in Session 111 via npm run art:generate-crossroads-overlays -> assets/overlays/act2-crossroads/act2_crossroads_boundary_south.png"
+  },
+  {
+    "id": "image-ar-060-shared-memory-well",
+    "arId": "AR-060",
+    "title": "Act 3 Finale Shared Memory Well",
+    "creator": "Codex Autonomous Agent (GPT-Image-1)",
+    "source": "assets/generated/act3-finale/act3_finale_shared_memory_well.png",
+    "license": "Internal generation (OpenAI gpt-image-1)",
+    "status": "derivative-generated",
+    "usage": "Shared Act 3 finale interlude panel that bridges the three stance epilogues before the credits roll.",
+    "notes": "Session 227 GPT-Image pass captured Kira guiding converging memory streams inside the Archive amphitheater so each stance epilogue can open on a unified beat. Transparent overlay staged at assets/overlays/act3-finale/shared/act3_finale_shared_memory_well.png for FinaleCinematicOverlay integration.",
+    "generatedAt": "2025-11-21T05:00:00Z",
+    "route": "ai",
+    "statusHistory": [
+      {
+        "status": "ai-generated",
+        "recordedAt": "2025-11-21T05:00:00Z",
+        "context": "Session 227 used mcp__generate-image__generate_image to produce the shared finale memory well plate.",
+        "route": "ai"
+      },
+      {
+        "status": "derivative-generated",
+        "recordedAt": "2025-11-21T05:05:00Z",
+        "context": "Session 227 copied the generated plate into assets/overlays/act3-finale/shared/ for immediate cinematic use.",
+        "route": "automation"
+      }
+    ]
   }
 ]
