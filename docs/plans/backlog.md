@@ -221,7 +221,7 @@
 - Audited finale cinematic manifests and runtime asset plumbing to confirm no `/assets/` URL prefixes remain in stance hero/beat descriptors, keeping Vite publicDir warnings suppressed.
 - Expanded `tests/e2e/act3-zenith-finale.spec.js` to exercise opposition, support, and alternative finales, asserting the overlay/controller surface the correct stance-specific hero and beat artwork paths.
 - Verification: `./run_playwright.sh test tests/e2e/act3-zenith-finale.spec.js`.
-- Next steps: re-run the finale cinematic E2E once the adaptive audio mix lands to validate mood transitions and telemetry hand-offs.
+- Next steps: monitor finale adaptive audio cues during full-playthrough smoke runs to catch regressions when additional stems are introduced.
 
 ### Session #225 Backlog Updates
 
@@ -230,7 +230,13 @@
 - Added `Act3FinaleCinematicController.hydrate` to rebuild overlay visuals and progression from saved payloads using the runtime asset manager descriptors.
 - Expanded Jest coverage across controller hydration and SaveManager persistence to guard finale art continuity (`tests/game/narrative/Act3FinaleCinematicController.test.js`, `tests/game/managers/SaveManager.test.js`).
 - Verification: `npm test -- --runTestsByPath tests/game/narrative/Act3FinaleCinematicController.test.js tests/game/managers/SaveManager.test.js`.
-- Next steps: re-run the finale cinematic E2E once the adaptive audio mix lands to validate mood transitions and telemetry hand-offs.
+- Next steps: monitor finale adaptive audio cues during full-playthrough smoke runs to catch regressions when additional stems are introduced.
+
+### Session #226 Backlog Updates
+
+#### Act 3 Narrative (415b4bd3-2053-400e-92a5-1f1fceccc632)
+- Authored stance-specific finale adaptive audio mix definitions, ensured SaveManager/controller reset the shared orchestrator after finale completion or skip, and extended the Act 3 finale Playwright spec to assert adaptive mood requests per stance.
+- Verification: `npm test -- --runTestsByPath tests/game/narrative/Act3FinaleCinematicController.test.js` and `./run_playwright.sh test tests/e2e/act3-zenith-finale.spec.js`.
 
 ### Session #151 Backlog Updates
 

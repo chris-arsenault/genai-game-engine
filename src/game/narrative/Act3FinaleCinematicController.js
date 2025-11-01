@@ -1,3 +1,10 @@
+import { GameConfig } from '../config/GameConfig.js';
+import {
+  getFinaleAdaptiveDefinition,
+  getFinaleDefaultFadeSeconds,
+  getFinaleDefaultRevertFadeSeconds,
+} from '../audio/finaleAdaptiveMix.js';
+
 /**
  * Act3FinaleCinematicController
  *
@@ -26,6 +33,13 @@ export class Act3FinaleCinematicController {
     this._revealedBeats = 0;
     this._currentAssets = null;
     this._status = 'idle';
+    this._registeredFinaleMoods = new Set();
+    this._pendingRevertMood = null;
+    this._pendingRevertFade = null;
+    this._adaptiveMoodActive = false;
+    this._activeMusicCue = null;
+    this._defaultAdaptiveFallback =
+      GameConfig?.audio?.memoryParlorAmbient?.defaultAdaptiveState || 'ambient';
   }
 
   init() {
@@ -96,6 +110,8 @@ export class Act3FinaleCinematicController {
       }
     }
 
+    this._applyAdaptiveMoodReset('dispose');
+
     this._active = false;
     this._currentPayload = null;
     this._currentBeats = [];
@@ -114,6 +130,66 @@ export class Act3FinaleCinematicController {
       payload: this._currentPayload ? { ...this._currentPayload } : null,
       assets: this._currentAssets ? this._summarizeAssets(this._currentAssets) : null,
     };
+  }
+
+  _setAdaptiveMoodForFinale(moodId, { scheduleDuration = true } = {}) {
+    if (!moodId || !this.eventBus) {
+      this._pendingRevertMood = this._defaultAdaptiveFallback;
+      this._pendingRevertFade = getFinaleDefaultRevertFadeSeconds();
+      this._adaptiveMoodActive = false;
+      this._activeMusicCue = null;
+      return;
+    }
+
+    const finaleDefinition = getFinaleAdaptiveDefinition(moodId);
+    if (finaleDefinition?.weights && !this._registeredFinaleMoods.has(moodId)) {
+      this.eventBus.emit('audio:adaptive:define_mood', {
+        mood: moodId,
+        definition: finaleDefinition.weights,
+      });
+      this._registeredFinaleMoods.add(moodId);
+    }
+
+    const fadeSeconds = Number.isFinite(finaleDefinition?.fadeSeconds)
+      ? Math.max(0, finaleDefinition.fadeSeconds)
+      : getFinaleDefaultFadeSeconds();
+    const revertFadeSeconds = Number.isFinite(finaleDefinition?.revertFadeSeconds)
+      ? Math.max(0, finaleDefinition.revertFadeSeconds)
+      : getFinaleDefaultRevertFadeSeconds();
+
+    const fallbackMood = finaleDefinition?.revertTo || this._defaultAdaptiveFallback;
+    const options = {
+      source: 'act3_finale_cinematic',
+      fadeDuration: fadeSeconds,
+      force: true,
+    };
+
+    if (
+      scheduleDuration &&
+      Number.isFinite(finaleDefinition?.durationSeconds) &&
+      finaleDefinition.durationSeconds > 0
+    ) {
+      options.duration = finaleDefinition.durationSeconds;
+      if (finaleDefinition?.revertTo) {
+        options.revertTo = finaleDefinition.revertTo;
+      }
+      if (
+        Number.isFinite(finaleDefinition?.revertFadeSeconds) &&
+        finaleDefinition.revertFadeSeconds > 0
+      ) {
+        options.revertFadeDuration = finaleDefinition.revertFadeSeconds;
+      }
+    }
+
+    this._pendingRevertMood = fallbackMood;
+    this._pendingRevertFade = revertFadeSeconds;
+    this._adaptiveMoodActive = true;
+    this._activeMusicCue = moodId;
+
+    this.eventBus.emit('audio:adaptive:set_mood', {
+      mood: moodId,
+      options,
+    });
   }
 
   _handleFinaleReady(payload = {}) {
@@ -163,16 +239,7 @@ export class Act3FinaleCinematicController {
       this.overlay.show('finale_cinematic_ready');
     }
 
-    if (sanitized.musicCue) {
-      this.eventBus.emit('audio:adaptive:set_mood', {
-        mood: sanitized.musicCue,
-        options: {
-          source: 'act3_finale_cinematic',
-          fadeDuration: 4000,
-          force: true,
-        },
-      });
-    }
+    this._setAdaptiveMoodForFinale(sanitized.musicCue, { scheduleDuration: true });
 
     this.eventBus.emit('narrative:finale_cinematic_begin', {
       ...this._buildContext('begin'),
@@ -310,6 +377,12 @@ export class Act3FinaleCinematicController {
       this.overlay.hide('finale_cinematic_restore_inactive');
     }
 
+    if (active && payload?.musicCue) {
+      this._setAdaptiveMoodForFinale(payload.musicCue, { scheduleDuration: true });
+    } else {
+      this._setAdaptiveMoodForFinale(null);
+    }
+
     if (typeof this.eventBus?.emit === 'function') {
       this.eventBus.emit('narrative:finale_cinematic_restored', {
         ...this._buildContext('restored'),
@@ -361,10 +434,41 @@ export class Act3FinaleCinematicController {
       context
     );
 
-    this._resetState('complete', { emit: false });
+    this._resetState(skipped ? 'skipped' : 'complete', { emit: false });
+  }
+
+  _applyAdaptiveMoodReset(reason) {
+    if (!this._adaptiveMoodActive || !this.eventBus) {
+      this._pendingRevertMood = null;
+      this._pendingRevertFade = null;
+      this._adaptiveMoodActive = false;
+      this._activeMusicCue = null;
+      return;
+    }
+
+    const fallbackMood = this._pendingRevertMood || this._defaultAdaptiveFallback || null;
+    const fadeSeconds = Number.isFinite(this._pendingRevertFade)
+      ? Math.max(0, this._pendingRevertFade)
+      : getFinaleDefaultRevertFadeSeconds();
+
+    if (fallbackMood) {
+      this.eventBus.emit('audio:adaptive:reset', {
+        mood: fallbackMood,
+        fadeDuration: fadeSeconds,
+        source: 'act3_finale_cinematic',
+        reason,
+      });
+    }
+
+    this._pendingRevertMood = null;
+    this._pendingRevertFade = null;
+    this._adaptiveMoodActive = false;
+    this._activeMusicCue = null;
   }
 
   _resetState(reason, { emit = false, event = 'narrative:finale_cinematic_abandoned' } = {}) {
+    this._applyAdaptiveMoodReset(reason);
+
     const payload = this._currentPayload ? { ...this._currentPayload } : null;
     const beatIndex = this._beatIndex;
 

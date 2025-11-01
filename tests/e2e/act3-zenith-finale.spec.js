@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { waitForGameLoad, collectConsoleErrors } from './setup.js';
+import { getFinaleAdaptiveDefinition } from '../../src/game/audio/finaleAdaptiveMix.js';
 
 const QUEST_ID = 'main-act3-zenith-infiltration';
 
@@ -165,6 +166,12 @@ const STANCE_CONFIGS = [
   },
 ];
 
+const STANCE_MUSIC_CUES = {
+  opposition: 'track-ending-opposition',
+  support: 'track-ending-support',
+  alternative: 'track-ending-alternative',
+};
+
 async function runFinaleScenario(page, stance) {
   await waitForGameLoad(page);
 
@@ -199,6 +206,14 @@ async function runFinaleScenario(page, stance) {
         });
       };
 
+      window.__adaptiveEvents = [];
+      const recordAdaptive = (type) => (payload) => {
+        window.__adaptiveEvents.push({
+          type,
+          payload: payload ? JSON.parse(JSON.stringify(payload)) : null,
+        });
+      };
+
       const unsubscribes = [
         eventBus.on('narrative:finale_cinematic_ready', record('ready')),
         eventBus.on('narrative:finale_cinematic_begin', record('begin')),
@@ -207,6 +222,14 @@ async function runFinaleScenario(page, stance) {
         eventBus.on('narrative:finale_cinematic_skipped', record('skipped')),
       ];
       window.__finaleUnsubscribes = unsubscribes;
+
+      const adaptiveUnsubscribes = [
+        eventBus.on('audio:adaptive:define_mood', recordAdaptive('define_mood')),
+        eventBus.on('audio:adaptive:set_mood', recordAdaptive('set_mood')),
+        eventBus.on('audio:adaptive:state_changed', recordAdaptive('state_changed')),
+        eventBus.on('audio:adaptive:reset', recordAdaptive('reset')),
+      ];
+      window.__adaptiveUnsubscribes = adaptiveUnsubscribes;
 
       if (!questManager.quests.has('main-act3-archive-heart')) {
         questManager.registerQuest({
@@ -417,8 +440,13 @@ async function runFinaleScenario(page, stance) {
     });
   }
 
-  const finalEvents = await page.evaluate(() => {
-    const events = Array.isArray(window.__finaleEvents) ? window.__finaleEvents.slice() : [];
+  const { finaleEvents, adaptiveEvents } = await page.evaluate(() => {
+    const finaleEvents = Array.isArray(window.__finaleEvents)
+      ? window.__finaleEvents.slice()
+      : [];
+    const adaptiveEvents = Array.isArray(window.__adaptiveEvents)
+      ? window.__adaptiveEvents.slice()
+      : [];
     if (Array.isArray(window.__finaleUnsubscribes)) {
       for (const off of window.__finaleUnsubscribes) {
         if (typeof off === 'function') {
@@ -426,18 +454,32 @@ async function runFinaleScenario(page, stance) {
         }
       }
     }
+    if (Array.isArray(window.__adaptiveUnsubscribes)) {
+      for (const off of window.__adaptiveUnsubscribes) {
+        if (typeof off === 'function') {
+          off();
+        }
+      }
+    }
     window.__finaleUnsubscribes = [];
-    return events;
+    window.__adaptiveUnsubscribes = [];
+    return { finaleEvents, adaptiveEvents };
   });
 
-  return { stateAfterReady, advancedState, finalEvents, initialBeatCount };
+  return {
+    stateAfterReady,
+    advancedState,
+    finalEvents: finaleEvents,
+    adaptiveEvents,
+    initialBeatCount,
+  };
 }
 
 test.describe('Act 3 finale readiness', () => {
   for (const stance of STANCE_CONFIGS) {
     test(`finale pipeline surfaces ${stance.id} hero and beat artwork`, async ({ page }) => {
       const consoleErrors = collectConsoleErrors(page);
-      const { stateAfterReady, advancedState, finalEvents, initialBeatCount } =
+      const { stateAfterReady, advancedState, finalEvents, adaptiveEvents, initialBeatCount } =
         await runFinaleScenario(page, stance);
 
       expect(stateAfterReady.questStatus).toBe('completed');
@@ -469,6 +511,36 @@ test.describe('Act 3 finale readiness', () => {
           expect(controllerDescriptor.src).toBe(expectedDescriptor.src);
           expect(controllerDescriptor.assetId).toBe(expectedDescriptor.assetId);
         }
+      }
+
+      const expectedCue = STANCE_MUSIC_CUES[stance.id];
+      const finaleDefinition = getFinaleAdaptiveDefinition(expectedCue);
+
+      const defineEvent = adaptiveEvents
+        .filter((evt) => evt.type === 'define_mood')
+        .find((evt) => evt.payload?.mood === expectedCue);
+      expect(defineEvent).toBeDefined();
+      if (finaleDefinition?.weights) {
+        expect(defineEvent.payload.definition).toEqual(finaleDefinition.weights);
+      }
+
+      const moodEvent = adaptiveEvents
+        .filter((evt) => evt.type === 'set_mood')
+        .find((evt) => evt.payload?.mood === expectedCue);
+      expect(moodEvent).toBeDefined();
+      expect(moodEvent.payload.options?.force).toBe(true);
+      if (finaleDefinition?.fadeSeconds) {
+        expect(moodEvent.payload.options?.fadeDuration).toBeCloseTo(
+          finaleDefinition.fadeSeconds,
+          1
+        );
+      }
+      if (finaleDefinition?.durationSeconds) {
+        expect(moodEvent.payload.options?.duration).toBeCloseTo(
+          finaleDefinition.durationSeconds,
+          1
+        );
+        expect(moodEvent.payload.options?.revertTo).toBe(finaleDefinition.revertTo);
       }
 
       expect(initialBeatCount).toBeGreaterThanOrEqual(1);

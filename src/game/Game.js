@@ -189,6 +189,7 @@ export class Game {
     this.suspicionMoodMapper = null;
     this.adaptiveMoodEmitter = null;
     this.gameplayAdaptiveAudioBridge = null;
+    this._pendingAdaptiveMoodRequests = [];
     this.questTriggerTelemetryBridge = null;
     this.controlBindingsObservationLog = new ControlBindingsObservationLog();
 
@@ -3122,9 +3123,19 @@ export class Game {
         const options = typeof payload?.options === 'object' && payload.options !== null
           ? payload.options
           : {};
+        if (!this._adaptiveMusicReady) {
+          this._enqueueAdaptiveMoodRequest({ mood, options, silent: payload?.silent === true });
+          return;
+        }
         const applied = this.setAdaptiveMood(mood, options);
-        if (!applied && payload?.silent !== true) {
-          console.warn('[Game] Failed to apply adaptive mood request', mood);
+        if (!applied) {
+          if (!this._adaptiveMusicReady) {
+            this._enqueueAdaptiveMoodRequest({ mood, options, silent: payload?.silent === true });
+            return;
+          }
+          if (payload?.silent !== true) {
+            console.warn('[Game] Failed to apply adaptive mood request', mood);
+          }
         }
       })
     );
@@ -3172,24 +3183,69 @@ export class Game {
     this._adaptiveMoodHandlers.length = 0;
   }
 
+  _enqueueAdaptiveMoodRequest(request) {
+    if (!request || typeof request.mood !== 'string' || !request.mood) {
+      return;
+    }
+    if (!Array.isArray(this._pendingAdaptiveMoodRequests)) {
+      this._pendingAdaptiveMoodRequests = [];
+    }
+    this._pendingAdaptiveMoodRequests.push({
+      mood: request.mood,
+      options: request.options ? { ...request.options } : {},
+      silent: request.silent === true,
+    });
+  }
+
+  _flushPendingAdaptiveMoods() {
+    if (!Array.isArray(this._pendingAdaptiveMoodRequests) || this._pendingAdaptiveMoodRequests.length === 0) {
+      return;
+    }
+    const queue = this._pendingAdaptiveMoodRequests.splice(0);
+    for (const entry of queue) {
+      const applied = this.setAdaptiveMood(entry.mood, entry.options);
+      if (!applied && entry.silent !== true) {
+        console.warn('[Game] Failed to apply queued adaptive mood request', entry.mood);
+      }
+    }
+  }
+
   _registerAdaptiveMusic(adaptiveInstance, meta = {}) {
     if (adaptiveInstance === this.adaptiveMusic) {
       return;
     }
 
     this.adaptiveMusic = adaptiveInstance || null;
-    this._adaptiveMusicReady = Boolean(this.adaptiveMusic);
+    this._adaptiveMusicReady = false;
 
     if (!this.adaptiveMusic) {
       return;
     }
 
+    let initResult = true;
     if (typeof this.adaptiveMusic.init === 'function' && meta?.skipInit !== true) {
       try {
-        void this.adaptiveMusic.init();
+        initResult = this.adaptiveMusic.init();
       } catch (error) {
         console.warn('[Game] Adaptive music init failed during registration', error);
+        initResult = false;
       }
+    }
+
+    if (initResult && typeof initResult.then === 'function') {
+      initResult
+        .then((initialized) => {
+          if (initialized !== false) {
+            this._adaptiveMusicReady = true;
+            this._flushPendingAdaptiveMoods();
+          }
+        })
+        .catch((error) => {
+          console.warn('[Game] Adaptive music init promise rejected', error);
+        });
+    } else if (initResult !== false) {
+      this._adaptiveMusicReady = true;
+      this._flushPendingAdaptiveMoods();
     }
 
     this._ensureAdaptiveMoodHandlers();

@@ -1,5 +1,6 @@
 import { EventBus } from '../../../src/engine/events/EventBus.js';
 import { Act3FinaleCinematicController } from '../../../src/game/narrative/Act3FinaleCinematicController.js';
+import { getFinaleAdaptiveDefinition } from '../../../src/game/audio/finaleAdaptiveMix.js';
 
 function createOverlayStub() {
   const overlay = {
@@ -48,7 +49,7 @@ function buildPayload(overrides = {}) {
     stanceId: 'support',
     stanceTitle: 'Support Ending',
     summary: 'Test summary for finale playback.',
-    musicCue: 'ending_theme',
+    musicCue: 'track-ending-support',
     epilogueBeats: [
       { id: 'beat1', title: 'Beat 1', description: 'First beat' },
       { id: 'beat2', title: 'Beat 2', description: 'Second beat' },
@@ -81,9 +82,11 @@ describe('Act3FinaleCinematicController', () => {
   test('surfaces finale payload and emits adaptive mood requests', () => {
     const begins = [];
     const moods = [];
+    const defines = [];
 
     eventBus.on('narrative:finale_cinematic_begin', (payload) => begins.push(payload));
     eventBus.on('audio:adaptive:set_mood', (payload) => moods.push(payload));
+    eventBus.on('audio:adaptive:define_mood', (payload) => defines.push(payload));
 
     controller.init();
 
@@ -97,20 +100,42 @@ describe('Act3FinaleCinematicController', () => {
     expect(controller.getState().assets.hero.assetId).toBe('hero_asset');
     expect(overlay.show).toHaveBeenCalledTimes(1);
     expect(begins).toHaveLength(1);
+
+    const finaleDefinition = getFinaleAdaptiveDefinition('track-ending-support');
+    expect(defines).toHaveLength(1);
+    expect(defines[0]).toEqual(
+      expect.objectContaining({
+        mood: 'track-ending-support',
+        definition: finaleDefinition?.weights,
+      })
+    );
+
     expect(moods).toHaveLength(1);
     expect(moods[0]).toEqual(
       expect.objectContaining({
-        mood: 'ending_theme',
+        mood: 'track-ending-support',
       })
     );
+    expect(moods[0].options.force).toBe(true);
+    expect(moods[0].options.fadeDuration).toBeCloseTo(finaleDefinition?.fadeSeconds ?? 3.5, 5);
+    if (finaleDefinition?.durationSeconds) {
+      expect(moods[0].options.duration).toBeCloseTo(finaleDefinition.durationSeconds, 5);
+      expect(moods[0].options.revertTo).toBe(finaleDefinition.revertTo);
+      expect(moods[0].options.revertFadeDuration).toBeCloseTo(
+        finaleDefinition.revertFadeSeconds ?? 3.5,
+        5
+      );
+    }
   });
 
   test('advances beats and completes after final confirmation', () => {
     const beatEvents = [];
     const completions = [];
+    const resets = [];
 
     eventBus.on('narrative:finale_cinematic_beat_advanced', (payload) => beatEvents.push(payload));
     eventBus.on('narrative:finale_cinematic_completed', (payload) => completions.push(payload));
+    eventBus.on('audio:adaptive:reset', (payload) => resets.push(payload));
 
     controller.init();
     eventBus.emit('narrative:finale_cinematic_ready', buildPayload());
@@ -124,13 +149,24 @@ describe('Act3FinaleCinematicController', () => {
     overlay.callbacks.onAdvance({ source: 'jest:complete' });
 
     expect(completions).toHaveLength(1);
+    expect(resets).toHaveLength(1);
     expect(completions[0].beatIndex).toBe(1);
     expect(overlay.hide).toHaveBeenLastCalledWith('finale_complete');
+    expect(resets[0]).toEqual(
+      expect.objectContaining({
+        mood: 'ambient',
+        reason: 'complete',
+      })
+    );
+    const finaleDefinition = getFinaleAdaptiveDefinition('track-ending-support');
+    expect(resets[0].fadeDuration).toBeCloseTo(finaleDefinition?.revertFadeSeconds ?? 4.5, 5);
   });
 
   test('skips finale when cancel input triggered', () => {
     const skips = [];
+    const resets = [];
     eventBus.on('narrative:finale_cinematic_skipped', (payload) => skips.push(payload));
+    eventBus.on('audio:adaptive:reset', (payload) => resets.push(payload));
 
     controller.init();
     eventBus.emit('narrative:finale_cinematic_ready', buildPayload());
@@ -140,9 +176,22 @@ describe('Act3FinaleCinematicController', () => {
     expect(skips).toHaveLength(1);
     expect(skips[0].reason).toBe('skipped');
     expect(overlay.hide).toHaveBeenLastCalledWith('finale_skip');
+    expect(resets).toHaveLength(1);
+    expect(resets[0]).toEqual(
+      expect.objectContaining({
+        mood: 'ambient',
+        reason: 'skipped',
+      })
+    );
   });
 
   test('hydrates saved state to restore visuals and progress', () => {
+    const moods = [];
+    const resets = [];
+
+    eventBus.on('audio:adaptive:set_mood', (payload) => moods.push(payload));
+    eventBus.on('audio:adaptive:reset', (payload) => resets.push(payload));
+
     controller.init();
     eventBus.emit('narrative:finale_cinematic_ready', buildPayload());
     overlay.callbacks.onAdvance({ source: 'jest:advance' });
@@ -169,6 +218,17 @@ describe('Act3FinaleCinematicController', () => {
     expect(restoredOverlay.setCinematic).toHaveBeenCalledTimes(1);
     expect(restoredOverlay.show).toHaveBeenCalledWith('finale_cinematic_restore');
     expect(restoredEvents).toHaveLength(1);
+    expect(moods).toHaveLength(2);
+    expect(moods[1]).toEqual(
+      expect.objectContaining({
+        mood: 'track-ending-support',
+      })
+    );
+    expect(resets).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ reason: 'dispose', mood: 'ambient' }),
+      ])
+    );
 
     const restoredState = restoredController.getState();
     expect(restoredState.beatIndex).toBe(snapshot.beatIndex);
