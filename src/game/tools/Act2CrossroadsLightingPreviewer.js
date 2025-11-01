@@ -7,7 +7,7 @@ import {
 } from './Act2CrossroadsArtValidator.js';
 
 const DEFAULT_OVERLAY_ALPHA_TOLERANCE = 0.02;
-const LIGHTING_CATEGORIES = ['floors', 'accents', 'lightColumns'];
+const LIGHTING_CATEGORIES = ['floors', 'accents', 'lightColumns', 'questHighlights'];
 
 /**
  * Generate a lighting preview report for Act 2 Crossroads overlays.
@@ -101,7 +101,8 @@ function evaluateSegmentLighting({
   const expectsOverlay =
     metadataAverageAlpha !== null ||
     category === 'accents' ||
-    category === 'lightColumns';
+    category === 'lightColumns' ||
+    category === 'questHighlights';
 
   const entry = {
     segmentId: segment?.id ?? null,

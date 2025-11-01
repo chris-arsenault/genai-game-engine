@@ -36,6 +36,12 @@
 - Integrated the Memory Parlor infiltration composite with runtime loading for `memory_parlor_neon_001.png`, including a tinted fallback path and dedicated Jest coverage (`tests/game/scenes/MemoryParlorScene.overlay.test.js`) to guard the overlay hook.
 - Re-ran `npm run art:export-crossroads-luminance` post-integration, yielding `reports/art/luminance-snapshots/act2-crossroads/act2-crossroads-luminance-2025-11-01T04-56-28-934Z.{json,md}` with all 12 tracked segments still within tolerance.
 
+## Session 221 Updates
+- Promoted the Memory Parlor infiltration composite into the shared scene-art manifests by introducing a `questHighlights` tier covering entry, firewall, and escape beats with quest trigger metadata (`assets/manifests/act2-crossroads-art.json`, `src/game/data/sceneArt/Act2CrossroadsArtConfig.js`).
+- Authored dedicated lighting presets for each Memory Parlor beat (`memory_parlor_entry_tension`, `memory_parlor_firewall_alert`, `memory_parlor_escape_release`) and calibrated their target luminance/alpha expectations to align with the neon plate analysis (`src/game/data/sceneArt/LightingPresetCatalog.js`).
+- Regenerated the Crossroads luminance export after wiring the new segments; latest snapshot `reports/art/luminance-snapshots/act2-crossroads/act2-crossroads-luminance-2025-11-01T05-12-53-881Z.{json,md}` tracks all 15 segments as within tolerance.
+- Extended the automated validation harness to cover the new quest highlight category, keeping the Act 2 art bundle Jest suite (`npm test -- Act2CrossroadsArtValidator`) green so the pipeline guards both legacy and Memory Parlor overlays.
+
 ## Session 217 Updates
 - Generated `image-memory-parlor-neon-001` via GPT-Image-1, staging the overlay at `assets/generated/ar-050/image-memory-parlor-neon-001.png` and updating `assets/images/requests.json` to `ai-generated` so Memory Parlor infiltration beats have a dedicated neon lighting plate.
 - Integrated the safehouse floor, briefing pad, and branch walkway derivatives into `assets/overlays/act2-crossroads/` via `node scripts/art/generateOverlayDerivatives.js --filter image-ar-050-crossroads-floor-safehouse,image-ar-050-crossroads-branch-walkway,image-ar-050-crossroads-briefing-pad`, then reran `node scripts/art/previewCrossroadsLighting.js --tolerance=0.03 --out=reports/art/act2-crossroads-lighting-preview.json` to confirm all 12 tracked segments land within tolerance.

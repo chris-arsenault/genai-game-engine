@@ -44,6 +44,8 @@ describe('Act2CrossroadsArtValidator', () => {
     }
     expect(result.coverage.floors.missing).toEqual([]);
     expect(result.coverage.boundaries.present).toBeGreaterThanOrEqual(4);
+    expect(result.coverage.questHighlights.missing).toEqual([]);
+    expect(result.coverage.questHighlights.present).toBeGreaterThanOrEqual(3);
 
     const summary = summarizeAct2CrossroadsArtValidation(result);
     expect(summary.status).toBe('pass');
@@ -81,11 +83,16 @@ describe('Act2CrossroadsArtValidator', () => {
 
     expect(result.ok).toBe(false);
     expect(result.coverage.floors.missing).toContain('crossroads_floor_safehouse');
+    expect(result.coverage.questHighlights.missing).toContain('memory_parlor_infiltration_entry');
     expect(result.issues).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           severity: 'error',
           segmentId: 'crossroads_floor_safehouse',
+        }),
+        expect.objectContaining({
+          severity: 'error',
+          segmentId: 'memory_parlor_infiltration_entry',
         }),
       ])
     );

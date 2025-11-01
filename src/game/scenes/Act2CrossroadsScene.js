@@ -318,6 +318,7 @@ function resolveAct2CrossroadsArtSegments(artConfig = GameConfig?.sceneArt?.act2
       accents: cloneSegments(ACCENT_SEGMENTS),
       lightColumns: cloneSegments(LIGHT_COLUMN_SEGMENTS),
       boundaries: cloneSegments(BOUNDARY_SEGMENTS),
+      questHighlights: [],
     };
   }
 
@@ -330,6 +331,11 @@ function resolveAct2CrossroadsArtSegments(artConfig = GameConfig?.sceneArt?.act2
       'light_column'
     ),
     boundaries: mergeSegmentCollection(artConfig.boundaries, BOUNDARY_SEGMENTS, 'boundary'),
+    questHighlights: mergeSegmentCollection(
+      Array.isArray(artConfig.questHighlights) ? artConfig.questHighlights : [],
+      [],
+      'quest_highlight'
+    ),
   };
 }
 
@@ -338,13 +344,14 @@ function cloneArtConfig(config) {
     return null;
   }
 
-  const { floors, accents, lightColumns, boundaries, ...meta } = config;
+  const { floors, accents, lightColumns, boundaries, questHighlights, ...meta } = config;
   return {
     ...meta,
     floors: Array.isArray(floors) ? cloneSegments(floors) : [],
     accents: Array.isArray(accents) ? cloneSegments(accents) : [],
     lightColumns: Array.isArray(lightColumns) ? cloneSegments(lightColumns) : [],
     boundaries: Array.isArray(boundaries) ? cloneSegments(boundaries) : [],
+    questHighlights: Array.isArray(questHighlights) ? cloneSegments(questHighlights) : [],
   };
 }
 
@@ -367,6 +374,7 @@ function combineArtConfigs(baseConfig, overrideConfig) {
     accents: baseAccents = [],
     lightColumns: baseLightColumns = [],
     boundaries: baseBoundaries = [],
+    questHighlights: baseQuestHighlights = [],
     ...baseMeta
   } = baseClone;
 
@@ -375,6 +383,7 @@ function combineArtConfigs(baseConfig, overrideConfig) {
     accents: overrideAccents = [],
     lightColumns: overrideLightColumns = [],
     boundaries: overrideBoundaries = [],
+    questHighlights: overrideQuestHighlights = [],
     ...overrideMeta
   } = overrideClone;
 
@@ -385,6 +394,11 @@ function combineArtConfigs(baseConfig, overrideConfig) {
     accents: mergeSegmentCollection(overrideAccents, baseAccents, 'accent'),
     lightColumns: mergeSegmentCollection(overrideLightColumns, baseLightColumns, 'light_column'),
     boundaries: mergeSegmentCollection(overrideBoundaries, baseBoundaries, 'boundary'),
+    questHighlights: mergeSegmentCollection(
+      overrideQuestHighlights,
+      baseQuestHighlights,
+      'quest_highlight'
+    ),
   };
 }
 
