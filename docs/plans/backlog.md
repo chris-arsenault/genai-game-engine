@@ -174,7 +174,9 @@
 - Added `Act3FinaleCinematicSequencer` to surface finale cinematics from the Act 3 epilogue library once `act3_zenith_infiltration_complete` fires, emitting `narrative:finale_cinematic_ready` with stance and beat metadata (`src/game/narrative/Act3FinaleCinematicSequencer.js`, `src/game/Game.js`).
 - Registered the sequencer during game initialization and ensured cleanup paths dispose subscriptions to avoid duplicate dispatches (`src/game/Game.js`).
 - Authored Jest coverage confirming gating semantics and re-dispatch behaviour when infiltration completion toggles (`tests/game/narrative/Act3FinaleCinematicSequencer.test.js`).
-- Next steps: author stance-specific Zenith infiltration dialogue beats, integrate the finale cinematic playback layer once assets land, and queue Playwright coverage validating trigger flow through cinematic readiness.
+- Implemented `Act3FinaleCinematicController` alongside the `FinaleCinematicOverlay` so the readiness payload now drives beat progression UI, emits lifecycle telemetry, and kicks adaptive finale music (`src/game/narrative/Act3FinaleCinematicController.js`, `src/game/ui/FinaleCinematicOverlay.js`, `src/game/Game.js`).
+- Added dedicated Jest coverage for the controller covering readiness handling, beat advancement, skip flows, and adaptive mood emission (`tests/game/narrative/Act3FinaleCinematicController.test.js`).
+- Next steps: author stance-specific Zenith infiltration dialogue beats, hook bespoke finale cinematic assets into the new controller pipeline once renders land, and queue Playwright coverage validating trigger flow through cinematic readiness.
 
 ### Session #151 Backlog Updates
 

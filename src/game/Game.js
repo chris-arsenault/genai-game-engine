@@ -64,9 +64,11 @@ import { SuspicionMoodMapper } from './audio/SuspicionMoodMapper.js';
 import { GameplayAdaptiveAudioBridge } from './audio/GameplayAdaptiveAudioBridge.js';
 import { SaveInspectorOverlay } from './ui/SaveInspectorOverlay.js';
 import { SaveLoadOverlay } from './ui/SaveLoadOverlay.js';
+import { FinaleCinematicOverlay } from './ui/FinaleCinematicOverlay.js';
 import { CrossroadsPromptController } from './narrative/CrossroadsPromptController.js';
 import { CrossroadsBranchTransitionController } from './narrative/CrossroadsBranchTransitionController.js';
 import { Act3FinaleCinematicSequencer } from './narrative/Act3FinaleCinematicSequencer.js';
+import { Act3FinaleCinematicController } from './narrative/Act3FinaleCinematicController.js';
 import { NavigationMeshService } from './navigation/NavigationMeshService.js';
 
 // Managers
@@ -251,9 +253,11 @@ export class Game {
     this.audioFeedback = null;
     this.saveLoadOverlay = null;
     this.saveInspectorOverlay = null;
+    this.finaleCinematicOverlay = null;
     this.crossroadsPromptController = null;
     this.crossroadsBranchTransitionController = null;
     this.act3FinaleCinematicSequencer = null;
+    this.act3FinaleCinematicController = null;
     this.navigationMeshService = null;
 
     // Forensic prompt plumbing
@@ -982,6 +986,13 @@ export class Game {
     );
     this.saveLoadOverlay.init();
 
+    this.finaleCinematicOverlay = new FinaleCinematicOverlay(
+      this.engine.canvas,
+      this.eventBus,
+      {}
+    );
+    this.finaleCinematicOverlay.init();
+
     // Create interaction prompt overlay (HUD)
     this.interactionPromptOverlay = new InteractionPromptOverlay(
       this.engine.canvas,
@@ -1111,6 +1122,14 @@ export class Game {
       this.act3FinaleCinematicSequencer = null;
     }
 
+    if (
+      this.act3FinaleCinematicController &&
+      typeof this.act3FinaleCinematicController.dispose === 'function'
+    ) {
+      this.act3FinaleCinematicController.dispose();
+      this.act3FinaleCinematicController = null;
+    }
+
     this.crossroadsPromptController = new CrossroadsPromptController({
       eventBus: this.eventBus,
       dialogueSystem: this.gameSystems.dialogue,
@@ -1145,6 +1164,14 @@ export class Game {
         storyFlagManager: this.storyFlagManager,
       });
       this.act3FinaleCinematicSequencer.init();
+    }
+
+    if (this.eventBus && this.finaleCinematicOverlay) {
+      this.act3FinaleCinematicController = new Act3FinaleCinematicController({
+        eventBus: this.eventBus,
+        overlay: this.finaleCinematicOverlay,
+      });
+      this.act3FinaleCinematicController.init();
     }
 
     this._ensureQuestTriggerTelemetryBridge();
@@ -2620,6 +2647,9 @@ export class Game {
     if (this.saveLoadOverlay) {
       this.saveLoadOverlay.update(deltaTime);
     }
+    if (this.finaleCinematicOverlay) {
+      this.finaleCinematicOverlay.update(deltaTime);
+    }
     if (this.saveInspectorOverlay) {
       this.saveInspectorOverlay.update(deltaTime);
     }
@@ -3412,9 +3442,13 @@ export class Game {
       this.saveLoadOverlay.render();
     }
 
-    // Render tutorial overlay (kept highest priority for in-world guidance)
+    // Render tutorial overlay (kept high priority for in-world guidance; finale overlay renders above)
     if (this.tutorialOverlay) {
       this.tutorialOverlay.render(ctx);
+    }
+
+    if (this.finaleCinematicOverlay) {
+      this.finaleCinematicOverlay.render(ctx);
     }
 
     // Modal control bindings overlay renders last to sit above other HUD layers
@@ -3531,8 +3565,19 @@ export class Game {
       this.act3FinaleCinematicSequencer.dispose();
       this.act3FinaleCinematicSequencer = null;
     }
+    if (
+      this.act3FinaleCinematicController &&
+      typeof this.act3FinaleCinematicController.dispose === 'function'
+    ) {
+      this.act3FinaleCinematicController.dispose();
+      this.act3FinaleCinematicController = null;
+    }
     if (this.saveLoadOverlay && this.saveLoadOverlay.cleanup) {
       this.saveLoadOverlay.cleanup();
+    }
+    if (this.finaleCinematicOverlay && this.finaleCinematicOverlay.cleanup) {
+      this.finaleCinematicOverlay.cleanup();
+      this.finaleCinematicOverlay = null;
     }
     if (this.saveInspectorOverlay && this.saveInspectorOverlay.cleanup) {
       this.saveInspectorOverlay.cleanup();

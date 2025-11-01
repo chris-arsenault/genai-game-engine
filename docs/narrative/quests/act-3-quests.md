@@ -258,6 +258,7 @@ Automation Hooks: `QuestManager` tracks stance commitment via `act3:stance_commi
 #### Implementation Notes (Session 211)
 
 - `Act3FinaleCinematicSequencer` listens for the `act3_zenith_infiltration_complete` story flag and surfaces the correct finale cinematic from the Act 3 epilogue library once the player’s stance flag is active. The sequencer emits `narrative:finale_cinematic_ready` with cinematic ID, stance metadata, and beat summaries so playback systems can queue the finale without duplicating exporter data (`src/game/narrative/Act3FinaleCinematicSequencer.js`).
+- `Act3FinaleCinematicController` consumes the sequencer payload, directs the new `FinaleCinematicOverlay`, and emits lifecycle telemetry (`narrative:finale_cinematic_begin|beat_advanced|completed|skipped`) while driving adaptive music cues. The overlay renders stance summaries, epilogue beats, and input prompts so finale playback can move forward even before bespoke cinematics land (`src/game/narrative/Act3FinaleCinematicController.js`, `src/game/ui/FinaleCinematicOverlay.js`).
 - Added coverage in `tests/game/narrative/Act3FinaleCinematicSequencer.test.js` verifying that infiltration completion gates dispatch, pre-set flags dispatch on init, and toggling the completion flag re-queues the payload.
 
 #### Rewards
