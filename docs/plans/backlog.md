@@ -221,7 +221,16 @@
 - Audited finale cinematic manifests and runtime asset plumbing to confirm no `/assets/` URL prefixes remain in stance hero/beat descriptors, keeping Vite publicDir warnings suppressed.
 - Expanded `tests/e2e/act3-zenith-finale.spec.js` to exercise opposition, support, and alternative finales, asserting the overlay/controller surface the correct stance-specific hero and beat artwork paths.
 - Verification: `./run_playwright.sh test tests/e2e/act3-zenith-finale.spec.js`.
-- Next steps: re-run the finale cinematic E2E once the adaptive audio mix lands to validate mood transitions and telemetry hand-offs; smoke test Act 3 finale save/load continuity to ensure stance-specific art descriptors persist across sessions.
+- Next steps: re-run the finale cinematic E2E once the adaptive audio mix lands to validate mood transitions and telemetry hand-offs.
+
+### Session #225 Backlog Updates
+
+#### Act 3 Narrative (415b4bd3-2053-400e-92a5-1f1fceccc632)
+- Extended `SaveManager` to serialize and hydrate the Act 3 finale cinematic controller snapshot so stance-specific hero/beat art descriptors survive manual saves and reloads, emitting a `narrative:finale_cinematic_restored` hook for telemetry consumers.
+- Added `Act3FinaleCinematicController.hydrate` to rebuild overlay visuals and progression from saved payloads using the runtime asset manager descriptors.
+- Expanded Jest coverage across controller hydration and SaveManager persistence to guard finale art continuity (`tests/game/narrative/Act3FinaleCinematicController.test.js`, `tests/game/managers/SaveManager.test.js`).
+- Verification: `npm test -- --runTestsByPath tests/game/narrative/Act3FinaleCinematicController.test.js tests/game/managers/SaveManager.test.js`.
+- Next steps: re-run the finale cinematic E2E once the adaptive audio mix lands to validate mood transitions and telemetry hand-offs.
 
 ### Session #151 Backlog Updates
 

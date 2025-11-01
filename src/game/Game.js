@@ -1137,6 +1137,14 @@ export class Game {
       this.act3FinaleCinematicController = null;
     }
 
+    if (this.saveManager) {
+      if (typeof this.saveManager.setFinaleCinematicController === 'function') {
+        this.saveManager.setFinaleCinematicController(null);
+      } else {
+        this.saveManager.finaleCinematicController = null;
+      }
+    }
+
     this.crossroadsPromptController = new CrossroadsPromptController({
       eventBus: this.eventBus,
       dialogueSystem: this.gameSystems.dialogue,
@@ -1190,6 +1198,13 @@ export class Game {
         assetManager: this.finaleCinematicAssetManager,
       });
       this.act3FinaleCinematicController.init();
+      if (this.saveManager) {
+        if (typeof this.saveManager.setFinaleCinematicController === 'function') {
+          this.saveManager.setFinaleCinematicController(this.act3FinaleCinematicController);
+        } else {
+          this.saveManager.finaleCinematicController = this.act3FinaleCinematicController;
+        }
+      }
     }
 
     this._ensureQuestTriggerTelemetryBridge();

@@ -25,6 +25,7 @@ export class Act3FinaleCinematicController {
     this._beatIndex = -1;
     this._revealedBeats = 0;
     this._currentAssets = null;
+    this._status = 'idle';
   }
 
   init() {
@@ -101,6 +102,7 @@ export class Act3FinaleCinematicController {
     this._beatIndex = -1;
     this._revealedBeats = 0;
     this._currentAssets = null;
+    this._status = 'idle';
   }
 
   getState() {
@@ -108,6 +110,7 @@ export class Act3FinaleCinematicController {
       active: this._active,
       beatIndex: this._beatIndex,
       revealedBeats: this._revealedBeats,
+      status: this._status,
       payload: this._currentPayload ? { ...this._currentPayload } : null,
       assets: this._currentAssets ? this._summarizeAssets(this._currentAssets) : null,
     };
@@ -138,6 +141,7 @@ export class Act3FinaleCinematicController {
 
     this._active = true;
     this._currentAssets = visuals;
+    this._status = 'playing';
     if (this._currentPayload) {
       this._currentPayload.assets = this._currentAssets
         ? this._summarizeAssets(this._currentAssets)
@@ -240,6 +244,86 @@ export class Act3FinaleCinematicController {
     this._completeCinematic(payload?.reason ?? 'external_abort', payload, { skipped: true });
   }
 
+  hydrate(state = {}) {
+    if (!state || typeof state !== 'object') {
+      this._resetState('hydrate_invalid', { emit: false });
+      return false;
+    }
+
+    const payload = state.payload ? this._sanitizePayload(state.payload) : null;
+    if (!payload) {
+      this._resetState('hydrate_missing_payload', { emit: false });
+      return false;
+    }
+
+    const visuals = this.assetManager ? this.assetManager.prepareAssets(payload) : null;
+    this._currentPayload = payload;
+    this._currentBeats = Array.isArray(payload.epilogueBeats) ? payload.epilogueBeats : [];
+
+    const beatCount = this._currentBeats.length;
+    const sanitizedBeatIndex = Number.isFinite(state.beatIndex)
+      ? Math.min(Math.max(state.beatIndex, -1), beatCount - 1)
+      : beatCount > 0
+        ? 0
+        : -1;
+    const sanitizedRevealed = Number.isFinite(state.revealedBeats)
+      ? Math.min(Math.max(state.revealedBeats, 0), beatCount)
+      : sanitizedBeatIndex >= 0
+        ? sanitizedBeatIndex + 1
+        : 0;
+
+    const active = Boolean(state.active) && beatCount > 0;
+    const statusCandidate = typeof state.status === 'string' ? state.status.trim() : '';
+
+    this._beatIndex = sanitizedBeatIndex;
+    this._revealedBeats = sanitizedRevealed;
+    this._active = active;
+    this._currentAssets = visuals;
+    this._status = statusCandidate.length
+      ? statusCandidate
+      : active
+        ? 'playing'
+        : 'complete';
+
+    if (this._currentPayload) {
+      this._currentPayload.assets = this._currentAssets
+        ? this._summarizeAssets(this._currentAssets)
+        : null;
+    }
+
+    if (typeof this.overlay?.setCinematic === 'function') {
+      this.overlay.setCinematic(this._currentPayload, {
+        progress: {
+          activeIndex: this._beatIndex >= 0 ? this._beatIndex : 0,
+          revealedCount: this._revealedBeats,
+          status: this._status,
+        },
+        visuals,
+      });
+    }
+
+    if (this._active) {
+      if (typeof this.overlay?.show === 'function') {
+        this.overlay.show('finale_cinematic_restore');
+      }
+    } else if (typeof this.overlay?.hide === 'function') {
+      this.overlay.hide('finale_cinematic_restore_inactive');
+    }
+
+    if (typeof this.eventBus?.emit === 'function') {
+      this.eventBus.emit('narrative:finale_cinematic_restored', {
+        ...this._buildContext('restored'),
+        active: this._active,
+        status: this._status,
+        beatIndex: this._beatIndex,
+        revealedBeats: this._revealedBeats,
+        payload: this._currentPayload,
+      });
+    }
+
+    return true;
+  }
+
   _completeCinematic(reason, meta = {}, { skipped = false } = {}) {
     if (!this._currentPayload) {
       return;
@@ -270,6 +354,8 @@ export class Act3FinaleCinematicController {
       payload,
     };
 
+    this._status = skipped ? 'skipped' : 'complete';
+
     this.eventBus.emit(
       skipped ? 'narrative:finale_cinematic_skipped' : 'narrative:finale_cinematic_completed',
       context
@@ -288,6 +374,7 @@ export class Act3FinaleCinematicController {
     this._beatIndex = -1;
     this._revealedBeats = 0;
     this._currentAssets = null;
+    this._status = 'idle';
 
     if (emit && payload) {
       this.eventBus.emit(event, {

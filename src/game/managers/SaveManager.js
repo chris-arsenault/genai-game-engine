@@ -36,6 +36,7 @@ export class SaveManager {
     this.worldStateStore = managers.worldStateStore ?? null;
     this.caseManager = managers.caseManager ?? null;
     this.investigationSystem = managers.investigationSystem ?? null;
+    this.finaleCinematicController = managers.finaleCinematicController ?? null;
     this.storage =
       managers.storage ??
       (typeof globalThis !== 'undefined' && globalThis.localStorage
@@ -86,6 +87,14 @@ export class SaveManager {
     this._lastInventoryAutosave = 0;
 
     console.log('[SaveManager] Initialized');
+  }
+
+  /**
+   * Register or clear the finale cinematic controller reference.
+   * @param {object|null} controller
+   */
+  setFinaleCinematicController(controller) {
+    this.finaleCinematicController = controller ?? null;
   }
 
   /**
@@ -191,6 +200,7 @@ export class SaveManager {
 
       gameData.investigation = this._collectInvestigationState();
       gameData.cases = this._collectCaseState();
+      gameData.finaleCinematic = this._collectFinaleCinematicState();
 
       // Create save object
       const slotLabel =
@@ -282,6 +292,7 @@ export class SaveManager {
       }
 
       this._restoreInvestigationState(saveData.gameData.investigation);
+      this._restoreFinaleCinematicState(saveData.gameData.finaleCinematic);
 
       // Update game start time to account for saved playtime
       this.gameStartTime = Date.now() - saveData.playtime;
@@ -1258,6 +1269,7 @@ export class SaveManager {
       cases: this._collectCaseState(),
       investigation: this._collectInvestigationState(),
       dialogue: null,
+      finaleCinematic: this._collectFinaleCinematicState(),
     };
   }
 
@@ -1361,6 +1373,23 @@ export class SaveManager {
       return JSON.parse(JSON.stringify(snapshot));
     } catch (error) {
       console.warn('[SaveManager] Failed to serialize case manager state', error);
+      return null;
+    }
+  }
+
+  _collectFinaleCinematicState() {
+    const controller = this.finaleCinematicController;
+    if (!controller || typeof controller.getState !== 'function') {
+      return null;
+    }
+    try {
+      const state = controller.getState();
+      if (!state || typeof state !== 'object') {
+        return null;
+      }
+      return JSON.parse(JSON.stringify(state));
+    } catch (error) {
+      console.warn('[SaveManager] Failed to collect finale cinematic state', error);
       return null;
     }
   }
@@ -1483,6 +1512,32 @@ export class SaveManager {
       this.caseManager.deserialize(snapshot);
     } catch (error) {
       console.warn('[SaveManager] Failed to restore case manager state', error);
+    }
+  }
+
+  _restoreFinaleCinematicState(state) {
+    if (!state) {
+      return;
+    }
+    const controller = this.finaleCinematicController;
+    if (controller && typeof controller.hydrate === 'function') {
+      try {
+        controller.hydrate(state);
+        return;
+      } catch (error) {
+        console.warn('[SaveManager] Finale cinematic controller hydrate failed', error);
+      }
+    }
+
+    if (state.payload && this.eventBus && typeof this.eventBus.emit === 'function') {
+      try {
+        this.eventBus.emit('narrative:finale_cinematic_ready', {
+          ...state.payload,
+          restoredFromSave: true,
+        });
+      } catch (error) {
+        console.warn('[SaveManager] Failed to re-dispatch finale cinematic payload', error);
+      }
     }
   }
 

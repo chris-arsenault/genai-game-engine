@@ -922,6 +922,103 @@ describe('SaveManager', () => {
       );
     });
 
+    test('persists finale cinematic state across save and load cycles', () => {
+      const finaleState = {
+        active: true,
+        beatIndex: 1,
+        revealedBeats: 2,
+        status: 'playing',
+        payload: {
+          cinematicId: 'act3_support_finale',
+          stanceId: 'support',
+          stanceFlag: 'act3_support_path',
+          stanceTitle: 'Support Finale',
+          summary: 'Support your allies as the finale unfolds.',
+          musicCue: 'finale_support_theme',
+          epilogueBeats: [
+            { id: 'beat1', title: 'Rally', description: 'Allies rally together.' },
+            { id: 'beat2', title: 'Charge', description: 'Final charge into Zenith.' },
+          ],
+          libraryVersion: '1.0.0',
+          dispatchedAt: 1730400000000,
+        },
+        assets: {
+          hero: {
+            assetId: 'act3_finale_support_hero_v1',
+            src: '/overlays/act3-finale/support/act3_finale_support_hero.png',
+            alt: 'Support hero silhouette',
+            stanceId: 'support',
+            cinematicId: 'act3_support_finale',
+            status: 'ready',
+            tags: ['act3', 'hero'],
+            metadata: { artist: 'automation' },
+            palette: ['#202833', '#f1c550'],
+          },
+          beats: {
+            beat1: {
+              assetId: 'act3_finale_support_city_aftermath_v1',
+              src: '/overlays/act3-finale/support/act3_finale_support_city_aftermath.png',
+              alt: 'City aftermath with supporters',
+              stanceId: 'support',
+              beatId: 'beat1',
+              cinematicId: 'act3_support_finale',
+              status: 'ready',
+              tags: ['act3', 'beat'],
+              metadata: {},
+              palette: [],
+            },
+          },
+        },
+      };
+
+      const finaleController = {
+        getState: jest.fn(() => finaleState),
+        hydrate: jest.fn(),
+      };
+
+      saveManager.setFinaleCinematicController(finaleController);
+      saveManager.init();
+      saveManager.saveGame('finale_slot');
+
+      const stored = JSON.parse(localStorageMock.getItem('save_finale_slot'));
+      expect(stored.gameData.finaleCinematic).toEqual(expect.objectContaining({
+        payload: expect.objectContaining({ stanceId: 'support', cinematicId: 'act3_support_finale' }),
+        assets: expect.objectContaining({
+          hero: expect.objectContaining({ assetId: 'act3_finale_support_hero_v1' }),
+        }),
+        status: 'playing',
+      }));
+
+      const loadFinaleController = {
+        hydrate: jest.fn(() => true),
+      };
+
+      const loadSaveManager = new SaveManager(eventBus, {
+        storyFlagManager: { deserialize: jest.fn() },
+        questManager: { deserialize: jest.fn() },
+        factionManager: { deserialize: jest.fn(() => true), reputation: {} },
+        tutorialSystem: null,
+        caseManager: { deserialize: jest.fn() },
+        investigationSystem: { deserialize: jest.fn() },
+        storage: localStorageMock,
+        finaleCinematicController: loadFinaleController,
+      });
+      loadSaveManager.init();
+      const result = loadSaveManager.loadGame('finale_slot');
+
+      expect(result).toBe(true);
+      expect(loadFinaleController.hydrate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: expect.objectContaining({ stanceId: 'support' }),
+          assets: expect.objectContaining({
+            hero: expect.objectContaining({ assetId: 'act3_finale_support_hero_v1' }),
+          }),
+        })
+      );
+
+      loadSaveManager.cleanup();
+    });
+
     test('should restore tutorial status correctly', () => {
       // Set tutorial complete before saving
       const originalGetItem = localStorageMock.getItem;

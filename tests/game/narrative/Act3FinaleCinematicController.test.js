@@ -141,4 +141,40 @@ describe('Act3FinaleCinematicController', () => {
     expect(skips[0].reason).toBe('skipped');
     expect(overlay.hide).toHaveBeenLastCalledWith('finale_skip');
   });
+
+  test('hydrates saved state to restore visuals and progress', () => {
+    controller.init();
+    eventBus.emit('narrative:finale_cinematic_ready', buildPayload());
+    overlay.callbacks.onAdvance({ source: 'jest:advance' });
+
+    const snapshot = controller.getState();
+    controller.dispose();
+
+    const restoredOverlay = createOverlayStub();
+    const restoredAssetManager = createAssetManagerStub();
+    const restoredEvents = [];
+    eventBus.on('narrative:finale_cinematic_restored', (payload) => restoredEvents.push(payload));
+
+    const restoredController = new Act3FinaleCinematicController({
+      eventBus,
+      overlay: restoredOverlay,
+      assetManager: restoredAssetManager,
+    });
+    restoredController.init();
+
+    const hydrateResult = restoredController.hydrate(snapshot);
+
+    expect(hydrateResult).toBe(true);
+    expect(restoredAssetManager.prepareAssets).toHaveBeenCalledTimes(1);
+    expect(restoredOverlay.setCinematic).toHaveBeenCalledTimes(1);
+    expect(restoredOverlay.show).toHaveBeenCalledWith('finale_cinematic_restore');
+    expect(restoredEvents).toHaveLength(1);
+
+    const restoredState = restoredController.getState();
+    expect(restoredState.beatIndex).toBe(snapshot.beatIndex);
+    expect(restoredState.revealedBeats).toBe(snapshot.revealedBeats);
+    expect(restoredState.status).toBe(snapshot.status);
+    expect(restoredState.assets.hero).toEqual(expect.objectContaining({ assetId: 'hero_asset' }));
+    restoredController.dispose();
+  });
 });
