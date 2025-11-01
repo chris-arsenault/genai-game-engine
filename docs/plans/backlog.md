@@ -2917,10 +2917,10 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Archive Undercity: Dark, ancient tech (16x16 tiles)
   - Zenith Sector: Futuristic, imposing (16x16 tiles)
 - **File**: `assets/images/requests.json`
-- **Status**: All four AR-005 atlases (Neon District, Corporate Spires, Archive Undercity, Zenith Sector) are now `ai-generated` and staged under `assets/generated/images/ar-005/`; seam/collision analysis remains pending.
+- **Status**: All four AR-005 atlases (Neon District, Corporate Spires, Archive Undercity, Zenith Sector) are now `ai-generated` and staged under `assets/generated/images/ar-005/`; Neon District seam metadata lives in `assets/manifests/tilesets/image-ar-005-tileset-neon-district-metadata.json` while the remaining atlases still await analysis.
 - **Next Steps**:
   - Rerun the manifest sync without `--dry-run` so `assets/images/requests.json` and downstream docs reflect the new tileset outputs.
-  - Triage the 108 seam/collision warnings in `reports/art/neon-district-tileset-analysis.json` (extend coverage to the new tilesets) and promote confirmed seams into authored metadata before integration previews.
+  - Integrate the Neon District seam manifest into the tileset preview and corridor metadata validators, then extend the analysis + promotion workflow to the remaining AR-005 atlases once their reports are generated.
 
 #### AR-006: UI Sound Effects (M2-M6)
 - **Type**: Audio
