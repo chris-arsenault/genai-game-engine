@@ -5,8 +5,8 @@
 
 ## Document Overview
 
-**Version**: 1.4
-**Last Updated**: 2025-11-01 (Session 183 backlog cleanup)
+**Version**: 1.5
+**Last Updated**: 2025-11-21 (Session 228 backlog cleanup)
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
@@ -19,19 +19,25 @@
 - Tangential initiatives—such as net-new systems, auxiliary tooling, narrative review suites, or analytics dashboards—remain out of scope until roadmap deliverables ship.
 - Telemetry and performance management/testing initiatives are cancelled; do not schedule or create new work in these areas per the 2025-11-04 directive.
 
-### Current High-Priority Focus (Groomed 2025-10-29)
+### Current High-Priority Focus (Session 228)
 
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
-| BUG-201 | P0 | Completed | Collision system crashes on load when Collider metadata overwrites shape definitions (`shapeA`/`shapeB` null). Refactoring Collider component to preserve `shapeType` while keeping ECS registration stable; adding guards/tests. | Land collider refactor + guard rails, expand physics regression tests, and run targeted Jest suites (`CollisionSystem`, `physics/integration`, `integration-full`) before CI handoff. |
-| AR-050 | P0 | In Progress | Visual asset sourcing pipeline now covers Act 2 Crossroads selection conduit/pad, checkpoint glow/plaza, safehouse arc, boundary walls, and column beam overlays with CC0/CC-BY references captured in manifests; Session 112 calibrated tint/alpha parameters (~0.13 columns/conduits, ~0.75 boundaries), Session 113 added a lighting preview harness plus queued the AR-001–AR-005 generation batch, Session 114 boosted conduit/glow/column luminance so previewed segments meet thresholds, Session 115 delivered placeholder atlases for AR-001–AR-005, Session 116 layered RenderOps packet/placeholder audit automation, Session 117 shipped prioritized replacement plans, Session 118 produced a four-week bespoke art sprint schedule plus delivery staging CLI, Session 121 automated week-one bespoke status ingestion with licensing approvals recorded in manifests/reports, Session 171 added TRACK_BESPOKE_ROOT overrides plus Jest coverage to keep `scripts/art/trackBespokeDeliverables.js` ingest sweeps reproducible, Session 172 generated safehouse floor, briefing pad, and branch walkway textures via GPT-Image-1 with manifests flipped to `ai-generated`, Session 175 reran `scripts/art/packageRenderOpsLighting.js` to ship `reports/art/renderops-packets/act2-crossroads-2025-10-31T16-03-38-011Z` alongside a ready_for_ack approval job, Session 189 refreshed the bespoke cadence (track-bespoke -> package-renderops -> export-crossroads-luminance) yielding packet `act2-crossroads-2025-10-31T20-26-00-520Z` with zero actionable segments and approval queue `2025-10-31T20:26:00.543Z-c488a1c4-4834-4a83-9b33-57510d68c396.json`, Session 191 captured RenderOps acknowledgement while regenerating the approval summary (0 pending actionable segments), Session 220 wired the Memory Parlor neon overlay into the infiltration composite with automation-backed luminance validation, Session 221 promoted Memory Parlor quest highlight metadata (entry/firewall/escape) into the shared manifests with calibrated lighting presets and automation coverage, Session 222 reran the automation regression bundle to produce packet `reports/art/renderops-packets/act2-crossroads-2025-11-01T05-19-21-549Z` (12/12 segments ok) with approval job `2025-11-01T05:19:21.571Z-af361a7d-b05a-46f4-bf06-996e877f3dc5` staged `ready_for_ack`, and Session 223 staged `deliveries/renderops/act2-crossroads/act2-crossroads-2025-11-01T05-19-21-549Z` while acknowledging the approval job (now completed). | Monitor bespoke week updates for follow-up automation reruns and capture any RenderOps feedback that introduces actionable segments. |
-| TUT-201 | P0 | Completed | Tutorial case blocked at step 3 (`evidence_detection`) because legacy scene entities bypassed ECS detection events. | ECS-aligned tutorial scene entities shipped Session #51; re-run tutorial smoke tests after combat audio validation. |
-| AUDIO-351 | P0 | Completed | Validate live combat/disguise trigger routing through `AmbientSceneAudioController` using real combat loop events. | Adaptive audio routing now responds to gameplay emits; telemetry verified by Jest/Playwright suites and new infiltration benchmark. |
-| PERF-214 | P1 | Completed | Profiling harness restored; `npm run profile` runs without module errors and captures infiltration telemetry. | No further follow-up; profiling harness remains static per the 2025-11-04 performance freeze. |
-| UX-173 | P1 | Completed | Debug audio overlay now fully keyboard navigable with Shift+Alt+A shortcut, focus trap, and Playwright coverage. | Continue watching the automated Playwright spec for regressions during future overlay changes. |
+| Act 3 Narrative | P0 | In Progress | Finale storyline sequencing is staged with the shared memory well overlay in manifests and inventories; remaining scope is scripting the overlay into FinaleCinematicOverlay with automated validation. | Integrate the overlay through FinaleCinematicOverlay updates and cover the beat with `npm test` plus `npx playwright test tests/e2e/finale-cinematic.spec.js`. |
+| AR-050 | P1 | In Progress | Act 2 visual pipeline automation delivers RenderOps packets, inventories, and ai-generated overlays (Memory Parlor neon set) with luminance/tolerance snapshots tracked across reports. | Run `npm run art:stage-renderops -- --packet-dir reports/art/renderops-packets/act2-crossroads-2025-11-01T05-19-21-549Z` and schedule the weekly automation sweep (`npm run art:track-bespoke`, `npm run art:package-renderops`, `npm run art:export-crossroads-luminance`) to close job `af361a7d-b05a-46f4-bf06-996e877f3dc5` without manual follow-up. |
+| CORE-303 | P1 | Pending | Minimal investigative loop remains blocked on CORE-301/302 quest plumbing; scope captures evidence intake unlocking Detective Vision and advancing witness beats. | Break down implementation tasks once dependencies are ready and pre-wire quest/evidence validation via existing automation harnesses. |
+| M3-003 | P1 | Pending | ECS faction system components, systems, and Jest scaffolding are outlined but paused, awaiting upstream faction data contracts. | Resume after M3-002 readiness and keep validation inside scripted faction behaviour suites—no manual QA loops. |
+| M2-005 | P1 | Pending | Deduction board UI foundations (nodes, drag/drop, connection rendering) are still queued behind M2-004, with automated regression requirements documented. | Spin up the UI shell once M2-004 lands, ensuring drag/connect workflows ship with Jest coverage and zero manual acceptance steps. |
 
 **Next Session Focus**:
-- Execute the full art automation regression bundle now that the Memory Parlor quest highlights are part of the luminance export so RenderOps packets and docs carry the updated metadata.
+- Script the Act 3 Finale memory well overlay integration and queue automated Jest/Playwright coverage (`npm test`, `npx playwright test tests/e2e/finale-cinematic.spec.js`).
+- Re-run the art automation bundle (`npm run art:track-bespoke`, `npm run art:package-renderops`, `npm run art:export-crossroads-luminance`) to close RenderOps job `af361a7d-b05a-46f4-bf06-996e877f3dc5` without manual approvals.
+- Break down CORE-303 investigative loop tasks so dependencies (CORE-301/302) and faction prerequisites stay aligned with automation-first delivery.
+
+### Session #228 Backlog Maintenance
+
+- Normalized AR-050, BUG-201, and QA-330 backlog entries to strip manual follow-ups and point entirely to scripted automation.
+- Refreshed high-priority focus and Next Session Focus so MCP and documentation stay in sync around Act 3, art automation, and investigative loop planning.
 
 ### Session #173 Backlog Maintenance
 

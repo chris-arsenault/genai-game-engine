@@ -1,6 +1,0 @@
-<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="2.2641649999999998">
-<testsuite name="feedback-overlays.spec.js" timestamp="2025-10-31T14:01:59.266Z" hostname="" tests="1" failures="0" skipped="0" time="1.115" errors="0">
-<testcase name="Feedback overlays › render prompts and movement pulses with audio controller active" classname="feedback-overlays.spec.js" time="1.115">
-</testcase>
-</testsuite>
-</testsuites>
