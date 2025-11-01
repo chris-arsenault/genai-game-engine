@@ -1940,6 +1940,8 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Frame time tracked accurately
   - Pause/resume works correctly
   - Systems update in correct order
+- **Status**: Done — Implemented fixed-timestep accumulator with catch-up guardrails, reset semantics for pause/resume, and richer frame metrics (`stepCount`, `lag`) for profiling hooks.
+- **Verification**: `npm test`
 
 #### M1-024: Full Engine Integration Test
 - **Priority**: P1

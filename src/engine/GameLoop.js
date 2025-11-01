@@ -22,6 +22,11 @@ export class GameLoop {
 
     // Calculate target frame time in milliseconds
     this.targetFrameTime = 1000 / this.targetFPS;
+    this.fixedDeltaTime = this.targetFrameTime / 1000;
+
+    // Maximum number of catch-up steps to avoid spiral of death
+    this.maxCatchUpSteps = options.maxCatchUpSteps || 5;
+    this.maxFrameDelta = this.targetFrameTime * this.maxCatchUpSteps;
 
     // Loop state
     this.running = false;
@@ -43,6 +48,9 @@ export class GameLoop {
     this.maxFrameTime = 0;
     this.totalFrameTime = 0;
 
+    // Fixed timestep accumulator (ms)
+    this.accumulator = this.targetFrameTime;
+
     // RequestAnimationFrame ID for cleanup
     this.rafId = null;
   }
@@ -63,6 +71,7 @@ export class GameLoop {
     this.fpsUpdateTime = this.lastFrameTime;
     this.frameCount = 0;
     this.fpsFrameCount = 0;
+    this.accumulator = 0;
 
     // Start the loop
     this.rafId = requestAnimationFrame((time) => this._loop(time));
@@ -84,6 +93,8 @@ export class GameLoop {
       cancelAnimationFrame(this.rafId);
       this.rafId = null;
     }
+
+    this.accumulator = 0;
   }
 
   /**
@@ -121,6 +132,7 @@ export class GameLoop {
     this.paused = false;
     // Reset last frame time to prevent delta time spike
     this.lastFrameTime = performance.now();
+    this.accumulator = this.targetFrameTime;
   }
 
   /**
@@ -136,10 +148,8 @@ export class GameLoop {
     }
 
     // Calculate frame time in milliseconds
-    this.frameTime = currentTime - this.lastFrameTime;
-
-    // Calculate delta time in seconds
-    this.deltaTime = this.frameTime / 1000;
+    const rawDelta = currentTime - this.lastFrameTime;
+    let frameDelta = Math.min(rawDelta, this.maxFrameDelta);
 
     // Update timing for next frame
     this.lastFrameTime = currentTime;
@@ -148,13 +158,6 @@ export class GameLoop {
     this.frameCount++;
     this.fpsFrameCount++;
 
-    // Update frame timing statistics (only for active frames)
-    if (!this.paused) {
-      this.totalFrameTime += this.frameTime;
-      this.minFrameTime = Math.min(this.minFrameTime, this.frameTime);
-      this.maxFrameTime = Math.max(this.maxFrameTime, this.frameTime);
-    }
-
     // Update FPS counter every second
     if (currentTime - this.fpsUpdateTime >= 1000) {
       this.fps = this.fpsFrameCount;
@@ -162,11 +165,55 @@ export class GameLoop {
       this.fpsUpdateTime = currentTime;
     }
 
-    // Update systems if not paused
-    if (!this.paused) {
-      this.systemManager.update(this.deltaTime);
+    if (this.paused) {
+      this.frameTime = 0;
+      this.deltaTime = 0;
+      this.accumulator = 0;
+
+      if (this.onFrame) {
+        this.onFrame({
+          frameCount: this.frameCount,
+          fps: this.fps,
+          deltaTime: this.deltaTime,
+          frameTime: this.frameTime,
+          paused: this.paused,
+          stepCount: 0,
+          lag: 0,
+        });
+      }
+
+      this.rafId = requestAnimationFrame((time) => this._loop(time));
+      return;
     }
 
+    this.frameTime = frameDelta;
+
+    // Update frame timing statistics (only for active frames)
+    this.totalFrameTime += this.frameTime;
+    this.minFrameTime = Math.min(this.minFrameTime, this.frameTime);
+    this.maxFrameTime = Math.max(this.maxFrameTime, this.frameTime);
+
+    // Accumulate elapsed time for fixed timestep (ms)
+    this.accumulator += this.frameTime;
+
+    const stepMs = this.targetFrameTime;
+    const fixedStepSeconds = this.fixedDeltaTime;
+    let stepCount = 0;
+
+    while (this.accumulator >= stepMs && stepCount < this.maxCatchUpSteps) {
+      this.systemManager.update(fixedStepSeconds);
+      this.accumulator -= stepMs;
+      stepCount++;
+    }
+
+    if (this.accumulator < 0.0001) {
+      this.accumulator = 0;
+    }
+
+    // The simulation advanced by fixed steps; expose total simulated delta
+    this.deltaTime = stepCount > 0 ? fixedStepSeconds * stepCount : 0;
+
+    // Update systems if not paused
     // Call frame callback if provided
     if (this.onFrame) {
       this.onFrame({
@@ -175,6 +222,8 @@ export class GameLoop {
         deltaTime: this.deltaTime,
         frameTime: this.frameTime,
         paused: this.paused,
+        stepCount,
+        lag: this.accumulator / stepMs,
       });
     }
 
