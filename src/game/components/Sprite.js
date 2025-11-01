@@ -1,3 +1,5 @@
+import { requestImageAsset } from '../assets/assetResolver.js';
+
 /**
  * Sprite Component
  *
@@ -43,6 +45,13 @@ export class Sprite {
     this.sourceY = sourceY;
     this.sourceWidth = sourceWidth;
     this.sourceHeight = sourceHeight;
+
+    this.imageSource = typeof image === 'string' ? image : null;
+    this.assetLoadPromise = null;
+
+    if (typeof image === 'string' && image.length > 0) {
+      this.assetLoadPromise = resolveSpriteImageAsset(this, image);
+    }
   }
 
   /**
@@ -66,4 +75,31 @@ export class Sprite {
   setAlpha(alpha) {
     this.alpha = Math.max(0, Math.min(1, alpha));
   }
+}
+
+function resolveSpriteImageAsset(sprite, imageRef) {
+  return requestImageAsset(imageRef)
+    .then((loadedImage) => {
+      if (!loadedImage) {
+        return null;
+      }
+      sprite.image = loadedImage;
+
+      const naturalWidth = loadedImage.naturalWidth || loadedImage.width;
+      const naturalHeight = loadedImage.naturalHeight || loadedImage.height;
+
+      if (sprite.width == null && Number.isFinite(naturalWidth)) {
+        sprite.width = naturalWidth;
+      }
+
+      if (sprite.height == null && Number.isFinite(naturalHeight)) {
+        sprite.height = naturalHeight;
+      }
+
+      return loadedImage;
+    })
+    .catch((error) => {
+      console.warn(`[Sprite] Failed to load sprite image "${imageRef}"`, error);
+      return null;
+    });
 }

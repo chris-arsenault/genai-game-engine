@@ -185,6 +185,7 @@ export class PlayerMovementSystem extends System {
     controller.input.moveUp = this.input.isPressed('moveUp');
     controller.input.moveDown = this.input.isPressed('moveDown');
     controller.input.interact = this.input.isPressed('interact');
+    controller.input.interactJustPressed = this.input.wasJustPressed('interact');
     controller.input.deductionBoard = this.input.isPressed('deductionBoard');
     controller.input.inventory = this.input.isPressed('inventory');
     controller.input.pause = this.input.isPressed('pause');

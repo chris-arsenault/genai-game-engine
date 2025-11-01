@@ -22,7 +22,7 @@ describe('InvestigationSystem', () => {
     // Mock EventBus
     mockEventBus = {
       emit: jest.fn(),
-      on: jest.fn(),
+      on: jest.fn(() => () => {}),
       off: jest.fn()
     };
 
@@ -30,8 +30,10 @@ describe('InvestigationSystem', () => {
     mockEntityManager = {
       getEntity: jest.fn((id) => ({
         id,
+        tag: id === 1 ? 'player' : null,
         hasTag: (tag) => id === 1 && tag === 'player'
       })),
+      getTag: jest.fn((id) => (id === 1 ? 'player' : null)),
       hasEntity: jest.fn(() => true),
       getEntitiesByTag: jest.fn((tag) => (tag === 'player' ? [1] : []))
     };
@@ -351,6 +353,58 @@ describe('InvestigationSystem', () => {
       expect(mockEventBus.emit).toHaveBeenCalledWith('evidence:detected',
         expect.objectContaining({
           evidenceId: 'evidence_3'
+        })
+      );
+    });
+  });
+
+  describe('Interaction Input Handling', () => {
+    it('consumes interact input events to trigger evidence collection', () => {
+      const playerTransform = new Transform(0, 0);
+      const playerController = new PlayerController();
+      mockComponentRegistry._components.set('1:Transform', playerTransform);
+      mockComponentRegistry._components.set('1:PlayerController', playerController);
+
+      const evidenceTransform = new Transform(20, 0);
+      const interactionZone = new InteractionZone({
+        id: 'evidence_zone_alpha',
+        type: 'evidence',
+        radius: 64,
+        requiresInput: true,
+        prompt: 'Collect evidence',
+        data: { evidenceId: 'evidence_alpha' }
+      });
+      const evidence = new Evidence({
+        id: 'evidence_alpha',
+        caseId: 'case_alpha',
+        type: 'physical',
+        category: 'documents',
+        collected: false,
+        derivedClues: []
+      });
+
+      mockComponentRegistry._components.set('2:Transform', evidenceTransform);
+      mockComponentRegistry._components.set('2:InteractionZone', interactionZone);
+      mockComponentRegistry._components.set('2:Evidence', evidence);
+
+      // Simulate an interact input pulse
+      const interactCall = mockEventBus.on.mock.calls.find(
+        ([eventName]) => eventName === 'input:interact:pressed'
+      );
+      expect(interactCall).toBeDefined();
+      const interactHandler = interactCall[1];
+      interactHandler({ source: 'jest' });
+
+      mockEventBus.emit.mockClear();
+
+      system.update(0.016, [1, 2]);
+
+      expect(evidence.collected).toBe(true);
+      expect(mockEventBus.emit).toHaveBeenCalledWith(
+        'evidence:collected',
+        expect.objectContaining({
+          evidenceId: 'evidence_alpha',
+          entityId: 2
         })
       );
     });

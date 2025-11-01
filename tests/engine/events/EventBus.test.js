@@ -225,6 +225,45 @@ describe('EventBus', () => {
     });
   });
 
+  describe('Unhandled Event Tracking', () => {
+    it('records events emitted without listeners', () => {
+      expect(eventBus.getUnhandledEvents()).toEqual([]);
+
+      const payload = { test: 'payload' };
+      eventBus.emit('unhandled:event', payload);
+
+      const entries = eventBus.getUnhandledEvents();
+      expect(entries).toHaveLength(1);
+      expect(entries[0].eventType).toBe('unhandled:event');
+      expect(entries[0].count).toBe(1);
+      expect(entries[0].lastPayload).toEqual(payload);
+      expect(typeof entries[0].lastTimestamp).toBe('number');
+    });
+
+    it('accumulates counts for repeated emissions', () => {
+      eventBus.emit('unused:event');
+      eventBus.emit('unused:event');
+
+      const entry = eventBus.getUnhandledEvents().find((e) => e.eventType === 'unused:event');
+      expect(entry?.count).toBe(2);
+    });
+
+    it('clears tracked events by type and globally', () => {
+      eventBus.emit('single:clear');
+      expect(eventBus.getUnhandledEvents()).toHaveLength(1);
+
+      eventBus.clearUnhandledEvents('single:clear');
+      expect(eventBus.getUnhandledEvents()).toHaveLength(0);
+
+      eventBus.emit('first:event');
+      eventBus.emit('second:event');
+      expect(eventBus.getUnhandledEvents()).toHaveLength(2);
+
+      eventBus.clearUnhandledEvents();
+      expect(eventBus.getUnhandledEvents()).toHaveLength(0);
+    });
+  });
+
   describe('Wildcard Subscriptions', () => {
     it('should match wildcard patterns', () => {
       const callback = jest.fn();

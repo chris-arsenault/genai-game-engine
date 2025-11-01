@@ -357,7 +357,9 @@ export class FxOverlay {
   _extractWorldPosition(payload = {}) {
     const candidates = [
       payload.worldPosition,
+      payload.position,
       payload.context?.worldPosition,
+      payload.context?.position,
     ];
 
     for (const candidate of candidates) {
@@ -418,10 +420,9 @@ export class FxOverlay {
     if (effect?.anchor) {
       if (effect.anchor.type === 'world' && this.camera?.worldToScreen) {
         const worldPoint = this.camera.worldToScreen(effect.anchor.x, effect.anchor.y);
-        const clamped = this._normalizePoint(worldPoint);
-        if (clamped) {
-          const { x, y } = this._clampScreenPoint(clamped.x, clamped.y, canvas);
-          return { cx: x, cy: y, anchored: true };
+        const normalized = this._normalizePoint(worldPoint);
+        if (normalized) {
+          return { cx: normalized.x, cy: normalized.y, anchored: true };
         }
       } else if (effect.anchor.type === 'screen') {
         const { x, y } = this._clampScreenPoint(effect.anchor.x, effect.anchor.y, canvas);

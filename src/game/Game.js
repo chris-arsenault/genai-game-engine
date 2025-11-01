@@ -35,6 +35,9 @@ import {
 // Engine systems
 import { RenderSystem } from '../engine/renderer/RenderSystem.js';
 
+// Asset management
+import { registerGlobalAssetManager } from './assets/assetResolver.js';
+
 // UI Components
 import { TutorialOverlay } from './ui/TutorialOverlay.js';
 import { DialogueBox } from './ui/DialogueBox.js';
@@ -178,6 +181,10 @@ export class Game {
     this.audioManager = typeof engine.getAudioManager === 'function'
       ? engine.getAudioManager()
       : engine.audioManager || null;
+    this.assetManager = typeof engine.getAssetManager === 'function'
+      ? engine.getAssetManager()
+      : engine.assetManager || null;
+    registerGlobalAssetManager(this.assetManager);
     this.sfxCatalogLoader = null;
     this._sfxCatalogSummary = null;
     this.audioTelemetry = { currentState: null, history: [] };
@@ -680,10 +687,7 @@ export class Game {
       this.camera
     );
 
-    const assetManager =
-      (typeof this.engine?.getAssetManager === 'function' && this.engine.getAssetManager()) ||
-      this.engine?.assetManager ||
-      null;
+    const assetManager = this.assetManager;
     const spriteAnimationOptions = {};
     if (assetManager && assetManager.loader) {
       spriteAnimationOptions.assetLoader = assetManager.loader;
@@ -1182,10 +1186,7 @@ export class Game {
     }
 
     if (!this.finaleCinematicAssetManager) {
-      const runtimeAssetManager =
-        (typeof this.engine?.getAssetManager === 'function' && this.engine.getAssetManager()) ||
-        this.engine?.assetManager ||
-        null;
+      const runtimeAssetManager = this.assetManager;
       this.finaleCinematicAssetManager = new Act3FinaleCinematicAssetManager({
         loader: runtimeAssetManager?.loader ?? null,
       });
@@ -1454,10 +1455,7 @@ export class Game {
     try {
       this._destroySceneEntities();
 
-      const runtimeAssetManager =
-        (typeof this.engine?.getAssetManager === 'function' && this.engine.getAssetManager()) ||
-        this.engine?.assetManager ||
-        null;
+      const runtimeAssetManager = this.assetManager;
       const fallbackAssetLoader = runtimeAssetManager?.loader ?? null;
 
       const sceneData = await loadMemoryParlorScene(

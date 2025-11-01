@@ -10,6 +10,7 @@
  * @property {boolean} input.moveUp - A key pressed
  * @property {boolean} input.moveDown - D key pressed
  * @property {boolean} input.interact - E key pressed (evidence collection)
+ * @property {boolean} input.interactJustPressed - Edge-trigger flag for interact input
  * @property {boolean} input.deductionBoard - Tab key pressed
  * @property {boolean} input.inventory - I key pressed
  * @property {boolean} input.pause - ESC key pressed
@@ -30,6 +31,7 @@ export class PlayerController {
       moveUp: false,
       moveDown: false,
       interact: false,
+      interactJustPressed: false,
       deductionBoard: false,
       inventory: false,
       pause: false,
