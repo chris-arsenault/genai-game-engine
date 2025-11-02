@@ -2388,6 +2388,11 @@ _Progress 2025-11-03 (Session #256 guardrail verification): Re-ran the pointer c
   - Completion time <2 minutes
   - Success grants meaningful reward
   - Failure not punishing (can retry)
+- **Status**: ✅ Completed — Session 285 delivered playable fingerprint matching minigame with Canvas overlay and ECS-friendly event hooks.
+- **Completion Notes**:
+  - `FingerprintMatching` controller normalizes puzzle data, enforces timing windows, and publishes `forensic:minigame_result` payloads for integration.
+  - `ForensicMinigame` overlay renders partial print, candidate cards, hover highlighting, and result feedback while emitting `forensic:minigame_ui_feedback`; future M2-012 work can launch it from ForensicSystem.
+  - Jest suite `tests/game/minigames/FingerprintMatching.test.js` verifies duration scaling, success flow, and retry penalties.
 
 #### M2-010: Document Reconstruction Minigame
 - **Priority**: P2
