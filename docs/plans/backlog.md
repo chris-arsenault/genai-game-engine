@@ -36,6 +36,10 @@
 - Allow **AR-001** generation runs to deliver deduction board UI assets via the nightly queue before wiring updates.
 - Maintain WIP ceiling adherence while grooming DialogueSystem and save/load follow-ups; restricted area mechanics no longer need manual attention.
 
+### Session #280 Backlog Maintenance
+
+- Closed **M3-017 Save/Load Stress Testing** after landing SaveManager migration upgrades and 100-cycle/large-payload stress coverage, verified via `npm test -- --runTestsByPath tests/game/managers/SaveManager.test.js`.
+
 ### Session #279 Backlog Maintenance
 
 - Implemented **M3-015 Restricted Area Mechanics**, introducing `RestrictedAreaSystem`, data-driven access policies, and Jest coverage to keep infiltration gating automated.
@@ -2980,6 +2984,12 @@ _Progress 2025-11-03 (Session #256 guardrail verification): Re-ran the pointer c
 - **Effort**: 3 hours
 - **Dependencies**: M3-016
 - **Description**: Rigorous save/load testing
+- **Status**: Done (Session 280)
+- **Summary**:
+  - Added SaveManager migration utilities with metadata upgrades and future-version rejection so legacy slots hydrate cleanly while incompatible payloads fail fast.
+  - Authored Jest stress coverage validating 100-cycle save/load parity, large inventory payloads (1500 items), corruption handling, and version migration logic (`tests/game/managers/SaveManager.test.js`).
+- **Verification**:
+  - `npm test -- --runTestsByPath tests/game/managers/SaveManager.test.js`
 - **Test Scenarios**:
   - Save and load 100 times (no corruption)
   - Save with large world state (1000+ NPCs)

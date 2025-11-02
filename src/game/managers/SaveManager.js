@@ -276,7 +276,28 @@ export class SaveManager {
       // Version check
       if (saveData.version !== this.config.version) {
         console.warn(`[SaveManager] Save version mismatch: ${saveData.version} vs ${this.config.version}`);
-        // Could implement migration here
+
+        const migrationResult = this._migrateSaveData(saveData, resolvedSlot);
+        if (!migrationResult.success) {
+          const reason = migrationResult.reason ?? 'migration_failed';
+          console.error(
+            `[SaveManager] Unable to load slot ${resolvedSlot} due to migration failure (${reason})`
+          );
+          this.eventBus.emit('game:load_failed', {
+            slot: resolvedSlot,
+            error: reason,
+          });
+          return false;
+        }
+
+        if (migrationResult.performed) {
+          console.info(
+            `[SaveManager] Migrated save slot ${resolvedSlot} from v${saveData.version} to v${this.config.version}`
+          );
+          this._upgradeSlotMetadataVersion(resolvedSlot, this.config.version);
+        }
+
+        saveData = migrationResult.data;
       }
 
       // Restore game data to all managers
@@ -608,6 +629,221 @@ export class SaveManager {
       slotType,
       label,
       snapshotSource: raw.snapshotSource ?? null,
+    };
+  }
+
+  _upgradeSlotMetadataVersion(slot, version) {
+    if (!this.storage) {
+      return;
+    }
+
+    try {
+      const metadata = this._readMetadata();
+      if (!metadata || typeof metadata !== 'object') {
+        return;
+      }
+
+      if (!Object.prototype.hasOwnProperty.call(metadata, slot)) {
+        return;
+      }
+
+      const entry = metadata[slot] && typeof metadata[slot] === 'object' ? { ...metadata[slot] } : {};
+      entry.version = version;
+      metadata[slot] = entry;
+      this._writeMetadata(metadata);
+    } catch (error) {
+      console.warn(`[SaveManager] Failed to upgrade metadata version for slot ${slot}`, error);
+    }
+  }
+
+  _migrateSaveData(saveData, slot = null) {
+    if (!saveData || typeof saveData !== 'object') {
+      return { success: false, reason: 'invalid_save_data', performed: false, data: null };
+    }
+
+    const targetVersion = Number.isFinite(this.config.version) ? this.config.version : 1;
+    const sourceVersion = Number.isFinite(saveData.version) ? saveData.version : 0;
+
+    if (sourceVersion === targetVersion) {
+      return { success: true, performed: false, data: saveData };
+    }
+
+    if (sourceVersion > targetVersion) {
+      return { success: false, reason: 'future_version', performed: false, data: null };
+    }
+
+    try {
+      let migrated = JSON.parse(JSON.stringify(saveData));
+      let currentVersion = sourceVersion;
+
+      while (currentVersion < targetVersion) {
+        const nextVersion = currentVersion + 1;
+        migrated = this._migrateToVersion(nextVersion, migrated);
+        if (!migrated) {
+          return {
+            success: false,
+            reason: `migration_failed_${currentVersion}_to_${nextVersion}`,
+            performed: false,
+            data: null,
+          };
+        }
+        currentVersion = nextVersion;
+      }
+
+      migrated.version = targetVersion;
+      if (!migrated.gameData || typeof migrated.gameData !== 'object' || Array.isArray(migrated.gameData)) {
+        migrated.gameData = {};
+      }
+
+      return { success: true, performed: true, data: migrated };
+    } catch (error) {
+      console.error(
+        `[SaveManager] Migration error for slot ${slot ?? 'unknown_slot'}:`,
+        error
+      );
+      return { success: false, reason: 'migration_exception', performed: false, data: null };
+    }
+  }
+
+  _migrateToVersion(targetVersion, saveData) {
+    if (!saveData || typeof saveData !== 'object' || Array.isArray(saveData)) {
+      return null;
+    }
+
+    if (targetVersion === 1) {
+      const migrated = JSON.parse(JSON.stringify(saveData));
+      const legacyGameData =
+        migrated.gameData && typeof migrated.gameData === 'object' && !Array.isArray(migrated.gameData)
+          ? migrated.gameData
+          : {};
+
+      const tutorialComplete = Boolean(
+        legacyGameData.tutorialComplete ?? migrated.tutorialComplete ?? false
+      );
+      const tutorialSkipped = Boolean(
+        legacyGameData.tutorialSkipped ?? migrated.tutorialSkipped ?? false
+      );
+
+      legacyGameData.storyFlags = this._normalizeLegacyObject(legacyGameData.storyFlags);
+      legacyGameData.quests = this._normalizeLegacyObject(legacyGameData.quests);
+      legacyGameData.factions = this._normalizeLegacyFactions(legacyGameData.factions);
+      legacyGameData.inventory = this._normalizeLegacyInventory(legacyGameData.inventory);
+      legacyGameData.cases = this._normalizeLegacyOptionalObject(legacyGameData.cases);
+      legacyGameData.investigation = this._normalizeLegacyOptionalObject(legacyGameData.investigation);
+
+      if (typeof legacyGameData.dialogue === 'undefined') {
+        legacyGameData.dialogue = null;
+      }
+      if (typeof legacyGameData.finaleCinematic === 'undefined') {
+        legacyGameData.finaleCinematic = null;
+      }
+
+      legacyGameData.tutorial = this._normalizeLegacyTutorial(
+        legacyGameData.tutorial,
+        tutorialComplete,
+        tutorialSkipped
+      );
+      legacyGameData.tutorialComplete = tutorialComplete;
+      legacyGameData.tutorialSkipped = tutorialSkipped;
+
+      migrated.gameData = legacyGameData;
+      delete migrated.tutorialComplete;
+      delete migrated.tutorialSkipped;
+
+      return migrated;
+    }
+
+    return null;
+  }
+
+  _normalizeLegacyObject(source) {
+    if (!source || typeof source !== 'object' || Array.isArray(source)) {
+      return {};
+    }
+    return JSON.parse(JSON.stringify(source));
+  }
+
+  _normalizeLegacyOptionalObject(source) {
+    if (!source || typeof source !== 'object' || Array.isArray(source)) {
+      return null;
+    }
+    return JSON.parse(JSON.stringify(source));
+  }
+
+  _normalizeLegacyFactions(source) {
+    const normalized = this._normalizeLegacyObject(source);
+    if (!normalized.reputation || typeof normalized.reputation !== 'object') {
+      normalized.reputation = {};
+    } else {
+      normalized.reputation = JSON.parse(JSON.stringify(normalized.reputation));
+    }
+
+    if (!Array.isArray(normalized.recentMemberRemovals)) {
+      normalized.recentMemberRemovals = [];
+    } else {
+      normalized.recentMemberRemovals = normalized.recentMemberRemovals.map((entry) =>
+        entry && typeof entry === 'object' ? { ...entry } : {}
+      );
+    }
+
+    normalized.version = Number.isFinite(normalized.version) ? normalized.version : 1;
+    normalized.timestamp = Number.isFinite(normalized.timestamp) ? normalized.timestamp : Date.now();
+
+    return normalized;
+  }
+
+  _normalizeLegacyInventory(source) {
+    if (!source || typeof source !== 'object') {
+      return {
+        items: [],
+        equipped: {},
+        lastUpdatedAt: Date.now(),
+      };
+    }
+
+    const items = Array.isArray(source.items)
+      ? source.items.map((item) => (item && typeof item === 'object' ? { ...item } : { id: null }))
+      : [];
+
+    const equipped =
+      source.equipped && typeof source.equipped === 'object' && !Array.isArray(source.equipped)
+        ? { ...source.equipped }
+        : {};
+
+    const lastUpdatedAt = Number.isFinite(source.lastUpdatedAt)
+      ? source.lastUpdatedAt
+      : Date.now();
+
+    return {
+      items,
+      equipped,
+      lastUpdatedAt,
+    };
+  }
+
+  _normalizeLegacyTutorial(tutorial, completed, skipped) {
+    const base =
+      tutorial && typeof tutorial === 'object' && !Array.isArray(tutorial) ? { ...tutorial } : {};
+
+    const completedSteps = this._coerceNonNegativeInteger(base.completedSteps);
+    const totalSteps = this._coerceNonNegativeInteger(base.totalSteps);
+    const currentStepIndex = Number.isFinite(base.currentStepIndex)
+      ? Math.trunc(base.currentStepIndex)
+      : -1;
+    const currentStep =
+      typeof base.currentStep === 'string' && base.currentStep.trim().length
+        ? base.currentStep
+        : null;
+    const lastActionAt = Number.isFinite(base.lastActionAt) ? base.lastActionAt : null;
+
+    return {
+      completed: Boolean(completed),
+      completedSteps,
+      skipped: Boolean(skipped ?? base.skipped),
+      totalSteps,
+      currentStep,
+      currentStepIndex,
+      lastActionAt,
     };
   }
 
