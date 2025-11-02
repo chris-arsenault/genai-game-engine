@@ -4,6 +4,7 @@ import { GameConfig } from '../../../src/game/config/GameConfig.js';
 import { TriggerMigrationToolkit } from '../../../src/game/quests/TriggerMigrationToolkit.js';
 import { QuestTriggerRegistry } from '../../../src/game/quests/QuestTriggerRegistry.js';
 import { QUEST_001_HOLLOW_CASE } from '../../../src/game/data/quests/act1Quests.js';
+import { NarrativeBeats } from '../../../src/game/data/narrative/NarrativeBeatCatalog.js';
 
 function createMockCanvas() {
   return {
@@ -244,7 +245,7 @@ describe('Game audio telemetry integration', () => {
       once: false,
       metadata: {
         moodHint,
-        narrativeBeat: 'act1_vendor_briefing',
+        narrativeBeat: NarrativeBeats.act1.VENDOR_BRIEFING,
       },
     });
 

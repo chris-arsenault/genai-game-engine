@@ -7,6 +7,7 @@ import {
   renderAct3EpilogueMarkdown,
   writeAct3EpilogueMarkdown,
 } from '../../../src/game/tools/Act3EpilogueExporter.js';
+import { NarrativeBeats } from '../../../src/game/data/narrative/NarrativeBeatCatalog.js';
 
 describe('Act3EpilogueExporter', () => {
   test('builds summary with stance metadata', () => {
@@ -49,7 +50,9 @@ describe('Act3EpilogueExporter', () => {
 
     expect(markdown).toContain('# Act 3 Epilogue Review Packet');
     expect(markdown).toContain('Ending A — Sever the Broadcast');
-    expect(markdown).toContain('Narrative Beat: act3_epilogue_opposition_city');
+    expect(markdown).toContain(
+      `Narrative Beat: ${NarrativeBeats.act3.epilogue.OPPOSITION_CITY}`
+    );
 
     const tmpDir = await mkdtemp(path.join(os.tmpdir(), 'act3-epilogues-md-'));
     const outPath = path.join(tmpDir, 'epilogues.md');

@@ -79,7 +79,7 @@ describe('Act2PersonalInvestigationScene', () => {
     expect(entry.trigger.once).toBe(true);
     expect(entry.trigger.data.metadata).toEqual(
       expect.objectContaining({
-        narrativeBeat: 'act2_personal_archive_entry',
+        narrativeBeat: NarrativeBeats.act2.personal.ARCHIVE_ENTRY,
       })
     );
 

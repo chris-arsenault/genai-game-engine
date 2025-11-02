@@ -79,7 +79,7 @@ describe('Act2ResistanceHideoutScene', () => {
     expect(entry.trigger.once).toBe(true);
     expect(entry.trigger.data.metadata).toEqual(
       expect.objectContaining({
-        narrativeBeat: 'act2_resistance_hideout_entry',
+        narrativeBeat: NarrativeBeats.act2.resistance.ENTRY,
       })
     );
 

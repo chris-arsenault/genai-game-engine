@@ -43,7 +43,7 @@
 
 ### Session #250 Backlog Maintenance
 
-- Advanced **Narrative consitentcy** to `in-progress` after unifying tutorial through Act 3 beat identifiers via `src/game/data/narrative/NarrativeBeatCatalog.js`, updating scene metadata/quest seeds, and adding Jest coverage. Narrative exporters and Playwright suites still need catalog hooks before closure.
+- Advanced **Narrative consitentcy** to `ready-for-review` after wiring narrative tooling to the beat catalog: Act 3 epilogue library now imports `NarrativeBeatCatalog`, tutorial/Act 2 trigger tests consume the constants, and the Act 3 finale Playwright suite asserts catalog beats. Verification: `npm test`, `npx playwright test tests/e2e/act3-zenith-finale.spec.js`.
 
 ### Session #248 Backlog Maintenance
 

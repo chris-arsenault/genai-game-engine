@@ -79,7 +79,7 @@ describe('Act2CorporateInfiltrationScene', () => {
     expect(lobby.trigger.once).toBe(true);
     expect(lobby.trigger.data.metadata).toEqual(
       expect.objectContaining({
-        narrativeBeat: 'act2_corporate_lobby_entry',
+        narrativeBeat: NarrativeBeats.act2.corporate.ENTRY,
       })
     );
 
@@ -107,7 +107,7 @@ describe('Act2CorporateInfiltrationScene', () => {
     expect(serverAccess.trigger.once).toBe(true);
     expect(serverAccess.trigger.data.metadata).toEqual(
       expect.objectContaining({
-        narrativeBeat: 'act2_corporate_server_access',
+        narrativeBeat: NarrativeBeats.act2.corporate.SERVER_ACCESS,
       })
     );
 

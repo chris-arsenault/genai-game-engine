@@ -5,6 +5,7 @@ import { ComponentRegistry } from '../../../src/engine/ecs/ComponentRegistry.js'
 import { CaseManager } from '../../../src/game/managers/CaseManager.js';
 import { QuestTriggerRegistry } from '../../../src/game/quests/QuestTriggerRegistry.js';
 import { QUEST_001_HOLLOW_CASE } from '../../../src/game/data/quests/act1Quests.js';
+import { NarrativeBeats } from '../../../src/game/data/narrative/NarrativeBeatCatalog.js';
 
 const TUTORIAL_TRIGGER_IDS = {
   ARRIVAL: 'crime_scene_entry',
@@ -25,7 +26,7 @@ const ACT1_TRIGGER_DEFINITIONS = [
     triggerType: 'crime_scene',
     metadata: {
       moodHint: 'investigation_peak',
-      narrativeBeat: 'act1_arrival_scene',
+      narrativeBeat: NarrativeBeats.act1.ARRIVAL,
     },
   },
   {
@@ -39,7 +40,7 @@ const ACT1_TRIGGER_DEFINITIONS = [
     triggerType: 'npc_vendor_dialogue',
     metadata: {
       moodHint: 'market_intrigue',
-      narrativeBeat: 'act1_vendor_briefing',
+      narrativeBeat: NarrativeBeats.act1.VENDOR_BRIEFING,
       npcId: 'witness_street_vendor',
     },
   },
@@ -54,7 +55,7 @@ const ACT1_TRIGGER_DEFINITIONS = [
     triggerType: 'npc_vendor_dialogue',
     metadata: {
       moodHint: 'underground_pressure',
-      narrativeBeat: 'act1_broker_lead',
+      narrativeBeat: NarrativeBeats.act1.BROKER_LEAD,
       npcId: 'black_market_broker',
     },
   },
@@ -69,7 +70,7 @@ const ACT1_TRIGGER_DEFINITIONS = [
     triggerType: 'npc_vendor_dialogue',
     metadata: {
       moodHint: 'cipher_preparation',
-      narrativeBeat: 'act1_cipher_supply',
+      narrativeBeat: NarrativeBeats.act1.CIPHER_SUPPLY,
       npcId: 'cipher_quartermaster',
     },
   },
