@@ -1891,6 +1891,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 
 #### M1-020: AssetLoader Implementation
 - **Priority**: P0
+- **Status**: ready-for-review
 - **Tags**: `engine`, `asset`
 - **Effort**: 4 hours
 - **Dependencies**: M1-001
@@ -1898,6 +1899,14 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Files**:
   - `src/engine/assets/AssetLoader.js`
   - `tests/engine/assets/AssetLoader.test.js`
+- **Completed Work**:
+  - Introduced `AssetLoadError` to standardise metadata-rich failure handling across image, JSON, and audio loaders.
+  - Reworked batch loading to surface partial failures via aggregated `AssetLoadError` payloads while preserving successful results.
+  - Expanded Jest coverage for retry, timeout, and error classification scenarios.
+- **Verification**:
+  - `npm test`
+- **Next Steps**:
+  - Mirror the new error metadata in asset manifest telemetry/warning logs.
 - **Implementation Requirements**:
   - Load images (PNG, JPEG)
   - Load JSON data

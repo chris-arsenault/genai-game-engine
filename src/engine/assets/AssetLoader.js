@@ -1,35 +1,96 @@
 /**
  * AssetLoader - Promise-based asset loading with retry logic.
- * Handles loading of images, JSON, and audio files with automatic retries.
- *
- * Performance targets:
- * - Max 3 retry attempts on failure
- * - Progress tracking for batch operations
- * - Graceful error handling with descriptive messages
- *
- * @class AssetLoader
- * @example
- * const loader = new AssetLoader();
- *
- * // Load single image
- * const image = await loader.loadImage('assets/player.png');
- *
- * // Load with progress tracking
- * loader.on('progress', (data) => console.log(`${data.loaded}/${data.total}`));
- * const assets = await loader.loadBatch([...]);
+ * Handles loading of images, JSON, and audio files with automatic retries
+ * and descriptive error information for downstream diagnostics.
  */
+export class AssetLoadError extends Error {
+  /**
+   * @param {object} options
+   * @param {string} options.assetType - Type of asset that failed to load.
+   * @param {string} options.url - Source URL for the asset.
+   * @param {number} options.attempt - Attempt number when the error occurred (1-based).
+   * @param {number} [options.maxAttempts] - Maximum number of attempts allowed.
+   * @param {string} [options.reason] - Machine-readable reason code (e.g. timeout, network-error).
+  * @param {boolean} [options.retryable] - Whether the failure is safe to retry.
+   * @param {object|null} [options.details] - Optional structured metadata about the failure.
+   * @param {Error} [options.cause] - Underlying error that triggered the failure.
+   */
+  constructor({
+    assetType,
+    url,
+    attempt,
+    maxAttempts,
+    reason = 'unknown',
+    retryable = true,
+    details = null,
+    cause
+  }) {
+    const normalizedAttempt = Math.max(1, attempt ?? 1);
+    const normalizedMax = Math.max(normalizedAttempt, maxAttempts ?? normalizedAttempt);
+    const message = AssetLoadError._buildMessage(
+      assetType,
+      url,
+      normalizedAttempt,
+      normalizedMax,
+      reason
+    );
+
+    super(message, cause ? { cause } : undefined);
+
+    this.name = 'AssetLoadError';
+    this.assetType = assetType;
+    this.url = url;
+    this.attempt = normalizedAttempt;
+    this.maxAttempts = normalizedMax;
+    this.reason = reason;
+    this.retryable = retryable;
+    this.details = details;
+  }
+
+  /**
+   * Builds a descriptive error message that includes attempts and reason.
+   * @private
+   */
+  static _buildMessage(assetType, url, attempt, maxAttempts, reason) {
+    const context = [];
+
+    if (typeof attempt === 'number' && typeof maxAttempts === 'number') {
+      context.push(`attempt ${attempt} of ${maxAttempts}`);
+    }
+
+    if (reason) {
+      context.push(`reason: ${reason}`);
+    }
+
+    const suffix = context.length > 0 ? ` (${context.join(', ')})` : '';
+    return `Failed to load ${assetType} asset "${url}"${suffix}`;
+  }
+}
+
 export class AssetLoader {
   /**
    * Creates a new AssetLoader.
-   * @param {object} options - Configuration options
-   * @param {number} options.maxRetries - Maximum retry attempts (default: 3)
-   * @param {number} options.retryDelay - Delay between retries in ms (default: 1000)
-   * @param {number} options.timeout - Load timeout in ms (default: 30000)
+   * @param {object} [options]
+   * @param {number} [options.maxRetries=3] - Maximum number of attempts per asset.
+   * @param {number} [options.retryDelay=1000] - Delay between attempts in milliseconds.
+   * @param {number} [options.timeout=30000] - Timeout for a single attempt in milliseconds.
    */
   constructor(options = {}) {
-    this.maxRetries = options.maxRetries ?? 3;
-    this.retryDelay = options.retryDelay ?? 1000;
-    this.timeout = options.timeout ?? 30000;
+    const requestedRetries = options.maxRetries ?? 3;
+    this.maxRetries = Number.isFinite(requestedRetries) && requestedRetries > 0
+      ? Math.floor(requestedRetries)
+      : 3;
+
+    const requestedDelay = options.retryDelay ?? 1000;
+    this.retryDelay = Number.isFinite(requestedDelay) && requestedDelay >= 0
+      ? requestedDelay
+      : 1000;
+
+    const requestedTimeout = options.timeout ?? 30000;
+    this.timeout = Number.isFinite(requestedTimeout) && requestedTimeout > 0
+      ? requestedTimeout
+      : 30000;
+
     this.progressCallbacks = [];
     this.loadedCount = 0;
     this.totalCount = 0;
@@ -37,8 +98,8 @@ export class AssetLoader {
 
   /**
    * Registers a progress callback.
-   * @param {Function} callback - Progress callback(loaded, total, percentage)
-   * @returns {Function} Unsubscribe function
+   * @param {(loaded: number, total: number, percentage: number) => void} callback
+   * @returns {() => void} Unsubscribe function
    */
   onProgress(callback) {
     this.progressCallbacks.push(callback);
@@ -51,7 +112,7 @@ export class AssetLoader {
   }
 
   /**
-   * Emits progress update to all callbacks.
+   * Emits progress to registered callbacks.
    * @private
    */
   _emitProgress() {
@@ -69,143 +130,237 @@ export class AssetLoader {
   }
 
   /**
-   * Loads an image asset.
-   * @param {string} url - Image URL
-   * @param {number} retryCount - Current retry attempt (internal)
-   * @returns {Promise<HTMLImageElement>} Loaded image
-   * @throws {Error} If loading fails after max retries
+   * Loads an image asset using retry semantics.
+   * @param {string} url
+   * @returns {Promise<HTMLImageElement>}
    */
-  async loadImage(url, retryCount = 0) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      let timedOut = false;
+  async loadImage(url) {
+    return this._loadWithRetry('image', url, (attempt) => new Promise((resolve, reject) => {
+      if (typeof Image !== 'function') {
+        reject(new AssetLoadError({
+          assetType: 'image',
+          url,
+          attempt,
+          maxAttempts: this.maxRetries,
+          reason: 'image-constructor-missing',
+          retryable: false
+        }));
+        return;
+      }
 
-      // Set up timeout
+      const img = new Image();
+      let settled = false;
+
+      const clear = () => {
+        settled = true;
+        clearTimeout(timeoutId);
+        img.onload = null;
+        img.onerror = null;
+      };
+
       const timeoutId = setTimeout(() => {
-        timedOut = true;
-        reject(new Error(`Image load timeout: ${url}`));
+        if (settled) {
+          return;
+        }
+        clear();
+        reject(new AssetLoadError({
+          assetType: 'image',
+          url,
+          attempt,
+          maxAttempts: this.maxRetries,
+          reason: 'timeout'
+        }));
       }, this.timeout);
 
       img.onload = () => {
-        clearTimeout(timeoutId);
-        if (!timedOut) {
-          resolve(img);
+        if (settled) {
+          return;
         }
+        clear();
+        resolve(img);
       };
 
-      img.onerror = async () => {
-        clearTimeout(timeoutId);
-        if (!timedOut) {
-          if (retryCount < this.maxRetries) {
-            console.warn(`Retry ${retryCount + 1}/${this.maxRetries} for image: ${url}`);
-            await this._delay(this.retryDelay);
-            try {
-              const retryResult = await this.loadImage(url, retryCount + 1);
-              resolve(retryResult);
-            } catch (error) {
-              reject(error);
-            }
-          } else {
-            reject(new Error(`Failed to load image after ${this.maxRetries} attempts: ${url}`));
-          }
+      img.onerror = () => {
+        if (settled) {
+          return;
         }
+        clear();
+        reject(new AssetLoadError({
+          assetType: 'image',
+          url,
+          attempt,
+          maxAttempts: this.maxRetries,
+          reason: 'network-error'
+        }));
       };
 
-      // Start loading
       img.src = url;
-    });
+    }));
   }
 
   /**
-   * Loads a JSON data file.
-   * @param {string} url - JSON file URL
-   * @param {number} retryCount - Current retry attempt (internal)
-   * @returns {Promise<object>} Parsed JSON data
-   * @throws {Error} If loading or parsing fails after max retries
+   * Loads a JSON asset with timeout and retry handling.
+   * @param {string} url
+   * @returns {Promise<object>}
    */
-  async loadJSON(url, retryCount = 0) {
-    try {
+  async loadJSON(url) {
+    return this._loadWithRetry('json', url, async (attempt) => {
+      if (typeof fetch !== 'function') {
+        throw new AssetLoadError({
+          assetType: 'json',
+          url,
+          attempt,
+          maxAttempts: this.maxRetries,
+          reason: 'fetch-missing',
+          retryable: false
+        });
+      }
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
-      const response = await fetch(url, {
-        signal: controller.signal
-      });
+      try {
+        const response = await fetch(url, { signal: controller.signal });
 
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      return data;
-
-    } catch (error) {
-      if (retryCount < this.maxRetries) {
-        console.warn(`Retry ${retryCount + 1}/${this.maxRetries} for JSON: ${url}`);
-        await this._delay(this.retryDelay);
-        return this.loadJSON(url, retryCount + 1);
-      } else {
-        throw new Error(`Failed to load JSON after ${this.maxRetries} attempts: ${url} - ${error.message}`);
-      }
-    }
-  }
-
-  /**
-   * Loads an audio file.
-   * @param {string} url - Audio file URL
-   * @param {number} retryCount - Current retry attempt (internal)
-   * @returns {Promise<HTMLAudioElement>} Loaded audio element
-   * @throws {Error} If loading fails after max retries
-   */
-  async loadAudio(url, retryCount = 0) {
-    return new Promise((resolve, reject) => {
-      const audio = new Audio();
-      let timedOut = false;
-
-      // Set up timeout
-      const timeoutId = setTimeout(() => {
-        timedOut = true;
-        reject(new Error(`Audio load timeout: ${url}`));
-      }, this.timeout);
-
-      // Use canplaythrough for better reliability
-      audio.addEventListener('canplaythrough', () => {
-        clearTimeout(timeoutId);
-        if (!timedOut) {
-          resolve(audio);
-        }
-      }, { once: true });
-
-      audio.addEventListener('error', async () => {
-        clearTimeout(timeoutId);
-        if (!timedOut) {
-          if (retryCount < this.maxRetries) {
-            console.warn(`Retry ${retryCount + 1}/${this.maxRetries} for audio: ${url}`);
-            await this._delay(this.retryDelay);
-            try {
-              const retryResult = await this.loadAudio(url, retryCount + 1);
-              resolve(retryResult);
-            } catch (error) {
-              reject(error);
+        if (!response.ok) {
+          const reason = `http-${response.status}`;
+          throw new AssetLoadError({
+            assetType: 'json',
+            url,
+            attempt,
+            maxAttempts: this.maxRetries,
+            reason,
+            retryable: response.status >= 500,
+            details: {
+              status: response.status,
+              statusText: response.statusText
             }
-          } else {
-            reject(new Error(`Failed to load audio after ${this.maxRetries} attempts: ${url}`));
-          }
+          });
         }
-      }, { once: true });
 
-      // Start loading
-      audio.src = url;
-      audio.load();
+        try {
+          return await response.json();
+        } catch (parseError) {
+          throw new AssetLoadError({
+            assetType: 'json',
+            url,
+            attempt,
+            maxAttempts: this.maxRetries,
+            reason: 'parse-error',
+            retryable: false,
+            cause: parseError
+          });
+        }
+
+      } catch (error) {
+        if (error instanceof AssetLoadError) {
+          throw error;
+        }
+
+        if (error?.name === 'AbortError') {
+          throw new AssetLoadError({
+            assetType: 'json',
+            url,
+            attempt,
+            maxAttempts: this.maxRetries,
+            reason: 'timeout',
+            cause: error
+          });
+        }
+
+        throw new AssetLoadError({
+          assetType: 'json',
+          url,
+          attempt,
+          maxAttempts: this.maxRetries,
+          reason: 'network-error',
+          cause: error
+        });
+
+      } finally {
+        clearTimeout(timeoutId);
+      }
     });
   }
 
   /**
-   * Loads multiple assets with progress tracking.
-   * @param {Array<{url: string, type: string}>} assets - Assets to load
-   * @returns {Promise<Map<string, any>>} Map of url -> loaded asset
+   * Loads an audio asset with retry semantics.
+   * @param {string} url
+   * @returns {Promise<HTMLAudioElement>}
+   */
+  async loadAudio(url) {
+    return this._loadWithRetry('audio', url, (attempt) => new Promise((resolve, reject) => {
+      if (typeof Audio !== 'function') {
+        reject(new AssetLoadError({
+          assetType: 'audio',
+          url,
+          attempt,
+          maxAttempts: this.maxRetries,
+          reason: 'audio-constructor-missing',
+          retryable: false
+        }));
+        return;
+      }
+
+      const audio = new Audio();
+      let settled = false;
+
+      const clear = () => {
+        settled = true;
+        clearTimeout(timeoutId);
+        audio.removeEventListener('canplaythrough', handleCanPlay);
+        audio.removeEventListener('error', handleError);
+      };
+
+      const timeoutId = setTimeout(() => {
+        if (settled) {
+          return;
+        }
+        clear();
+        reject(new AssetLoadError({
+          assetType: 'audio',
+          url,
+          attempt,
+          maxAttempts: this.maxRetries,
+          reason: 'timeout'
+        }));
+      }, this.timeout);
+
+      const handleCanPlay = () => {
+        if (settled) {
+          return;
+        }
+        clear();
+        resolve(audio);
+      };
+
+      const handleError = () => {
+        if (settled) {
+          return;
+        }
+        clear();
+        reject(new AssetLoadError({
+          assetType: 'audio',
+          url,
+          attempt,
+          maxAttempts: this.maxRetries,
+          reason: 'network-error'
+        }));
+      };
+
+      audio.addEventListener('canplaythrough', handleCanPlay, { once: true });
+      audio.addEventListener('error', handleError, { once: true });
+
+      audio.src = url;
+      audio.load();
+    }));
+  }
+
+  /**
+   * Loads a batch of assets while tracking progress.
+   * Rejects with an AssetLoadError that includes partial results when failures occur.
+   * @param {Array<{url: string, type: string}>} assets
+   * @returns {Promise<Map<string, any>>}
    */
   async loadBatch(assets) {
     this.loadedCount = 0;
@@ -213,37 +368,78 @@ export class AssetLoader {
     this._emitProgress();
 
     const results = new Map();
-    const promises = [];
+    const settled = await Promise.all(assets.map(async (asset) => {
+      try {
+        const data = await this._loadAssetByType(asset.url, asset.type);
+        results.set(asset.url, data);
+        return { status: 'fulfilled', asset, data };
+      } catch (error) {
+        const loadError = error instanceof AssetLoadError
+          ? error
+          : new AssetLoadError({
+            assetType: asset.type,
+            url: asset.url,
+            attempt: this.maxRetries,
+            maxAttempts: this.maxRetries,
+            reason: 'unknown',
+            cause: error
+          });
 
-    for (let i = 0; i < assets.length; i++) {
-      const asset = assets[i];
-      const promise = this._loadAssetByType(asset.url, asset.type)
-        .then((data) => {
-          results.set(asset.url, data);
-          this.loadedCount++;
-          this._emitProgress();
-          return { url: asset.url, success: true, data };
-        })
-        .catch((error) => {
-          console.error(`Failed to load asset: ${asset.url}`, error);
-          this.loadedCount++;
-          this._emitProgress();
-          return { url: asset.url, success: false, error };
-        });
+        return { status: 'rejected', asset, error: loadError };
+      } finally {
+        this.loadedCount++;
+        this._emitProgress();
+      }
+    }));
 
-      promises.push(promise);
+    const failures = [];
+
+    for (let i = 0; i < settled.length; i++) {
+      if (settled[i].status === 'rejected') {
+        failures.push(settled[i]);
+      }
     }
 
-    await Promise.all(promises);
+    if (failures.length > 0) {
+      console.error('[AssetLoader] Batch load encountered failures', failures.map((failure) => ({
+        url: failure.asset.url,
+        reason: failure.error.reason
+      })));
+
+      const error = new AssetLoadError({
+        assetType: 'batch',
+        url: 'batch',
+        attempt: 1,
+        maxAttempts: 1,
+        reason: 'partial-failure',
+        retryable: failures.every((failure) => failure.error.retryable !== false),
+        details: {
+          successes: assets.length - failures.length,
+          failures: failures.map(({ asset, error: failureError }) => ({
+            url: asset.url,
+            type: asset.type,
+            reason: failureError.reason,
+            attempt: failureError.attempt,
+            maxAttempts: failureError.maxAttempts
+          }))
+        }
+      });
+
+      error.results = results;
+      error.failures = failures;
+
+      throw error;
+    }
+
     return results;
   }
 
   /**
-   * Loads an asset based on its type.
+   * Loads an asset based on type.
    * @private
-   * @param {string} url - Asset URL
-   * @param {string} type - Asset type ('image', 'json', 'audio')
-   * @returns {Promise<any>} Loaded asset
+   * @param {string} url
+   * @param {string} type
+   * @returns {Promise<any>}
    */
   async _loadAssetByType(url, type) {
     switch (type.toLowerCase()) {
@@ -269,22 +465,69 @@ export class AssetLoader {
         return this.loadAudio(url);
 
       default:
-        throw new Error(`Unknown asset type: ${type}`);
+        throw new AssetLoadError({
+          assetType: type,
+          url,
+          attempt: 1,
+          maxAttempts: 1,
+          reason: 'unsupported-type',
+          retryable: false
+        });
     }
   }
 
   /**
-   * Delays execution for specified milliseconds.
+   * Delay helper.
    * @private
-   * @param {number} ms - Milliseconds to delay
+   * @param {number} ms
    * @returns {Promise<void>}
    */
   _delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
-   * Resets progress tracking.
+   * Executes loader logic with retry semantics.
+   * @private
+   * @param {string} assetType
+   * @param {string} url
+   * @param {(attempt: number) => Promise<any>} executor
+   * @param {number} [attempt=1]
+   * @returns {Promise<any>}
+   */
+  async _loadWithRetry(assetType, url, executor, attempt = 1) {
+    try {
+      return await executor(attempt);
+    } catch (error) {
+      const loadError = error instanceof AssetLoadError
+        ? error
+        : new AssetLoadError({
+          assetType,
+          url,
+          attempt,
+          maxAttempts: this.maxRetries,
+          reason: 'unknown',
+          cause: error
+        });
+
+      if (loadError.attempt == null) {
+        loadError.attempt = attempt;
+      }
+
+      loadError.maxAttempts = this.maxRetries;
+
+      if (attempt < this.maxRetries && loadError.retryable !== false) {
+        console.warn(`Retry ${attempt + 1}/${this.maxRetries} for ${assetType}: ${url} (${loadError.reason})`);
+        await this._delay(this.retryDelay);
+        return this._loadWithRetry(assetType, url, executor, attempt + 1);
+      }
+
+      throw loadError;
+    }
+  }
+
+  /**
+   * Resets progress tracking counters.
    */
   resetProgress() {
     this.loadedCount = 0;
@@ -292,7 +535,7 @@ export class AssetLoader {
   }
 
   /**
-   * Gets current progress.
+   * Returns current progress snapshot.
    * @returns {{loaded: number, total: number, percentage: number}}
    */
   getProgress() {
