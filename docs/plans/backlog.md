@@ -5,8 +5,8 @@
 
 ## Document Overview
 
-**Version**: 1.8
-**Last Updated**: 2025-11-02 (Session 257 backlog audit)
+**Version**: 1.9
+**Last Updated**: 2025-11-02 (Session 259 automation queue)
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
@@ -19,20 +19,25 @@
 - Tangential initiatives—such as net-new systems, auxiliary tooling, narrative review suites, or analytics dashboards—remain out of scope until roadmap deliverables ship.
 - Telemetry and performance management/testing initiatives are cancelled; do not schedule or create new work in these areas per the 2025-11-04 directive.
 
-### Current High-Priority Focus (Session 257)
+### Current High-Priority Focus (Session 259)
 
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
-| AR-004 | P1 | In Progress | Civilian and guard NPC atlases regenerated via GPT-Image-1 in Session 257; manifests under `assets/generated/images/ar-004/` are flagged `ai-generated` and ready for animation slicing. | Queue the refreshed atlases through `node scripts/art/queueGenerationRequests.js --filter=AR-004` so the automation pipeline slices/exports loops, then rely on targeted Jest runs when the manifests update. |
+| AR-004 | P1 | In Progress | Civilian and guard NPC atlases regenerated via GPT-Image-1 in Session 257; Session 259 queued the refreshed packs (`assets/images/generation-queue/2025-11-02T03-28-32-933Z-ar-004.jsonl`) for automated slicing. | Allow the automation job to publish normalized manifests, then wire the civilian/guard variants into NPC prefabs and rerun scripted coverage (`npm test -- NPC`). |
 | AR-050 | P1 | In Progress | RenderOps packets, luminance snapshots, and bespoke tracking continue running through the asset automation suite without manual staging. | Allow the weekly `art:track-bespoke`, `art:package-renderops`, and `art:export-crossroads-luminance` sweeps to execute; investigate only if telemetry raises anomalies. |
 | M3-016 | P2 | In Progress | Save/Load dashboards, acknowledgement sweeps, and distribution tooling regenerate automatically each export window with parity scripts keeping coverage at 100%. | Depend on the telemetry cron to launch `npm run telemetry:ack` and `npm run telemetry:distribute-save-load`; review dashboards solely when automation surfaces alerts. |
 | M3-003 | P1 | Pending | Faction system scaffolding remains staged awaiting the automated data contract feed; regression suites sit ready for activation once dependencies unlock. | Hold until M3-002 signals readiness and keep all validation inside scripted faction behaviour suites—no manual check-ins. |
 
 **Next Session Focus**:
-- Push the refreshed AR-004 NPC atlases through the automation queue (`node scripts/art/queueGenerationRequests.js --filter=AR-004`) and wait for the slicing job to publish updated manifests before rerunning targeted Jest coverage.
+- Let the queued AR-004 NPC job (`generation-queue/2025-11-02T03-28-32-933Z-ar-004.jsonl`) finish slicing, then integrate the produced manifests into NPC prefabs and rerun `npm test -- NPC`.
 - Continue monitoring AR-050 via the weekly automation sweeps (`art:track-bespoke`, `art:package-renderops`, `art:export-crossroads-luminance`); intervene only on telemetry alerts.
 - Let the telemetry cron handle save/load acknowledgements and distribution (`npm run telemetry:ack`, `npm run telemetry:distribute-save-load`); review dashboards when automation raises exceptions.
 - Keep **M3-003** staged until the automated data contract notifier unlocks the faction work; maintain WIP within the ten-item ceiling.
+
+### Session #259 Backlog Maintenance
+
+- Queued the regenerated AR-004 civilian and guard sprite packs via `node scripts/art/queueGenerationRequests.js --filter=AR-004`, producing `assets/images/generation-queue/2025-11-02T03-28-32-933Z-ar-004.jsonl` and marking both requests `generation-queued`.
+- Updated the MCP backlog entry for **AR-004** to capture the new queue artifact and to shift the remaining work toward automated slicing output and prefab integration.
 
 ### Session #257 Backlog Maintenance
 
