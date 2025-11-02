@@ -1552,7 +1552,8 @@ export class Game {
       this.eventBus.emit('scene:loaded', {
         sceneId: this.activeScene.id,
         spawnPoint,
-        reason: options.reason || 'manual'
+        reason: options.reason || 'manual',
+        navigationMesh: this.activeScene.metadata?.navigationMesh || null,
       });
 
       return this.activeScene.id;

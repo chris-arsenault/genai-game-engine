@@ -5,8 +5,8 @@
 
 ## Document Overview
 
-**Version**: 1.10
-**Last Updated**: 2025-11-03 (Session 263 AssetManager priority queue)
+**Version**: 1.11
+**Last Updated**: 2025-11-04 (Session 265 Memory Parlor access gating)
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
@@ -33,6 +33,11 @@
 - Continue monitoring AR-050 via the weekly automation sweeps (`art:track-bespoke`, `art:package-renderops`, `art:export-crossroads-luminance`); intervene only on telemetry alerts.
 - Let the telemetry cron handle save/load acknowledgements and distribution (`npm run telemetry:ack`, `npm run telemetry:distribute-save-load`); review dashboards when automation raises exceptions.
 - Keep **M3-003** staged until the automated data contract notifier unlocks the faction work; maintain WIP within the ten-item ceiling.
+- Monitor Memory Parlor stealth telemetry now that cipher-restricted navigation surfaces are live; scope additional infiltration scenes (e.g., Memory Parlor adjacent quests) for the same gating pattern.
+
+### Session #265 Backlog Maintenance
+
+- Opened and closed **M3-021: Memory Parlor Disguise Access Tags**, adding a Memory Parlor navigation mesh with cipher-restricted walkable surfaces, extending `DisguiseSystem` unlocks, and validating via targeted Jest runs (`npm test -- DisguiseSystem.access`, `npm test -- MemoryParlorScene.navigation`).
 
 ### Session #263 Backlog Maintenance
 

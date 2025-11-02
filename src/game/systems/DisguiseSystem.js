@@ -30,7 +30,7 @@ const DISGUISE_ACCESS_RULES = {
   },
   cipher_collective: {
     unlockSurfaceTags: ['restricted', 'restricted:cipher_collective'],
-    unlockSurfaceIds: [],
+    unlockSurfaceIds: ['memory_parlor_firewall_channel', 'memory_parlor_interior_floor'],
   },
   vanguard_prime: {
     unlockSurfaceTags: ['restricted', 'restricted:vanguard_prime'],

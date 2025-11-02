@@ -90,6 +90,27 @@ describe('DisguiseSystem access gating', () => {
     });
   });
 
+  test('equipping a Cipher disguise unlocks Memory Parlor restricted surfaces', () => {
+    listeners['disguise:equipped']?.({ factionId: 'cipher_collective' });
+
+    expect(eventBus.emit).toHaveBeenCalledWith('navigation:unlockSurfaceTag', {
+      tag: 'restricted',
+      entityId: playerId,
+    });
+    expect(eventBus.emit).toHaveBeenCalledWith('navigation:unlockSurfaceTag', {
+      tag: 'restricted:cipher_collective',
+      entityId: playerId,
+    });
+    expect(eventBus.emit).toHaveBeenCalledWith('navigation:unlockSurfaceId', {
+      surfaceId: 'memory_parlor_firewall_channel',
+      entityId: playerId,
+    });
+    expect(eventBus.emit).toHaveBeenCalledWith('navigation:unlockSurfaceId', {
+      surfaceId: 'memory_parlor_interior_floor',
+      entityId: playerId,
+    });
+  });
+
   test('switching disguises relocks previous access before applying new rules', () => {
     listeners['disguise:equipped']?.({ factionId: 'luminari_syndicate' });
     eventBus.emit.mockClear();
@@ -111,5 +132,13 @@ describe('DisguiseSystem access gating', () => {
         entry.payload.tag === 'restricted:cipher_collective'
     );
     expect(unlockCipher.length).toBeGreaterThanOrEqual(1);
+
+    const cipherSurfaceUnlocks = events.filter(
+      (entry) =>
+        entry.event === 'navigation:unlockSurfaceId' &&
+        (entry.payload.surfaceId === 'memory_parlor_firewall_channel' ||
+          entry.payload.surfaceId === 'memory_parlor_interior_floor')
+    );
+    expect(cipherSurfaceUnlocks.length).toBeGreaterThanOrEqual(2);
   });
 });
