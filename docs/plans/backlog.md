@@ -19,22 +19,22 @@
 - Tangential initiatives—such as net-new systems, auxiliary tooling, narrative review suites, or analytics dashboards—remain out of scope until roadmap deliverables ship.
 - Telemetry and performance management/testing initiatives are cancelled; do not schedule or create new work in these areas per the 2025-11-04 directive.
 
-### Current High-Priority Focus (Session 278)
+### Current High-Priority Focus (Session 281)
 
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
 | AR-050 | P1 | In Progress | RenderOps packets, luminance snapshots, and bespoke tracking continue running through the asset automation suite without manual staging. | Allow the weekly `art:track-bespoke`, `art:package-renderops`, and `art:export-crossroads-luminance` sweeps to execute; investigate only if telemetry raises anomalies. |
 | AR-001 | P0 | Pending | Deduction board UI asset pack remains queued through the art automation pipeline with prompts/manifests packaged. | Let nightly `node scripts/art/queueGenerationRequests.js --filter=AR-001` feed the queue and consume manifest diffs once automation delivers. |
 | M3-016 | P2 | In Progress | Save/Load system automation is finalising autosave polish through telemetry and distribution scripts. | Telemetry cron runs `npm run telemetry:ack` and `npm run telemetry:distribute-save-load`; monitor dashboards for anomalies only. |
-| M2-016 | P1 | Pending | Baseline DialogueSystem delivery with branching choices, consequence tracking, and UI polish. | Keep DialogueSystem Jest and Playwright coverage primed to gate activation without manual dry runs. |
+| M2-016 | P1 | Done | DialogueSystem branching, conditional choice gating, and UI polish ship with automation-backed coverage. | Monitor DialogueSystem Jest/Playwright automation; no manual rehearsals required. |
 | M3-015 | P1 | Done | Restricted Area System landed; infiltration zones now honor disguises and scrambler credentials with automated coverage. | Monitor stealth telemetry only; no manual interventions required. |
 
 **Next Session Focus**:
 - Continue monitoring **AR-050** automation sweeps; intervene only if telemetry flags anomalies.
-- Keep **M2-016** poised for activation by leaning on DialogueSystem regression automation instead of manual rehearsal.
 - Let **M3-016** telemetry scripts (`npm run telemetry:ack`, `npm run telemetry:distribute-save-load`) settle the save/load queue and surface issues automatically.
 - Allow **AR-001** generation runs to deliver deduction board UI assets via the nightly queue before wiring updates.
-- Maintain WIP ceiling adherence while grooming DialogueSystem and save/load follow-ups; restricted area mechanics no longer need manual attention.
+- Watch **M2-016** automation dashboards to confirm conditional choice gating stays healthy; no manual runs needed.
+- Maintain WIP ceiling adherence while monitoring DialogueSystem and save/load follow-ups; restricted area mechanics no longer need manual attention.
 
 ### Session #280 Backlog Maintenance
 
@@ -2500,6 +2500,7 @@ _Progress 2025-11-03 (Session #256 guardrail verification): Re-ran the pointer c
 - **Tags**: `gameplay`, `narrative`, `ux`
 - **Effort**: 6 hours
 - **Dependencies**: M1-004
+- **Status**: ✅ Done (Session 281 – conditional choice gating fix landed)
 - **Description**: NPC dialogue and choices
 - **Files**:
   - `src/game/systems/DialogueSystem.js`
@@ -2511,6 +2512,9 @@ _Progress 2025-11-03 (Session #256 guardrail verification): Re-ran the pointer c
   - Branching dialogue trees
   - Dialogue history
   - Choice consequences (reputation, information)
+- **Completed Work Notes**:
+  - Conditional choice availability now drives `hasChoices` payloads, keeping dialogue overlays aligned with world state gating.
+  - DialogueSystem Jest suite expanded with conditional-branch tests to guard automation coverage.
 - **Acceptance Criteria**:
   - Dialogue displays correctly
   - Choices lead to correct branches

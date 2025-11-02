@@ -455,6 +455,81 @@ describe('DialogueSystem', () => {
       expect(visited.has('start')).toBe(true);
     });
 
+    it('marks hasChoices false when conditional choices fail requirements', () => {
+      const conditionalTree = new DialogueTree({
+        id: 'conditional_dialogue',
+        startNode: 'start',
+        nodes: {
+          start: {
+            speaker: 'Vault Guard',
+            text: 'Clearance required.',
+            choices: [
+              {
+                text: 'Access secure archives',
+                nextNode: 'granted',
+                conditions: ['flag:has_clearance'],
+              },
+            ],
+          },
+          granted: {
+            speaker: 'Vault Guard',
+            text: 'Welcome inside.',
+          },
+        },
+      });
+
+      system.registerDialogueTree(conditionalTree);
+      mockWorldStateStore.getState.mockImplementation(() => ({
+        inventory: { items: [] },
+        story: { flags: {} },
+      }));
+
+      system.startDialogue('vault_guard', 'conditional_dialogue');
+
+      const startEvent = emittedEvents.find((event) => event.eventType === 'dialogue:started');
+      expect(startEvent).toBeDefined();
+      expect(startEvent.data.choices).toHaveLength(0);
+      expect(startEvent.data.hasChoices).toBe(false);
+    });
+
+    it('marks hasChoices true when conditional choices succeed', () => {
+      const conditionalTree = new DialogueTree({
+        id: 'conditional_dialogue_success',
+        startNode: 'start',
+        nodes: {
+          start: {
+            speaker: 'Vault Guard',
+            text: 'Clearance required.',
+            choices: [
+              {
+                id: 'choice_access',
+                text: 'Access secure archives',
+                nextNode: 'granted',
+                conditions: ['flag:has_clearance'],
+              },
+            ],
+          },
+          granted: {
+            speaker: 'Vault Guard',
+            text: 'Welcome inside.',
+          },
+        },
+      });
+
+      system.registerDialogueTree(conditionalTree);
+      mockWorldStateStore.getState.mockImplementation(() => ({
+        inventory: { items: [] },
+        story: { flags: { has_clearance: true } },
+      }));
+
+      system.startDialogue('vault_guard', 'conditional_dialogue_success');
+
+      const startEvent = emittedEvents.find((event) => event.eventType === 'dialogue:started');
+      expect(startEvent).toBeDefined();
+      expect(startEvent.data.choices).toHaveLength(1);
+      expect(startEvent.data.hasChoices).toBe(true);
+    });
+
     it('responds to dialogue:choice_requested events', () => {
       system.startDialogue('npc_1', 'test_dialogue');
       emittedEvents.length = 0;
@@ -540,6 +615,60 @@ describe('DialogueSystem', () => {
       expect(nodeEvent.data.dialogueMetadata).toEqual({
         factionId: 'luminari_syndicate'
       });
+    });
+
+    it('emits node changes with hasChoices false when conditional options are unavailable', () => {
+      system.endDialogue();
+      emittedEvents = [];
+
+      const conditionalTree = new DialogueTree({
+        id: 'conditional_path',
+        startNode: 'start',
+        nodes: {
+          start: {
+            speaker: 'AI Sentinel',
+            text: 'Choose your access path.',
+            choices: [
+              {
+                text: 'Request clearance',
+                nextNode: 'restricted',
+              },
+            ],
+          },
+          restricted: {
+            speaker: 'AI Sentinel',
+            text: 'Clearance codes invalid.',
+            choices: [
+              {
+                text: 'Override security',
+                nextNode: 'end',
+                conditions: ['flag:has_override'],
+              },
+            ],
+          },
+          end: {
+            speaker: 'AI Sentinel',
+            text: 'Access complete.',
+          },
+        },
+      });
+
+      system.registerDialogueTree(conditionalTree);
+      mockWorldStateStore.getState.mockImplementation(() => ({
+        inventory: { items: [] },
+        story: { flags: {} },
+      }));
+
+      expect(system.startDialogue('sentinel_ai', 'conditional_path')).toBe(true);
+      emittedEvents = [];
+
+      system.selectChoice(0);
+
+      const nodeEvent = emittedEvents.find((event) => event.eventType === 'dialogue:node_changed');
+      expect(nodeEvent).toBeDefined();
+      expect(nodeEvent.data.nodeId).toBe('restricted');
+      expect(nodeEvent.data.choices).toHaveLength(0);
+      expect(nodeEvent.data.hasChoices).toBe(false);
     });
 
     it('should emit fx cue on dialogue beat', () => {

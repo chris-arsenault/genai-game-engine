@@ -272,6 +272,12 @@ export class DialogueSystem extends System {
     }
     this.activeDialogue.lastPresentation = nodePresentation;
 
+    const availableChoices = this.activeDialogue.tree.getAvailableChoices(
+      this.activeDialogue.currentNode,
+      this.activeDialogue.context
+    );
+    const hasChoices = availableChoices.length > 0;
+
     // Emit dialogue started event
     this.eventBus.emit('dialogue:started', {
       npcId,
@@ -280,8 +286,8 @@ export class DialogueSystem extends System {
       nodeId: tree.startNode,
       speaker: startNode.speaker,
       text: nodePresentation.text,
-      choices: tree.getAvailableChoices(tree.startNode, this.activeDialogue.context),
-      hasChoices: startNode.choices.length > 0,
+      choices: availableChoices,
+      hasChoices,
       canAdvance: startNode.nextNode !== null,
       startedAt,
       timestamp: startedAt,
@@ -474,6 +480,9 @@ export class DialogueSystem extends System {
     }
     this.activeDialogue.lastPresentation = nodePresentation;
 
+    const availableChoices = tree.getAvailableChoices(nodeId, this.activeDialogue.context);
+    const hasChoices = availableChoices.length > 0;
+
     // Emit node changed event
     this.eventBus.emit('dialogue:node_changed', {
       npcId: this.activeDialogue.npcId,
@@ -482,8 +491,8 @@ export class DialogueSystem extends System {
       nodeId,
       speaker: nextNode.speaker,
       text: nodePresentation.text,
-      choices: tree.getAvailableChoices(nodeId, this.activeDialogue.context),
-      hasChoices: nextNode.choices.length > 0,
+      choices: availableChoices,
+      hasChoices,
       canAdvance: nextNode.nextNode !== null,
       timestamp,
       metadata: {
