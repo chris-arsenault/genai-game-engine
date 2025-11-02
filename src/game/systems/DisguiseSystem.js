@@ -46,6 +46,82 @@ const DISGUISE_ACCESS_RULES = {
   },
 };
 
+const ATTITUDE_REACTION_PROFILES = Object.freeze({
+  allied: {
+    detectionMultiplier: 0.65,
+    suspiciousActionModifier: -8,
+    alertThresholdDelta: 18,
+    calmThresholdDelta: 4,
+    suspicionDecayBonus: 1.5,
+  },
+  friendly: {
+    detectionMultiplier: 0.85,
+    suspiciousActionModifier: -4,
+    alertThresholdDelta: 10,
+    calmThresholdDelta: 2,
+    suspicionDecayBonus: 0.75,
+  },
+  neutral: {
+    detectionMultiplier: 1,
+    suspiciousActionModifier: 0,
+    alertThresholdDelta: 0,
+    calmThresholdDelta: 0,
+    suspicionDecayBonus: 0,
+  },
+  unfriendly: {
+    detectionMultiplier: 1.2,
+    suspiciousActionModifier: 6,
+    alertThresholdDelta: -6,
+    calmThresholdDelta: -2,
+    suspicionDecayBonus: -0.5,
+  },
+  hostile: {
+    detectionMultiplier: 1.4,
+    suspiciousActionModifier: 12,
+    alertThresholdDelta: -12,
+    calmThresholdDelta: -4,
+    suspicionDecayBonus: -1,
+  },
+});
+
+const KNOWN_ATTITUDES = new Set(Object.keys(ATTITUDE_REACTION_PROFILES));
+
+function clampSuspicionValue(value, fallback) {
+  const base = Number.isFinite(value) ? value : fallback;
+  if (!Number.isFinite(base)) {
+    return 0;
+  }
+  if (base < 0) {
+    return 0;
+  }
+  if (base > 100) {
+    return 100;
+  }
+  return base;
+}
+
+function normalizeAttitude(attitude) {
+  if (typeof attitude !== 'string' || attitude.length === 0) {
+    return 'neutral';
+  }
+  const lowered = attitude.toLowerCase();
+  if (KNOWN_ATTITUDES.has(lowered)) {
+    return lowered;
+  }
+  switch (lowered) {
+    case 'ally':
+    case 'supportive':
+    case 'positive':
+      return 'friendly';
+    case 'aggressive':
+    case 'negative':
+    case 'angry':
+      return 'hostile';
+    default:
+      return 'neutral';
+  }
+}
+
 export class DisguiseSystem extends System {
   constructor(componentRegistry, eventBus, factionManager) {
     super(componentRegistry, eventBus);
@@ -75,6 +151,20 @@ export class DisguiseSystem extends System {
       suspicionDecayBonusPerSecond: 0,
     };
 
+    this.attitudeResponseConfig = ATTITUDE_REACTION_PROFILES;
+    this._baseAlertThreshold = this.config.alertSuspicionThreshold;
+    this._baseCalmThreshold = this.config.calmSuspicionThreshold;
+    this._baseSuspiciousActionPenalty = this.config.suspiciousActionPenalty;
+    this.attitudeState = {
+      factionId: null,
+      attitude: 'neutral',
+      detectionMultiplier: 1,
+      suspiciousActionModifier: 0,
+      suspicionDecayBonus: 0,
+      alertThreshold: this._baseAlertThreshold,
+      calmThreshold: this._baseCalmThreshold,
+    };
+
     // Audio / telemetry hooks
     this._alertActive = false;
     this._combatEngaged = false;
@@ -84,6 +174,8 @@ export class DisguiseSystem extends System {
     this._activeDisguiseFaction = null;
     this._activeAccessDescriptor = null;
     this._pendingAccessUpdates = [];
+
+    this._handleNpcAttitudeChanged = this._handleNpcAttitudeChanged.bind(this);
   }
 
   _resolvePlayerEntityId() {
@@ -200,6 +292,8 @@ export class DisguiseSystem extends System {
       this.scramblerEffect.suspicionDecayBonusPerSecond = 0;
     });
 
+    this.eventBus.on('npc:attitude_changed', this._handleNpcAttitudeChanged);
+
     console.log('[DisguiseSystem] Initialized');
   }
 
@@ -234,8 +328,9 @@ export class DisguiseSystem extends System {
     }
 
     // Decay suspicion when not performing suspicious actions
-    if (this.recentSuspiciousActions.length === 0) {
-      disguise.reduceSuspicion(this.config.suspicionDecayRate * deltaTime);
+    const passiveDecayRate = this._resolveSuspicionDecayRate();
+    if (this.recentSuspiciousActions.length === 0 && passiveDecayRate > 0) {
+      disguise.reduceSuspicion(passiveDecayRate * deltaTime);
     }
 
     if (this.scramblerEffect.active && this.scramblerEffect.suspicionDecayBonusPerSecond > 0) {
@@ -302,7 +397,7 @@ export class DisguiseSystem extends System {
       const effectiveness = disguise.calculateEffectiveness(infamyPenalty, isKnown);
 
       // Roll for detection
-      const detected = this.rollDetection(effectiveness);
+      const detected = this.rollDetection(effectiveness, disguise.factionId);
 
       if (detected) {
         // NPC detected the disguise!
@@ -316,7 +411,7 @@ export class DisguiseSystem extends System {
    * @param {number} effectiveness - Disguise effectiveness (0-1)
    * @returns {boolean} Whether disguise was detected
    */
-  rollDetection(effectiveness) {
+  rollDetection(effectiveness, factionId = null) {
     // Detection chance = base chance * (1 - effectiveness) + suspicious action bonus
     let detectionChance = this.config.baseDetectionChance * (1 - effectiveness);
 
@@ -327,10 +422,19 @@ export class DisguiseSystem extends System {
       suspiciousBonus *= modifier;
       detectionChance *= modifier;
     }
+
+    const attitudeMultiplier =
+      factionId && this.attitudeState.factionId === factionId
+        ? this.attitudeState.detectionMultiplier || 1
+        : 1;
+
+    detectionChance *= attitudeMultiplier;
+    suspiciousBonus *= attitudeMultiplier;
+
     detectionChance += suspiciousBonus;
 
     // Cap at 90% max detection chance
-    detectionChance = Math.min(0.9, detectionChance);
+    detectionChance = Math.min(0.9, Math.max(0, detectionChance));
 
     // Roll
     return Math.random() < detectionChance;
@@ -344,7 +448,8 @@ export class DisguiseSystem extends System {
    */
   onDisguiseDetected(playerEntity, npc, disguise) {
     // Add suspicion
-    disguise.addSuspicion(this.config.suspiciousActionPenalty);
+    const suspicionPenalty = this._adjustSuspicionAmount(this.config.suspiciousActionPenalty);
+    disguise.addSuspicion(suspicionPenalty);
     this._updateSuspicionState(disguise, {
       reason: 'detection',
       factionId: disguise.factionId,
@@ -355,7 +460,8 @@ export class DisguiseSystem extends System {
       npcId: npc.npcId,
       npcName: npc.name,
       disguiseFaction: disguise.factionId,
-      suspicionLevel: disguise.suspicionLevel
+      suspicionLevel: disguise.suspicionLevel,
+      suspicionAdded: suspicionPenalty,
     });
 
     console.log(
@@ -445,10 +551,11 @@ export class DisguiseSystem extends System {
    */
   onSuspiciousAction(actionType, suspicionAmount) {
     // Track action
+    const appliedSuspicion = this._adjustSuspicionAmount(suspicionAmount);
     this.recentSuspiciousActions.push({
       type: actionType,
       timestamp: Date.now(),
-      suspicion: suspicionAmount
+      suspicion: appliedSuspicion
     });
 
     // Get player disguise
@@ -457,11 +564,12 @@ export class DisguiseSystem extends System {
 
     const disguise = this.componentRegistry.getComponent(playerEntities[0], 'Disguise');
     if (disguise && disguise.equipped) {
-      disguise.addSuspicion(suspicionAmount);
+      disguise.addSuspicion(appliedSuspicion);
 
       this.eventBus.emit('disguise:suspicious_action', {
         actionType,
-        suspicionAdded: suspicionAmount,
+        suspicionAdded: appliedSuspicion,
+        baseSuspicion: suspicionAmount,
         totalSuspicion: disguise.suspicionLevel
       });
 
@@ -479,8 +587,9 @@ export class DisguiseSystem extends System {
    */
   decaySuspicion(playerEntity, deltaTime) {
     const disguise = this.componentRegistry.getComponent(playerEntity, 'Disguise');
-    if (disguise && this.recentSuspiciousActions.length === 0) {
-      disguise.reduceSuspicion(this.config.suspicionDecayRate * deltaTime);
+    const decayRate = this._resolveSuspicionDecayRate();
+    if (disguise && this.recentSuspiciousActions.length === 0 && decayRate > 0) {
+      disguise.reduceSuspicion(decayRate * deltaTime);
       this._updateSuspicionState(disguise, { reason: 'decay', factionId: disguise.factionId });
     }
   }
@@ -528,6 +637,15 @@ export class DisguiseSystem extends System {
     this._combatResolveAt = 0;
     this._clearAccessRules();
     this._pendingAccessUpdates = [];
+    this.attitudeState = {
+      factionId: null,
+      attitude: 'neutral',
+      detectionMultiplier: 1,
+      suspiciousActionModifier: 0,
+      suspicionDecayBonus: 0,
+      alertThreshold: this._baseAlertThreshold,
+      calmThreshold: this._baseCalmThreshold,
+    };
   }
 
   /**
@@ -540,8 +658,19 @@ export class DisguiseSystem extends System {
     const suspicionLevel = disguise?.suspicionLevel ?? 0;
     const equipped = Boolean(disguise?.equipped);
     const factionId = context.factionId ?? disguise?.factionId ?? null;
-    const alertThreshold = this.config.alertSuspicionThreshold;
-    const calmThreshold = this.config.calmSuspicionThreshold;
+    const attitudeMatches =
+      factionId &&
+      this.attitudeState.factionId &&
+      factionId === this.attitudeState.factionId;
+    const alertThreshold = attitudeMatches
+      ? clampSuspicionValue(this.attitudeState.alertThreshold, this._baseAlertThreshold)
+      : this._baseAlertThreshold;
+    let calmThreshold = attitudeMatches
+      ? clampSuspicionValue(this.attitudeState.calmThreshold, this._baseCalmThreshold)
+      : this._baseCalmThreshold;
+    if (calmThreshold > alertThreshold) {
+      calmThreshold = Math.min(alertThreshold, calmThreshold);
+    }
     const reason = context.reason || 'tick';
 
     if (!equipped) {
@@ -608,5 +737,115 @@ export class DisguiseSystem extends System {
       reason,
       factionId,
     });
+  }
+
+  _resolveSuspicionDecayRate() {
+    const bonus = Number(this.attitudeState.suspicionDecayBonus) || 0;
+    const rate = this.config.suspicionDecayRate + bonus;
+    return rate > 0 ? rate : 0;
+  }
+
+  _adjustSuspicionAmount(amount) {
+    const base = Number.isFinite(amount) ? amount : 0;
+    if (base <= 0) {
+      return 0;
+    }
+    const modifier = Number(this.attitudeState.suspiciousActionModifier) || 0;
+    const adjusted = base + modifier;
+    if (adjusted <= 0) {
+      return 0;
+    }
+    return Math.min(100, adjusted);
+  }
+
+  _handleNpcAttitudeChanged(payload = {}) {
+    if (!payload || typeof payload !== 'object') {
+      return;
+    }
+
+    const factionId = typeof payload.factionId === 'string' ? payload.factionId : null;
+    if (!factionId) {
+      return;
+    }
+
+    const activeFaction = this._activeDisguiseFaction || this._resolveActiveFactionId();
+    if (activeFaction && factionId !== activeFaction) {
+      return;
+    }
+
+    const attitude = normalizeAttitude(
+      payload.newAttitude ?? payload.npcAttitude ?? payload.behaviorState
+    );
+    const profile =
+      this.attitudeResponseConfig[attitude] ||
+      this.attitudeResponseConfig.neutral ||
+      ATTITUDE_REACTION_PROFILES.neutral;
+    const previousAttitude = this.attitudeState.attitude;
+
+    this.attitudeState = {
+      factionId,
+      attitude,
+      detectionMultiplier: Number.isFinite(profile.detectionMultiplier)
+        ? profile.detectionMultiplier
+        : 1,
+      suspiciousActionModifier: Number.isFinite(profile.suspiciousActionModifier)
+        ? profile.suspiciousActionModifier
+        : 0,
+      suspicionDecayBonus: Number.isFinite(profile.suspicionDecayBonus)
+        ? profile.suspicionDecayBonus
+        : 0,
+      alertThreshold: clampSuspicionValue(
+        this._baseAlertThreshold +
+          (Number.isFinite(profile.alertThresholdDelta) ? profile.alertThresholdDelta : 0),
+        this._baseAlertThreshold
+      ),
+      calmThreshold: clampSuspicionValue(
+        this._baseCalmThreshold +
+          (Number.isFinite(profile.calmThresholdDelta) ? profile.calmThresholdDelta : 0),
+        this._baseCalmThreshold
+      ),
+    };
+
+    const playerEntity = this._playerEntityId ?? this._resolvePlayerEntityId();
+    const disguise =
+      playerEntity != null ? this.componentRegistry.getComponent(playerEntity, 'Disguise') : null;
+
+    this._updateSuspicionState(disguise, {
+      reason: 'attitude_shift',
+      factionId,
+      attitude,
+      previousAttitude,
+    });
+
+    this.eventBus.emit('disguise:attitude_reaction_updated', {
+      factionId,
+      attitude,
+      previousAttitude,
+      detectionMultiplier: this.attitudeState.detectionMultiplier,
+      suspiciousActionModifier: this.attitudeState.suspiciousActionModifier,
+      alertThreshold: this.attitudeState.alertThreshold,
+      calmThreshold: this.attitudeState.calmThreshold,
+    });
+  }
+
+  _resolveActiveFactionId() {
+    const playerEntityId = this._resolvePlayerEntityId();
+    if (playerEntityId == null || !this.componentRegistry) {
+      return null;
+    }
+    const disguise = this.componentRegistry.getComponent(playerEntityId, 'Disguise');
+    if (disguise && disguise.equipped && typeof disguise.factionId === 'string') {
+      return disguise.factionId;
+    }
+    const factionMember = this.componentRegistry.getComponent(playerEntityId, 'FactionMember');
+    if (factionMember) {
+      if (typeof factionMember.currentDisguise === 'string' && factionMember.currentDisguise) {
+        return factionMember.currentDisguise;
+      }
+      if (typeof factionMember.primaryFaction === 'string' && factionMember.primaryFaction) {
+        return factionMember.primaryFaction;
+      }
+    }
+    return null;
   }
 }

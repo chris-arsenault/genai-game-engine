@@ -28,6 +28,10 @@ describe('SocialStealthSystem', () => {
         const applied = Number.isFinite(amount) ? amount : 0;
         this.suspicionLevel = Math.min(100, this.suspicionLevel + applied);
       }),
+      reduceSuspicion: jest.fn(function reduceSuspicion(amount) {
+        const applied = Number.isFinite(amount) ? amount : 0;
+        this.suspicionLevel = Math.max(0, this.suspicionLevel - applied);
+      }),
     };
 
     componentRegistry = {
@@ -147,5 +151,45 @@ describe('SocialStealthSystem', () => {
       system.config.combatInfamyPenalty,
       expect.stringContaining('combat')
     );
+  });
+
+  test('npc attitude change to hostile tightens thresholds and raises suspicion', () => {
+    system.state.lastKnownFaction = 'cipher_collective';
+    disguiseComponent.suspicionLevel = 5;
+    eventBus.emit.mockClear();
+
+    listeners['npc:attitude_changed']?.({
+      factionId: 'cipher_collective',
+      newAttitude: 'hostile',
+    });
+
+    expect(system.state.thresholds.alerted).toBeLessThan(system._baseThresholds.alerted);
+    expect(disguiseComponent.suspicionLevel).toBeGreaterThan(5);
+
+    const profileEvent = eventBus.emit.mock.calls.find(
+      ([eventName]) => eventName === 'socialStealth:attitude_profile_updated'
+    );
+    expect(profileEvent).toBeDefined();
+    expect(profileEvent[1]).toMatchObject({
+      factionId: 'cipher_collective',
+      attitude: 'hostile',
+    });
+  });
+
+  test('npc attitude change to friendly relaxes suspicion pressure', () => {
+    system.state.lastKnownFaction = 'cipher_collective';
+    disguiseComponent.suspicionLevel = 20;
+    eventBus.emit.mockClear();
+
+    listeners['npc:attitude_changed']?.({
+      factionId: 'cipher_collective',
+      newAttitude: 'friendly',
+    });
+
+    expect(system.state.thresholds.alerted).toBeGreaterThanOrEqual(
+      system._baseThresholds.alerted
+    );
+    expect(disguiseComponent.reduceSuspicion).toHaveBeenCalled();
+    expect(disguiseComponent.suspicionLevel).toBeLessThan(20);
   });
 });
