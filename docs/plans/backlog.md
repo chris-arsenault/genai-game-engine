@@ -5,8 +5,8 @@
 
 ## Document Overview
 
-**Version**: 1.14
-**Last Updated**: 2025-11-07 (Session 275 Luminari & Memory Keeper bespoke dialogue scenes)
+**Version**: 1.15
+**Last Updated**: 2025-11-09 (Session 277 AR-004 NPC sprite regeneration)
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
@@ -19,7 +19,7 @@
 - Tangential initiatives—such as net-new systems, auxiliary tooling, narrative review suites, or analytics dashboards—remain out of scope until roadmap deliverables ship.
 - Telemetry and performance management/testing initiatives are cancelled; do not schedule or create new work in these areas per the 2025-11-04 directive.
 
-### Current High-Priority Focus (Session 275)
+### Current High-Priority Focus (Session 277)
 
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
@@ -35,6 +35,11 @@
 - Continue monitoring **AR-050** automation runs and respond only if telemetry flags anomalies.
 - Prepare planning notes so **M2-016** can close without blocking the interview mechanics sequence.
 - Maintain WIP ceiling adherence while staging the next faction narrative beats.
+
+### Session #277 Backlog Maintenance
+
+- Regenerated **AR-004** civilian and guard NPC sprite packs via `mcp__generate-image__generate_image`, cleared the `generation-queued` statuses in `assets/images/requests.json`, and updated **AR-050** completed work to reflect the refreshed automation pass.
+- Audited asset manifests to confirm no additional outstanding visual requests remain outside the automated pipeline, keeping active WIP within the mandated ceiling.
 
 ### Session #275 Backlog Maintenance
 

@@ -465,11 +465,11 @@
     "creator": "Codex Autonomous Agent (GPT-Image-1)",
     "source": "assets/generated/images/ar-004/image-ar-004-npc-civilian-pack.png",
     "license": "Internal generation (OpenAI gpt-image-1)",
-    "status": "generation-queued",
+    "status": "ai-generated",
     "usage": "Five 32x32 civilian NPC variants for social hubs and investigation scenes.",
     "notes": "Session 200 automated generation delivered faction-signature civilian variants with diverse silhouettes, replacing placeholder art. Session 257 refresh regenerated the civilian pack with updated faction color grading and silhouette polish.",
-    "generatedAt": "2025-11-02T03:17:03Z",
-    "updatedAt": "2025-11-02T03:17:03Z",
+    "generatedAt": "2025-11-02T07:45:54Z",
+    "updatedAt": "2025-11-02T07:45:54Z",
     "route": "ai",
     "statusHistory": [
       {
@@ -482,6 +482,12 @@
         "status": "ai-regenerated",
         "recordedAt": "2025-11-02T03:17:03Z",
         "context": "Session 257 refreshed the civilian NPC sprites via mcp__generate-image__generate_image to improve faction readability and lighting balance.",
+        "route": "ai"
+      },
+      {
+        "status": "ai-generated",
+        "recordedAt": "2025-11-02T07:45:54Z",
+        "context": "Session 277 regenerated the civilian NPC sprite pack via mcp__generate-image__generate_image to finalize AR-004 assets.",
         "route": "ai"
       }
     ],
@@ -497,11 +503,11 @@
     "creator": "Codex Autonomous Agent (GPT-Image-1)",
     "source": "assets/generated/images/ar-004/image-ar-004-npc-guard-pack.png",
     "license": "Internal generation (OpenAI gpt-image-1)",
-    "status": "generation-queued",
+    "status": "ai-generated",
     "usage": "Three 32x32 guard NPC variants for stealth patrols.",
     "notes": "Session 200 GPT-Image run produced security guards with visor glow and faction insignia, ready for patrol animation integration. Session 257 refresh regenerated the guard pack to standardize visor luminosity and detection matrix accents.",
-    "generatedAt": "2025-11-02T03:17:03Z",
-    "updatedAt": "2025-11-02T03:17:03Z",
+    "generatedAt": "2025-11-02T07:45:54Z",
+    "updatedAt": "2025-11-02T07:45:54Z",
     "route": "ai",
     "statusHistory": [
       {
@@ -514,6 +520,12 @@
         "status": "ai-regenerated",
         "recordedAt": "2025-11-02T03:17:03Z",
         "context": "Session 257 refreshed the guard NPC sprites via mcp__generate-image__generate_image to sync visor readouts with stealth encounter cues.",
+        "route": "ai"
+      },
+      {
+        "status": "ai-generated",
+        "recordedAt": "2025-11-02T07:45:54Z",
+        "context": "Session 277 regenerated the guard NPC sprite pack via mcp__generate-image__generate_image to finalize AR-004 assets.",
         "route": "ai"
       }
     ],
