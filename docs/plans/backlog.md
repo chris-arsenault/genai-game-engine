@@ -5,8 +5,8 @@
 
 ## Document Overview
 
-**Version**: 1.11
-**Last Updated**: 2025-11-04 (Session 265 Memory Parlor access gating)
+**Version**: 1.12
+**Last Updated**: 2025-11-05 (Session 268 backlog automation audit)
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
@@ -23,17 +23,23 @@
 
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
-| AR-004 | P1 | Done | Civilian and guard NPC variants sliced into 32x48 sprites via `scripts/art/deriveNpcSpriteVariants.py` and wired into NPC prefabs with deterministic faction-aware selection. | — |
 | AR-050 | P1 | In Progress | RenderOps packets, luminance snapshots, and bespoke tracking continue running through the asset automation suite without manual staging. | Allow the weekly `art:track-bespoke`, `art:package-renderops`, and `art:export-crossroads-luminance` sweeps to execute; investigate only if telemetry raises anomalies. |
+| AR-009 | P2 | Review Approved | Procedural AR-009 ambience suite generated via `scripts/audio/generateAr009EnvironmentalSfx.js` with deterministic WAV assets staged in `assets/generated/audio/ar-009/`. | Extend the automation to publish mixer routing and infiltration guidance—no manual mixing or documentation passes. |
 | M3-016 | P2 | In Progress | Save/Load dashboards, acknowledgement sweeps, and distribution tooling regenerate automatically each export window with parity scripts keeping coverage at 100%. | Depend on the telemetry cron to launch `npm run telemetry:ack` and `npm run telemetry:distribute-save-load`; review dashboards solely when automation surfaces alerts. |
 | M3-003 | P1 | Pending | Faction system scaffolding remains staged awaiting the automated data contract feed; regression suites sit ready for activation once dependencies unlock. | Hold until M3-002 signals readiness and keep all validation inside scripted faction behaviour suites—no manual check-ins. |
 
 **Next Session Focus**:
-- AR-004 NPC sprites integrated into ECS prefabs; monitor automation reruns for regressions via the derivation script and targeted Jest coverage.
+- Automate AR-009 loop integration by extending `scripts/audio/generateAr009EnvironmentalSfx.js` to register mixer routing and verify coverage through the existing Jest suite.
+- Trigger the audio playbook automation once AR-009 wiring lands so infiltration mix guidance publishes without manual drafting.
 - Continue monitoring AR-050 via the weekly automation sweeps (`art:track-bespoke`, `art:package-renderops`, `art:export-crossroads-luminance`); intervene only on telemetry alerts.
 - Let the telemetry cron handle save/load acknowledgements and distribution (`npm run telemetry:ack`, `npm run telemetry:distribute-save-load`); review dashboards when automation raises exceptions.
 - Keep **M3-003** staged until the automated data contract notifier unlocks the faction work; maintain WIP within the ten-item ceiling.
-- Monitor Memory Parlor stealth telemetry now that cipher-restricted navigation surfaces are live; scope additional infiltration scenes (e.g., Memory Parlor adjacent quests) for the same gating pattern.
+
+### Session #268 Backlog Maintenance
+
+- Closed **M1-020: AssetLoader Implementation** after confirming automated regression suites keep retry/timeout behaviour green, eliminating the pending review gate.
+- Rewrote follow-up guidance for **AR-001** and **AR-009** to lean exclusively on scripted asset/audio pipelines instead of manual staging.
+- Cleared residual manual to-dos from completed items (**INPUT-310**, **UX-413**) so no backlog entries depend on hand-run steps.
 
 ### Session #265 Backlog Maintenance
 
@@ -54,7 +60,7 @@
 
 ### Session #257 Backlog Maintenance
 
-- Promoted **M1-020: AssetLoader Implementation** to `review-approved`, documenting that existing Jest suites and the full `npm test` run guard retry/timeout behaviour without manual QA.
+- Promoted **M1-020: AssetLoader Implementation** to `review-approved`, documenting that existing Jest suites and the full `npm test` run guard retry/timeout behaviour without manual QA (superseded by Session 268 closure).
 - Rewrote next steps for **AR-004**, **AR-001**, and **M3-016** so follow-ups depend on scripted queues, telemetry crons, and Jest automation rather than manual staging.
 - Confirmed high-priority WIP (AR-004, AR-050, M3-016) stays within the automation-first mandate and below the WIP ceiling; no additional backlog pulls required.
 
@@ -484,7 +490,7 @@
 - Introduced a centralized control binding store with subscribe/update/reset APIs so gameplay systems resolve input prompts from the active bindings instead of static constants.
 - Updated `InputState`, `TutorialSystem`, `tutorialSlice`, and evidence prompts to react to binding changes, emitting `tutorial:control_hint_updated` events for telemetry and UI refreshes.
 - Expanded Jest coverage across the new store, state slices, view model, and tutorial/evidence modules, plus added Playwright assertions verifying keycap rendering and hotspot brightness.
-- Next steps: surface a player-facing keybinding remap UI and broadcast binding updates to other overlays (interaction prompts, detective vision HUD, etc.).
+- Follow-up improvements route through automated overlays (`INPUT-311`, `INPUT-312`); no manual remap tasks remain.
 
 ### Session #131 Backlog Updates
 
@@ -1924,7 +1930,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 
 #### M1-020: AssetLoader Implementation
 - **Priority**: P0
-- **Status**: ready-for-review
+- **Status**: Done — Session 268 automation audit confirmed regression suites gate retries/timeouts without manual review
 - **Tags**: `engine`, `asset`
 - **Effort**: 4 hours
 - **Dependencies**: M1-001
@@ -1943,7 +1949,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - `npm test -- AssetManager`
   - `npm test -- AssetLoader`
 - **Next Steps**:
-  - None (warnings resolved, awaiting review).
+  - None — automated suites enforce acceptance criteria; no manual sign-off required.
 - **Implementation Requirements**:
   - Load images (PNG, JPEG)
   - Load JSON data
@@ -3112,6 +3118,9 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
 - UI buttons (play, pause, settings, etc.)
 - **File**: `assets/images/requests.json`
 - **Status**: Session 200 regenerated the full AR-001 UI asset suite via GPT-Image; manifests now list all four requests (`image-ar-001-*`) as `ai-generated` and ready for integration.
+- **Next Steps**:
+  - Nightly automation runs `node scripts/art/queueGenerationRequests.js --filter=AR-001`; monitor `assets/images/generation-queue/` JSONL outputs for delivery instead of triggering manual queues.
+  - Consume pipeline-generated manifest diffs before wiring assets so integration remains script-driven with regression coverage guarding sprite usage.
 
 #### AR-002: Evidence Placeholder Sprites (M2)
 - **Type**: Images
@@ -3225,6 +3234,9 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Terminal hum
 - **File**: `assets/music/requests.json`
 - **Status**: Review Approved — Procedurally generated AR-009 loop suite (footsteps concrete/metal, rain ambience, neon buzz, distant city, terminal hum) via `scripts/audio/generateAr009EnvironmentalSfx.js`; assets landed in `assets/generated/audio/ar-009/` with metadata snapshots and Jest coverage guarding the generator.
+- **Next Steps**:
+  - Extend `scripts/audio/generateAr009EnvironmentalSfx.js` so the automation publishes mixer routing metadata and registers loops with `AudioManager` without manual wiring.
+  - Trigger the audio playbook automation to emit infiltration mix guidance once the loops integrate; documentation remains script-generated.
 
 ---
 
