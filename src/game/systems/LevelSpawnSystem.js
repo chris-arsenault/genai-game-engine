@@ -8,6 +8,7 @@ import { System } from '../../engine/ecs/System.js';
 import { createNPCEntity } from '../entities/NPCEntity.js';
 import { NPCFactory } from '../entities/NPCFactory.js';
 import { createEvidenceEntity } from '../entities/EvidenceEntity.js';
+import { EvidenceFactory } from '../entities/EvidenceFactory.js';
 import { Transform } from '../components/Transform.js';
 import { Sprite } from '../components/Sprite.js';
 import { Collider } from '../components/Collider.js';
@@ -52,6 +53,10 @@ export class LevelSpawnSystem extends System {
     this.entityManager = entityManager;
     this.spatialHash = spatialHash;
     this.npcFactory = new NPCFactory({
+      entityManager,
+      componentRegistry,
+    });
+    this.evidenceFactory = new EvidenceFactory({
       entityManager,
       componentRegistry,
     });
@@ -289,34 +294,95 @@ export class LevelSpawnSystem extends System {
    * @returns {number|null} Entity ID or null if failed
    */
   spawnEvidence(evidenceData) {
-    try {
-      // Use existing evidence entity factory
-      const entityId = createEvidenceEntity(this.entityManager, this.componentRegistry, {
-        x: evidenceData.position.x,
-        y: evidenceData.position.y,
-        id: evidenceData.evidenceId,
-        type: evidenceData.evidenceType || 'physical',
-        category: 'case_evidence',
-        title: evidenceData.title || 'Evidence',
-        description: evidenceData.description || 'A piece of evidence',
-        caseId: evidenceData.caseId,
-        hidden: evidenceData.hidden || false,
-        requires: evidenceData.requires || null,
-        derivedClues: evidenceData.derivedClues || [],
-      });
-
-      // Update spatial hash if available
-      if (this.spatialHash && entityId !== null) {
-        const transform = this.componentRegistry.getComponent(entityId, 'Transform');
-        if (transform) {
-          this.spatialHash.insert(entityId, transform.x, transform.y);
-        }
+    if (!evidenceData) {
+      if (shouldLog()) {
+        console.warn('[LevelSpawnSystem] Received invalid evidence spawn data.');
       }
+      return null;
+    }
 
+    try {
+      const type = this._resolveEvidenceType(evidenceData);
+      const options = this._buildEvidenceFactoryOptions(evidenceData);
+      const { entityId } = this.evidenceFactory.create(type, options);
+      this._indexEntity(entityId);
       return entityId;
     } catch (error) {
       if (shouldLog()) {
-        console.error(`[LevelSpawnSystem] Failed to spawn evidence:`, evidenceData, error);
+        console.warn('[LevelSpawnSystem] EvidenceFactory spawn failed; falling back to legacy path.', error);
+      }
+      return this._spawnEvidenceLegacy(evidenceData);
+    }
+  }
+
+  _resolveEvidenceType(evidenceData) {
+    if (typeof evidenceData?.evidenceType === 'string') {
+      return evidenceData.evidenceType;
+    }
+    if (typeof evidenceData?.type === 'string') {
+      return evidenceData.type;
+    }
+    return 'physical';
+  }
+
+  _buildEvidenceFactoryOptions(evidenceData) {
+    const rawPosition =
+      evidenceData?.position && typeof evidenceData.position === 'object'
+        ? evidenceData.position
+        : { x: evidenceData?.x ?? 0, y: evidenceData?.y ?? 0 };
+
+    const options = {
+      position: {
+        x: rawPosition?.x ?? 0,
+        y: rawPosition?.y ?? 0,
+      },
+      id: evidenceData?.evidenceId ?? evidenceData?.id,
+      caseId: evidenceData?.caseId,
+      title: evidenceData?.title,
+      description: evidenceData?.description,
+      hidden: evidenceData?.hidden,
+      requires: evidenceData?.requires,
+      derivedClues: Array.isArray(evidenceData?.derivedClues) ? evidenceData.derivedClues : undefined,
+      prompt: evidenceData?.prompt,
+      forensic: evidenceData?.forensic,
+      sprite: evidenceData?.sprite,
+      tags: evidenceData?.tags,
+      category: evidenceData?.category,
+      variantKey: evidenceData?.variantKey ?? evidenceData?.variant,
+    };
+
+    return options;
+  }
+
+  _spawnEvidenceLegacy(evidenceData) {
+    try {
+      const rawPosition =
+        evidenceData?.position && typeof evidenceData.position === 'object'
+          ? evidenceData.position
+          : { x: evidenceData?.x ?? 0, y: evidenceData?.y ?? 0 };
+
+      const entityId = createEvidenceEntity(this.entityManager, this.componentRegistry, {
+        x: rawPosition?.x ?? 0,
+        y: rawPosition?.y ?? 0,
+        id: evidenceData?.evidenceId ?? evidenceData?.id,
+        type: evidenceData?.evidenceType || evidenceData?.type || 'physical',
+        category: evidenceData?.category || 'case_evidence',
+        title: evidenceData?.title || 'Evidence',
+        description: evidenceData?.description || 'A piece of evidence',
+        caseId: evidenceData?.caseId,
+        hidden: Boolean(evidenceData?.hidden),
+        requires: evidenceData?.requires ?? null,
+        derivedClues: Array.isArray(evidenceData?.derivedClues) ? evidenceData.derivedClues : [],
+        prompt: evidenceData?.prompt,
+        sprite: evidenceData?.sprite,
+        forensic: evidenceData?.forensic ?? null,
+      });
+
+      this._indexEntity(entityId);
+      return entityId;
+    } catch (legacyError) {
+      if (shouldLog()) {
+        console.error('[LevelSpawnSystem] Legacy evidence spawn failed:', evidenceData, legacyError);
       }
       return null;
     }

@@ -5,8 +5,8 @@
 
 ## Document Overview
 
-**Version**: 1.17
-**Last Updated**: 2025-11-02 (Session 279 restricted area mechanics delivery)
+**Version**: 1.18
+**Last Updated**: 2025-11-04 (Session 283 evidence factory integration)
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
@@ -19,7 +19,7 @@
 - Tangential initiatives—such as net-new systems, auxiliary tooling, narrative review suites, or analytics dashboards—remain out of scope until roadmap deliverables ship.
 - Telemetry and performance management/testing initiatives are cancelled; do not schedule or create new work in these areas per the 2025-11-04 directive.
 
-### Current High-Priority Focus (Session 281)
+### Current High-Priority Focus (Session 283)
 
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
@@ -36,8 +36,14 @@
 - Watch **M2-016** automation dashboards to confirm conditional choice gating stays healthy; no manual runs needed.
 - Maintain WIP ceiling adherence while monitoring DialogueSystem and save/load follow-ups; restricted area mechanics no longer need manual attention.
 
-### Session #280 Backlog Maintenance
+### Session #283 Backlog Maintenance
 
+- Closed **M2-003: Evidence Entity Factory** by adding `src/game/entities/EvidenceFactory.js`, delivering template-driven variants for physical, digital, testimony, and forensic evidence with randomized prompts, tags, and ability gates.
+- Routed **LevelSpawnSystem** through the new factory (with a legacy fallback) so procedural districts and authored scenes share metadata normalization while preserving existing spawn payloads.
+- Added Jest coverage for EvidenceFactory, EvidenceEntity, and LevelSpawnSystem factory integration via `npm test -- --runTestsByPath tests/game/entities/EvidenceFactory.test.js tests/game/entities/EvidenceEntity.test.js tests/game/systems/LevelSpawnSystem.test.js`.
+- Recorded architecture decision `40b04e8f-1815-45df-8c77-01c8fe04e697` to capture the template adoption and fallback rationale.
+
+### Session #280 Backlog Maintenance
 - Closed **M3-017 Save/Load Stress Testing** after landing SaveManager migration upgrades and 100-cycle/large-payload stress coverage, verified via `npm test -- --runTestsByPath tests/game/managers/SaveManager.test.js`.
 
 ### Session #279 Backlog Maintenance
@@ -2231,6 +2237,7 @@ _Progress 2025-11-09 (Session #139 audio/perf polish): Augmented performanceSnap
   - All evidence types supported
   - Metadata correctly attached
   - Unit tests pass
+- **Status**: ✅ Completed – Session #283 introduced `EvidenceFactory` templates plus LevelSpawnSystem factory integration and Jest coverage (`npm test -- --runTestsByPath tests/game/entities/EvidenceFactory.test.js tests/game/entities/EvidenceEntity.test.js tests/game/systems/LevelSpawnSystem.test.js`), with architecture decision `40b04e8f-1815-45df-8c77-01c8fe04e697` documenting the approach.
 
 #### M2-004: Case File Manager
 - **Priority**: P0
