@@ -2722,6 +2722,7 @@ _Progress 2025-11-03 (Session #256 guardrail verification): Re-ran the pointer c
 - **Priority**: P2
 - **Tags**: `narrative`, `faction`
 - **Effort**: 4 hours
+- **Status**: Done — DialogueSystem now routes faction-aware variants with canonical greetings across Vanguard Prime, Wraith Network, Luminari Syndicate, Cipher Collective, and Memory Keepers.
 - **Dependencies**: M3-003, M2-016, narrative team
 - **Description**: NPC dialogue changes with reputation
 - **Files**:
@@ -2737,6 +2738,7 @@ _Progress 2025-11-03 (Session #256 guardrail verification): Re-ran the pointer c
   - Transitions feel natural
   - All factions have variations
   - Narrative team approves tone
+- **Verification**: `npm test -- --runTestsByPath tests/game/systems/DialogueSystem.test.js`
 
 #### M3-008: DisguiseSystem Implementation
 - **Priority**: P0

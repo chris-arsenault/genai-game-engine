@@ -140,10 +140,16 @@ function createResistanceCoordinationDialogue() {
     id: ACT2_BRANCH_DIALOGUE_IDS.resistance.coordinationCouncil,
     npcId: 'act2_resistance_ops',
     title: 'Coordination Council',
+    metadata: {
+      factionId: 'luminari_syndicate',
+    },
     nodes: {
       start: {
         speaker: 'Archivist Liaison',
         text: 'Our strike teams are ready, detective. We need your intel to prioritise which vaults go first.',
+        metadata: {
+          useFactionGreeting: true,
+        },
         nextNode: 'kira_plan',
       },
       kira_plan: {
@@ -170,10 +176,16 @@ function createResistanceSignalDialogue() {
     id: ACT2_BRANCH_DIALOGUE_IDS.resistance.signalArray,
     npcId: 'act2_resistance_ops',
     title: 'Signal Array Calibration',
+    metadata: {
+      factionId: 'luminari_syndicate',
+    },
     nodes: {
       start: {
         speaker: 'Archivist Engineer',
         text: 'Array capacitors are primed. One misstep and the Corps triangulate our uplinks.',
+        metadata: {
+          useFactionGreeting: true,
+        },
         nextNode: 'kira_assurance',
       },
       kira_assurance: {

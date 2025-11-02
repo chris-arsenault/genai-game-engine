@@ -15,10 +15,16 @@ export const DIALOGUE_REESE_BRIEFING = new DialogueTree({
   title: 'Briefing: The Hollow Case',
   npcId: 'captain_reese',
   startNode: 'start',
+  metadata: {
+    factionId: 'vanguard_prime'
+  },
   nodes: {
     start: {
       speaker: 'Captain Reese',
       text: 'Detective Voss. I know this is difficult, but we need you on this case. Alex was your partner... and your friend. But what happened to them... it\'s not natural.',
+      metadata: {
+        useFactionGreeting: true
+      },
       choices: [
         {
           text: 'What do you mean, "not natural"?',
@@ -344,10 +350,16 @@ export const DIALOGUE_CIPHER_QUARTERMASTER = new DialogueTree({
   title: 'Cipher Quartermaster',
   npcId: 'cipher_quartermaster',
   startNode: 'start',
+  metadata: {
+    factionId: 'cipher_collective'
+  },
   nodes: {
     start: {
       speaker: 'Cipher Quartermaster',
       text: 'The Collective does not open the locker for badge-carrying detectives. State your need or move along.',
+      metadata: {
+        useFactionGreeting: true
+      },
       choices: [
         {
           text: 'I need a scrambler to bypass parlor firewalls.',
@@ -571,10 +583,16 @@ export const DIALOGUE_ERASER_CIPHER = new DialogueTree({
   title: 'Encounter: Eraser Agent',
   npcId: 'eraser_agent_cipher',
   startNode: 'start',
+  metadata: {
+    factionId: 'memory_keepers'
+  },
   nodes: {
     start: {
       speaker: 'Cipher',
       text: 'Detective. You\'ve wandered into the wrong district. This parlor is under Curator protection. I\'m afraid I can\'t let you leave with that data.',
+      metadata: {
+        useFactionGreeting: true
+      },
       choices: [
         {
           text: 'Curators? You\'re behind the hollow victims?',

@@ -74,7 +74,8 @@ describe('DialogueSystem', () => {
     mockComponentRegistry = {
       getComponent: jest.fn(),
       addComponent: jest.fn(),
-      hasComponent: jest.fn(() => false)
+      hasComponent: jest.fn(() => false),
+      getComponentsOfType: jest.fn(() => new Map())
     };
 
     // Mock CaseManager
@@ -88,8 +89,12 @@ describe('DialogueSystem', () => {
 
     // Mock FactionManager (updated to match new FactionManager API)
     mockFactionSystem = {
-      getReputation: jest.fn((faction) => ({ fame: 50, infamy: 10 })),
-      modifyReputation: jest.fn()
+      getReputation: jest.fn(() => ({ fame: 50, infamy: 10 })),
+      modifyReputation: jest.fn(),
+      getAllStandings: jest.fn(() => ({
+        luminari_syndicate: { fame: 50, infamy: 10, attitude: 'neutral' },
+      })),
+      getFactionAttitude: jest.fn(() => 'neutral')
     };
 
     // Create test dialogue tree
@@ -102,6 +107,14 @@ describe('DialogueSystem', () => {
         start: {
           speaker: 'NPC',
           text: 'Hello, Detective.',
+          attitudeVariants: {
+            neutral: 'Hello, Detective.',
+            friendly: 'Detective, always a pleasure.',
+            allied: 'Our archives are open to you, Detective.',
+          },
+          metadata: {
+            useFactionGreeting: true
+          },
           choices: [
             {
               text: 'Greeting',
@@ -136,6 +149,9 @@ describe('DialogueSystem', () => {
           text: 'Goodbye.',
           nextNode: null
         }
+      },
+      metadata: {
+        factionId: 'luminari_syndicate'
       }
     });
 
@@ -223,6 +239,57 @@ describe('DialogueSystem', () => {
       expect(startEvent.data.npcId).toBe('npc_1');
       expect(startEvent.data.speaker).toBe('NPC');
       expect(startEvent.data.text).toBe('Hello, Detective.');
+    });
+
+    it('selects faction attitude variant text when friendly', () => {
+      mockFactionSystem.getFactionAttitude.mockReturnValue('friendly');
+      mockFactionSystem.getAllStandings.mockReturnValue({
+        luminari_syndicate: { fame: 60, infamy: 5, attitude: 'friendly' },
+      });
+
+      system.startDialogue('npc_1', 'test_dialogue');
+
+      const startEvent = emittedEvents.find((e) => e.eventType === 'dialogue:started');
+      expect(startEvent).toBeDefined();
+      expect(startEvent.data.text).toBe('Detective, always a pleasure.');
+      expect(startEvent.data.attitude).toBe('friendly');
+      expect(startEvent.data.factionId).toBe('luminari_syndicate');
+      expect(startEvent.data.textVariant).toBe('friendly');
+    });
+
+    it('falls back to default faction greeting variants when requested', () => {
+      const greetingTree = new DialogueTree({
+        id: 'vanguard_greeting',
+        title: 'Vanguard Greeting',
+        npcId: 'vanguard_guard',
+        startNode: 'start',
+        nodes: {
+          start: {
+            speaker: 'Captain Reyes',
+            text: 'State your business.',
+            metadata: {
+              useFactionGreeting: true,
+            },
+          },
+        },
+        metadata: {
+          factionId: 'vanguard_prime',
+        },
+      });
+
+      system.registerDialogueTree(greetingTree);
+
+      mockFactionSystem.getFactionAttitude.mockReturnValue('hostile');
+      mockFactionSystem.getAllStandings.mockReturnValue({
+        vanguard_prime: { fame: 5, infamy: 70, attitude: 'hostile' },
+      });
+
+      system.startDialogue('vanguard_guard', 'vanguard_greeting');
+
+      const startEvent = emittedEvents.find((e) => e.eventType === 'dialogue:started');
+      expect(startEvent).toBeDefined();
+      expect(startEvent.data.text).toBe('Vanguard Prime marks you as a security risk. State your intent.');
+      expect(startEvent.data.textVariant).toBe('hostile');
     });
 
     it('resolves dialogue aliases before starting dialogue', () => {

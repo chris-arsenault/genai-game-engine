@@ -52,7 +52,9 @@ export class DialogueTree {
       consequences = null,
       onEnter = null,
       onExit = null,
-      metadata = {}
+      metadata = {},
+      attitudeVariants = null,
+      factionId = null
     } = nodeData;
 
     this.nodes.set(nodeId, {
@@ -71,8 +73,29 @@ export class DialogueTree {
       consequences,
       onEnter,
       onExit,
-      metadata
+      metadata,
+      attitudeVariants: this.normalizeAttitudeVariants(attitudeVariants),
+      factionId: typeof factionId === 'string' && factionId.trim().length ? factionId.trim() : null
     });
+  }
+
+  normalizeAttitudeVariants(variants) {
+    if (!variants || typeof variants !== 'object') {
+      return null;
+    }
+
+    const normalized = {};
+    for (const [key, value] of Object.entries(variants)) {
+      if (typeof value === 'string' && value.trim().length > 0) {
+        const normalizedKey = key.trim().toLowerCase();
+        if (normalizedKey.length === 0) {
+          continue;
+        }
+        normalized[normalizedKey] = value;
+      }
+    }
+
+    return Object.keys(normalized).length > 0 ? normalized : null;
   }
 
   /**

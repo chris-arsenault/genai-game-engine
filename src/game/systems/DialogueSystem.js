@@ -11,6 +11,8 @@
 import { System } from '../../engine/ecs/System.js';
 import { emitVendorPurchaseEvent } from '../economy/vendorEvents.js';
 import { inventorySlice } from '../state/slices/inventorySlice.js';
+import { getFactionIds } from '../data/factions/index.js';
+import { getFactionDialogueVariants } from '../data/dialogues/factionDialogueVariants.js';
 
 export class DialogueSystem extends System {
   constructor(
@@ -25,6 +27,7 @@ export class DialogueSystem extends System {
     this.caseManager = caseManager;
     this.factionManager = factionManager;
     this.worldStateStore = worldStateStore;
+    this.npcFactionCache = new Map();
 
     // Dialogue tree registry
     this.dialogueTrees = new Map(); // treeId -> DialogueTree
@@ -170,6 +173,8 @@ export class DialogueSystem extends System {
       context: this.buildDialogueContext(npcId),
       startedAt,
       lastUpdatedAt: startedAt,
+      lastPresentation: null,
+      primaryFactionId: null,
     };
     this.lastChoice = null;
 
@@ -189,6 +194,17 @@ export class DialogueSystem extends System {
       startNode.onEnter(this.activeDialogue.context);
     }
 
+    const nodePresentation = this.getNodePresentation(
+      this.activeDialogue.tree,
+      startNode,
+      this.activeDialogue.context,
+      this.activeDialogue.npcId
+    );
+    if (nodePresentation.factionId && !this.activeDialogue.primaryFactionId) {
+      this.activeDialogue.primaryFactionId = nodePresentation.factionId;
+    }
+    this.activeDialogue.lastPresentation = nodePresentation;
+
     // Emit dialogue started event
     this.eventBus.emit('dialogue:started', {
       npcId,
@@ -196,12 +212,20 @@ export class DialogueSystem extends System {
       requestedDialogueId: this.activeDialogue.requestedDialogueId,
       nodeId: tree.startNode,
       speaker: startNode.speaker,
-      text: startNode.text,
+      text: nodePresentation.text,
       choices: tree.getAvailableChoices(tree.startNode, this.activeDialogue.context),
       hasChoices: startNode.choices.length > 0,
       canAdvance: startNode.nextNode !== null,
       startedAt,
       timestamp: startedAt,
+      attitude: nodePresentation.attitude ?? null,
+      factionId: nodePresentation.factionId ?? null,
+      textVariant: nodePresentation.variantKey ?? null,
+      metadata: {
+        attitude: nodePresentation.attitude ?? null,
+        factionId: nodePresentation.factionId ?? null,
+        textVariant: nodePresentation.variantKey ?? null,
+      },
     });
 
     this.eventBus.emit('fx:overlay_cue', {
@@ -214,6 +238,9 @@ export class DialogueSystem extends System {
       speaker: startNode.speaker ?? null,
       title: tree.title ?? null,
       timestamp: startedAt,
+      factionId: nodePresentation.factionId ?? null,
+      attitude: nodePresentation.attitude ?? null,
+      textVariant: nodePresentation.variantKey ?? null,
     });
 
     console.log(
@@ -364,6 +391,17 @@ export class DialogueSystem extends System {
 
     const timestamp = Date.now();
     this.activeDialogue.lastUpdatedAt = timestamp;
+    const previousPresentation = this.activeDialogue.lastPresentation;
+    const nodePresentation = this.getNodePresentation(
+      this.activeDialogue.tree,
+      nextNode,
+      this.activeDialogue.context,
+      this.activeDialogue.npcId
+    );
+    if (nodePresentation.factionId && !this.activeDialogue.primaryFactionId) {
+      this.activeDialogue.primaryFactionId = nodePresentation.factionId;
+    }
+    this.activeDialogue.lastPresentation = nodePresentation;
 
     // Emit node changed event
     this.eventBus.emit('dialogue:node_changed', {
@@ -372,13 +410,22 @@ export class DialogueSystem extends System {
       requestedDialogueId: this.activeDialogue.requestedDialogueId,
       nodeId,
       speaker: nextNode.speaker,
-      text: nextNode.text,
+      text: nodePresentation.text,
       choices: tree.getAvailableChoices(nodeId, this.activeDialogue.context),
       hasChoices: nextNode.choices.length > 0,
       canAdvance: nextNode.nextNode !== null,
       timestamp,
       metadata: {
         previousNodeId,
+        factionId: nodePresentation.factionId ?? null,
+        attitude: nodePresentation.attitude ?? null,
+        previousAttitude: previousPresentation?.attitude ?? null,
+        attitudeChanged: Boolean(
+          previousPresentation &&
+            (previousPresentation.attitude !== nodePresentation.attitude ||
+              previousPresentation.variantKey !== nodePresentation.variantKey)
+        ),
+        textVariant: nodePresentation.variantKey ?? null,
       },
     });
 
@@ -392,7 +439,263 @@ export class DialogueSystem extends System {
       speaker: nextNode.speaker ?? null,
       previousNodeId,
       timestamp,
+      factionId: nodePresentation.factionId ?? null,
+      attitude: nodePresentation.attitude ?? null,
+      textVariant: nodePresentation.variantKey ?? null,
     });
+  }
+
+  getNodePresentation(tree, node, context, npcId) {
+    const fallbackText = node?.text ?? '';
+    const factionId = this.resolveFactionId(node, tree, npcId);
+    const attitude = this.resolveFactionAttitude(factionId, context);
+    const variants = this.getAttitudeVariants(node, tree, factionId);
+    const variantSelection = this.selectAttitudeVariant(variants, attitude);
+
+    return {
+      text: variantSelection.text ?? fallbackText,
+      factionId: factionId ?? null,
+      attitude: attitude ?? null,
+      variantKey: variantSelection.variantKey ?? null,
+    };
+  }
+
+  resolveFactionId(node, tree, npcId) {
+    const candidates = [
+      node?.factionId,
+      node?.metadata?.factionId,
+      tree?.metadata?.factionId,
+      this.activeDialogue?.primaryFactionId,
+      this.getNpcFactionId(npcId),
+    ];
+
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string') {
+        const trimmed = candidate.trim();
+        if (trimmed.length > 0) {
+          return trimmed;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  resolveFactionAttitude(factionId, context = {}) {
+    if (typeof factionId !== 'string' || factionId.length === 0) {
+      return null;
+    }
+
+    const normalizedId = factionId.trim();
+    if (normalizedId.length === 0) {
+      return null;
+    }
+
+    const contextAttitude = context.attitudes?.[normalizedId];
+    if (typeof contextAttitude === 'string' && contextAttitude.length > 0) {
+      return contextAttitude;
+    }
+
+    if (this.factionManager) {
+      if (typeof this.factionManager.getFactionAttitude === 'function') {
+        const liveAttitude = this.factionManager.getFactionAttitude(normalizedId);
+        if (typeof liveAttitude === 'string' && liveAttitude.length > 0) {
+          return liveAttitude;
+        }
+      }
+
+      if (typeof this.factionManager.getAllStandings === 'function') {
+        const standings = this.factionManager.getAllStandings();
+        const standing = standings?.[normalizedId];
+        if (standing && typeof standing.attitude === 'string' && standing.attitude.length > 0) {
+          return standing.attitude;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  getAttitudeVariants(node, tree, factionId) {
+    const result = {};
+
+    const mergeLayer = (layer) => {
+      const normalized = this.normalizeVariantMap(layer);
+      if (normalized) {
+        Object.assign(result, normalized);
+      }
+    };
+
+    const factionGreetingRequested =
+      Boolean(node?.metadata?.useFactionGreeting) || Boolean(tree?.metadata?.useFactionGreeting);
+
+    if (factionGreetingRequested && typeof factionId === 'string' && factionId.length > 0) {
+      const factionVariants = getFactionDialogueVariants(factionId);
+      mergeLayer(factionVariants);
+    }
+
+    if (tree?.metadata?.attitudeVariants) {
+      mergeLayer(tree.metadata.attitudeVariants);
+      if (node?.id && typeof tree.metadata.attitudeVariants === 'object') {
+        mergeLayer(tree.metadata.attitudeVariants[node.id]);
+      }
+    }
+
+    mergeLayer(node?.metadata?.attitudeVariants);
+    mergeLayer(node?.attitudeVariants);
+
+    return Object.keys(result).length > 0 ? result : null;
+  }
+
+  selectAttitudeVariant(variants, attitude) {
+    if (!variants) {
+      return { text: null, variantKey: null };
+    }
+
+    const normalizedVariants = this.normalizeVariantMap(variants);
+    if (!normalizedVariants) {
+      return { text: null, variantKey: null };
+    }
+
+    const order = this.getVariantFallbackOrder(attitude);
+    for (const key of order) {
+      if (Object.prototype.hasOwnProperty.call(normalizedVariants, key)) {
+        return { text: normalizedVariants[key], variantKey: key };
+      }
+    }
+
+    return { text: null, variantKey: null };
+  }
+
+  getVariantFallbackOrder(attitude) {
+    const order = [];
+    const normalized = typeof attitude === 'string' ? attitude.trim().toLowerCase() : '';
+
+    if (normalized) {
+      order.push(normalized);
+      switch (normalized) {
+        case 'allied':
+          order.push('friendly', 'neutral');
+          break;
+        case 'friendly':
+          order.push('allied', 'neutral');
+          break;
+        case 'neutral':
+          order.push('friendly');
+          break;
+        case 'unfriendly':
+          order.push('hostile', 'neutral');
+          break;
+        case 'hostile':
+          order.push('unfriendly', 'neutral');
+          break;
+        default:
+          order.push('neutral');
+          break;
+      }
+    } else {
+      order.push('neutral');
+    }
+
+    order.push('default', 'baseline', 'base', 'fallback');
+
+    const deduped = [];
+    const seen = new Set();
+    for (const key of order) {
+      if (!key) continue;
+      const normalizedKey = key.toLowerCase();
+      if (!seen.has(normalizedKey)) {
+        seen.add(normalizedKey);
+        deduped.push(normalizedKey);
+      }
+    }
+
+    return deduped;
+  }
+
+  normalizeVariantMap(variants) {
+    if (!variants || typeof variants !== 'object') {
+      return null;
+    }
+
+    const normalized = {};
+    for (const [key, value] of Object.entries(variants)) {
+      if (typeof value !== 'string') continue;
+      const normalizedKey = key.trim().toLowerCase();
+      if (normalizedKey.length === 0) continue;
+      if (value.trim().length === 0) continue;
+      normalized[normalizedKey] = value;
+    }
+
+    return Object.keys(normalized).length > 0 ? normalized : null;
+  }
+
+  getNpcFactionId(npcId) {
+    if (typeof npcId !== 'string' || npcId.length === 0) {
+      return null;
+    }
+
+    if (this.npcFactionCache.has(npcId)) {
+      const cached = this.npcFactionCache.get(npcId);
+      return typeof cached === 'string' && cached.length > 0 ? cached : null;
+    }
+
+    const factionId = this.lookupNpcFactionId(npcId);
+    if (typeof factionId === 'string' && factionId.length > 0) {
+      this.npcFactionCache.set(npcId, factionId);
+      return factionId;
+    }
+
+    this.npcFactionCache.set(npcId, null);
+    return null;
+  }
+
+  lookupNpcFactionId(npcId) {
+    if (
+      !this.componentRegistry ||
+      typeof this.componentRegistry.getComponentsOfType !== 'function'
+    ) {
+      return null;
+    }
+
+    try {
+      const npcComponents = this.componentRegistry.getComponentsOfType('NPC');
+      if (!npcComponents) {
+        return null;
+      }
+
+      const iterator =
+        typeof npcComponents.entries === 'function'
+          ? npcComponents.entries()
+          : Object.entries(npcComponents);
+
+      for (const [entityId, npcComponent] of iterator) {
+        if (!npcComponent || npcComponent.npcId !== npcId) {
+          continue;
+        }
+
+        if (typeof npcComponent.faction === 'string' && npcComponent.faction.length > 0) {
+          return npcComponent.faction;
+        }
+
+        if (typeof this.componentRegistry.getComponent === 'function') {
+          const factionComponent = this.componentRegistry.getComponent(entityId, 'Faction');
+          if (
+            factionComponent &&
+            typeof factionComponent.factionId === 'string' &&
+            factionComponent.factionId.length > 0
+          ) {
+            return factionComponent.factionId;
+          }
+        }
+
+        break;
+      }
+    } catch (error) {
+      console.warn('[DialogueSystem] Failed to resolve NPC faction from registry', error);
+    }
+
+    return null;
   }
 
   /**
@@ -591,6 +894,7 @@ export class DialogueSystem extends System {
       clues: new Set(),
       evidence: new Set(),
       reputation: {},
+      attitudes: {},
       flags: new Set(),
       inventory: {
         items: [],
@@ -608,13 +912,52 @@ export class DialogueSystem extends System {
       }
     }
 
-    // Get player reputation
+    // Get player reputation and attitude context
     if (this.factionManager) {
-      // Use new faction IDs
-      for (const faction of ['vanguard_prime', 'luminari_syndicate', 'wraith_network', 'cipher_collective', 'memory_keepers']) {
-        const rep = this.factionManager.getReputation(faction);
-        if (rep) {
-          context.reputation[faction] = rep.fame - rep.infamy;
+      const factionIdSet = new Set();
+      if (typeof getFactionIds === 'function') {
+        for (const id of getFactionIds()) {
+          if (typeof id === 'string' && id.length > 0) {
+            factionIdSet.add(id);
+          }
+        }
+      }
+
+      let standings = null;
+      if (typeof this.factionManager.getAllStandings === 'function') {
+        standings = this.factionManager.getAllStandings();
+        if (standings && typeof standings === 'object') {
+          for (const [factionId, standing] of Object.entries(standings)) {
+            if (typeof factionId === 'string' && factionId.length > 0) {
+              factionIdSet.add(factionId);
+            }
+            if (standing && typeof factionId === 'string' && factionId.length > 0) {
+              if (Number.isFinite(standing.fame) && Number.isFinite(standing.infamy)) {
+                context.reputation[factionId] = standing.fame - standing.infamy;
+              }
+              if (typeof standing.attitude === 'string' && standing.attitude.length > 0) {
+                context.attitudes[factionId] = standing.attitude;
+              }
+            }
+          }
+        }
+      }
+
+      for (const factionId of factionIdSet) {
+        if (context.reputation[factionId] === undefined && typeof this.factionManager.getReputation === 'function') {
+          const rep = this.factionManager.getReputation(factionId);
+          if (rep) {
+            const fame = Number.isFinite(rep.fame) ? rep.fame : 0;
+            const infamy = Number.isFinite(rep.infamy) ? rep.infamy : 0;
+            context.reputation[factionId] = fame - infamy;
+          }
+        }
+
+        if (!context.attitudes[factionId] && typeof this.factionManager.getFactionAttitude === 'function') {
+          const attitude = this.factionManager.getFactionAttitude(factionId);
+          if (typeof attitude === 'string' && attitude.length > 0) {
+            context.attitudes[factionId] = attitude;
+          }
         }
       }
     }

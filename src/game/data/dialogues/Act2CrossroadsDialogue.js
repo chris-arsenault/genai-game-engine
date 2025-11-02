@@ -96,6 +96,9 @@ export function createAct2CrossroadsBriefingDialogue(options = {}) {
     start: {
       speaker: 'Zara',
       text: 'Okay, detective - three leads, three headaches. Want the quick download or feeling decisive tonight?',
+      metadata: {
+        useFactionGreeting: true,
+      },
       choices: [
         {
           text: 'Hit me with the breakdown.',
@@ -157,6 +160,9 @@ export function createAct2CrossroadsBriefingDialogue(options = {}) {
     npcId,
     title: 'Act 2 Crossroads Briefing',
     nodes,
+    metadata: {
+      factionId: 'wraith_network',
+    },
   });
 }
 
