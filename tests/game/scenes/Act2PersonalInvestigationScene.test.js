@@ -8,6 +8,7 @@ import {
 import { QuestTriggerRegistry } from '../../../src/game/quests/QuestTriggerRegistry.js';
 import { QUEST_ACT2_PERSONAL } from '../../../src/game/data/quests/act2PersonalInvestigationQuest.js';
 import { seedAct2CrossroadsTriggers } from '../../../src/game/data/quests/act2TriggerDefinitions.js';
+import { NarrativeBeats } from '../../../src/game/data/narrative/NarrativeBeatCatalog.js';
 
 describe('Act2PersonalInvestigationScene', () => {
   let entityManager;
@@ -78,7 +79,7 @@ describe('Act2PersonalInvestigationScene', () => {
     expect(entry.trigger.once).toBe(true);
     expect(entry.trigger.data.metadata).toEqual(
       expect.objectContaining({
-        narrativeBeat: 'act2_personal_archive_entry',
+        narrativeBeat: NarrativeBeats.act2.personal.ARCHIVE_ENTRY,
       })
     );
 
@@ -190,11 +191,11 @@ describe('Act2PersonalInvestigationScene', () => {
     );
     expect(sceneData.metadata.narrativeBeats).toEqual(
       expect.objectContaining({
-        entry: 'act2_personal_archive_entry',
-        progression: 'act2_personal_casefile_reckoning',
-        projection: 'act2_personal_projection_analysis',
-        broadcast: 'act2_personal_broadcast_commitment',
-        objective: 'act2_personal_memory_vault_unlocked',
+        entry: NarrativeBeats.act2.personal.ARCHIVE_ENTRY,
+        progression: NarrativeBeats.act2.personal.CASEFILE_RECKONING,
+        projection: NarrativeBeats.act2.personal.PROJECTION_ANALYSIS,
+        broadcast: NarrativeBeats.act2.personal.BROADCAST_COMMITMENT,
+        objective: NarrativeBeats.act2.personal.MEMORY_VAULT_UNLOCKED,
       })
     );
   });

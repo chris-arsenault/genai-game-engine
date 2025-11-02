@@ -247,6 +247,14 @@ describe('Camera', () => {
       expect(camera.x).toBe(100);
       expect(camera.y).toBe(200);
     });
+
+    it('should respect bounds when setting position', () => {
+      camera.setBounds(0, 0, 400, 300);
+      camera.setPosition(500, 600);
+
+      expect(camera.x).toBeCloseTo(-200, 5); // Centered because world smaller than viewport
+      expect(camera.y).toBeCloseTo(-150, 5);
+    });
   });
 
   describe('move', () => {
@@ -255,6 +263,15 @@ describe('Camera', () => {
       camera.move(50, -50);
       expect(camera.x).toBe(150);
       expect(camera.y).toBe(150);
+    });
+
+    it('should clamp movement inside bounds', () => {
+      camera.setBounds(0, 0, 1600, 1200);
+      camera.setPosition(0, 0);
+      camera.move(2000, 2000);
+
+      expect(camera.x).toBeLessThanOrEqual(800);
+      expect(camera.y).toBeLessThanOrEqual(600);
     });
   });
 
@@ -270,6 +287,24 @@ describe('Camera', () => {
 
       camera.setZoom(20);
       expect(camera.zoom).toBe(10);
+    });
+
+    it('should re-clamp bounds when zoom changes', () => {
+      camera.setBounds(0, 0, 1000, 750);
+      camera.setPosition(0, 0);
+      camera.setZoom(0.5);
+
+      // With zoomed-out view wider than bounds, camera recenters on the playfield.
+      expect(camera.x).toBeCloseTo(-300, 5);
+      expect(camera.y).toBeCloseTo(-225, 5);
+
+      // Force camera outside bounds, then ensure zooming back in reclamps.
+      camera.x = 5000;
+      camera.y = 5000;
+      camera.setZoom(2.0);
+
+      expect(camera.x).toBeLessThanOrEqual(1200);
+      expect(camera.y).toBeLessThanOrEqual(900);
     });
   });
 
@@ -310,6 +345,28 @@ describe('Camera', () => {
 
       expect(center.x).toBe(200);
       expect(center.y).toBe(150);
+    });
+  });
+
+  describe('setBounds', () => {
+    it('should clamp follow target inside bounds', () => {
+      camera.setBounds(0, 0, 1600, 1200);
+      camera.follow(5, 1.0);
+      const getPosition = (entityId) => (entityId === 5 ? { x: 2000, y: 2000 } : null);
+
+      camera.update(0.016, getPosition);
+
+      expect(camera.x).toBeLessThanOrEqual(800);
+      expect(camera.y).toBeLessThanOrEqual(600);
+    });
+
+    it('should clear bounds when requested', () => {
+      camera.setBounds(0, 0, 1600, 1200);
+      camera.clearBounds();
+      camera.setPosition(2000, 2000);
+
+      expect(camera.x).toBe(2000);
+      expect(camera.y).toBe(2000);
     });
   });
 });

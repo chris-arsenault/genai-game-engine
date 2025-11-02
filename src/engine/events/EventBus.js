@@ -15,10 +15,17 @@
  * // Emit event
  * eventBus.emit('entity:damaged', { entityId: 5, damage: 10 });
  */
+import { EventQueue } from './EventQueue.js';
+
 export class EventBus {
   constructor() {
     this.listeners = new Map(); // eventType -> Array<{callback, context, priority}>
-    this.eventQueue = []; // Deferred events processed at end of frame
+    this.eventQueue = new EventQueue({
+      maxSize: 4096,
+      maxBatchSize: 128,
+      defaultPriority: 50,
+      overflowStrategy: 'drop-lowest-priority',
+    });
     this.isProcessing = false;
     this.wildcardListeners = []; // Wildcard subscriptions (e.g., 'entity:*')
     this.unhandledEvents = new Map(); // eventType -> { count, lastPayload, lastTimestamp }
@@ -91,6 +98,16 @@ export class EventBus {
    * @param {Function} callback - Callback to remove
    */
   off(eventType, callback) {
+    if (eventType.includes('*')) {
+      for (let i = this.wildcardListeners.length - 1; i >= 0; i--) {
+        const listener = this.wildcardListeners[i];
+        if (listener.pattern === eventType && listener.callback === callback) {
+          this.wildcardListeners.splice(i, 1);
+        }
+      }
+      return;
+    }
+
     const listeners = this.listeners.get(eventType);
     if (!listeners) {
       return;
@@ -99,6 +116,9 @@ export class EventBus {
     const index = listeners.findIndex((l) => l.callback === callback);
     if (index !== -1) {
       listeners.splice(index, 1);
+      if (listeners.length === 0) {
+        this.listeners.delete(eventType);
+      }
     }
   }
 
@@ -170,8 +190,8 @@ export class EventBus {
    * @param {string} eventType - Event type
    * @param {object} data - Event data
    */
-  enqueue(eventType, data = {}) {
-    this.eventQueue.push({ eventType, data });
+  enqueue(eventType, data = {}, options = {}) {
+    this.eventQueue.enqueue(eventType, data, options);
   }
 
   /**
@@ -185,15 +205,9 @@ export class EventBus {
 
     this.isProcessing = true;
 
-    // Make a copy of the queue and clear it
-    const queue = [...this.eventQueue];
-    this.eventQueue = [];
-
-    // Process all queued events
-    for (let i = 0; i < queue.length; i++) {
-      const event = queue[i];
+    this.eventQueue.drain((event) => {
       this.emit(event.eventType, event.data);
-    }
+    });
 
     this.isProcessing = false;
   }
@@ -270,12 +284,18 @@ export class EventBus {
    */
   clear(eventType = null) {
     if (eventType) {
+      if (eventType.includes('*')) {
+        this.wildcardListeners = this.wildcardListeners.filter((listener) => listener.pattern !== eventType);
+        return;
+      }
+
       this.listeners.delete(eventType);
-    } else {
-      this.listeners.clear();
-      this.wildcardListeners = [];
-      this.eventQueue = [];
+      return;
     }
+
+    this.listeners.clear();
+    this.wildcardListeners = [];
+    this.eventQueue.clear();
   }
 
   /**

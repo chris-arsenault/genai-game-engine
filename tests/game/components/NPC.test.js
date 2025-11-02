@@ -294,6 +294,7 @@ describe('NPC Component', () => {
       npc.recognizePlayer();
       npc.witnessCrime({ type: 'theft', location: 'store', severity: 2 });
       npc.rememberEvent('helped_quest', Date.now());
+      npc.appearanceId = 'ar-004::guard::01';
 
       const json = npc.toJSON();
 
@@ -304,6 +305,7 @@ describe('NPC Component', () => {
       expect(json.lastInteraction).toBeTruthy();
       expect(json.witnessedCrimes).toHaveLength(1);
       expect(json.memory).toHaveProperty('helped_quest');
+      expect(json.appearanceId).toBe('ar-004::guard::01');
     });
 
     test('fromJSON() should deserialize correctly', () => {
@@ -315,7 +317,8 @@ describe('NPC Component', () => {
         lastInteraction: 1234567890,
         witnessedCrimes: [{ type: 'assault', severity: 3, reported: true }],
         attitude: 'hostile',
-        memory: { quest_completed: true }
+        memory: { quest_completed: true },
+        appearanceId: 'ar-004::criminal::02'
       };
 
       const restored = NPC.fromJSON(data);
@@ -326,6 +329,7 @@ describe('NPC Component', () => {
       expect(restored.knownPlayer).toBe(true);
       expect(restored.witnessedCrimes).toHaveLength(1);
       expect(restored.memory).toHaveProperty('quest_completed');
+      expect(restored.appearanceId).toBe('ar-004::criminal::02');
     });
   });
 });

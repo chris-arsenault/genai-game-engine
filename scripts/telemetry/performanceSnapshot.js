@@ -9,6 +9,8 @@ import { FactionManager } from '../../src/game/managers/FactionManager.js';
 import { EventBus } from '../../src/engine/events/EventBus.js';
 import { BSPGenerator } from '../../src/game/procedural/BSPGenerator.js';
 import { DetectiveVisionOverlay } from '../../src/game/ui/DetectiveVisionOverlay.js';
+import { DeductionBoard } from '../../src/game/ui/DeductionBoard.js';
+import { DeductionBoardPointerController } from '../../src/game/ui/helpers/deductionBoardPointerController.js';
 
 const DEFAULT_OUTPUT = 'telemetry-artifacts/performance/performance-metrics.json';
 const THRESHOLDS = {
@@ -19,6 +21,10 @@ const THRESHOLDS = {
   detectiveVisionUpdateAvgMs: 0.6,
   detectiveVisionRenderAvgMs: 0.75,
   detectiveVisionCombinedAvgMs: 1,
+  deductionBoardPointerDownAvgMs: 1.5,
+  deductionBoardPointerMoveAvgMs: 1,
+  deductionBoardPointerUpAvgMs: 1.2,
+  deductionBoardPointerCombinedAvgMs: 3.5,
 };
 
 function parseArgs(argv = process.argv.slice(2)) {
@@ -205,6 +211,117 @@ function summariseSamples(samples = []) {
   };
 }
 
+function createPointerEvent(type, overrides = {}) {
+  return {
+    type,
+    pointerId: overrides.pointerId ?? 1,
+    clientX: overrides.clientX ?? 0,
+    clientY: overrides.clientY ?? 0,
+    button: overrides.button ?? 0,
+    preventDefault() {},
+  };
+}
+
+function measureDeductionBoardPointerLatency(options = {}) {
+  const iterations = Number.isFinite(options.iterations) ? Math.max(1, options.iterations) : 180;
+  const width = 1280;
+  const height = 720;
+  const canvas = {
+    width,
+    height,
+    getBoundingClientRect: () => ({ left: 0, top: 0, width, height }),
+    setPointerCapture() {},
+    releasePointerCapture() {},
+    addEventListener() {},
+    removeEventListener() {},
+  };
+
+  const eventBus = new EventBus();
+  const board = new DeductionBoard(width, height, {
+    eventBus,
+    onValidate: () => ({ accuracy: 1 }),
+  });
+
+  const sampleClues = Array.from({ length: 9 }, (_, index) => ({
+    id: `telemetry-clue-${index + 1}`,
+    title: `Telemetry Clue ${index + 1}`,
+    description: 'Pointer latency measurement clue',
+  }));
+
+  board.loadClues(sampleClues);
+  board.show('telemetry_profile');
+
+  const controller = new DeductionBoardPointerController(canvas, board, { eventTarget: canvas });
+
+  const pointerDownSamples = [];
+  const pointerMoveSamples = [];
+  const pointerUpSamples = [];
+  const combinedSamples = [];
+
+  for (let i = 0; i < iterations; i += 1) {
+    if (i > 0) {
+      board.loadClues(sampleClues);
+    }
+
+    const nodes = Array.from(board.nodes.values());
+    const sourceIndex = i % nodes.length;
+    const targetIndex = (i + 1) % nodes.length;
+    const sourceNode = nodes[sourceIndex];
+    const targetNode = nodes[targetIndex];
+
+    const sourceCenter = sourceNode.getCenter();
+    const targetCenter = targetNode.getCenter();
+    const intermediateX = (sourceCenter.x + targetCenter.x) / 2;
+    const intermediateY = (sourceCenter.y + targetCenter.y) / 2;
+
+    const pointerId = i + 1;
+
+    const downEvent = createPointerEvent('pointerdown', {
+      pointerId,
+      button: 0,
+      clientX: sourceCenter.x,
+      clientY: sourceCenter.y,
+    });
+    const moveEvent = createPointerEvent('pointermove', {
+      pointerId,
+      clientX: intermediateX,
+      clientY: intermediateY,
+    });
+    const upEvent = createPointerEvent('pointerup', {
+      pointerId,
+      button: 0,
+      clientX: targetCenter.x,
+      clientY: targetCenter.y,
+    });
+
+    const downStart = performance.now();
+    controller._boundHandlers.pointerdown(downEvent);
+    const downElapsed = performance.now() - downStart;
+
+    const moveStart = performance.now();
+    controller._boundHandlers.pointermove(moveEvent);
+    const moveElapsed = performance.now() - moveStart;
+
+    const upStart = performance.now();
+    controller._boundHandlers.pointerup(upEvent);
+    const upElapsed = performance.now() - upStart;
+
+    pointerDownSamples.push(downElapsed);
+    pointerMoveSamples.push(moveElapsed);
+    pointerUpSamples.push(upElapsed);
+    combinedSamples.push(downElapsed + moveElapsed + upElapsed);
+  }
+
+  controller.destroy();
+
+  return {
+    down: summariseSamples(pointerDownSamples),
+    move: summariseSamples(pointerMoveSamples),
+    up: summariseSamples(pointerUpSamples),
+    combined: summariseSamples(combinedSamples),
+  };
+}
+
 class DetectiveVisionComponentRegistryStub {
   constructor(hiddenCount = 48) {
     this.entityIds = [];
@@ -385,6 +502,7 @@ async function main() {
   const factionSummary = measureFactionPerformance();
   const bspSummary = measureBspGeneration();
   const detectiveVisionSummary = measureDetectiveVisionOverlay();
+  const deductionBoardPointerSummary = measureDeductionBoardPointerLatency();
 
   const report = {
     generatedAt: new Date().toISOString(),
@@ -404,6 +522,22 @@ async function main() {
       detectiveVisionCombined: formatMetric(
         detectiveVisionSummary.combined,
         THRESHOLDS.detectiveVisionCombinedAvgMs
+      ),
+      deductionBoardPointerDown: formatMetric(
+        deductionBoardPointerSummary.down,
+        THRESHOLDS.deductionBoardPointerDownAvgMs
+      ),
+      deductionBoardPointerMove: formatMetric(
+        deductionBoardPointerSummary.move,
+        THRESHOLDS.deductionBoardPointerMoveAvgMs
+      ),
+      deductionBoardPointerUp: formatMetric(
+        deductionBoardPointerSummary.up,
+        THRESHOLDS.deductionBoardPointerUpAvgMs
+      ),
+      deductionBoardPointerCombined: formatMetric(
+        deductionBoardPointerSummary.combined,
+        THRESHOLDS.deductionBoardPointerCombinedAvgMs
       ),
     },
     thresholds: THRESHOLDS,
@@ -429,6 +563,26 @@ async function main() {
   console.log(
     '[performance-telemetry] Detective vision combined average:',
     report.metrics.detectiveVisionCombined.averageMs,
+    'ms'
+  );
+  console.log(
+    '[performance-telemetry] Deduction board pointer down average:',
+    report.metrics.deductionBoardPointerDown.averageMs,
+    'ms'
+  );
+  console.log(
+    '[performance-telemetry] Deduction board pointer move average:',
+    report.metrics.deductionBoardPointerMove.averageMs,
+    'ms'
+  );
+  console.log(
+    '[performance-telemetry] Deduction board pointer up average:',
+    report.metrics.deductionBoardPointerUp.averageMs,
+    'ms'
+  );
+  console.log(
+    '[performance-telemetry] Deduction board pointer combined average:',
+    report.metrics.deductionBoardPointerCombined.averageMs,
     'ms'
   );
 

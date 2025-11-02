@@ -1,3 +1,5 @@
+import { AssetLoadError } from '../../engine/assets/AssetLoader.js';
+
 /**
  * Global AssetManager registry and sprite asset hydration helpers.
  *
@@ -76,7 +78,11 @@ export function requestImageAsset(assetRef) {
         const message = typeof error?.message === 'string' ? error.message : '';
         const missingFromManifest = message.includes('Asset not found in manifest');
         if (!missingFromManifest) {
-          console.warn(`[SpriteAssetResolver] Failed to load asset "${assetRef}" via manifest`, error);
+          const telemetry = AssetLoadError.buildTelemetryContext(error, {
+            consumer: 'SpriteAssetResolver.requestImageAsset.manifest',
+            assetRef
+          });
+          console.warn(`[SpriteAssetResolver] Failed to load asset "${assetRef}" via manifest`, error, telemetry);
         }
         // Fall through to loader fallback when manifest entry is missing.
       }
@@ -87,7 +93,11 @@ export function requestImageAsset(assetRef) {
           imageCache.set(assetRef, asset);
           return asset;
         } catch (error) {
-          console.warn(`[SpriteAssetResolver] Loader failed for "${assetRef}"`, error);
+          const telemetry = AssetLoadError.buildTelemetryContext(error, {
+            consumer: 'SpriteAssetResolver.requestImageAsset.loader',
+            assetRef
+          });
+          console.warn(`[SpriteAssetResolver] Loader failed for "${assetRef}"`, error, telemetry);
           throw error;
         }
       }

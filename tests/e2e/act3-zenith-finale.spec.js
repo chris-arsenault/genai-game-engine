@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { waitForGameLoad, collectConsoleErrors } from './setup.js';
 import { getFinaleAdaptiveDefinition } from '../../src/game/audio/finaleAdaptiveMix.js';
+import { NarrativeBeats } from '../../src/game/data/narrative/NarrativeBeatCatalog.js';
 
 const QUEST_ID = 'main-act3-zenith-infiltration';
 
@@ -170,6 +171,24 @@ const STANCE_MUSIC_CUES = {
   opposition: 'track-ending-opposition',
   support: 'track-ending-support',
   alternative: 'track-ending-alternative',
+};
+
+const STANCE_NARRATIVE_BEATS = {
+  opposition: [
+    NarrativeBeats.act3.epilogue.OPPOSITION_CITY,
+    NarrativeBeats.act3.epilogue.OPPOSITION_MORROW,
+    NarrativeBeats.act3.epilogue.OPPOSITION_ALLIES,
+  ],
+  support: [
+    NarrativeBeats.act3.epilogue.SUPPORT_CITY,
+    NarrativeBeats.act3.epilogue.SUPPORT_BROADCAST,
+    NarrativeBeats.act3.epilogue.SUPPORT_ALLIES,
+  ],
+  alternative: [
+    NarrativeBeats.act3.epilogue.ALTERNATIVE_CITY,
+    NarrativeBeats.act3.epilogue.ALTERNATIVE_MORROW,
+    NarrativeBeats.act3.epilogue.ALTERNATIVE_ALLIES,
+  ],
 };
 
 const SHARED_OVERLAY = {
@@ -534,6 +553,20 @@ test.describe('Act 3 finale readiness', () => {
           expect(controllerDescriptor.assetId).toBe(expectedDescriptor.assetId);
         }
       }
+
+      const expectedNarrativeBeats = STANCE_NARRATIVE_BEATS[stance.id] ?? [];
+      const payloadBeatIds =
+        stateAfterReady.controllerState?.payload?.epilogueBeats?.map(
+          (beat) => beat?.narrativeBeat ?? null
+        ) ?? [];
+      expect(payloadBeatIds).toEqual(expectedNarrativeBeats);
+      const eventBeatIds = finalEvents
+        .filter((evt) => evt.type === 'beat')
+        .map((evt) => evt.payload?.beat?.narrativeBeat ?? null)
+        .filter(Boolean);
+      expect(eventBeatIds.length).toBeGreaterThan(0);
+      expect(eventBeatIds[0]).toBe(expectedNarrativeBeats[0]);
+      expect(eventBeatIds.every((id) => expectedNarrativeBeats.includes(id))).toBe(true);
 
       const expectedCue = STANCE_MUSIC_CUES[stance.id];
       const finaleDefinition = getFinaleAdaptiveDefinition(expectedCue);

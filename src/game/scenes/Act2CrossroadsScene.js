@@ -13,7 +13,11 @@ import { GameConfig } from '../config/GameConfig.js';
 import { TriggerMigrationToolkit } from '../quests/TriggerMigrationToolkit.js';
 import { QuestTriggerRegistry } from '../quests/QuestTriggerRegistry.js';
 import { seedAct2CrossroadsTriggers } from '../data/quests/act2TriggerDefinitions.js';
-import { AssetLoader } from '../../engine/assets/AssetLoader.js';
+import { AssetLoader, AssetLoadError } from '../../engine/assets/AssetLoader.js';
+import {
+  NarrativeActs,
+  NarrativeBeats,
+} from '../data/narrative/NarrativeBeatCatalog.js';
 
 export const ACT2_CROSSROADS_TRIGGER_IDS = Object.freeze({
   CHECKPOINT: 'act2_crossroads_checkpoint',
@@ -49,6 +53,18 @@ const TRIGGER_LAYOUT = Object.freeze({
     layer: 'ground_fx',
     zIndex: 2,
   },
+});
+
+const CROSSROADS_NARRATIVE_BEATS = Object.freeze({
+  checkpoint: NarrativeBeats.act2.crossroads.ARRIVAL_CHECKPOINT,
+  briefing: NarrativeBeats.act2.crossroads.BRIEFING_SELECTION,
+  threadSelection: NarrativeBeats.act2.crossroads.THREAD_COMMIT,
+});
+
+const CROSSROADS_NARRATIVE = Object.freeze({
+  act: NarrativeActs.ACT2,
+  hub: 'crossroads',
+  beats: CROSSROADS_NARRATIVE_BEATS,
 });
 
 const FLOOR_SEGMENTS = Object.freeze([
@@ -651,6 +667,8 @@ export class Act2CrossroadsScene {
         ...layout,
       })),
       artSource: null,
+      narrative: CROSSROADS_NARRATIVE,
+      narrativeBeats: { ...CROSSROADS_NARRATIVE_BEATS },
     };
   }
 
@@ -754,6 +772,8 @@ export class Act2CrossroadsScene {
         triggerId,
         ...layout,
       })),
+      narrative: CROSSROADS_NARRATIVE,
+      narrativeBeats: { ...CROSSROADS_NARRATIVE_BEATS },
       artSource: null,
     };
     this._triggerDefinitions.clear();
@@ -827,9 +847,15 @@ export class Act2CrossroadsScene {
             segment.image = image;
           }
         } catch (error) {
+          const telemetry = AssetLoadError.buildTelemetryContext(error, {
+            consumer: 'Act2CrossroadsScene.loadArtSegments',
+            segmentId: segment.id,
+            imageUrl: segment.imageUrl
+          });
           console.warn(
             `[Act2CrossroadsScene] Failed to load art asset for "${segment.id}" (${segment.imageUrl})`,
-            error
+            error,
+            telemetry
           );
           segment.image = null;
         }
@@ -899,7 +925,11 @@ export class Act2CrossroadsScene {
         return cloneArtConfig(data);
       }
     } catch (error) {
-      console.warn(`[Act2CrossroadsScene] Failed to load art manifest (${url})`, error);
+      const telemetry = AssetLoadError.buildTelemetryContext(error, {
+        consumer: 'Act2CrossroadsScene._loadArtManifest',
+        manifestUrl: url
+      });
+      console.warn(`[Act2CrossroadsScene] Failed to load art manifest (${url})`, error, telemetry);
     }
 
     return null;

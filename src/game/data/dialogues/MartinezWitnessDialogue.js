@@ -23,9 +23,9 @@ export function createMartinezDialogue() {
           metadata: { approach: 'diplomatic' }
         },
         {
-          text: '[Direct] Tell me who touched what and when. No flourishes.',
+          text: '[Aggressive] Tell me who touched what and when. No flourishes.',
           nextNode: 'direct_1',
-          metadata: { approach: 'direct' }
+          metadata: { approach: 'aggressive' }
         },
         {
           text: '[Analytical] Start with the victim state. Pupil dilation, vitals, scent—details please.',
@@ -38,6 +38,16 @@ export function createMartinezDialogue() {
     diplomatic_1: {
       speaker: 'Officer Martinez',
       text: 'Dispatch pinged us at 02:47. Anonymous tip said “Apartment 4B, hurry.” I got here second, partner secured the hallway. Marcus was strapped to that chair when we breached—no struggle left in him.',
+      metadata: {
+        testimonyFacts: [
+          {
+            factId: 'martinez.dispatch_timestamp',
+            value: 'dispatch_ping_0247',
+            confidence: 'medium',
+            category: 'timeline'
+          }
+        ]
+      },
       choices: [
         {
           text: 'Any sign of forced entry or tampered locks?',
@@ -53,6 +63,16 @@ export function createMartinezDialogue() {
     direct_1: {
       speaker: 'Officer Martinez',
       text: 'Just me, my partner, and the paramedics. We swept with body cams rolling. I logged every touch—only contact we made was checking vitals. Extractor was still warm when we got here.',
+      metadata: {
+        testimonyFacts: [
+          {
+            factId: 'martinez.scene_integrity',
+            value: 'scene_logged_no_external_contact',
+            confidence: 'high',
+            category: 'scene_control'
+          }
+        ]
+      },
       choices: [
         {
           text: 'So they left the hardware behind on purpose?',
@@ -68,6 +88,16 @@ export function createMartinezDialogue() {
     analytical_1: {
       speaker: 'Officer Martinez',
       text: 'Pupils blown, eight millimeters. Skin clammy but no blood loss beyond what you see. There is a faint ozone burn in the air and the extractor capacitors are still discharging. Whoever did this moved fast.',
+      metadata: {
+        testimonyFacts: [
+          {
+            factId: 'martinez.victim_condition',
+            value: 'pupils_dilated_ozone_residue',
+            confidence: 'high',
+            category: 'forensics'
+          }
+        ]
+      },
       choices: [
         {
           text: 'Then they had a clean exit route. Show me the timeframe.',
@@ -83,6 +113,16 @@ export function createMartinezDialogue() {
     timeline_details: {
       speaker: 'Officer Martinez',
       text: 'Building cams show a courier van at 01:18. Same model I have seen near other hollowings. Three silhouettes unload gear, swipe a maintenance key, and ride the service lift up. Nobody comes out until 02:41.',
+      metadata: {
+        testimonyFacts: [
+          {
+            factId: 'martinez.van_timeline',
+            value: 'courier_van_0118_exit_0241',
+            confidence: 'high',
+            category: 'timeline'
+          }
+        ]
+      },
       nextNode: 'pattern_bridge',
       consequences: {
         setFlags: ['martinez_shared_timeline']
@@ -92,6 +132,16 @@ export function createMartinezDialogue() {
     tip_details: {
       speaker: 'Officer Martinez',
       text: 'Call was routed through a public mesh node. Voice masked, just coordinates and “Get there before NeuroSync does.” Command wants me to log it as citizen concern and forget it.',
+      metadata: {
+        testimonyFacts: [
+          {
+            factId: 'martinez.anonymous_tip',
+            value: 'mesh_node_warning_neurosync',
+            confidence: 'low',
+            category: 'lead'
+          }
+        ]
+      },
       nextNode: 'pattern_bridge',
       consequences: {
         setFlags: ['martinez_shared_tip']
@@ -101,6 +151,16 @@ export function createMartinezDialogue() {
     pattern_bridge: {
       speaker: 'Officer Martinez',
       text: 'I am not supposed to say this, but you deserve the truth. Marcus makes five. Every victim this month is tied to NeuroSync investigations. Brass keeps telling us it is coincidence. I do not buy it.',
+      metadata: {
+        testimonyFacts: [
+          {
+            factId: 'martinez.pattern_statement',
+            value: 'five_victims_neurosync_link',
+            confidence: 'medium',
+            category: 'pattern'
+          }
+        ]
+      },
       nextNode: 'final_questions',
       consequences: {
         revealClues: ['clue_006_pattern']
@@ -132,6 +192,16 @@ export function createMartinezDialogue() {
     neurosync_presence: {
       speaker: 'Officer Martinez',
       text: 'They packed up quick tonight, but my partner clocked the same plates outside Hollow Victim #3. Mobile labs. “Free wellness scans.” You ask me, they are scouting targets.',
+      metadata: {
+        testimonyFacts: [
+          {
+            factId: 'martinez.neurosync_presence',
+            value: 'mobile_labs_seen_prior_cases',
+            confidence: 'medium',
+            category: 'suspect_activity'
+          }
+        ]
+      },
       nextNode: 'closing_warning',
       consequences: {
         setFlags: ['martinez_flags_neurosync']

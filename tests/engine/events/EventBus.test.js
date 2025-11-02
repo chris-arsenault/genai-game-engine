@@ -120,6 +120,15 @@ describe('EventBus', () => {
       expect(callback1).not.toHaveBeenCalled();
       expect(callback2).toHaveBeenCalledTimes(1);
     });
+
+    it('removes empty listener arrays after off()', () => {
+      const callback = jest.fn();
+
+      eventBus.on('test:event', callback);
+      eventBus.off('test:event', callback);
+
+      expect(eventBus.getEventTypes()).not.toContain('test:event');
+    });
   });
 
   describe('One-Time Subscriptions', () => {
@@ -325,6 +334,16 @@ describe('EventBus', () => {
 
       const unsubscribe = eventBus.on('entity:*', callback);
       unsubscribe();
+      eventBus.emit('entity:created');
+
+      expect(callback).not.toHaveBeenCalled();
+    });
+
+    it('should allow off() to remove wildcard listeners', () => {
+      const callback = jest.fn();
+
+      eventBus.on('entity:*', callback);
+      eventBus.off('entity:*', callback);
       eventBus.emit('entity:created');
 
       expect(callback).not.toHaveBeenCalled();

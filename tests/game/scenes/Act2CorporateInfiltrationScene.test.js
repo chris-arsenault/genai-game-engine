@@ -8,6 +8,7 @@ import {
 import { QuestTriggerRegistry } from '../../../src/game/quests/QuestTriggerRegistry.js';
 import { QUEST_ACT2_NEUROSYNC } from '../../../src/game/data/quests/act2NeuroSyncQuest.js';
 import { seedAct2CrossroadsTriggers } from '../../../src/game/data/quests/act2TriggerDefinitions.js';
+import { NarrativeBeats } from '../../../src/game/data/narrative/NarrativeBeatCatalog.js';
 
 describe('Act2CorporateInfiltrationScene', () => {
   let entityManager;
@@ -78,7 +79,7 @@ describe('Act2CorporateInfiltrationScene', () => {
     expect(lobby.trigger.once).toBe(true);
     expect(lobby.trigger.data.metadata).toEqual(
       expect.objectContaining({
-        narrativeBeat: 'act2_corporate_lobby_entry',
+        narrativeBeat: NarrativeBeats.act2.corporate.ENTRY,
       })
     );
 
@@ -106,7 +107,7 @@ describe('Act2CorporateInfiltrationScene', () => {
     expect(serverAccess.trigger.once).toBe(true);
     expect(serverAccess.trigger.data.metadata).toEqual(
       expect.objectContaining({
-        narrativeBeat: 'act2_corporate_server_access',
+        narrativeBeat: NarrativeBeats.act2.corporate.SERVER_ACCESS,
       })
     );
 
@@ -188,11 +189,11 @@ describe('Act2CorporateInfiltrationScene', () => {
     );
     expect(sceneData.metadata.narrativeBeats).toEqual(
       expect.objectContaining({
-        entry: 'act2_corporate_lobby_entry',
-        progression: 'act2_corporate_security',
-        objective: 'act2_corporate_server_access',
-        encryption: 'act2_corporate_encryption_clone',
-        exfiltration: 'act2_corporate_exfiltration',
+        entry: NarrativeBeats.act2.corporate.ENTRY,
+        progression: NarrativeBeats.act2.corporate.SECURITY,
+        objective: NarrativeBeats.act2.corporate.SERVER_ACCESS,
+        encryption: NarrativeBeats.act2.corporate.ENCRYPTION_CLONE,
+        exfiltration: NarrativeBeats.act2.corporate.EXFILTRATION,
       })
     );
   });

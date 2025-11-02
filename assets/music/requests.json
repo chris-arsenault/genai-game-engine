@@ -11,7 +11,7 @@
   },
   {
     "id": "music-memory-parlor-tension-001",
-    "title": "Goodnightmare \u2013 Procedural Tension Stem",
+    "title": "Goodnightmare – Procedural Tension Stem",
     "creator": "Codex Audio Lab",
     "source": "Generated in-session via procedural sine/noise synthesis",
     "license": "CC0 / Original work (self-authored)",
@@ -21,7 +21,7 @@
   },
   {
     "id": "music-memory-parlor-combat-001",
-    "title": "Goodnightmare \u2013 Procedural Combat Stem",
+    "title": "Goodnightmare – Procedural Combat Stem",
     "creator": "Codex Audio Lab",
     "source": "Generated in-session via procedural sine/noise synthesis",
     "license": "CC0 / Original work (self-authored)",
@@ -105,6 +105,308 @@
         }
       },
       "checksumSha256": "2bef998b22f8c1d91209385ecf3efe0e6e7332f83dcf5da34e86e170b0b7e5c8"
+    }
+  },
+  {
+    "id": "sfx-ar-009-footsteps-concrete",
+    "title": "Footsteps — Concrete Loop",
+    "creator": "Codex Audio Generator",
+    "source": "scripts/audio/generateAr009EnvironmentalSfx.js",
+    "license": "CC0 / Original work (automation)",
+    "status": "generated",
+    "usage": "Looped concrete footstep bed for infiltration walk cycles.",
+    "notes": "Loop 12.0s at 44100Hz (2ch); seed=ar009-footsteps-concrete; peak=0.950; checksum=003a5f9c1bc98932e3eb18b57235a984f4fde14494b3ccb247a709754b53d584",
+    "metadata": {
+      "file": "assets/generated/audio/ar-009/ar-009-footsteps-concrete.wav",
+      "loopStartSeconds": 0,
+      "loopEndSeconds": 12,
+      "sampleRate": 44100,
+      "channels": 2,
+      "seed": "ar009-footsteps-concrete",
+      "statistics": {
+        "peak": 0.949999988079071,
+        "rms": {
+          "left": 0.1074484338313659,
+          "right": 0.11346130802717218
+        }
+      },
+      "checksumSha256": "003a5f9c1bc98932e3eb18b57235a984f4fde14494b3ccb247a709754b53d584",
+      "runtimeUrl": "/generated/audio/ar-009/ar-009-footsteps-concrete.wav",
+      "routing": {
+        "bus": "ambient",
+        "type": "ambient-loop",
+        "mixGroup": "infiltration_surface",
+        "defaultVolume": 0.38,
+        "tags": [
+          "ar-009",
+          "environment",
+          "loop",
+          "footsteps",
+          "concrete"
+        ],
+        "stateGains": {
+          "ambient": 0.28,
+          "stealth": 0.42,
+          "alert": 0.33,
+          "combat": 0.18
+        },
+        "recommendedScenes": [
+          "act2_corporate_infiltration",
+          "memory_parlor"
+        ]
+      }
+    }
+  },
+  {
+    "id": "sfx-ar-009-footsteps-metal",
+    "title": "Footsteps — Metal Loop",
+    "creator": "Codex Audio Generator",
+    "source": "scripts/audio/generateAr009EnvironmentalSfx.js",
+    "license": "CC0 / Original work (automation)",
+    "status": "generated",
+    "usage": "Looped metallic walkway footstep bed with subtle resonance.",
+    "notes": "Loop 12.0s at 44100Hz (2ch); seed=ar009-footsteps-metal; peak=0.950; checksum=30608ff4f9777947bb73f772b52be45b8ee38e74140f52170123d9a858e4c30f",
+    "metadata": {
+      "file": "assets/generated/audio/ar-009/ar-009-footsteps-metal.wav",
+      "loopStartSeconds": 0,
+      "loopEndSeconds": 12,
+      "sampleRate": 44100,
+      "channels": 2,
+      "seed": "ar009-footsteps-metal",
+      "statistics": {
+        "peak": 0.949999988079071,
+        "rms": {
+          "left": 0.10496757924328257,
+          "right": 0.11067167627041953
+        }
+      },
+      "checksumSha256": "30608ff4f9777947bb73f772b52be45b8ee38e74140f52170123d9a858e4c30f",
+      "runtimeUrl": "/generated/audio/ar-009/ar-009-footsteps-metal.wav",
+      "routing": {
+        "bus": "ambient",
+        "type": "ambient-loop",
+        "mixGroup": "infiltration_surface",
+        "defaultVolume": 0.4,
+        "tags": [
+          "ar-009",
+          "environment",
+          "loop",
+          "footsteps",
+          "metal"
+        ],
+        "stateGains": {
+          "ambient": 0.26,
+          "stealth": 0.44,
+          "alert": 0.35,
+          "combat": 0.2
+        },
+        "recommendedScenes": [
+          "act2_corporate_infiltration",
+          "act3_zenith_infiltration"
+        ]
+      }
+    }
+  },
+  {
+    "id": "sfx-ar-009-rain-ambience",
+    "title": "Rain Ambience Loop",
+    "creator": "Codex Audio Generator",
+    "source": "scripts/audio/generateAr009EnvironmentalSfx.js",
+    "license": "CC0 / Original work (automation)",
+    "status": "generated",
+    "usage": "Exterior rain ambience with occasional droplets for noir scenes.",
+    "notes": "Loop 24.0s at 44100Hz (2ch); seed=ar009-rain-ambience; peak=0.950; checksum=67adf90a896b87d7b2f2ea13dc8822a4fa2cd434d7886ce954b97e7a08e3adad",
+    "metadata": {
+      "file": "assets/generated/audio/ar-009/ar-009-rain-ambience.wav",
+      "loopStartSeconds": 0,
+      "loopEndSeconds": 24,
+      "sampleRate": 44100,
+      "channels": 2,
+      "seed": "ar009-rain-ambience",
+      "statistics": {
+        "peak": 0.949999988079071,
+        "rms": {
+          "left": 0.14359538342141198,
+          "right": 0.14089555548241972
+        }
+      },
+      "checksumSha256": "67adf90a896b87d7b2f2ea13dc8822a4fa2cd434d7886ce954b97e7a08e3adad",
+      "runtimeUrl": "/generated/audio/ar-009/ar-009-rain-ambience.wav",
+      "routing": {
+        "bus": "ambient",
+        "type": "ambient-loop",
+        "mixGroup": "weather_beds",
+        "defaultVolume": 0.58,
+        "tags": [
+          "ar-009",
+          "environment",
+          "loop",
+          "weather",
+          "rain"
+        ],
+        "stateGains": {
+          "ambient": 0.54,
+          "stealth": 0.6,
+          "alert": 0.68,
+          "combat": 0.72
+        },
+        "recommendedScenes": [
+          "act2_crossroads",
+          "neon_district"
+        ]
+      }
+    }
+  },
+  {
+    "id": "sfx-ar-009-neon-buzz",
+    "title": "Neon Buzz Loop",
+    "creator": "Codex Audio Generator",
+    "source": "scripts/audio/generateAr009EnvironmentalSfx.js",
+    "license": "CC0 / Original work (automation)",
+    "status": "generated",
+    "usage": "Electrical signage hum with crackle accents for city alleys.",
+    "notes": "Loop 18.0s at 44100Hz (2ch); seed=ar009-neon-buzz; peak=0.950; checksum=236cf1158458b700f9594068c93787c58664ee9ec3d2ed6925fe3d1dc66b3d0a",
+    "metadata": {
+      "file": "assets/generated/audio/ar-009/ar-009-neon-buzz.wav",
+      "loopStartSeconds": 0,
+      "loopEndSeconds": 18,
+      "sampleRate": 44100,
+      "channels": 2,
+      "seed": "ar009-neon-buzz",
+      "statistics": {
+        "peak": 0.949999988079071,
+        "rms": {
+          "left": 0.1614045121723407,
+          "right": 0.1559104978918539
+        }
+      },
+      "checksumSha256": "236cf1158458b700f9594068c93787c58664ee9ec3d2ed6925fe3d1dc66b3d0a",
+      "runtimeUrl": "/generated/audio/ar-009/ar-009-neon-buzz.wav",
+      "routing": {
+        "bus": "ambient",
+        "type": "ambient-loop",
+        "mixGroup": "diegetic_layers",
+        "defaultVolume": 0.34,
+        "tags": [
+          "ar-009",
+          "environment",
+          "loop",
+          "neon",
+          "electrical"
+        ],
+        "stateGains": {
+          "ambient": 0.3,
+          "stealth": 0.36,
+          "alert": 0.44,
+          "combat": 0.5
+        },
+        "recommendedScenes": [
+          "act2_crossroads",
+          "neon_district",
+          "memory_parlor"
+        ]
+      }
+    }
+  },
+  {
+    "id": "sfx-ar-009-distant-city",
+    "title": "Distant City Loop",
+    "creator": "Codex Audio Generator",
+    "source": "scripts/audio/generateAr009EnvironmentalSfx.js",
+    "license": "CC0 / Original work (automation)",
+    "status": "generated",
+    "usage": "Far skyline traffic and horn beds for open district exteriors.",
+    "notes": "Loop 24.0s at 44100Hz (2ch); seed=ar009-distant-city; peak=0.950; checksum=f2ec31c30a59cd80c6334336fd0eb69954a028eae4c542c4cd95368a26e9d7b2",
+    "metadata": {
+      "file": "assets/generated/audio/ar-009/ar-009-distant-city.wav",
+      "loopStartSeconds": 0,
+      "loopEndSeconds": 24,
+      "sampleRate": 44100,
+      "channels": 2,
+      "seed": "ar009-distant-city",
+      "statistics": {
+        "peak": 0.949999988079071,
+        "rms": {
+          "left": 0.1219257649449756,
+          "right": 0.12119672326855857
+        }
+      },
+      "checksumSha256": "f2ec31c30a59cd80c6334336fd0eb69954a028eae4c542c4cd95368a26e9d7b2",
+      "runtimeUrl": "/generated/audio/ar-009/ar-009-distant-city.wav",
+      "routing": {
+        "bus": "ambient",
+        "type": "ambient-loop",
+        "mixGroup": "district_beds",
+        "defaultVolume": 0.47,
+        "tags": [
+          "ar-009",
+          "environment",
+          "loop",
+          "city",
+          "ambience"
+        ],
+        "stateGains": {
+          "ambient": 0.5,
+          "stealth": 0.48,
+          "alert": 0.56,
+          "combat": 0.64
+        },
+        "recommendedScenes": [
+          "act2_crossroads",
+          "act3_zenith_infiltration"
+        ]
+      }
+    }
+  },
+  {
+    "id": "sfx-ar-009-terminal-hum",
+    "title": "Terminal Hum Loop",
+    "creator": "Codex Audio Generator",
+    "source": "scripts/audio/generateAr009EnvironmentalSfx.js",
+    "license": "CC0 / Original work (automation)",
+    "status": "generated",
+    "usage": "Data terminal hum with intermittent glitch pulses.",
+    "notes": "Loop 18.0s at 44100Hz (2ch); seed=ar009-terminal-hum; peak=0.950; checksum=f94c8afa189e9eb3af746e2bdbd2f4272fd36bc46e3cdd2f73e06077a0a99020",
+    "metadata": {
+      "file": "assets/generated/audio/ar-009/ar-009-terminal-hum.wav",
+      "loopStartSeconds": 0,
+      "loopEndSeconds": 18,
+      "sampleRate": 44100,
+      "channels": 2,
+      "seed": "ar009-terminal-hum",
+      "statistics": {
+        "peak": 0.949999988079071,
+        "rms": {
+          "left": 0.22681102825659757,
+          "right": 0.2204125807678047
+        }
+      },
+      "checksumSha256": "f94c8afa189e9eb3af746e2bdbd2f4272fd36bc46e3cdd2f73e06077a0a99020",
+      "runtimeUrl": "/generated/audio/ar-009/ar-009-terminal-hum.wav",
+      "routing": {
+        "bus": "ambient",
+        "type": "ambient-loop",
+        "mixGroup": "diegetic_layers",
+        "defaultVolume": 0.31,
+        "tags": [
+          "ar-009",
+          "environment",
+          "loop",
+          "terminal",
+          "electronics"
+        ],
+        "stateGains": {
+          "ambient": 0.28,
+          "stealth": 0.32,
+          "alert": 0.4,
+          "combat": 0.46
+        },
+        "recommendedScenes": [
+          "act2_corporate_infiltration",
+          "memory_parlor",
+          "act3_zenith_infiltration"
+        ]
+      }
     }
   }
 ]

@@ -13,6 +13,10 @@ import { Collider } from '../components/Collider.js';
 import { TriggerMigrationToolkit } from '../quests/TriggerMigrationToolkit.js';
 import { QuestTriggerRegistry } from '../quests/QuestTriggerRegistry.js';
 import { ACT2_BRANCH_DIALOGUE_IDS } from '../data/dialogues/Act2BranchObjectiveDialogues.js';
+import {
+  NarrativeActs,
+  NarrativeBeats,
+} from '../data/narrative/NarrativeBeatCatalog.js';
 
 const SCENE_ID = 'act2_corporate_interior';
 const DEFAULT_QUEST_ID = 'main-act2-neurosync-infiltration';
@@ -37,7 +41,7 @@ const TRIGGER_DEFINITIONS = Object.freeze([
     prompt: 'Blend into the NeuroSync lobby.',
     triggerType: 'quest_area',
     metadata: {
-      narrativeBeat: 'act2_corporate_lobby_entry',
+      narrativeBeat: NarrativeBeats.act2.corporate.ENTRY,
       moodHint: 'social_stealth',
       telemetryTag: 'act2_corporate_lobby_entry',
     },
@@ -52,7 +56,7 @@ const TRIGGER_DEFINITIONS = Object.freeze([
     prompt: 'Slip past security and reach internal elevators.',
     triggerType: 'quest_area',
     metadata: {
-      narrativeBeat: 'act2_corporate_security',
+      narrativeBeat: NarrativeBeats.act2.corporate.SECURITY,
       unlocksMechanic: 'social_stealth',
       telemetryTag: 'act2_corporate_security_floor',
     },
@@ -67,7 +71,7 @@ const TRIGGER_DEFINITIONS = Object.freeze([
     prompt: 'Secure a route to the server access hall.',
     triggerType: 'quest_area',
     metadata: {
-      narrativeBeat: 'act2_corporate_server_access',
+      narrativeBeat: NarrativeBeats.act2.corporate.SERVER_ACCESS,
       unlocksMechanic: 'data_extraction',
       telemetryTag: 'act2_corporate_server_access',
     },
@@ -82,7 +86,7 @@ const TRIGGER_DEFINITIONS = Object.freeze([
     prompt: 'Clone the encryption core without tripping sensors.',
     triggerType: 'quest_area',
     metadata: {
-      narrativeBeat: 'act2_corporate_encryption_clone',
+      narrativeBeat: NarrativeBeats.act2.corporate.ENCRYPTION_CLONE,
       unlocksMechanic: 'data_extraction',
       telemetryTag: 'act2_corporate_encryption_lab',
       dialogueId: ACT2_BRANCH_DIALOGUE_IDS.corporate.encryptionClone,
@@ -99,7 +103,7 @@ const TRIGGER_DEFINITIONS = Object.freeze([
     prompt: 'Exfiltrate with stolen data before countermeasures deploy.',
     triggerType: 'quest_area',
     metadata: {
-      narrativeBeat: 'act2_corporate_exfiltration',
+      narrativeBeat: NarrativeBeats.act2.corporate.EXFILTRATION,
       unlocksMechanic: 'escape_route',
       telemetryTag: 'act2_corporate_exfiltration_route',
       dialogueId: ACT2_BRANCH_DIALOGUE_IDS.corporate.exfiltrationRoute,
@@ -250,7 +254,7 @@ const NAVIGATION_TEMPLATE = Object.freeze({
       id: 'encryption_lab',
       position: Object.freeze({ x: 700, y: 200 }),
       radius: 50,
-      tags: Object.freeze(['data_extraction', 'restricted']),
+      tags: Object.freeze(['data_extraction', 'restricted', 'restricted:luminari_syndicate']),
     }),
     Object.freeze({
       id: 'exfil_route',
@@ -285,7 +289,7 @@ const NAVIGATION_TEMPLATE = Object.freeze({
         Object.freeze({ x: 720, y: 420 }),
         Object.freeze({ x: 380, y: 420 }),
       ]),
-      tags: Object.freeze(['restricted', 'transition']),
+      tags: Object.freeze(['restricted', 'restricted:luminari_syndicate', 'transition']),
     }),
     Object.freeze({
       id: 'server_access',
@@ -305,7 +309,7 @@ const NAVIGATION_TEMPLATE = Object.freeze({
         Object.freeze({ x: 820, y: 300 }),
         Object.freeze({ x: 580, y: 300 }),
       ]),
-      tags: Object.freeze(['data_extraction', 'restricted']),
+      tags: Object.freeze(['data_extraction', 'restricted', 'restricted:luminari_syndicate']),
     }),
     Object.freeze({
       id: 'exfil_route_floor',
@@ -322,7 +326,11 @@ const NAVIGATION_TEMPLATE = Object.freeze({
 
 function ensureTriggerDefinitions() {
   for (const definition of TRIGGER_DEFINITIONS) {
-    if (!QuestTriggerRegistry.getTriggerDefinition(definition.id)) {
+    const existingDefinition = QuestTriggerRegistry.getTriggerDefinition(definition.id);
+    if (
+      !existingDefinition ||
+      existingDefinition.metadata?.narrativeBeat !== definition.metadata?.narrativeBeat
+    ) {
       QuestTriggerRegistry.registerDefinition({ ...definition });
     }
   }
@@ -565,6 +573,13 @@ export async function loadAct2CorporateInfiltrationScene(
   };
 
   const navigationMesh = cloneNavigationMesh();
+  const narrativeBeats = {
+    entry: NarrativeBeats.act2.corporate.ENTRY,
+    progression: NarrativeBeats.act2.corporate.SECURITY,
+    objective: NarrativeBeats.act2.corporate.SERVER_ACCESS,
+    encryption: NarrativeBeats.act2.corporate.ENCRYPTION_CLONE,
+    exfiltration: NarrativeBeats.act2.corporate.EXFILTRATION,
+  };
 
   return {
     sceneName: SCENE_ID,
@@ -592,13 +607,12 @@ export async function loadAct2CorporateInfiltrationScene(
         y: layout.y,
         color: layout.color,
       })),
-      narrativeBeats: {
-        entry: 'act2_corporate_lobby_entry',
-        progression: 'act2_corporate_security',
-        objective: 'act2_corporate_server_access',
-        encryption: 'act2_corporate_encryption_clone',
-        exfiltration: 'act2_corporate_exfiltration',
+      narrative: {
+        act: NarrativeActs.ACT2,
+        branch: 'corporate',
+        beats: narrativeBeats,
       },
+      narrativeBeats,
     },
   };
 }

@@ -21,9 +21,16 @@ import { tutorialCase, tutorialEvidence } from '../data/cases/tutorialCase.js';
 import { QUEST_001_HOLLOW_CASE } from '../data/quests/act1Quests.js';
 import { TriggerMigrationToolkit } from '../quests/TriggerMigrationToolkit.js';
 import { QuestTriggerRegistry } from '../quests/QuestTriggerRegistry.js';
+import {
+  NarrativeActs,
+  NarrativeBeats,
+} from '../data/narrative/NarrativeBeatCatalog.js';
 
-const SCENE_CENTER_X = 400;
-const SCENE_CENTER_Y = 300;
+const SCENE_WORLD_WIDTH = 800;
+const SCENE_WORLD_HEIGHT = 600;
+const BOUNDARY_THICKNESS = 20;
+const SCENE_CENTER_X = SCENE_WORLD_WIDTH / 2;
+const SCENE_CENTER_Y = SCENE_WORLD_HEIGHT / 2;
 const CRIME_SCENE_WIDTH = 560;
 const CRIME_SCENE_HEIGHT = 360;
 const CRIME_SCENE_TRIGGER_ID = 'crime_scene_entry';
@@ -33,22 +40,27 @@ const VENDOR_TRIGGER_IDS = Object.freeze({
   QUARTERMASTER: 'act1_cipher_quartermaster_trigger',
 });
 
+const crimeSceneDefinition = {
+  id: CRIME_SCENE_TRIGGER_ID,
+  questId: QUEST_001_HOLLOW_CASE.id,
+  objectiveId: 'obj_arrive_scene',
+  areaId: 'crime_scene_alley',
+  radius: 150,
+  once: true,
+  prompt: 'Crime Scene Perimeter',
+  triggerType: 'crime_scene',
+  metadata: {
+    moodHint: 'investigation_peak',
+    narrativeBeat: NarrativeBeats.act1.ARRIVAL,
+  },
+};
+
 const existingCrimeSceneDefinition = QuestTriggerRegistry.getTriggerDefinition(CRIME_SCENE_TRIGGER_ID);
-if (!existingCrimeSceneDefinition) {
-  QuestTriggerRegistry.registerDefinition({
-    id: CRIME_SCENE_TRIGGER_ID,
-    questId: QUEST_001_HOLLOW_CASE.id,
-    objectiveId: 'obj_arrive_scene',
-    areaId: 'crime_scene_alley',
-    radius: 150,
-    once: true,
-    prompt: 'Crime Scene Perimeter',
-    triggerType: 'crime_scene',
-    metadata: {
-      moodHint: 'investigation_peak',
-      narrativeBeat: 'act1_arrival_scene',
-    },
-  });
+if (
+  !existingCrimeSceneDefinition ||
+  existingCrimeSceneDefinition.metadata?.narrativeBeat !== NarrativeBeats.act1.ARRIVAL
+) {
+  QuestTriggerRegistry.registerDefinition(crimeSceneDefinition);
 }
 
 const vendorTriggerDefinitions = [
@@ -63,7 +75,7 @@ const vendorTriggerDefinitions = [
     triggerType: 'npc_vendor_dialogue',
     metadata: {
       moodHint: 'market_intrigue',
-      narrativeBeat: 'act1_vendor_briefing',
+      narrativeBeat: NarrativeBeats.act1.VENDOR_BRIEFING,
       npcId: 'witness_street_vendor',
     },
   },
@@ -78,7 +90,7 @@ const vendorTriggerDefinitions = [
     triggerType: 'npc_vendor_dialogue',
     metadata: {
       moodHint: 'underground_pressure',
-      narrativeBeat: 'act1_broker_lead',
+      narrativeBeat: NarrativeBeats.act1.BROKER_LEAD,
       npcId: 'black_market_broker',
     },
   },
@@ -93,14 +105,18 @@ const vendorTriggerDefinitions = [
     triggerType: 'npc_vendor_dialogue',
     metadata: {
       moodHint: 'cipher_preparation',
-      narrativeBeat: 'act1_cipher_supply',
+      narrativeBeat: NarrativeBeats.act1.CIPHER_SUPPLY,
       npcId: 'cipher_quartermaster',
     },
   },
 ];
 
 for (const definition of vendorTriggerDefinitions) {
-  if (!QuestTriggerRegistry.getTriggerDefinition(definition.id)) {
+  const existingDefinition = QuestTriggerRegistry.getTriggerDefinition(definition.id);
+  if (
+    !existingDefinition ||
+    existingDefinition.metadata?.narrativeBeat !== definition.metadata.narrativeBeat
+  ) {
     QuestTriggerRegistry.registerDefinition(definition);
   }
 }
@@ -115,6 +131,11 @@ for (const definition of vendorTriggerDefinitions) {
 export async function loadAct1Scene(entityManager, componentRegistry, eventBus, options = {}) {
   console.log('[Act1Scene] Loading Act 1 scene...');
 
+  const {
+    reusePlayerId = null,
+    narrativeContext = NarrativeActs.ACT1,
+  } = options;
+
   const sceneEntities = [];
   const cleanupHandlers = [];
   const paletteSummary = {
@@ -126,9 +147,28 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus, 
     boundaries: [],
   };
   const questTriggerToolkit = new TriggerMigrationToolkit(componentRegistry, eventBus);
+  const sceneNarrative =
+    narrativeContext === NarrativeActs.TUTORIAL
+      ? {
+          act: NarrativeActs.TUTORIAL,
+          beats: {
+            arrival: NarrativeBeats.tutorial.ARRIVAL,
+            detectiveVision: NarrativeBeats.tutorial.DETECTIVE_VISION,
+            deduction: NarrativeBeats.tutorial.DEDUCTION,
+            report: NarrativeBeats.tutorial.REPORT,
+          },
+        }
+      : {
+          act: NarrativeActs.ACT1,
+          beats: {
+            arrival: NarrativeBeats.act1.ARRIVAL,
+            witness: NarrativeBeats.act1.VENDOR_BRIEFING,
+            broker: NarrativeBeats.act1.BROKER_LEAD,
+            quartermaster: NarrativeBeats.act1.CIPHER_SUPPLY,
+          },
+        };
 
   // 1. Create player at spawn point
-  const reusePlayerId = options.reusePlayerId ?? null;
   const canReusePlayer = reusePlayerId != null
     && typeof entityManager.hasEntity === 'function'
     && entityManager.hasEntity(reusePlayerId);
@@ -247,10 +287,20 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus, 
 
   // 8. Create boundary walls
   const boundaries = [
-    { x: 0, y: 0, width: 800, height: 20 }, // Top
-    { x: 0, y: 580, width: 800, height: 20 }, // Bottom
-    { x: 0, y: 0, width: 20, height: 600 }, // Left
-    { x: 780, y: 0, width: 20, height: 600 } // Right
+    { x: 0, y: 0, width: SCENE_WORLD_WIDTH, height: BOUNDARY_THICKNESS }, // Top
+    {
+      x: 0,
+      y: SCENE_WORLD_HEIGHT - BOUNDARY_THICKNESS,
+      width: SCENE_WORLD_WIDTH,
+      height: BOUNDARY_THICKNESS
+    }, // Bottom
+    { x: 0, y: 0, width: BOUNDARY_THICKNESS, height: SCENE_WORLD_HEIGHT }, // Left
+    {
+      x: SCENE_WORLD_WIDTH - BOUNDARY_THICKNESS,
+      y: 0,
+      width: BOUNDARY_THICKNESS,
+      height: SCENE_WORLD_HEIGHT
+    } // Right
   ];
 
   for (const boundary of boundaries) {
@@ -302,6 +352,16 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus, 
       crimeSceneDimensions: {
         width: CRIME_SCENE_WIDTH,
         height: CRIME_SCENE_HEIGHT,
+      },
+      cameraBounds: {
+        x: 0,
+        y: 0,
+        width: SCENE_WORLD_WIDTH,
+        height: SCENE_WORLD_HEIGHT,
+      },
+      narrative: sceneNarrative,
+      narrativeBeats: {
+        ...sceneNarrative.beats,
       },
     },
     cleanup: () => {

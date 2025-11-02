@@ -243,6 +243,13 @@
 - Authored manifest `assets/manifests/act3-finale-cinematics.json` and mirrored runtime data in `src/game/data/narrative/act3FinaleCinematicManifestData.js` so the cinematic asset manager can resolve stance/beat art.
 - Wired the overlay/controller to surface hero thumbnails and beat previews using the new art bundle with automated coverage in `tests/game/narrative/Act3FinaleCinematic{Controller,AssetManager}.test.js`.
 
+## Session 247 Updates
+- Regenerated the AR-005 Neon District tileset (v3) via `mcp__generate-image__generate_image`, layering deeper wet-surface reflections, expanded holographic signage, and refreshed puddle animation highlights. Canonical atlas `assets/generated/images/ar-005/image-ar-005-tileset-neon-district.png` now points at the new render, with the prior pass archived as `image-ar-005-tileset-neon-district-v2.png` for reference.
+- Normalized the AR-001 and AR-002 manifest entries to the automation pipeline, clearing residual bespoke statuses so `image-ar-001-*` and `image-ar-002-generic-marker` now record `ai-generated` provenance aligned with their GPT-Image source assets.
+
+## Session 277 Updates
+- Regenerated the AR-004 civilian and guard NPC sprite packs via `mcp__generate-image__generate_image` (GPT-Image-1), updating manifest statuses to `ai-generated` and restaging the canonical atlases under `assets/generated/images/ar-004/` for hub/patrol encounter integration.
+
 ## Next Actions
 1. Monitor RenderOps feedback channels and import notes into `reports/art/renderops-feedback.json` if follow-up arrives for the 2025-10-31 packet.
 2. Follow `reports/art/placeholder-replacement-schedule.md` to drive weekly bespoke assignments and annotate `assets/images/requests.json` with source/licensing updates upon completion.

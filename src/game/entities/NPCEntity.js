@@ -8,11 +8,13 @@
 import { Transform } from '../components/Transform.js';
 import { Sprite } from '../components/Sprite.js';
 import { FactionMember } from '../components/FactionMember.js';
+import { Faction } from '../components/Faction.js';
 import { Collider } from '../components/Collider.js';
 import { InteractionZone } from '../components/InteractionZone.js';
 import { NPC } from '../components/NPC.js';
 import { NavigationAgent } from '../components/NavigationAgent.js';
 import { formatActionPrompt } from '../utils/controlBindingPrompts.js';
+import { pickNpcSpriteVariant } from '../assets/npcSpriteLibrary.js';
 
 function shouldLog() {
   if (typeof __DEV__ !== 'undefined') {
@@ -53,17 +55,33 @@ export function createNPCEntity(entityManager, componentRegistry, npcData) {
   componentRegistry.addComponent(entityId, transform);
 
   // Add Sprite component (placeholder)
+  const spriteVariant = pickNpcSpriteVariant(faction, {
+    variant: typeof npcData?.spriteVariant === 'number' ? npcData.spriteVariant : undefined,
+    randomFn: () => deterministicRandomValue(id)
+  });
+
   const sprite = new Sprite({
-    image: null,
-    width: 32,
-    height: 48,
+    image: spriteVariant?.path ?? null,
+    width: spriteVariant?.width ?? 32,
+    height: spriteVariant?.height ?? 48,
     layer: 'entities',
     zIndex: 8,
-    color: getFactionColor(faction),
+    color: spriteVariant ? '#FFFFFF' : getFactionColor(faction),
     visible: true
   });
   sprite.type = 'Sprite';
+  if (spriteVariant?.id) {
+    sprite.appearanceId = spriteVariant.id;
+  }
   componentRegistry.addComponent(entityId, sprite);
+
+  // Add Faction component (used by FactionSystem)
+  const factionComponent = new Faction({
+    factionId: faction,
+    attitudeOverride: npcData?.attitudeOverride ?? null,
+    tags: Array.isArray(npcData?.factionTags) ? npcData.factionTags : [],
+  });
+  componentRegistry.addComponent(entityId, factionComponent);
 
   // Add FactionMember component
   const factionMember = new FactionMember({
@@ -87,7 +105,8 @@ export function createNPCEntity(entityManager, componentRegistry, npcData) {
       friendly: dialogueId ? `${dialogueId}_friendly` : 'default_friendly',
       neutral: dialogueId ? `${dialogueId}_neutral` : 'default_neutral',
       hostile: dialogueId ? `${dialogueId}_hostile` : 'default_hostile'
-    }
+    },
+    appearanceId: spriteVariant?.id ?? null
   });
   npcComponent.type = 'NPC';
   componentRegistry.addComponent(entityId, npcComponent);
@@ -157,4 +176,17 @@ function getFactionColor(faction) {
     civilian: '#999999' // Gray
   };
   return colors[faction] || '#CCCCCC';
+}
+
+function deterministicRandomValue(seed) {
+  if (typeof seed !== 'string') {
+    return Math.random();
+  }
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash << 5) - hash + seed.charCodeAt(i);
+    hash |= 0; // Convert to 32bit integer
+  }
+  const normalized = Math.abs(hash % 1000) / 1000;
+  return normalized === 1 ? 0.999 : normalized;
 }

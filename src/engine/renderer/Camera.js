@@ -24,6 +24,7 @@ export class Camera {
     this.width = width;
     this.height = height;
     this.zoom = 1.0;
+    this.bounds = null;
 
     // Following behavior
     this.followTarget = null;
@@ -53,6 +54,58 @@ export class Camera {
   }
 
   /**
+   * Sets world bounds the camera must stay within.
+   * @param {number} x - World X for bounds top-left
+   * @param {number} y - World Y for bounds top-left
+   * @param {number} width - Bounds width in world units
+   * @param {number} height - Bounds height in world units
+   */
+  setBounds(x, y, width, height) {
+    this.bounds = { x, y, width, height };
+    this.#clampToBounds();
+  }
+
+  /**
+   * Clears world bounds so camera can move freely.
+   */
+  clearBounds() {
+    this.bounds = null;
+  }
+
+  /**
+   * Ensures the camera remains inside bounds when they are defined.
+   * @private
+   */
+  #clampToBounds() {
+    if (!this.bounds) {
+      return;
+    }
+
+    const viewportWidth = this.width / this.zoom;
+    const viewportHeight = this.height / this.zoom;
+
+    const minX = this.bounds.x;
+    const minY = this.bounds.y;
+    const maxX = this.bounds.x + this.bounds.width - viewportWidth;
+    const maxY = this.bounds.y + this.bounds.height - viewportHeight;
+
+    if (this.bounds.width <= viewportWidth) {
+      // Center the bounds within the viewport when world is narrower.
+      const centerX = this.bounds.x + this.bounds.width / 2;
+      this.x = centerX - viewportWidth / 2;
+    } else {
+      this.x = Math.max(minX, Math.min(maxX, this.x));
+    }
+
+    if (this.bounds.height <= viewportHeight) {
+      const centerY = this.bounds.y + this.bounds.height / 2;
+      this.y = centerY - viewportHeight / 2;
+    } else {
+      this.y = Math.max(minY, Math.min(maxY, this.y));
+    }
+  }
+
+  /**
    * Stops following the current target.
    */
   stopFollowing() {
@@ -77,6 +130,7 @@ export class Camera {
         const lerpAmount = 1 - Math.pow(1 - this.followSpeed, deltaTime * 60);
         this.x += (targetX - this.x) * lerpAmount;
         this.y += (targetY - this.y) * lerpAmount;
+        this.#clampToBounds();
       }
     }
 
@@ -174,6 +228,7 @@ export class Camera {
   setPosition(x, y) {
     this.x = x;
     this.y = y;
+    this.#clampToBounds();
   }
 
   /**
@@ -184,6 +239,7 @@ export class Camera {
   move(dx, dy) {
     this.x += dx;
     this.y += dy;
+    this.#clampToBounds();
   }
 
   /**
@@ -192,6 +248,7 @@ export class Camera {
    */
   setZoom(zoom) {
     this.zoom = Math.max(0.1, Math.min(10, zoom));
+    this.#clampToBounds();
   }
 
   /**

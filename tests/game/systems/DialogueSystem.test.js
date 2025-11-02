@@ -6,6 +6,16 @@
 
 import { DialogueSystem } from '../../../src/game/systems/DialogueSystem.js';
 import { DialogueTree } from '../../../src/game/data/DialogueTree.js';
+import {
+  DIALOGUE_REESE_BRIEFING,
+  DIALOGUE_CIPHER_QUARTERMASTER,
+  DIALOGUE_ERASER_CIPHER,
+} from '../../../src/game/data/dialogues/Act1Dialogues.js';
+import { createAct2CrossroadsBriefingDialogue } from '../../../src/game/data/dialogues/Act2CrossroadsDialogue.js';
+import {
+  ACT2_BRANCH_DIALOGUE_IDS,
+  registerAct2BranchObjectiveDialogues,
+} from '../../../src/game/data/dialogues/Act2BranchObjectiveDialogues.js';
 
 describe('DialogueSystem', () => {
   let system;
@@ -74,7 +84,8 @@ describe('DialogueSystem', () => {
     mockComponentRegistry = {
       getComponent: jest.fn(),
       addComponent: jest.fn(),
-      hasComponent: jest.fn(() => false)
+      hasComponent: jest.fn(() => false),
+      getComponentsOfType: jest.fn(() => new Map())
     };
 
     // Mock CaseManager
@@ -88,8 +99,12 @@ describe('DialogueSystem', () => {
 
     // Mock FactionManager (updated to match new FactionManager API)
     mockFactionSystem = {
-      getReputation: jest.fn((faction) => ({ fame: 50, infamy: 10 })),
-      modifyReputation: jest.fn()
+      getReputation: jest.fn(() => ({ fame: 50, infamy: 10 })),
+      modifyReputation: jest.fn(),
+      getAllStandings: jest.fn(() => ({
+        luminari_syndicate: { fame: 50, infamy: 10, attitude: 'neutral' },
+      })),
+      getFactionAttitude: jest.fn(() => 'neutral')
     };
 
     // Create test dialogue tree
@@ -102,6 +117,14 @@ describe('DialogueSystem', () => {
         start: {
           speaker: 'NPC',
           text: 'Hello, Detective.',
+          attitudeVariants: {
+            neutral: 'Hello, Detective.',
+            friendly: 'Detective, always a pleasure.',
+            allied: 'Our archives are open to you, Detective.',
+          },
+          metadata: {
+            useFactionGreeting: true
+          },
           choices: [
             {
               text: 'Greeting',
@@ -136,6 +159,9 @@ describe('DialogueSystem', () => {
           text: 'Goodbye.',
           nextNode: null
         }
+      },
+      metadata: {
+        factionId: 'luminari_syndicate'
       }
     });
 
@@ -223,6 +249,163 @@ describe('DialogueSystem', () => {
       expect(startEvent.data.npcId).toBe('npc_1');
       expect(startEvent.data.speaker).toBe('NPC');
       expect(startEvent.data.text).toBe('Hello, Detective.');
+      expect(startEvent.data.dialogueMetadata).toEqual({
+        factionId: 'luminari_syndicate'
+      });
+      expect(startEvent.data.nodeMetadata).toEqual({
+        useFactionGreeting: true
+      });
+    });
+
+    it('selects faction attitude variant text when friendly', () => {
+      mockFactionSystem.getFactionAttitude.mockReturnValue('friendly');
+      mockFactionSystem.getAllStandings.mockReturnValue({
+        luminari_syndicate: { fame: 60, infamy: 5, attitude: 'friendly' },
+      });
+
+      system.startDialogue('npc_1', 'test_dialogue');
+
+      const startEvent = emittedEvents.find((e) => e.eventType === 'dialogue:started');
+      expect(startEvent).toBeDefined();
+      expect(startEvent.data.text).toBe('Detective, always a pleasure.');
+      expect(startEvent.data.attitude).toBe('friendly');
+      expect(startEvent.data.factionId).toBe('luminari_syndicate');
+      expect(startEvent.data.textVariant).toBe('friendly');
+    });
+
+    it('falls back to default faction greeting variants when requested', () => {
+      const greetingTree = new DialogueTree({
+        id: 'vanguard_greeting',
+        title: 'Vanguard Greeting',
+        npcId: 'vanguard_guard',
+        startNode: 'start',
+        nodes: {
+          start: {
+            speaker: 'Captain Reyes',
+            text: 'State your business.',
+            metadata: {
+              useFactionGreeting: true,
+            },
+          },
+        },
+        metadata: {
+          factionId: 'vanguard_prime',
+        },
+      });
+
+      system.registerDialogueTree(greetingTree);
+
+      mockFactionSystem.getFactionAttitude.mockReturnValue('hostile');
+      mockFactionSystem.getAllStandings.mockReturnValue({
+        vanguard_prime: { fame: 5, infamy: 70, attitude: 'hostile' },
+      });
+
+      system.startDialogue('vanguard_guard', 'vanguard_greeting');
+
+      const startEvent = emittedEvents.find((e) => e.eventType === 'dialogue:started');
+      expect(startEvent).toBeDefined();
+      expect(startEvent.data.text).toBe('Vanguard Prime marks you as a security risk. State your intent.');
+      expect(startEvent.data.textVariant).toBe('hostile');
+    });
+
+    it('prefers bespoke Vanguard Prime variants over greeting defaults', () => {
+      const reeseTree = new DialogueTree(DIALOGUE_REESE_BRIEFING.toJSON());
+      system.registerDialogueTree(reeseTree);
+
+      mockFactionSystem.getFactionAttitude.mockReturnValue('allied');
+      mockFactionSystem.getAllStandings.mockReturnValue({
+        vanguard_prime: { fame: 90, infamy: 0, attitude: 'allied' },
+      });
+
+      system.startDialogue('captain_reese', reeseTree.id);
+
+      const startEvent = emittedEvents.find((e) => e.eventType === 'dialogue:started');
+      expect(startEvent).toBeDefined();
+      expect(startEvent.data.text).toBe(
+        'You are the operator I trust above all others. Lead this hollow case and Vanguard Prime will clear the way.'
+      );
+      expect(startEvent.data.textVariant).toBe('allied');
+    });
+
+    it('uses bespoke Cipher quartermaster variants when standings are unfriendly', () => {
+      const cipherTree = new DialogueTree(DIALOGUE_CIPHER_QUARTERMASTER.toJSON());
+      system.registerDialogueTree(cipherTree);
+
+      mockFactionSystem.getFactionAttitude.mockReturnValue('unfriendly');
+      mockFactionSystem.getAllStandings.mockReturnValue({
+        cipher_collective: { fame: 20, infamy: 40, attitude: 'unfriendly' },
+      });
+
+      system.startDialogue('cipher_quartermaster', cipherTree.id);
+
+      const startEvent = emittedEvents.find((e) => e.eventType === 'dialogue:started');
+      expect(startEvent).toBeDefined();
+      expect(startEvent.data.text).toBe(
+        'Your logic is under audit, detective. Speak quickly if you want us to consider any request.'
+      );
+      expect(startEvent.data.textVariant).toBe('unfriendly');
+    });
+
+    it('delivers allied Wraith Network bespoke briefing lines', () => {
+      const wraithTree = createAct2CrossroadsBriefingDialogue({
+        npcId: 'zara_variant_test',
+        dialogueId: 'test_act2_crossroads_bespoke',
+      });
+      system.registerDialogueTree(wraithTree);
+
+      mockFactionSystem.getFactionAttitude.mockReturnValue('allied');
+      mockFactionSystem.getAllStandings.mockReturnValue({
+        wraith_network: { fame: 85, infamy: 0, attitude: 'allied' },
+      });
+
+      system.startDialogue('zara_variant_test', wraithTree.id);
+
+      const startEvent = emittedEvents.find((e) => e.eventType === 'dialogue:started');
+      expect(startEvent).toBeDefined();
+      expect(startEvent.data.text).toBe(
+        'Shadowspace is yours tonight, partner. Three leads and every node is primed the moment you call it.'
+      );
+      expect(startEvent.data.textVariant).toBe('allied');
+    });
+
+    it('delivers allied Luminari resistance council bespoke lines', () => {
+      registerAct2BranchObjectiveDialogues(system);
+      const treeId = ACT2_BRANCH_DIALOGUE_IDS.resistance.coordinationCouncil;
+      const tree = system.dialogueTrees.get(treeId);
+      expect(tree).toBeDefined();
+
+      mockFactionSystem.getFactionAttitude.mockReturnValue('allied');
+      mockFactionSystem.getAllStandings.mockReturnValue({
+        luminari_syndicate: { fame: 80, infamy: 5, attitude: 'allied' },
+      });
+
+      system.startDialogue('act2_resistance_ops', treeId);
+
+      const startEvent = emittedEvents.find((e) => e.eventType === 'dialogue:started');
+      expect(startEvent).toBeDefined();
+      expect(startEvent.data.text).toBe(
+        'The council stands on your command. Name the vault and every archivist synchronises.'
+      );
+      expect(startEvent.data.textVariant).toBe('allied');
+    });
+
+    it('surfaces hostile Memory Keeper curator confrontation variants', () => {
+      const curatorTree = new DialogueTree(DIALOGUE_ERASER_CIPHER.toJSON());
+      system.registerDialogueTree(curatorTree);
+
+      mockFactionSystem.getFactionAttitude.mockReturnValue('hostile');
+      mockFactionSystem.getAllStandings.mockReturnValue({
+        memory_keepers: { fame: 5, infamy: 85, attitude: 'hostile' },
+      });
+
+      system.startDialogue('eraser_agent_cipher', curatorTree.id);
+
+      const startEvent = emittedEvents.find((e) => e.eventType === 'dialogue:started');
+      expect(startEvent).toBeDefined();
+      expect(startEvent.data.text).toBe(
+        'Your reputation poisons every ledger, detective. The Curators would rather erase you than bargain.'
+      );
+      expect(startEvent.data.textVariant).toBe('hostile');
     });
 
     it('resolves dialogue aliases before starting dialogue', () => {
@@ -270,6 +453,81 @@ describe('DialogueSystem', () => {
 
       const visited = system.getVisitedNodes('npc_1');
       expect(visited.has('start')).toBe(true);
+    });
+
+    it('marks hasChoices false when conditional choices fail requirements', () => {
+      const conditionalTree = new DialogueTree({
+        id: 'conditional_dialogue',
+        startNode: 'start',
+        nodes: {
+          start: {
+            speaker: 'Vault Guard',
+            text: 'Clearance required.',
+            choices: [
+              {
+                text: 'Access secure archives',
+                nextNode: 'granted',
+                conditions: ['flag:has_clearance'],
+              },
+            ],
+          },
+          granted: {
+            speaker: 'Vault Guard',
+            text: 'Welcome inside.',
+          },
+        },
+      });
+
+      system.registerDialogueTree(conditionalTree);
+      mockWorldStateStore.getState.mockImplementation(() => ({
+        inventory: { items: [] },
+        story: { flags: {} },
+      }));
+
+      system.startDialogue('vault_guard', 'conditional_dialogue');
+
+      const startEvent = emittedEvents.find((event) => event.eventType === 'dialogue:started');
+      expect(startEvent).toBeDefined();
+      expect(startEvent.data.choices).toHaveLength(0);
+      expect(startEvent.data.hasChoices).toBe(false);
+    });
+
+    it('marks hasChoices true when conditional choices succeed', () => {
+      const conditionalTree = new DialogueTree({
+        id: 'conditional_dialogue_success',
+        startNode: 'start',
+        nodes: {
+          start: {
+            speaker: 'Vault Guard',
+            text: 'Clearance required.',
+            choices: [
+              {
+                id: 'choice_access',
+                text: 'Access secure archives',
+                nextNode: 'granted',
+                conditions: ['flag:has_clearance'],
+              },
+            ],
+          },
+          granted: {
+            speaker: 'Vault Guard',
+            text: 'Welcome inside.',
+          },
+        },
+      });
+
+      system.registerDialogueTree(conditionalTree);
+      mockWorldStateStore.getState.mockImplementation(() => ({
+        inventory: { items: [] },
+        story: { flags: { has_clearance: true } },
+      }));
+
+      system.startDialogue('vault_guard', 'conditional_dialogue_success');
+
+      const startEvent = emittedEvents.find((event) => event.eventType === 'dialogue:started');
+      expect(startEvent).toBeDefined();
+      expect(startEvent.data.choices).toHaveLength(1);
+      expect(startEvent.data.hasChoices).toBe(true);
     });
 
     it('responds to dialogue:choice_requested events', () => {
@@ -332,6 +590,7 @@ describe('DialogueSystem', () => {
       expect(choiceEvent).toBeDefined();
       expect(choiceEvent.data.choiceIndex).toBe(0);
       expect(choiceEvent.data.nextNode).toBe('response_1');
+      expect(choiceEvent.data.metadata).toBeNull();
     });
 
     it('should emit fx cue on choice selection', () => {
@@ -352,6 +611,64 @@ describe('DialogueSystem', () => {
       expect(nodeEvent).toBeDefined();
       expect(nodeEvent.data.nodeId).toBe('response_1');
       expect(nodeEvent.data.text).toBe('Nice to meet you.');
+      expect(nodeEvent.data.nodeMetadata).toBeNull();
+      expect(nodeEvent.data.dialogueMetadata).toEqual({
+        factionId: 'luminari_syndicate'
+      });
+    });
+
+    it('emits node changes with hasChoices false when conditional options are unavailable', () => {
+      system.endDialogue();
+      emittedEvents = [];
+
+      const conditionalTree = new DialogueTree({
+        id: 'conditional_path',
+        startNode: 'start',
+        nodes: {
+          start: {
+            speaker: 'AI Sentinel',
+            text: 'Choose your access path.',
+            choices: [
+              {
+                text: 'Request clearance',
+                nextNode: 'restricted',
+              },
+            ],
+          },
+          restricted: {
+            speaker: 'AI Sentinel',
+            text: 'Clearance codes invalid.',
+            choices: [
+              {
+                text: 'Override security',
+                nextNode: 'end',
+                conditions: ['flag:has_override'],
+              },
+            ],
+          },
+          end: {
+            speaker: 'AI Sentinel',
+            text: 'Access complete.',
+          },
+        },
+      });
+
+      system.registerDialogueTree(conditionalTree);
+      mockWorldStateStore.getState.mockImplementation(() => ({
+        inventory: { items: [] },
+        story: { flags: {} },
+      }));
+
+      expect(system.startDialogue('sentinel_ai', 'conditional_path')).toBe(true);
+      emittedEvents = [];
+
+      system.selectChoice(0);
+
+      const nodeEvent = emittedEvents.find((event) => event.eventType === 'dialogue:node_changed');
+      expect(nodeEvent).toBeDefined();
+      expect(nodeEvent.data.nodeId).toBe('restricted');
+      expect(nodeEvent.data.choices).toHaveLength(0);
+      expect(nodeEvent.data.hasChoices).toBe(false);
     });
 
     it('should emit fx cue on dialogue beat', () => {

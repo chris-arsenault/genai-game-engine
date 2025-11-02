@@ -124,6 +124,11 @@ Despite cynicism, the game celebrates human connection. Side investigations buil
 **Setting**: Neon Districts
 **Core Mystery**: Who is extracting memories, and why?
 
+### Narrative Beat Catalog (Updated)
+- Canonical beat identifiers now live in `src/game/data/narrative/NarrativeBeatCatalog.js`.
+- Tutorial, Act 1, Act 2, and Act 3 scenes reference this catalog so camera, quest, and dialogue systems stay aligned as players progress.
+- MCP backlog item 584629e6-006a-45ec-93e3-e05186acbb7d tracks this consistency pass.
+
 **Opening (Tutorial Investigation)**:
 - Kira receives anonymous tip about a "hollow" victim in her building
 - Crime scene investigation teaches mechanics: evidence scanning, memory reconstruction, environmental clues

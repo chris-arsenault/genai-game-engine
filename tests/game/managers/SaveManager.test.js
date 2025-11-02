@@ -2636,4 +2636,423 @@ describe('SaveManager', () => {
       expect(localStorageMock.store['tutorial_skipped']).toBeUndefined();
     });
   });
+
+  describe('Stress & Migration', () => {
+    const createState = (iteration, { inventorySize = 6 } = {}) => {
+      const items = Array.from({ length: inventorySize }, (_, index) => ({
+        id: `item_${iteration}_${index}`,
+        quantity: (index + 1) * (iteration + 1),
+        quality: (iteration + index) % 5,
+      }));
+
+      return {
+        storyFlags: {
+          [`flag_${iteration}`]: { value: true, updatedAt: 1700000000000 + iteration },
+          shared_flag: { value: iteration % 2 === 0 },
+        },
+        quests: {
+          active: [`quest_${iteration}`],
+          status: {
+            [`quest_${iteration}`]: {
+              stage: iteration % 5,
+              completed: iteration % 3 === 0,
+            },
+          },
+        },
+        factions: {
+          version: 1,
+          timestamp: 1700000050000 + iteration,
+          reputation: {
+            luminari_syndicate: { fame: 20 + iteration, infamy: iteration % 4 },
+            cipher_collective: { fame: 10 + iteration, infamy: 5 + (iteration % 2) },
+          },
+          recentMemberRemovals: [
+            {
+              factionId: 'cipher_collective',
+              memberId: `agent_${iteration}`,
+              removedAt: 1700000100000 + iteration,
+            },
+          ],
+        },
+        tutorial: {
+          completed: iteration % 3 === 0,
+          completedSteps: iteration % 7,
+          totalSteps: 7,
+          currentStep: `step_${iteration % 4}`,
+          currentStepIndex: iteration % 4,
+          lastActionAt: 1700000200000 + iteration,
+          skipped: iteration % 10 === 0,
+        },
+        tutorialComplete: iteration % 3 === 0,
+        tutorialSkipped: iteration % 10 === 0,
+        inventory: {
+          items,
+          equipped: { primary: items[0]?.id ?? null },
+          lastUpdatedAt: 1700000300000 + iteration,
+        },
+        cases: {
+          activeCaseId: 'case_001',
+          cases: {
+            case_001: {
+              status: 'active',
+              collectedEvidence: [`ev_${iteration}`],
+              discoveredClues: [`clue_${iteration}`],
+              objectives: [{ id: `obj_${iteration}`, completed: iteration % 2 === 0 }],
+            },
+          },
+        },
+        investigation: {
+          knowledge: [`knowledge_${iteration}`],
+          abilities: ['detective_vision', 'forensic_scan'],
+          detectiveVision: {
+            active: iteration % 2 === 0,
+            energy: 3 + (iteration % 3),
+            energyMax: 6,
+            cooldown: iteration % 5,
+          },
+        },
+      };
+    };
+
+    test('performs 100 save/load cycles without data corruption', () => {
+      const stressBus = new EventBus();
+      let currentState = null;
+
+      const cycleManagers = {
+        storage: localStorageMock,
+        worldStateStore: {
+          snapshot: jest.fn(() => {
+            if (!currentState) {
+              return null;
+            }
+            return JSON.parse(
+              JSON.stringify({
+                storyFlags: currentState.storyFlags,
+                quests: currentState.quests,
+                factions: currentState.factions,
+                tutorial: currentState.tutorial,
+                tutorialComplete: currentState.tutorialComplete,
+                tutorialSkipped: currentState.tutorialSkipped,
+                inventory: currentState.inventory,
+                cases: currentState.cases,
+                investigation: currentState.investigation,
+              })
+            );
+          }),
+          hydrate: jest.fn(),
+        },
+        storyFlagManager: {
+          serialize: jest.fn(() =>
+            currentState ? JSON.parse(JSON.stringify(currentState.storyFlags)) : {}
+          ),
+          deserialize: jest.fn(),
+        },
+        questManager: {
+          serialize: jest.fn(() =>
+            currentState ? JSON.parse(JSON.stringify(currentState.quests)) : {}
+          ),
+          deserialize: jest.fn(),
+        },
+        factionManager: {
+          serialize: jest.fn(() =>
+            currentState ? JSON.parse(JSON.stringify(currentState.factions)) : { reputation: {} }
+          ),
+          deserialize: jest.fn(() => true),
+          reputation: {},
+        },
+        tutorialSystem: {
+          getProgress: jest.fn(() => ({
+            totalSteps: currentState?.tutorial.totalSteps ?? 0,
+            completedSteps: currentState?.tutorial.completedSteps ?? 0,
+            currentStep: currentState?.tutorial.currentStep ?? null,
+            currentStepIndex: currentState?.tutorial.currentStepIndex ?? -1,
+          })),
+          isComplete: jest.fn(() => Boolean(currentState?.tutorial.completed)),
+          skipped: false,
+        },
+        caseManager: {
+          serialize: jest.fn(() =>
+            currentState ? JSON.parse(JSON.stringify(currentState.cases)) : null
+          ),
+          deserialize: jest.fn(),
+        },
+        investigationSystem: {
+          serialize: jest.fn(() =>
+            currentState ? JSON.parse(JSON.stringify(currentState.investigation)) : null
+          ),
+          deserialize: jest.fn(),
+        },
+      };
+
+      const cycleSaveManager = new SaveManager(stressBus, cycleManagers);
+      cycleSaveManager.init();
+
+      for (let i = 0; i < 100; i += 1) {
+        currentState = createState(i, { inventorySize: 12 });
+        cycleManagers.tutorialSystem.skipped = currentState.tutorialSkipped;
+
+        const expectedStoryFlags = JSON.parse(JSON.stringify(currentState.storyFlags));
+        const expectedQuests = JSON.parse(JSON.stringify(currentState.quests));
+        const expectedFactions = JSON.parse(JSON.stringify(currentState.factions));
+        const expectedInventory = JSON.parse(JSON.stringify(currentState.inventory));
+        const expectedCases = JSON.parse(JSON.stringify(currentState.cases));
+        const expectedInvestigation = JSON.parse(JSON.stringify(currentState.investigation));
+
+        const saveResult = cycleSaveManager.saveGame('stress_slot');
+        expect(saveResult).toBe(true);
+
+        cycleManagers.storyFlagManager.deserialize.mockClear();
+        cycleManagers.questManager.deserialize.mockClear();
+        cycleManagers.factionManager.deserialize.mockClear();
+        cycleManagers.caseManager.deserialize.mockClear();
+        cycleManagers.investigationSystem.deserialize.mockClear();
+        cycleManagers.worldStateStore.hydrate.mockClear();
+
+        const loadResult = cycleSaveManager.loadGame('stress_slot');
+        expect(loadResult).toBe(true);
+
+        expect(cycleManagers.storyFlagManager.deserialize).toHaveBeenCalledWith(
+          expectedStoryFlags
+        );
+        expect(cycleManagers.questManager.deserialize).toHaveBeenCalledWith(expectedQuests);
+        expect(cycleManagers.factionManager.deserialize).toHaveBeenCalledWith(expectedFactions);
+        expect(cycleManagers.caseManager.deserialize).toHaveBeenCalledWith(expectedCases);
+        expect(cycleManagers.investigationSystem.deserialize).toHaveBeenCalledWith(
+          expectedInvestigation
+        );
+
+        const hydrated = cycleManagers.worldStateStore.hydrate.mock.calls[0][0];
+        expect(hydrated.storyFlags).toEqual(expectedStoryFlags);
+        expect(hydrated.quests).toEqual(expectedQuests);
+        expect(hydrated.factions).toEqual(expectedFactions);
+        expect(hydrated.inventory.items).toHaveLength(expectedInventory.items.length);
+        expect(hydrated.inventory.equipped).toEqual(expectedInventory.equipped);
+      }
+
+      cycleSaveManager.cleanup();
+    });
+
+    test('persists large inventory payloads during save/load', () => {
+      const bus = new EventBus();
+      let currentState = createState(1, { inventorySize: 1500 });
+
+      const worldStateStore = {
+        snapshot: jest.fn(() =>
+          JSON.parse(
+            JSON.stringify({
+              storyFlags: currentState.storyFlags,
+              quests: currentState.quests,
+              factions: currentState.factions,
+              tutorial: currentState.tutorial,
+              tutorialComplete: currentState.tutorialComplete,
+              tutorialSkipped: currentState.tutorialSkipped,
+              inventory: currentState.inventory,
+              cases: currentState.cases,
+              investigation: currentState.investigation,
+            })
+          )
+        ),
+        hydrate: jest.fn(),
+      };
+
+      const managers = {
+        storage: localStorageMock,
+        worldStateStore,
+        storyFlagManager: {
+          serialize: jest.fn(() => JSON.parse(JSON.stringify(currentState.storyFlags))),
+          deserialize: jest.fn(),
+        },
+        questManager: {
+          serialize: jest.fn(() => JSON.parse(JSON.stringify(currentState.quests))),
+          deserialize: jest.fn(),
+        },
+        factionManager: {
+          serialize: jest.fn(() => JSON.parse(JSON.stringify(currentState.factions))),
+          deserialize: jest.fn(() => true),
+          reputation: {},
+        },
+        tutorialSystem: {
+          getProgress: jest.fn(() => ({
+            totalSteps: currentState.tutorial.totalSteps,
+            completedSteps: currentState.tutorial.completedSteps,
+            currentStep: currentState.tutorial.currentStep,
+            currentStepIndex: currentState.tutorial.currentStepIndex,
+          })),
+          isComplete: jest.fn(() => Boolean(currentState.tutorial.completed)),
+          skipped: currentState.tutorialSkipped,
+        },
+        caseManager: {
+          serialize: jest.fn(() => JSON.parse(JSON.stringify(currentState.cases))),
+          deserialize: jest.fn(),
+        },
+        investigationSystem: {
+          serialize: jest.fn(() => JSON.parse(JSON.stringify(currentState.investigation))),
+          deserialize: jest.fn(),
+        },
+      };
+
+      const manager = new SaveManager(bus, managers);
+      manager.init();
+
+      const saveResult = manager.saveGame('large_slot');
+      expect(saveResult).toBe(true);
+
+      managers.storyFlagManager.deserialize.mockClear();
+      managers.questManager.deserialize.mockClear();
+      managers.factionManager.deserialize.mockClear();
+      managers.caseManager.deserialize.mockClear();
+      managers.investigationSystem.deserialize.mockClear();
+      worldStateStore.hydrate.mockClear();
+
+      const loadResult = manager.loadGame('large_slot');
+      expect(loadResult).toBe(true);
+
+      expect(worldStateStore.hydrate).toHaveBeenCalledTimes(1);
+      const hydrated = worldStateStore.hydrate.mock.calls[0][0];
+      expect(hydrated.inventory.items).toHaveLength(1500);
+      expect(hydrated.inventory.equipped.primary).toBeDefined();
+
+      manager.cleanup();
+    });
+
+    test('migrates legacy version 0 saves to current schema', () => {
+      const bus = new EventBus();
+
+      const storyDeserialize = jest.fn();
+      const questDeserialize = jest.fn();
+      const factionDeserialize = jest.fn(() => true);
+      const caseDeserialize = jest.fn();
+      const investigationDeserialize = jest.fn();
+
+      const managers = {
+        storage: localStorageMock,
+        storyFlagManager: {
+          deserialize: storyDeserialize,
+        },
+        questManager: {
+          deserialize: questDeserialize,
+        },
+        factionManager: {
+          deserialize: factionDeserialize,
+          reputation: {},
+        },
+        tutorialSystem: null,
+        caseManager: {
+          deserialize: caseDeserialize,
+        },
+        investigationSystem: {
+          deserialize: investigationDeserialize,
+        },
+        worldStateStore: {
+          snapshot: jest.fn(() => null),
+          hydrate: jest.fn(),
+        },
+      };
+
+      const migrationManager = new SaveManager(bus, managers);
+      migrationManager.init();
+
+      const legacySlot = 'legacy_slot';
+      const legacySave = {
+        version: 0,
+        timestamp: 1700000000000,
+        playtime: 2500,
+        gameData: {
+          storyFlags: { legacy_flag: true },
+          quests: { legacyQuest: { status: 'active' } },
+          factions: {
+            reputation: {
+              cipher_collective: { fame: 5, infamy: 2 },
+            },
+          },
+          tutorialComplete: true,
+          tutorialSkipped: false,
+          tutorial: { completedSteps: 4, totalSteps: 7 },
+          inventory: { items: [{ id: 'legacy_item', quantity: 2 }] },
+          cases: null,
+          investigation: null,
+        },
+      };
+
+      const metadata = {
+        [legacySlot]: {
+          version: legacySave.version,
+          slotType: 'manual',
+          timestamp: legacySave.timestamp,
+        },
+      };
+
+      localStorageMock.store[migrationManager.config.metadataKey] = JSON.stringify(metadata);
+      localStorageMock.store[
+        `${migrationManager.config.storageKeyPrefix}${legacySlot}`
+      ] = JSON.stringify(legacySave);
+
+      const result = migrationManager.loadGame(legacySlot);
+      expect(result).toBe(true);
+
+      expect(storyDeserialize).toHaveBeenCalledWith(
+        expect.objectContaining({ legacy_flag: true })
+      );
+      expect(questDeserialize).toHaveBeenCalledWith(
+        expect.objectContaining({ legacyQuest: expect.any(Object) })
+      );
+      expect(factionDeserialize).toHaveBeenCalledWith(
+        expect.objectContaining({
+          version: migrationManager.config.version,
+          reputation: expect.objectContaining({
+            cipher_collective: expect.objectContaining({ fame: 5, infamy: 2 }),
+          }),
+        })
+      );
+
+      const updatedMeta = JSON.parse(localStorageMock.getItem(migrationManager.config.metadataKey));
+      expect(updatedMeta[legacySlot].version).toBe(migrationManager.config.version);
+
+      migrationManager.cleanup();
+    });
+
+    test('rejects future-version save data gracefully', () => {
+      const bus = new EventBus();
+
+      const storyDeserialize = jest.fn();
+      const managers = {
+        storage: localStorageMock,
+        storyFlagManager: { deserialize: storyDeserialize },
+        worldStateStore: {
+          snapshot: jest.fn(() => null),
+          hydrate: jest.fn(),
+        },
+      };
+
+      const manager = new SaveManager(bus, managers);
+      manager.init();
+
+      const slot = 'future_slot';
+      const futureVersion = manager.config.version + 5;
+      const futureSave = {
+        version: futureVersion,
+        timestamp: Date.now(),
+        playtime: 100,
+        gameData: {
+          storyFlags: { future_flag: true },
+        },
+      };
+
+      localStorageMock.store[
+        `${manager.config.storageKeyPrefix}${slot}`
+      ] = JSON.stringify(futureSave);
+
+      const emitSpy = jest.spyOn(bus, 'emit');
+      const result = manager.loadGame(slot);
+
+      expect(result).toBe(false);
+      expect(storyDeserialize).not.toHaveBeenCalled();
+
+      const failureEvent = emitSpy.mock.calls.find(([event]) => event === 'game:load_failed');
+      expect(failureEvent).toBeDefined();
+      expect(failureEvent[1]).toMatchObject({ slot, error: 'future_version' });
+
+      manager.cleanup();
+    });
+  });
 });

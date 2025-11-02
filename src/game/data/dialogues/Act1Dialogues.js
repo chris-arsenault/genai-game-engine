@@ -15,10 +15,24 @@ export const DIALOGUE_REESE_BRIEFING = new DialogueTree({
   title: 'Briefing: The Hollow Case',
   npcId: 'captain_reese',
   startNode: 'start',
+  metadata: {
+    factionId: 'vanguard_prime'
+  },
   nodes: {
     start: {
       speaker: 'Captain Reese',
       text: 'Detective Voss. I know this is difficult, but we need you on this case. Alex was your partner... and your friend. But what happened to them... it\'s not natural.',
+      metadata: {
+        useFactionGreeting: true,
+        attitudeVariants: {
+          hostile: 'Command wants eyes on you, Voss. You are only on this hollow case because no one else will touch it.',
+          unfriendly: 'Your last operation rattled command, but we still need you focused on this hollow case.',
+          neutral: 'Detective Voss. I know this is difficult, but we need you on this case. Alex was your partner... and your friend. But what happened to them... it\'s not natural.',
+          friendly: 'You have the task force on your side, Voss. Take the resources you need; this hollow case is yours.',
+          allied: 'You are the operator I trust above all others. Lead this hollow case and Vanguard Prime will clear the way.',
+          default: 'Detective Voss. I know this is difficult, but we need you on this case. Alex was your partner... and your friend. But what happened to them... it\'s not natural.'
+        }
+      },
       choices: [
         {
           text: 'What do you mean, "not natural"?',
@@ -344,10 +358,24 @@ export const DIALOGUE_CIPHER_QUARTERMASTER = new DialogueTree({
   title: 'Cipher Quartermaster',
   npcId: 'cipher_quartermaster',
   startNode: 'start',
+  metadata: {
+    factionId: 'cipher_collective'
+  },
   nodes: {
     start: {
       speaker: 'Cipher Quartermaster',
       text: 'The Collective does not open the locker for badge-carrying detectives. State your need or move along.',
+      metadata: {
+        useFactionGreeting: true,
+        attitudeVariants: {
+          hostile: 'Collective security flagged you as a breach vector; the locker stays sealed and your presence logged.',
+          unfriendly: 'Your logic is under audit, detective. Speak quickly if you want us to consider any request.',
+          neutral: 'The Collective does not open the locker for badge-carrying detectives. State your need or move along.',
+          friendly: 'Your recent data drops still circulate. Say the word and I will surface a scrambler from reserves.',
+          allied: 'Vault access is unlocked for you. Take the scrambler and I will queue spare charges.',
+          default: 'The Collective does not open the locker for badge-carrying detectives. State your need or move along.'
+        }
+      },
       choices: [
         {
           text: 'I need a scrambler to bypass parlor firewalls.',
@@ -571,10 +599,24 @@ export const DIALOGUE_ERASER_CIPHER = new DialogueTree({
   title: 'Encounter: Eraser Agent',
   npcId: 'eraser_agent_cipher',
   startNode: 'start',
+  metadata: {
+    factionId: 'memory_keepers'
+  },
   nodes: {
     start: {
       speaker: 'Cipher',
       text: 'Detective. You\'ve wandered into the wrong district. This parlor is under Curator protection. I\'m afraid I can\'t let you leave with that data.',
+      metadata: {
+        useFactionGreeting: true,
+        attitudeVariants: {
+          hostile: 'Your reputation poisons every ledger, detective. The Curators would rather erase you than bargain.',
+          unfriendly: 'You test the patience of the Archive. Speak fast before the Curators decide you leave hollow.',
+          neutral: 'Detective. You\'ve wandered into the wrong district. This parlor is under Curator protection. I\'m afraid I can\'t let you leave with that data.',
+          friendly: 'Your discretion has bought curiosity. State your price and perhaps we both walk out richer.',
+          allied: 'Archive whispers vouch for you. Take what you came for and I will smooth the ledger trail.',
+          default: 'Detective. You\'ve wandered into the wrong district. This parlor is under Curator protection. I\'m afraid I can\'t let you leave with that data.'
+        }
+      },
       choices: [
         {
           text: 'Curators? You\'re behind the hollow victims?',

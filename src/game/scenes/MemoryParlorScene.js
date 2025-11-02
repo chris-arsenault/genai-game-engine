@@ -21,6 +21,10 @@ import { Trigger } from '../../engine/physics/Trigger.js';
 import { TriggerMigrationToolkit } from '../quests/TriggerMigrationToolkit.js';
 import { QuestTriggerRegistry } from '../quests/QuestTriggerRegistry.js';
 import { QUEST_003_MEMORY_PARLOR } from '../data/quests/act1Quests.js';
+import {
+  NarrativeActs,
+  NarrativeBeats,
+} from '../data/narrative/NarrativeBeatCatalog.js';
 
 const ROOM_WIDTH = 960;
 const ROOM_HEIGHT = 600;
@@ -76,7 +80,7 @@ const MEMORY_PARLOR_TRIGGER_DEFINITIONS = [
     triggerType: 'scene_transition',
     metadata: {
       moodHint: 'pre_infiltration',
-      narrativeBeat: 'act1_memory_parlor_entry',
+      narrativeBeat: NarrativeBeats.act1.MEMORY_PARLOR_ENTRY,
       sceneId: 'memory_parlor_infiltration',
     },
   },
@@ -91,7 +95,7 @@ const MEMORY_PARLOR_TRIGGER_DEFINITIONS = [
     triggerType: 'objective_area',
     metadata: {
       moodHint: 'infiltration_tension',
-      narrativeBeat: 'act1_memory_parlor_interior',
+      narrativeBeat: NarrativeBeats.act1.MEMORY_PARLOR_INTERIOR,
       requiresScrambler: true,
     },
   },
@@ -106,14 +110,111 @@ const MEMORY_PARLOR_TRIGGER_DEFINITIONS = [
     triggerType: 'scene_exit',
     metadata: {
       moodHint: 'escape_release',
-      narrativeBeat: 'act1_memory_parlor_exit',
+      narrativeBeat: NarrativeBeats.act1.MEMORY_PARLOR_EXIT,
     },
   },
 ];
 
+const MEMORY_PARLOR_NARRATIVE = Object.freeze({
+  act: NarrativeActs.ACT1,
+  beats: {
+    entry: NarrativeBeats.act1.MEMORY_PARLOR_ENTRY,
+    interior: NarrativeBeats.act1.MEMORY_PARLOR_INTERIOR,
+    exit: NarrativeBeats.act1.MEMORY_PARLOR_EXIT,
+  },
+});
+
+const MEMORY_PARLOR_NAVIGATION_TEMPLATE = Object.freeze({
+  nodes: Object.freeze([
+    Object.freeze({
+      id: 'memory_parlor_entry',
+      position: Object.freeze({ x: ENTRANCE_POSITION.x, y: ENTRANCE_POSITION.y }),
+      radius: 72,
+      tags: Object.freeze(['spawn', 'approach']),
+    }),
+    Object.freeze({
+      id: 'memory_parlor_firewall',
+      position: Object.freeze({ x: FIREWALL_POSITION.x, y: FIREWALL_POSITION.y }),
+      radius: 60,
+      tags: Object.freeze(['firewall', 'restricted']),
+    }),
+    Object.freeze({
+      id: 'memory_parlor_interior',
+      position: Object.freeze({ x: INTERIOR_CENTER.x, y: INTERIOR_CENTER.y }),
+      radius: 70,
+      tags: Object.freeze(['objective', 'restricted']),
+    }),
+    Object.freeze({
+      id: 'memory_parlor_exit',
+      position: Object.freeze({ x: EXIT_POSITION.x, y: EXIT_POSITION.y }),
+      radius: 64,
+      tags: Object.freeze(['escape', 'approach']),
+    }),
+  ]),
+  edges: Object.freeze([
+    Object.freeze({ from: 'memory_parlor_entry', to: 'memory_parlor_firewall', cost: 1 }),
+    Object.freeze({ from: 'memory_parlor_firewall', to: 'memory_parlor_interior', cost: 1 }),
+    Object.freeze({ from: 'memory_parlor_interior', to: 'memory_parlor_exit', cost: 1 }),
+    Object.freeze({ from: 'memory_parlor_exit', to: 'memory_parlor_entry', cost: 1 }),
+  ]),
+  walkableSurfaces: Object.freeze([
+    Object.freeze({
+      id: 'memory_parlor_entry_floor',
+      polygon: Object.freeze([
+        Object.freeze({ x: 40, y: 200 }),
+        Object.freeze({ x: 360, y: 200 }),
+        Object.freeze({ x: 360, y: 420 }),
+        Object.freeze({ x: 40, y: 420 }),
+      ]),
+      tags: Object.freeze(['indoor', 'approach', 'stealth']),
+    }),
+    Object.freeze({
+      id: 'memory_parlor_firewall_channel',
+      polygon: Object.freeze([
+        Object.freeze({ x: 360, y: 260 }),
+        Object.freeze({ x: 540, y: 260 }),
+        Object.freeze({ x: 540, y: 380 }),
+        Object.freeze({ x: 360, y: 380 }),
+      ]),
+      tags: Object.freeze(['restricted', 'restricted:cipher_collective', 'transition']),
+    }),
+    Object.freeze({
+      id: 'memory_parlor_interior_floor',
+      polygon: Object.freeze([
+        Object.freeze({ x: 560, y: 180 }),
+        Object.freeze({ x: 900, y: 180 }),
+        Object.freeze({ x: 900, y: 460 }),
+        Object.freeze({ x: 560, y: 460 }),
+      ]),
+      tags: Object.freeze(['restricted', 'restricted:cipher_collective', 'objective']),
+    }),
+  ]),
+});
+
+function cloneNavigationMesh(template = MEMORY_PARLOR_NAVIGATION_TEMPLATE) {
+  return {
+    nodes: template.nodes.map((node) => ({
+      id: node.id,
+      position: { ...node.position },
+      radius: node.radius,
+      tags: Array.isArray(node.tags) ? [...node.tags] : [],
+    })),
+    edges: template.edges.map((edge) => ({ ...edge })),
+    walkableSurfaces: template.walkableSurfaces.map((surface) => ({
+      id: surface.id,
+      polygon: surface.polygon.map((point) => ({ ...point })),
+      tags: Array.isArray(surface.tags) ? [...surface.tags] : [],
+    })),
+  };
+}
+
 function ensureMemoryParlorTriggerDefinitions() {
   for (const definition of MEMORY_PARLOR_TRIGGER_DEFINITIONS) {
-    if (!QuestTriggerRegistry.getTriggerDefinition(definition.id)) {
+    const existingDefinition = QuestTriggerRegistry.getTriggerDefinition(definition.id);
+    if (
+      !existingDefinition ||
+      existingDefinition.metadata?.narrativeBeat !== definition.metadata.narrativeBeat
+    ) {
       QuestTriggerRegistry.registerDefinition(definition);
     }
   }
@@ -925,6 +1026,8 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
     }
   });
 
+  const navigationMesh = cloneNavigationMesh();
+
   return {
     sceneName: 'memory_parlor_infiltration',
     sceneEntities,
@@ -946,6 +1049,11 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
       exitZoneId,
       overlay: overlayMetadata,
       ambientAudioController,
+      narrative: MEMORY_PARLOR_NARRATIVE,
+      narrativeBeats: {
+        ...MEMORY_PARLOR_NARRATIVE.beats,
+      },
+      navigationMesh,
     },
   };
 }

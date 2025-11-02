@@ -13,6 +13,10 @@ import { Collider } from '../components/Collider.js';
 import { TriggerMigrationToolkit } from '../quests/TriggerMigrationToolkit.js';
 import { QuestTriggerRegistry } from '../quests/QuestTriggerRegistry.js';
 import { ACT2_BRANCH_DIALOGUE_IDS } from '../data/dialogues/Act2BranchObjectiveDialogues.js';
+import {
+  NarrativeActs,
+  NarrativeBeats,
+} from '../data/narrative/NarrativeBeatCatalog.js';
 
 const SCENE_ID = 'act2_resistance_hideout';
 const DEFAULT_QUEST_ID = 'main-act2-archivist-alliance';
@@ -37,7 +41,7 @@ const TRIGGER_DEFINITIONS = Object.freeze([
     prompt: 'Descend into the Archivist hideout.',
     triggerType: 'quest_area',
     metadata: {
-      narrativeBeat: 'act2_resistance_hideout_entry',
+      narrativeBeat: NarrativeBeats.act2.resistance.ENTRY,
       moodHint: 'clandestine',
       telemetryTag: 'act2_resistance_contact_entry',
     },
@@ -52,7 +56,7 @@ const TRIGGER_DEFINITIONS = Object.freeze([
     prompt: 'Gather intel at the strategy table.',
     triggerType: 'quest_area',
     metadata: {
-      narrativeBeat: 'act2_resistance_strategy_session',
+      narrativeBeat: NarrativeBeats.act2.resistance.STRATEGY_SESSION,
       unlocksMechanic: 'faction_alignment',
       telemetryTag: 'act2_resistance_strategy_table',
     },
@@ -67,7 +71,7 @@ const TRIGGER_DEFINITIONS = Object.freeze([
     prompt: 'Secure the tunnel network for future operations.',
     triggerType: 'quest_area',
     metadata: {
-      narrativeBeat: 'act2_resistance_escape_network',
+      narrativeBeat: NarrativeBeats.act2.resistance.ESCAPE_NETWORK,
       unlocksMechanic: 'fast_travel',
       telemetryTag: 'act2_resistance_escape_tunnel',
     },
@@ -82,7 +86,7 @@ const TRIGGER_DEFINITIONS = Object.freeze([
     prompt: 'Coordinate joint strikes with Archivist leadership.',
     triggerType: 'quest_area',
     metadata: {
-      narrativeBeat: 'act2_resistance_coordination_council',
+      narrativeBeat: NarrativeBeats.act2.resistance.COORDINATION_COUNCIL,
       unlocksMechanic: 'faction_alignment',
       telemetryTag: 'act2_resistance_coordination_chamber',
       dialogueId: ACT2_BRANCH_DIALOGUE_IDS.resistance.coordinationCouncil,
@@ -99,7 +103,7 @@ const TRIGGER_DEFINITIONS = Object.freeze([
     prompt: 'Prime the encrypted signal array to protect operations.',
     triggerType: 'quest_area',
     metadata: {
-      narrativeBeat: 'act2_resistance_signal_array_primed',
+      narrativeBeat: NarrativeBeats.act2.resistance.SIGNAL_ARRAY_PRIMED,
       unlocksMechanic: 'network_signal',
       telemetryTag: 'act2_resistance_signal_array',
       dialogueId: ACT2_BRANCH_DIALOGUE_IDS.resistance.signalArray,
@@ -322,7 +326,11 @@ const NAVIGATION_TEMPLATE = Object.freeze({
 
 function ensureTriggerDefinitions() {
   for (const definition of TRIGGER_DEFINITIONS) {
-    if (!QuestTriggerRegistry.getTriggerDefinition(definition.id)) {
+    const existingDefinition = QuestTriggerRegistry.getTriggerDefinition(definition.id);
+    if (
+      !existingDefinition ||
+      existingDefinition.metadata?.narrativeBeat !== definition.metadata?.narrativeBeat
+    ) {
       QuestTriggerRegistry.registerDefinition({ ...definition });
     }
   }
@@ -565,6 +573,13 @@ export async function loadAct2ResistanceHideoutScene(
   };
 
   const navigationMesh = cloneNavigationMesh();
+  const narrativeBeats = {
+    entry: NarrativeBeats.act2.resistance.ENTRY,
+    progression: NarrativeBeats.act2.resistance.STRATEGY_SESSION,
+    objective: NarrativeBeats.act2.resistance.ESCAPE_NETWORK,
+    coordination: NarrativeBeats.act2.resistance.COORDINATION_COUNCIL,
+    signal: NarrativeBeats.act2.resistance.SIGNAL_ARRAY_PRIMED,
+  };
 
   return {
     sceneName: SCENE_ID,
@@ -592,13 +607,12 @@ export async function loadAct2ResistanceHideoutScene(
         y: layout.y,
         color: layout.color,
       })),
-      narrativeBeats: {
-        entry: 'act2_resistance_hideout_entry',
-        progression: 'act2_resistance_strategy_session',
-        objective: 'act2_resistance_escape_network',
-        coordination: 'act2_resistance_coordination_council',
-        signal: 'act2_resistance_signal_array_primed',
+      narrative: {
+        act: NarrativeActs.ACT2,
+        branch: 'resistance',
+        beats: narrativeBeats,
       },
+      narrativeBeats,
     },
   };
 }

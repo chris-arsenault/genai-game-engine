@@ -7,6 +7,10 @@ import {
 } from '../../../src/game/scenes/MemoryParlorScene.js';
 import { QuestTriggerRegistry } from '../../../src/game/quests/QuestTriggerRegistry.js';
 import { QUEST_003_MEMORY_PARLOR } from '../../../src/game/data/quests/act1Quests.js';
+import {
+  NarrativeActs,
+  NarrativeBeats,
+} from '../../../src/game/data/narrative/NarrativeBeatCatalog.js';
 
 const TRIGGER_IDS = {
   ENTRANCE: 'memory_parlor_entrance',
@@ -65,7 +69,7 @@ describe('MemoryParlorScene quest trigger migration', () => {
     expect(entrance.trigger.data.objectiveId).toBe('obj_locate_parlor');
     expect(entrance.trigger.data.metadata).toEqual(
       expect.objectContaining({
-        narrativeBeat: 'act1_memory_parlor_entry',
+        narrativeBeat: NarrativeBeats.act1.MEMORY_PARLOR_ENTRY,
       })
     );
 
@@ -97,9 +101,18 @@ describe('MemoryParlorScene quest trigger migration', () => {
     expect(exit.trigger.data.objectiveId).toBe('obj_escape_parlor');
     expect(exit.trigger.data.metadata).toEqual(
       expect.objectContaining({
-        narrativeBeat: 'act1_memory_parlor_exit',
+        narrativeBeat: NarrativeBeats.act1.MEMORY_PARLOR_EXIT,
       })
     );
+
+    expect(sceneData.metadata.narrative).toEqual({
+      act: NarrativeActs.ACT1,
+      beats: {
+        entry: NarrativeBeats.act1.MEMORY_PARLOR_ENTRY,
+        interior: NarrativeBeats.act1.MEMORY_PARLOR_INTERIOR,
+        exit: NarrativeBeats.act1.MEMORY_PARLOR_EXIT,
+      },
+    });
 
     expect(QuestTriggerRegistry.getTriggerDefinition(TRIGGER_IDS.ENTRANCE)?.migrated).toBe(true);
     expect(QuestTriggerRegistry.getTriggerDefinition(TRIGGER_IDS.INTERIOR)?.migrated).toBe(true);

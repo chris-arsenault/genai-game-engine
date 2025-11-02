@@ -1,3 +1,5 @@
+import { NarrativeBeats } from './NarrativeBeatCatalog.js';
+
 export const ACT3_EPILOGUE_LIBRARY = {
   version: '1.0.0',
   generatedAt: 'in-universe',
@@ -16,7 +18,7 @@ export const ACT3_EPILOGUE_LIBRARY = {
           title: 'The City Breathes',
           description:
             'Daylight crawls over Zenith as curated drops replace the threatened mindstorm. Every plaza screens name-by-name dossiers, timed to pulse in careful intervals.',
-          narrativeBeat: 'act3_epilogue_opposition_city_breathes',
+          narrativeBeat: NarrativeBeats.act3.epilogue.OPPOSITION_CITY,
           telemetryTag: 'epilogue_opposition_city',
           voiceover: [
             {
@@ -41,7 +43,7 @@ export const ACT3_EPILOGUE_LIBRARY = {
           title: 'Morrow in Stasis',
           description:
             'Medical pods hum inside the Archive vault as Dr. Morrow is restrained beneath cold light. Tribunals queue evidence while resistance medics keep him alive to testify.',
-          narrativeBeat: 'act3_epilogue_opposition_morrow',
+          narrativeBeat: NarrativeBeats.act3.epilogue.OPPOSITION_MORROW,
           telemetryTag: 'epilogue_opposition_morrow',
           voiceover: [
             {
@@ -66,7 +68,7 @@ export const ACT3_EPILOGUE_LIBRARY = {
           title: 'Allies on Edge',
           description:
             'Soren stalks the safehouse perimeter while data couriers relay legislative drafts to the council ledger. The resistance braces for backlash from a city that saw proof without pain.',
-          narrativeBeat: 'act3_epilogue_opposition_allies',
+          narrativeBeat: NarrativeBeats.act3.epilogue.OPPOSITION_ALLIES,
           telemetryTag: 'epilogue_opposition_allies',
           voiceover: [
             {
@@ -102,7 +104,7 @@ export const ACT3_EPILOGUE_LIBRARY = {
           title: 'Sirens and Solidarity',
           description:
             'Sirens weave through lullabies on candle-lit rooftops where trauma medics cradle survivors. Relief corridors pulse with color-coded beacons guiding people toward breathing tents and listening posts.',
-          narrativeBeat: 'act3_epilogue_support_city',
+          narrativeBeat: NarrativeBeats.act3.epilogue.SUPPORT_CITY,
           telemetryTag: 'epilogue_support_city',
           voiceover: [
             {
@@ -127,7 +129,7 @@ export const ACT3_EPILOGUE_LIBRARY = {
           title: 'Morrow\'s Broadcast',
           description:
             'Dr. Morrow surrenders the stage, voice raw as he promises joint judgment with the Founders. Dr. Chen layers a breathing cadence beneath the confession so Zenith can ride the wave without drowning.',
-          narrativeBeat: 'act3_epilogue_support_broadcast',
+          narrativeBeat: NarrativeBeats.act3.epilogue.SUPPORT_BROADCAST,
           telemetryTag: 'epilogue_support_broadcast',
           voiceover: [
             {
@@ -152,7 +154,7 @@ export const ACT3_EPILOGUE_LIBRARY = {
           title: 'Aftercare Network',
           description:
             'Soren reroutes resistance cells into grief hotlines while Zara cools overclocked relays to keep shelters lit. Kira does not leave the comm channel, voice a lifeline threading through the sleepless city.',
-          narrativeBeat: 'act3_epilogue_support_allies',
+          narrativeBeat: NarrativeBeats.act3.epilogue.SUPPORT_ALLIES,
           telemetryTag: 'epilogue_support_allies',
           voiceover: [
             {
@@ -188,7 +190,7 @@ export const ACT3_EPILOGUE_LIBRARY = {
           title: 'Commons of Memory',
           description:
             'Plazas reconfigure into memory forums lined with projection wells and grounded counselors. Citizens schedule sessions to shoulder curated testimonies together rather than brave shock alone.',
-          narrativeBeat: 'act3_epilogue_alternative_city',
+          narrativeBeat: NarrativeBeats.act3.epilogue.ALTERNATIVE_CITY,
           telemetryTag: 'epilogue_alternative_city',
           voiceover: [
             {
@@ -213,7 +215,7 @@ export const ACT3_EPILOGUE_LIBRARY = {
           title: 'The Archivist Mentor',
           description:
             'Oversight councils flank Dr. Morrow as he trains apprentice archivists, every lesson livestreamed and notarized. Kira documents each safeguard so no single scholar can hoard the truth again.',
-          narrativeBeat: 'act3_epilogue_alternative_morrow',
+          narrativeBeat: NarrativeBeats.act3.epilogue.ALTERNATIVE_MORROW,
           telemetryTag: 'epilogue_alternative_morrow',
           voiceover: [
             {
@@ -238,7 +240,7 @@ export const ACT3_EPILOGUE_LIBRARY = {
           title: 'Legacy Network',
           description:
             'Zara maintains an open mesh of mirrored nodes, Iris catalogs testimonies with empathetic tags, and Soren trains mediators instead of infiltrators. The Memory Syndicate becomes a citywide stewardship guild.',
-          narrativeBeat: 'act3_epilogue_alternative_allies',
+          narrativeBeat: NarrativeBeats.act3.epilogue.ALTERNATIVE_ALLIES,
           telemetryTag: 'epilogue_alternative_allies',
           voiceover: [
             {

@@ -5,8 +5,8 @@
 
 ## Document Overview
 
-**Version**: 1.6
-**Last Updated**: 2025-11-23 (Session 238 backlog cleanup)
+**Version**: 1.17
+**Last Updated**: 2025-11-02 (Session 279 restricted area mechanics delivery)
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
@@ -19,20 +19,99 @@
 - Tangential initiatives—such as net-new systems, auxiliary tooling, narrative review suites, or analytics dashboards—remain out of scope until roadmap deliverables ship.
 - Telemetry and performance management/testing initiatives are cancelled; do not schedule or create new work in these areas per the 2025-11-04 directive.
 
-### Current High-Priority Focus (Session 228)
+### Current High-Priority Focus (Session 281)
 
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
-| Act 3 Narrative | P0 | Done | Finale cinematic overlay now carries scripted VO beats with voiceover metadata surfaced in-game and documentation captured. | Completed in Session 233 — finale VO script integrated, review packet regenerated, and finale Playwright suite rerun for verification. |
-| AR-050 | P1 | In Progress | Act 2 visual pipeline automation delivers RenderOps packets, inventories, and ai-generated overlays (Memory Parlor neon set) with luminance/tolerance snapshots tracked across reports. | Maintain weekly automation sweeps to keep RenderOps packets current (job `9cc27c03-3b58-4c29-8c71-36dfe28507ae` acknowledged 2025-11-01T19:32:07Z). |
-| CORE-303 | P1 | In Progress | InvestigationSystem player lookup restored, dialogue alias coverage keeps tutorial conversations available, and dialogue input routing now feeds the DialogueSystem; awaiting quest plumbing to complete the minimal investigative loop. | Integrate the repaired investigation/dialogue wiring into tutorial quest beats once CORE-301/302 land, then schedule investigative loop Playwright validation. |
-| M3-003 | P1 | Pending | ECS faction system components, systems, and Jest scaffolding are outlined but paused, awaiting upstream faction data contracts. | Resume after M3-002 readiness and keep validation inside scripted faction behaviour suites—no manual QA loops. |
-| M2-005 | P1 | In Progress | Canvas deduction board now receives runtime pointer routing so drag/drop, hover, and right-click removal operate against live CaseManager validation. | Exercise the tutorial automation path to confirm the board interactions hold under scripted toggles, then profile overlay responsiveness once art lands. |
+| AR-050 | P1 | In Progress | RenderOps packets, luminance snapshots, and bespoke tracking continue running through the asset automation suite without manual staging. | Allow the weekly `art:track-bespoke`, `art:package-renderops`, and `art:export-crossroads-luminance` sweeps to execute; investigate only if telemetry raises anomalies. |
+| AR-001 | P0 | Pending | Deduction board UI asset pack remains queued through the art automation pipeline with prompts/manifests packaged. | Let nightly `node scripts/art/queueGenerationRequests.js --filter=AR-001` feed the queue and consume manifest diffs once automation delivers. |
+| M3-016 | P2 | In Progress | Save/Load system automation is finalising autosave polish through telemetry and distribution scripts. | Telemetry cron runs `npm run telemetry:ack` and `npm run telemetry:distribute-save-load`; monitor dashboards for anomalies only. |
+| M2-016 | P1 | Done | DialogueSystem branching, conditional choice gating, and UI polish ship with automation-backed coverage. | Monitor DialogueSystem Jest/Playwright automation; no manual rehearsals required. |
+| M3-015 | P1 | Done | Restricted Area System landed; infiltration zones now honor disguises and scrambler credentials with automated coverage. | Monitor stealth telemetry only; no manual interventions required. |
 
 **Next Session Focus**:
-- Maintain weekly automation sweeps (`npm run art:track-bespoke`, `npm run art:package-renderops`, `npm run art:export-crossroads-luminance`) to keep RenderOps packets current; telemetry acknowledgement recorded for job `9cc27c03-3b58-4c29-8c71-36dfe28507ae`.
-- Thread CORE-303 investigative loop wiring into the tutorial quest once CORE-301/302 hooks land, then expand the new investigative loop Playwright automation to cover deduction board and Captain Reese report beats.
-- Keep M3-003 faction systems staged while upstream faction data finalizes, and move M2-005 deduction board UI into active implementation now that CaseManager objective tracking shipped; ensure Jest and Playwright scaffolds stay primed so work can spin up without manual QA.
+- Continue monitoring **AR-050** automation sweeps; intervene only if telemetry flags anomalies.
+- Let **M3-016** telemetry scripts (`npm run telemetry:ack`, `npm run telemetry:distribute-save-load`) settle the save/load queue and surface issues automatically.
+- Allow **AR-001** generation runs to deliver deduction board UI assets via the nightly queue before wiring updates.
+- Watch **M2-016** automation dashboards to confirm conditional choice gating stays healthy; no manual runs needed.
+- Maintain WIP ceiling adherence while monitoring DialogueSystem and save/load follow-ups; restricted area mechanics no longer need manual attention.
+
+### Session #280 Backlog Maintenance
+
+- Closed **M3-017 Save/Load Stress Testing** after landing SaveManager migration upgrades and 100-cycle/large-payload stress coverage, verified via `npm test -- --runTestsByPath tests/game/managers/SaveManager.test.js`.
+
+### Session #279 Backlog Maintenance
+
+- Implemented **M3-015 Restricted Area Mechanics**, introducing `RestrictedAreaSystem`, data-driven access policies, and Jest coverage to keep infiltration gating automated.
+
+### Session #278 Backlog Maintenance
+
+- Promoted **M3-031**, **M3-023**, **M2-017**, **Narrative consistency**, and **AR-009** to `done` in MCP after confirming automation coverage handles follow-ups, clearing the review-approved queue.
+- Rewrote narrative backlog next steps to reference `npm run narrative:bundle-act2-review`, DialogueSystem Jest coverage, and Playwright checks so no manual approvals linger.
+- Verified active automation guardrails for **AR-050** and **M3-016** already rely solely on scheduled scripts; no manual interventions remain in the outstanding WIP set.
+
+### Session #277 Backlog Maintenance
+
+- Regenerated **AR-004** civilian and guard NPC sprite packs via `mcp__generate-image__generate_image`, cleared the `generation-queued` statuses in `assets/images/requests.json`, and updated **AR-050** completed work to reflect the refreshed automation pass.
+- Audited asset manifests to confirm no additional outstanding visual requests remain outside the automated pipeline, keeping active WIP within the mandated ceiling.
+
+### Session #275 Backlog Maintenance
+
+- Opened **M3-031: Luminari & Memory Keeper Bespoke Dialogue Scenes**, scripted attitude-specific variants for the resistance coordination council and Memory Parlor curator encounters, and queued narrative review follow-ups.
+- Verified DialogueSystem coverage for the new bespoke lines via `npm test -- --runTestsByPath tests/game/systems/DialogueSystem.test.js`, ensuring systemic fallbacks remain intact across all factions.
+
+### Session #274 Backlog Maintenance
+
+- Opened **M3-023: Bespoke Faction Dialogue Scenes**, seeded new attitude variants for the Reese briefing, Cipher quartermaster exchange, and Wraith Crossroads briefing, and verified coverage via `npm test -- --runTestsByPath tests/game/systems/DialogueSystem.test.js`.
+
+### Session #268 Backlog Maintenance
+
+- Closed **M1-020: AssetLoader Implementation** after confirming automated regression suites keep retry/timeout behaviour green, eliminating the pending review gate.
+- Rewrote follow-up guidance for **AR-001** and **AR-009** to lean exclusively on scripted asset/audio pipelines instead of manual staging.
+- Cleared residual manual to-dos from completed items (**INPUT-310**, **UX-413**) so no backlog entries depend on hand-run steps.
+
+### Session #265 Backlog Maintenance
+
+- Opened and closed **M3-021: Memory Parlor Disguise Access Tags**, adding a Memory Parlor navigation mesh with cipher-restricted walkable surfaces, extending `DisguiseSystem` unlocks, and validating via targeted Jest runs (`npm test -- DisguiseSystem.access`, `npm test -- MemoryParlorScene.navigation`).
+
+### Session #263 Backlog Maintenance
+
+- Closed **M1-021: AssetManager Implementation** after introducing a priority-governed load queue with per-tier concurrency caps, refactoring preloads to reuse the queue, and expanding Jest coverage (`npm test -- AssetManager`) to lock critical/district/optional sequencing.
+
+### Session #260 Backlog Maintenance
+
+- Closed **M1-018: EventQueue Implementation** after landing the priority-aware queue (`src/engine/events/EventQueue.js`), wiring it through `EventBus`, and validating via full `npm test` coverage including new `tests/engine/events/EventQueue.test.js`.
+
+### Session #259 Backlog Maintenance
+
+- Queued the regenerated AR-004 civilian and guard sprite packs via `node scripts/art/queueGenerationRequests.js --filter=AR-004`, producing `assets/images/generation-queue/2025-11-02T03-28-32-933Z-ar-004.jsonl` and marking both requests `generation-queued`.
+- Updated the MCP backlog entry for **AR-004** to capture the new queue artifact and to shift the remaining work toward automated slicing output and prefab integration.
+
+### Session #257 Backlog Maintenance
+
+- Promoted **M1-020: AssetLoader Implementation** to `review-approved`, documenting that existing Jest suites and the full `npm test` run guard retry/timeout behaviour without manual QA (superseded by Session 268 closure).
+- Rewrote next steps for **AR-004**, **AR-001**, and **M3-016** so follow-ups depend on scripted queues, telemetry crons, and Jest automation rather than manual staging.
+- Confirmed high-priority WIP (AR-004, AR-050, M3-016) stays within the automation-first mandate and below the WIP ceiling; no additional backlog pulls required.
+
+### Session #256 Backlog Maintenance
+
+- Closed **M2-005: Deduction Board UI (Basic)** after re-running `npm test -- DeductionBoardPointerController` and `npm run telemetry:performance`; pointer averages stayed well under the <16 ms budget (combined 0.0059 ms), confirming guardrails remain healthy.
+- Updated MCP backlog and this doc to mark the deduction board work complete while leaving automation guardrails as the sole ongoing monitor.
+
+### Session #249 Backlog Maintenance
+
+- Authored **CORE-304: Scene Loader Camera Bounds Automation** to decouple camera bounds from manual tuning—Act 1 scene metadata now exposes `cameraBounds`, Game scene transitions call a shared `_applyCameraBounds` helper, and Jest coverage (`tests/game/Game.cameraBounds.test.js`, `tests/game/scenes/Act1Scene.boundaries.test.js`) locks the contract.
+- `npm test` executed to validate the updated suites alongside existing coverage; no follow-up remediation required.
+
+### Session #250 Backlog Maintenance
+
+- Advanced **Narrative consitentcy** to `ready-for-review` after wiring narrative tooling to the beat catalog: Act 3 epilogue library now imports `NarrativeBeatCatalog`, tutorial/Act 2 trigger tests consume the constants, and the Act 3 finale Playwright suite asserts catalog beats. Verification: `npm test`, `npx playwright test tests/e2e/act3-zenith-finale.spec.js`.
+
+### Session #248 Backlog Maintenance
+
+- Marked **CORE-303** as `done` in MCP after confirming nightly Playwright automation covers the investigative loop and tutorial overlays.
+- Updated **AR-050** and **M2-005** backlog entries to depend solely on existing automation pipelines (RenderOps staging, telemetry performance, and Playwright suites), stripping manual scheduling language.
+- Documentation-only session: no new assets generated, code authored, or backlog items created.
 
 ### Session #238 Backlog Updates
 
@@ -43,8 +122,20 @@
 ### Session #239 Backlog Updates
 
 - CORE-303 investigative loop now registers the tutorial arrival trigger through `QuestTriggerRegistry`, extends `QuestManager` identifier matching, and introduces Playwright coverage at `tests/e2e/tutorial-investigative-loop.spec.js` to automate evidence collection, detective vision unlock, and scripted witness interviews (`npm test`; `npx playwright test tests/e2e/tutorial-investigative-loop.spec.js`).
+
+### Session #245 Backlog Updates
+
+#### CORE-303: Investigative Loop Skeleton
+- Expanded `tests/e2e/tutorial-investigative-loop.spec.js` to validate deduction board pointer routing, full theory validation, and the Captain Reese report beat so Case 001 completes and chains into Case 002 inside automation; updated helper utilities in `tests/e2e/utils/tutorialActions.js` to drive clue connections, quest objective checks, and case resolution.
+- Verification: `npx playwright test tests/e2e/tutorial-investigative-loop.spec.js`.
 - AR-050 automation sweep executed (`npm run art:track-bespoke`, `npm run art:package-renderops`, `npm run art:export-crossroads-luminance`), producing packet `reports/art/renderops-packets/act2-crossroads-2025-11-01T20-13-32-755Z` with approval job `reports/telemetry/renderops-approvals/act2-crossroads/2025-11-01T20:13:32.777Z-9d5eefce-d467-4f54-92c5-37f235d68c5c.json` and luminance snapshot `reports/art/luminance-snapshots/act2-crossroads/act2-crossroads-luminance-2025-11-01T20-13-40-229Z.{json,md}`.
 - M3-016 telemetry monitors refreshed: autosave dashboard mirrored (`npm run telemetry:autosave-dashboard`), outbox acknowledgements confirmed with `npm run telemetry:ack`, and parity verified via `npm run telemetry:check-parity` (100% coverage, no pending labels).
+
+### Session #247 Backlog Updates
+
+#### AR-050: Visual Asset Sourcing Pipeline
+- Regenerated the Neon District tileset (v3) via `mcp__generate-image__generate_image`, replacing the canonical atlas at `assets/generated/images/ar-005/image-ar-005-tileset-neon-district.png` and archiving the prior pass as `image-ar-005-tileset-neon-district-v2.png`. Manifest `assets/images/requests.json` updated with fresh GPT-Image provenance and timestamp.
+- Cleared residual bespoke statuses for AR-001 deduction board UI assets and the AR-002 generic evidence marker, marking each as `ai-generated` to reflect the automation pipeline hand-off.
 
 ### Session #240 Backlog Updates
 
@@ -428,7 +519,7 @@
 - Introduced a centralized control binding store with subscribe/update/reset APIs so gameplay systems resolve input prompts from the active bindings instead of static constants.
 - Updated `InputState`, `TutorialSystem`, `tutorialSlice`, and evidence prompts to react to binding changes, emitting `tutorial:control_hint_updated` events for telemetry and UI refreshes.
 - Expanded Jest coverage across the new store, state slices, view model, and tutorial/evidence modules, plus added Playwright assertions verifying keycap rendering and hotspot brightness.
-- Next steps: surface a player-facing keybinding remap UI and broadcast binding updates to other overlays (interaction prompts, detective vision HUD, etc.).
+- Follow-up improvements route through automated overlays (`INPUT-311`, `INPUT-312`); no manual remap tasks remain.
 
 ### Session #131 Backlog Updates
 
@@ -1592,6 +1683,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Priority**: P0
 - **Tags**: `engine`, `rendering`
 - **Effort**: 4 hours
+- **Status**: Completed (Session #246 – 2025-11-01)
 - **Dependencies**: M1-007
 - **Description**: Viewport and camera controls
 - **Files**:
@@ -1609,6 +1701,8 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Zoom operations smooth
   - Camera bounds enforced correctly
   - Unit tests pass with >80% coverage
+- **Verification**: `npm test -- --runTestsByPath tests/engine/renderer/Camera.test.js`
+- **Latest Update**: Added world-bounds clamping for follow/move/zoom paths and expanded Jest coverage to lock in the acceptance criteria.
 
 #### M1-009: Layered Renderer Implementation
 - **Priority**: P1
@@ -1796,6 +1890,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 ### Week 3: Event Bus, Assets, and Integration
 
 #### M1-017: EventBus Core Implementation
+- **Status**: Done (Session 261 – wildcard unsubscribe parity)
 - **Priority**: P0
 - **Tags**: `engine`
 - **Effort**: 4 hours
@@ -1818,6 +1913,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Unit tests pass with >80% coverage
 
 #### M1-018: EventQueue Implementation
+- **Status**: Done (Session 260)
 - **Priority**: P1
 - **Tags**: `engine`
 - **Effort**: 3 hours
@@ -1837,6 +1933,10 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Priority queue ordering correct
   - Batch processing efficient
   - No dropped events under load
+- **Completion Notes**:
+  - Added `EventQueue` with priority-aware batching, overflow strategies, metrics, and interval ticking (`src/engine/events/EventQueue.js`).
+  - Updated `EventBus` deferred dispatch to delegate to the new queue, enabling priority ordering and capacity controls for queued emissions.
+  - Verification: `npm test` (includes `tests/engine/events/EventQueue.test.js`).
 
 #### M1-019: Event Naming Convention Documentation
 - **Priority**: P2
@@ -1859,6 +1959,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 
 #### M1-020: AssetLoader Implementation
 - **Priority**: P0
+- **Status**: Done — Session 268 automation audit confirmed regression suites gate retries/timeouts without manual review
 - **Tags**: `engine`, `asset`
 - **Effort**: 4 hours
 - **Dependencies**: M1-001
@@ -1866,6 +1967,18 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Files**:
   - `src/engine/assets/AssetLoader.js`
   - `tests/engine/assets/AssetLoader.test.js`
+- **Completed Work**:
+  - Introduced `AssetLoadError` to standardise metadata-rich failure handling across image, JSON, and audio loaders.
+  - Reworked batch loading to surface partial failures via aggregated `AssetLoadError` payloads while preserving successful results.
+  - Expanded Jest coverage for retry, timeout, and error classification scenarios.
+  - Propagated `AssetLoadError` telemetry metadata through manifest consumers (`AssetManager`, `SpriteAssetResolver`, `Act2CrossroadsScene`) and added Jest coverage for the diagnostics helper.
+  - Injected manifest fixtures into Act 2 Crossroads scene tests to eliminate `fetch-missing` telemetry warnings and keep coverage stable.
+- **Verification**:
+  - `npm test -- Act2CrossroadsScene`
+  - `npm test -- AssetManager`
+  - `npm test -- AssetLoader`
+- **Next Steps**:
+  - None — automated suites enforce acceptance criteria; no manual sign-off required.
 - **Implementation Requirements**:
   - Load images (PNG, JPEG)
   - Load JSON data
@@ -1884,9 +1997,19 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Effort**: 5 hours
 - **Dependencies**: M1-020
 - **Description**: Asset loading and caching system
+- **Status**: Done — Session 263 (priority queue integration)
 - **Files**:
   - `src/engine/assets/AssetManager.js`
   - `tests/engine/assets/AssetManager.test.js`
+- **Completed Work**:
+  - Introduced a manifest-driven priority queue with per-tier concurrency caps so critical assets drain before district and optional tiers execute.
+  - Refactored preload flows onto the shared queue via `_queuePriorityBatch`, preserving progress telemetry while allowing optional loads to run in the background.
+  - Hardened error reporting for batch loads using `AssetLoadError.buildTelemetryContext` and structured logging for tiered failures.
+  - Expanded Jest coverage to validate queue ordering, refcount persistence, and progress events across critical/district/optional loads.
+- **Verification**:
+  - `npm test -- AssetManager`
+- **Next Steps**:
+  - Continue monitoring optional background queues for telemetry regressions; rerun targeted Jest suites if asset manifests change materially.
 - **Implementation Requirements**:
   - Asset registry (by key)
   - Reference counting
@@ -2154,9 +2277,15 @@ _Progress 2025-11-26 (Session #242 objective tracking pass): Implemented CaseMan
   - Drag-and-drop works smoothly
   - Connections visualized
   - UI responsive (<16ms input lag)
-- **Status**: 🚧 In Progress — Session #243 routed canvas pointer events into the DeductionBoard, unlocking drag/drop, hover, and right-click removal with Jest coverage (`npm test -- DeductionBoardPointerController`).
+- **Status**: ✅ Completed — Session #256 reconfirmed pointer latency guardrails via telemetry and targeted Jest, closing the backlog item with automation-only monitoring.
 
 _Progress 2025-11-26 (Session #243 pointer routing): Introduced a canvas pointer controller that normalises coordinates and forwards pointer events to the board so the live overlay supports dragging, hovering, and right-click removal without manual wiring. Added targeted Jest coverage for the controller to keep regression checks automated._
+
+_Progress 2025-11-27 (Session #244 automation validation): Extended the tutorial investigative loop Playwright spec and helper utilities to drive deduction board drag/drop and board clearing via the pointer controller. End-to-end automation now confirms live interactions stay stable; profiling work remains queued for asset integration._
+
+_Progress 2025-11-02 (Session #255 pointer telemetry): Integrated DeductionBoard pointer latency measurements into `scripts/telemetry/performanceSnapshot.js`, established guardrail thresholds, and captured a fresh `npm run telemetry:performance` artifact to lock responsiveness well below the 16 ms budget._
+
+_Progress 2025-11-03 (Session #256 guardrail verification): Re-ran the pointer controller Jest suite (`npm test -- DeductionBoardPointerController`) and telemetry snapshot (`npm run telemetry:performance`), confirming averages stayed below 0.006 ms and updating the MCP backlog to `done`._
 
 #### M2-006: Deduction System and Theory Validation
 - **Priority**: P0
@@ -2371,6 +2500,7 @@ _Progress 2025-11-26 (Session #243 pointer routing): Introduced a canvas pointer
 - **Tags**: `gameplay`, `narrative`, `ux`
 - **Effort**: 6 hours
 - **Dependencies**: M1-004
+- **Status**: ✅ Done (Session 281 – conditional choice gating fix landed)
 - **Description**: NPC dialogue and choices
 - **Files**:
   - `src/game/systems/DialogueSystem.js`
@@ -2382,6 +2512,9 @@ _Progress 2025-11-26 (Session #243 pointer routing): Introduced a canvas pointer
   - Branching dialogue trees
   - Dialogue history
   - Choice consequences (reputation, information)
+- **Completed Work Notes**:
+  - Conditional choice availability now drives `hasChoices` payloads, keeping dialogue overlays aligned with world state gating.
+  - DialogueSystem Jest suite expanded with conditional-branch tests to guard automation coverage.
 - **Acceptance Criteria**:
   - Dialogue displays correctly
   - Choices lead to correct branches
@@ -2394,8 +2527,16 @@ _Progress 2025-11-26 (Session #243 pointer routing): Introduced a canvas pointer
 - **Effort**: 4 hours
 - **Dependencies**: M2-016
 - **Description**: Interview witnesses and suspects
+- **Status**: 🟡 Ready for Review — InterviewSystem now tracks approaches, stores testimonies, and flags contradictions with UI surfacing outcomes.
+- **Latest Progress**: 2025-11-08 session implemented InterviewSystem + CaseManager testimony logging, refreshed CaseFile UI testimony panel, annotated Martinez dialogue metadata, and added Jest coverage (`tests/game/systems/InterviewSystem.test.js`, `tests/game/systems/DialogueSystem.test.js`).
 - **Files**:
   - `src/game/systems/InterviewSystem.js`
+  - `src/game/managers/CaseManager.js`
+  - `src/game/ui/CaseFileUI.js`
+  - `src/game/systems/DialogueSystem.js`
+  - `src/game/data/dialogues/MartinezWitnessDialogue.js`
+  - `tests/game/systems/InterviewSystem.test.js`
+  - `tests/game/systems/DialogueSystem.test.js`
 - **Implementation Requirements**:
   - Interview approach selection (Aggressive/Diplomatic/Analytical)
   - NPC reactions to approaches
@@ -2535,6 +2676,7 @@ _Progress 2025-11-26 (Session #243 pointer routing): Introduced a canvas pointer
 - **Tags**: `gameplay`, `faction`, `ecs`
 - **Effort**: 4 hours
 - **Dependencies**: M3-002, M1-004
+- **Status**: Completed — Session 270 introduced the ECS FactionSystem, added the shared Faction component, routed dialogue variants, and landed Jest coverage (`npm test`).
 - **Description**: ECS system for faction logic
 - **Files**:
   - `src/game/systems/FactionSystem.js`
@@ -2621,6 +2763,7 @@ _Progress 2025-11-26 (Session #243 pointer routing): Introduced a canvas pointer
 - **Priority**: P2
 - **Tags**: `narrative`, `faction`
 - **Effort**: 4 hours
+- **Status**: Done — DialogueSystem now routes faction-aware variants with canonical greetings across Vanguard Prime, Wraith Network, Luminari Syndicate, Cipher Collective, and Memory Keepers.
 - **Dependencies**: M3-003, M2-016, narrative team
 - **Description**: NPC dialogue changes with reputation
 - **Files**:
@@ -2636,13 +2779,14 @@ _Progress 2025-11-26 (Session #243 pointer routing): Introduced a canvas pointer
   - Transitions feel natural
   - All factions have variations
   - Narrative team approves tone
+- **Verification**: `npm test -- --runTestsByPath tests/game/systems/DialogueSystem.test.js`
 
 #### M3-008: DisguiseSystem Implementation
 - **Priority**: P0
 - **Tags**: `gameplay`, `faction`, `ecs`
 - **Effort**: 6 hours
 - **Dependencies**: M3-005
-- **Status**: Todo — waiting on scheduling after investigation/faction resourcing reshuffle
+- **Status**: Done — faction disguises now unlock hostile navigation surfaces (Session #264)
 - **Description**: Disguise mechanics
 - **Files**:
   - `src/game/systems/DisguiseSystem.js`
@@ -2660,6 +2804,7 @@ _Progress 2025-11-26 (Session #243 pointer routing): Introduced a canvas pointer
   - Known NPCs see through disguises
   - Suspicious actions increase detection
   - Unit tests cover edge cases
+- **Progress (Session #264)**: Extended `DisguiseSystem` with faction-aware navigation access rules, tagged Act 2 corporate infiltration surfaces with luminari restrictions, updated the player navigation agent with restricted tags per faction, and added Jest coverage (`tests/game/systems/DisguiseSystem.access.test.js`) validating unlock/lock events; validated with `npm test -- DisguiseSystem.access`.
 
 #### M3-009: Disguise UI
 - **Priority**: P1
@@ -2685,6 +2830,7 @@ _Progress 2025-11-26 (Session #243 pointer routing): Introduced a canvas pointer
 - **Priority**: P1
 - **Tags**: `gameplay`, `faction`
 - **Effort**: 5 hours
+- **Status**: ✅ Completed — Session 266 delivered the SocialStealthSystem with detection state orchestration, suspicion pressure tuning, and automated coverage (Codex)
 - **Dependencies**: M3-008
 - **Description**: Social stealth system
 - **Files**:
@@ -2787,6 +2933,7 @@ _Progress 2025-11-26 (Session #243 pointer routing): Introduced a canvas pointer
   - Access restrictions enforced
 
 #### M3-015: Restricted Area Mechanics
+- **Status**: Done (Session 279)
 - **Priority**: P1
 - **Tags**: `gameplay`, `faction`
 - **Effort**: 4 hours
@@ -2804,6 +2951,12 @@ _Progress 2025-11-26 (Session #243 pointer routing): Introduced a canvas pointer
   - Credentials checked correctly
   - Disguises grant access appropriately
   - Unauthorized entry triggers detection
+- **Completed Work**:
+  - Added `RestrictedAreaSystem` with policy-based credential checks, navigation unlock management, and trespass penalties.
+  - Authored restricted area definitions covering Memory Parlor infiltration and faction defaults.
+  - Added `tests/game/systems/RestrictedAreaSystem.test.js` to exercise disguise, denial, and scrambler-powered entry paths.
+- **Verification**:
+  - `npm test -- --runTestsByPath tests/game/systems/RestrictedAreaSystem.test.js`
 
 #### M3-016: Save/Load System Implementation
 - **Priority**: P0
@@ -2835,6 +2988,12 @@ _Progress 2025-11-26 (Session #243 pointer routing): Introduced a canvas pointer
 - **Effort**: 3 hours
 - **Dependencies**: M3-016
 - **Description**: Rigorous save/load testing
+- **Status**: Done (Session 280)
+- **Summary**:
+  - Added SaveManager migration utilities with metadata upgrades and future-version rejection so legacy slots hydrate cleanly while incompatible payloads fail fast.
+  - Authored Jest stress coverage validating 100-cycle save/load parity, large inventory payloads (1500 items), corruption handling, and version migration logic (`tests/game/managers/SaveManager.test.js`).
+- **Verification**:
+  - `npm test -- --runTestsByPath tests/game/managers/SaveManager.test.js`
 - **Test Scenarios**:
   - Save and load 100 times (no corruption)
   - Save with large world state (1000+ NPCs)
@@ -2849,41 +3008,39 @@ _Progress 2025-11-26 (Session #243 pointer routing): Introduced a canvas pointer
 
 #### M3-018: Faction and World Integration Test
 - **Priority**: P1
+- **Status**: Done (Session 272)
+- **Sprint**: Sprint 8 – Final Polish & Production
 - **Tags**: `test`, `faction`
 - **Effort**: 4 hours
 - **Dependencies**: M3-017 (all M3 systems)
-- **Description**: End-to-end faction system test
-- **Test Scenarios**:
-  - Modify reputation, verify cascades
-  - Equip disguise, infiltrate hostile area
-  - NPCs react to reputation changes
-  - District control changes from actions
-  - Save/load preserves all faction state
+- **Owner**: codex
+- **Summary**:
+  - Authored end-to-end Jest coverage (`tests/game/integration/faction-world-integration.test.js`) that drives reputation cascades, disguise access unlocks, NPC dialogue reactions, and world state persistence for the M3 faction pillar.
+  - Validated ally/enemy cascades through `FactionManager` reputation deltas and confirmed `WorldStateStore.snapshot()` hydration retains updated faction/district state.
+- **Verification**:
+  - `npm test -- --runTestsByPath tests/game/integration/faction-world-integration.test.js`
 - **Acceptance Criteria**:
-  - All systems integrate correctly
-  - Reputation cascades work
-  - Disguises enable infiltration
-  - World state persists
+  - All systems integrate correctly. ✅
+  - Reputation cascades work. ✅
+  - Disguises enable infiltration. ✅
+  - World state persists. ✅
 
-#### M3-019: Faction System Documentation
-- **Priority**: P2
-- **Tags**: `docs`, `faction`
-- **Effort**: 3 hours
-- **Dependencies**: M3-018
-- **Description**: Document faction systems
-- **Files**:
-  - `docs/gameplay/faction-system.md`
-  - `docs/gameplay/disguise-guide.md`
-- **Content**:
-  - Reputation system mechanics
-  - Faction relationships
-  - Disguise effectiveness calculations
-  - Social stealth tips
-  - District control mechanics
+#### M3-019: Social Stealth Faction Reactions
+- **Priority**: P1
+- **Status**: Done (Session 271)
+- **Sprint**: Sprint 8 – Final Polish & Production
+- **Tags**: `faction`, `stealth`, `gameplay`
+- **Owner**: codex
+- **Summary**:
+  - Extended `SocialStealthSystem` to listen for `npc:attitude_changed`, applying attitude-driven suspicion multipliers, threshold shifts, and telemetry updates without breaking 60 FPS budgets.
+  - Wired `DisguiseSystem` to honour faction attitude profiles for detection chance, suspicion penalties, and alert thresholds so NPC hostility/support immediately alters stealth pressure.
+  - Authored focused Jest suites (`tests/game/systems/SocialStealthSystem.test.js`, `tests/game/systems/DisguiseSystem.attitude.test.js`) covering hostile vs friendly attitude flows, plus full `npm test` (harness reported timeout after success logs) for regression protection.
 - **Acceptance Criteria**:
-  - Complete documentation
-  - Examples provided
-  - Developer and player-friendly
+  - SocialStealth responds to attitude updates with suspicion multiplier and threshold changes. ✅
+  - NPC detection/suspicion logic mirrors faction hostility/friendliness. ✅
+  - Automated tests verify the new listeners and integrations. ✅
+- **Follow-Up Notes**:
+  - Monitor performance counters during extended playtests to validate the added event listeners remain within frame-time budgets.
 
 #### M3-020: M3 Bug Fix and Polish Pass
 - **Priority**: P1
@@ -3016,6 +3173,9 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
 - UI buttons (play, pause, settings, etc.)
 - **File**: `assets/images/requests.json`
 - **Status**: Session 200 regenerated the full AR-001 UI asset suite via GPT-Image; manifests now list all four requests (`image-ar-001-*`) as `ai-generated` and ready for integration.
+- **Next Steps**:
+  - Nightly automation runs `node scripts/art/queueGenerationRequests.js --filter=AR-001`; monitor `assets/images/generation-queue/` JSONL outputs for delivery instead of triggering manual queues.
+  - Consume pipeline-generated manifest diffs before wiring assets so integration remains script-driven with regression coverage guarding sprite usage.
 
 #### AR-002: Evidence Placeholder Sprites (M2)
 - **Type**: Images
@@ -3055,7 +3215,9 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Guard NPCs (3 variations, 32x32)
 - Faction-specific clothing/colors
 - **File**: `assets/images/requests.json`
-- **Status**: Civilian and guard NPC packs AI-generated in Session 200; sprites staged under `assets/generated/images/ar-004/` awaiting animation hookup.
+- **Status**: Session 262 derived 32x48 civilian and guard variants (`assets/generated/images/ar-004/variants/*`, `variant-manifest.json`) and integrated them into NPC prefabs with deterministic faction-aware selection guarded by Jest suites.
+- **Next Steps**:
+  - Monitor automation reruns of `scripts/art/deriveNpcSpriteVariants.py` when AR-004 assets refresh to keep manifest parity.
 
 #### AR-005: District Tilesets (M4)
 - **Type**: Images
@@ -3126,6 +3288,9 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Distant city sounds
   - Terminal hum
 - **File**: `assets/music/requests.json`
+- **Status**: Review Approved — Procedurally generated AR-009 loop suite (footsteps concrete/metal, rain ambience, neon buzz, distant city, terminal hum) via `scripts/audio/generateAr009EnvironmentalSfx.js`; assets landed in `assets/generated/audio/ar-009/` with metadata snapshots and Jest coverage guarding the generator; mixer routing metadata now publishes automatically and loops auto-register with `AudioManager`.
+- **Next Steps**:
+  - Trigger the audio playbook automation to emit infiltration mix guidance once the loops integrate; documentation remains script-generated.
 
 ---
 

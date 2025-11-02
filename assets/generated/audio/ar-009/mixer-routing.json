@@ -1,0 +1,187 @@
+{
+  "generatedAt": "2025-11-02T05:39:30.567Z",
+  "loops": [
+    {
+      "id": "sfx-ar-009-footsteps-concrete",
+      "runtimeUrl": "/generated/audio/ar-009/ar-009-footsteps-concrete.wav",
+      "loopStartSeconds": 0,
+      "loopEndSeconds": 12,
+      "routing": {
+        "bus": "ambient",
+        "type": "ambient-loop",
+        "mixGroup": "infiltration_surface",
+        "defaultVolume": 0.38,
+        "tags": [
+          "ar-009",
+          "environment",
+          "loop",
+          "footsteps",
+          "concrete"
+        ],
+        "stateGains": {
+          "ambient": 0.28,
+          "stealth": 0.42,
+          "alert": 0.33,
+          "combat": 0.18
+        },
+        "recommendedScenes": [
+          "act2_corporate_infiltration",
+          "memory_parlor"
+        ]
+      },
+      "usage": "Looped concrete footstep bed for infiltration walk cycles."
+    },
+    {
+      "id": "sfx-ar-009-footsteps-metal",
+      "runtimeUrl": "/generated/audio/ar-009/ar-009-footsteps-metal.wav",
+      "loopStartSeconds": 0,
+      "loopEndSeconds": 12,
+      "routing": {
+        "bus": "ambient",
+        "type": "ambient-loop",
+        "mixGroup": "infiltration_surface",
+        "defaultVolume": 0.4,
+        "tags": [
+          "ar-009",
+          "environment",
+          "loop",
+          "footsteps",
+          "metal"
+        ],
+        "stateGains": {
+          "ambient": 0.26,
+          "stealth": 0.44,
+          "alert": 0.35,
+          "combat": 0.2
+        },
+        "recommendedScenes": [
+          "act2_corporate_infiltration",
+          "act3_zenith_infiltration"
+        ]
+      },
+      "usage": "Looped metallic walkway footstep bed with subtle resonance."
+    },
+    {
+      "id": "sfx-ar-009-rain-ambience",
+      "runtimeUrl": "/generated/audio/ar-009/ar-009-rain-ambience.wav",
+      "loopStartSeconds": 0,
+      "loopEndSeconds": 24,
+      "routing": {
+        "bus": "ambient",
+        "type": "ambient-loop",
+        "mixGroup": "weather_beds",
+        "defaultVolume": 0.58,
+        "tags": [
+          "ar-009",
+          "environment",
+          "loop",
+          "weather",
+          "rain"
+        ],
+        "stateGains": {
+          "ambient": 0.54,
+          "stealth": 0.6,
+          "alert": 0.68,
+          "combat": 0.72
+        },
+        "recommendedScenes": [
+          "act2_crossroads",
+          "neon_district"
+        ]
+      },
+      "usage": "Exterior rain ambience with occasional droplets for noir scenes."
+    },
+    {
+      "id": "sfx-ar-009-neon-buzz",
+      "runtimeUrl": "/generated/audio/ar-009/ar-009-neon-buzz.wav",
+      "loopStartSeconds": 0,
+      "loopEndSeconds": 18,
+      "routing": {
+        "bus": "ambient",
+        "type": "ambient-loop",
+        "mixGroup": "diegetic_layers",
+        "defaultVolume": 0.34,
+        "tags": [
+          "ar-009",
+          "environment",
+          "loop",
+          "neon",
+          "electrical"
+        ],
+        "stateGains": {
+          "ambient": 0.3,
+          "stealth": 0.36,
+          "alert": 0.44,
+          "combat": 0.5
+        },
+        "recommendedScenes": [
+          "act2_crossroads",
+          "neon_district",
+          "memory_parlor"
+        ]
+      },
+      "usage": "Electrical signage hum with crackle accents for city alleys."
+    },
+    {
+      "id": "sfx-ar-009-distant-city",
+      "runtimeUrl": "/generated/audio/ar-009/ar-009-distant-city.wav",
+      "loopStartSeconds": 0,
+      "loopEndSeconds": 24,
+      "routing": {
+        "bus": "ambient",
+        "type": "ambient-loop",
+        "mixGroup": "district_beds",
+        "defaultVolume": 0.47,
+        "tags": [
+          "ar-009",
+          "environment",
+          "loop",
+          "city",
+          "ambience"
+        ],
+        "stateGains": {
+          "ambient": 0.5,
+          "stealth": 0.48,
+          "alert": 0.56,
+          "combat": 0.64
+        },
+        "recommendedScenes": [
+          "act2_crossroads",
+          "act3_zenith_infiltration"
+        ]
+      },
+      "usage": "Far skyline traffic and horn beds for open district exteriors."
+    },
+    {
+      "id": "sfx-ar-009-terminal-hum",
+      "runtimeUrl": "/generated/audio/ar-009/ar-009-terminal-hum.wav",
+      "loopStartSeconds": 0,
+      "loopEndSeconds": 18,
+      "routing": {
+        "bus": "ambient",
+        "type": "ambient-loop",
+        "mixGroup": "diegetic_layers",
+        "defaultVolume": 0.31,
+        "tags": [
+          "ar-009",
+          "environment",
+          "loop",
+          "terminal",
+          "electronics"
+        ],
+        "stateGains": {
+          "ambient": 0.28,
+          "stealth": 0.32,
+          "alert": 0.4,
+          "combat": 0.46
+        },
+        "recommendedScenes": [
+          "act2_corporate_infiltration",
+          "memory_parlor",
+          "act3_zenith_infiltration"
+        ]
+      },
+      "usage": "Data terminal hum with intermittent glitch pulses."
+    }
+  ]
+}

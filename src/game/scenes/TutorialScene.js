@@ -27,6 +27,10 @@ import { QUEST_001_HOLLOW_CASE } from '../data/quests/act1Quests.js';
 import { createNPCEntity } from '../entities/NPCEntity.js';
 import { createMartinezDialogue } from '../data/dialogues/MartinezWitnessDialogue.js';
 import { createMrsChenDialogue } from '../data/dialogues/MrsChenWitnessDialogue.js';
+import {
+  NarrativeActs,
+  NarrativeBeats,
+} from '../data/narrative/NarrativeBeatCatalog.js';
 
 const TUTORIAL_TRIGGER_IDS = Object.freeze({
   ARRIVAL: 'crime_scene_entry',
@@ -47,7 +51,7 @@ const TUTORIAL_TRIGGER_DEFINITIONS = [
     triggerType: 'crime_scene',
     metadata: {
       moodHint: 'investigation_peak',
-      narrativeBeat: 'act1_arrival_scene',
+      narrativeBeat: NarrativeBeats.tutorial.ARRIVAL,
     },
   },
   {
@@ -62,6 +66,7 @@ const TUTORIAL_TRIGGER_DEFINITIONS = [
     metadata: {
       tutorialStage: 'detective_vision',
       moodHint: 'investigation_focus',
+      narrativeBeat: NarrativeBeats.tutorial.DETECTIVE_VISION,
     },
   },
   {
@@ -76,6 +81,7 @@ const TUTORIAL_TRIGGER_DEFINITIONS = [
     metadata: {
       tutorialStage: 'deduction_board',
       moodHint: 'analysis_phase',
+      narrativeBeat: NarrativeBeats.tutorial.DEDUCTION,
     },
   },
   {
@@ -90,6 +96,7 @@ const TUTORIAL_TRIGGER_DEFINITIONS = [
     metadata: {
       tutorialStage: 'reporting',
       moodHint: 'resolution_moment',
+      narrativeBeat: NarrativeBeats.tutorial.REPORT,
     },
   },
 ];
@@ -188,7 +195,10 @@ export class TutorialScene {
       this.entityManager,
       this.componentRegistry,
       this.eventBus,
-      { reusePlayerId: null }
+      {
+        reusePlayerId: null,
+        narrativeContext: NarrativeActs.TUTORIAL,
+      }
     );
 
     this.sceneEntities = new Set(

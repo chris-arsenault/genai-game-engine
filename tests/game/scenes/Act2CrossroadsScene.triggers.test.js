@@ -28,6 +28,11 @@ describe('Act2CrossroadsScene trigger migration', () => {
       componentRegistry,
       eventBus,
     });
+    scene._loadAct2CrossroadsArtConfig = jest.fn().mockResolvedValue({
+      input: null,
+      manifestUrl: null,
+      config: null,
+    });
   });
 
   afterEach(() => {

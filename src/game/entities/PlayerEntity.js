@@ -107,9 +107,25 @@ export function createPlayerEntity(entityManager, componentRegistry, x = 0, y = 
   });
   componentRegistry.addComponent(entityId, 'Disguise', disguise);
 
+  const restrictedTags = [
+    'restricted',
+    'restricted:vanguard_prime',
+    'restricted:luminari_syndicate',
+    'restricted:cipher_collective',
+    'restricted:wraith_network',
+    'restricted:memory_keepers',
+  ];
+
   const navigationAgent = new NavigationAgent({
-    allowedSurfaceTags: ['safehouse', 'indoor', 'walkway', 'transition', 'checkpoint'],
-    lockedSurfaceTags: ['transition', 'checkpoint'],
+    allowedSurfaceTags: [
+      'safehouse',
+      'indoor',
+      'walkway',
+      'transition',
+      'checkpoint',
+      ...restrictedTags,
+    ],
+    lockedSurfaceTags: ['transition', 'checkpoint', ...restrictedTags],
     initialPosition: { x, y },
     metadata: {
       role: 'player',

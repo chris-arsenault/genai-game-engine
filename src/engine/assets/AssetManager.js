@@ -1,4 +1,4 @@
-import { AssetLoader } from './AssetLoader.js';
+import { AssetLoader, AssetLoadError } from './AssetLoader.js';
 import { eventBus } from '../events/EventBus.js';
 
 /**
@@ -42,6 +42,7 @@ export class AssetManager {
    * Creates a new AssetManager.
    * @param {object} options - Configuration options
    * @param {AssetLoader} options.loader - Custom asset loader (optional)
+   * @param {object} [options.concurrency] - Optional per-priority concurrency overrides
    */
   constructor(options = {}) {
     this.loader = options.loader || new AssetLoader();
@@ -53,6 +54,24 @@ export class AssetManager {
       [AssetPriority.CRITICAL]: [],
       [AssetPriority.DISTRICT]: [],
       [AssetPriority.OPTIONAL]: []
+    };
+    const concurrencyOverrides = options.concurrency || {};
+    const resolveConcurrency = (priority, fallback) => {
+      const override = concurrencyOverrides[priority];
+      if (Number.isFinite(override) && override > 0) {
+        return Math.floor(override);
+      }
+      return fallback;
+    };
+    this.concurrency = {
+      [AssetPriority.CRITICAL]: resolveConcurrency(AssetPriority.CRITICAL, 1),
+      [AssetPriority.DISTRICT]: resolveConcurrency(AssetPriority.DISTRICT, 2),
+      [AssetPriority.OPTIONAL]: resolveConcurrency(AssetPriority.OPTIONAL, 1)
+    };
+    this.activeLoads = {
+      [AssetPriority.CRITICAL]: 0,
+      [AssetPriority.DISTRICT]: 0,
+      [AssetPriority.OPTIONAL]: 0
     };
     this.loadingStats = {
       [AssetPriority.CRITICAL]: { loaded: 0, total: 0 },
@@ -73,7 +92,13 @@ export class AssetManager {
       this._buildGroups();
       eventBus.emit('asset:manifest-loaded', { manifest: this.manifest });
     } catch (error) {
-      console.error('Failed to load manifest:', error);
+      const telemetry = AssetLoadError.buildTelemetryContext(error, {
+        consumer: 'AssetManager.loadManifest',
+        manifestUrl: url
+      });
+      telemetry.error = telemetry.message;
+      console.error('Failed to load manifest:', error, telemetry);
+      eventBus.emit('asset:manifest-failed', telemetry);
       throw error;
     }
   }
@@ -107,9 +132,12 @@ export class AssetManager {
    * Otherwise, starts new load.
    *
    * @param {string} assetId - Asset identifier
+   * @param {object} [options]
+   * @param {AssetPriority|string} [options.priority] - Override priority for queue placement
+   * @param {boolean} [options.trackProgress=false] - Whether to update loading stats for this load
    * @returns {Promise<any>} Loaded asset data
    */
-  async loadAsset(assetId) {
+  async loadAsset(assetId, options = {}) {
     // Already loaded - increment reference
     if (this.assets.has(assetId)) {
       const asset = this.assets.get(assetId);
@@ -123,48 +151,48 @@ export class AssetManager {
       return this.loading.get(assetId);
     }
 
-    // Start new load
-    const promise = this._loadAssetData(assetId);
-    this.loading.set(assetId, promise);
-
-    try {
-      const data = await promise;
-      this.loading.delete(assetId);
-
-      const assetInfo = this._getAssetInfo(assetId);
-      this.assets.set(assetId, {
-        data,
-        refCount: 1,
-        type: assetInfo.type,
-        group: assetInfo.group,
-        priority: assetInfo.priority
-      });
-
-      eventBus.emit('asset:loaded', { assetId, type: assetInfo.type });
-      return data;
-
-    } catch (error) {
-      this.loading.delete(assetId);
-      eventBus.emit('asset:failed', { assetId, error: error.message });
-      throw error;
+    const assetInfo = this._getAssetInfo(assetId);
+    if (!assetInfo) {
+      throw new Error(`Asset not found in manifest: ${assetId}`);
     }
+
+    const priority = this._normalizePriority(
+      options.priority || assetInfo.priority || AssetPriority.OPTIONAL
+    );
+
+    const deferred = this._createDeferred();
+    this.loading.set(assetId, deferred.promise);
+
+    this.priorityQueues[priority].push({
+      assetId,
+      assetInfo,
+      priority,
+      deferred,
+      trackProgress: options.trackProgress === true
+    });
+
+    this._processQueues();
+
+    return deferred.promise;
   }
 
   /**
    * Loads asset data from disk.
    * @private
    * @param {string} assetId - Asset identifier
+   * @param {object|null} assetInfo - Resolved asset info from manifest
    * @returns {Promise<any>} Asset data
    */
-  async _loadAssetData(assetId) {
-    const assetInfo = this._getAssetInfo(assetId);
-    if (!assetInfo) {
+  async _loadAssetData(assetId, assetInfo = null) {
+    const resolvedInfo = assetInfo || this._getAssetInfo(assetId);
+    if (!resolvedInfo) {
       throw new Error(`Asset not found in manifest: ${assetId}`);
     }
 
-    eventBus.emit('asset:loading', { assetId, url: assetInfo.url, type: assetInfo.type });
+    const { url, type } = resolvedInfo;
+    eventBus.emit('asset:loading', { assetId, url, type });
 
-    return await this.loader._loadAssetByType(assetInfo.url, assetInfo.type);
+    return await this.loader._loadAssetByType(url, type);
   }
 
   /**
@@ -185,6 +213,139 @@ export class AssetManager {
     }
 
     return null;
+  }
+
+  /**
+   * Normalizes priority input to a known tier.
+   * @private
+   * @param {string} priority
+   * @returns {AssetPriority}
+   */
+  _normalizePriority(priority) {
+    if (priority === AssetPriority.CRITICAL || priority === AssetPriority.DISTRICT || priority === AssetPriority.OPTIONAL) {
+      return priority;
+    }
+
+    const normalized = typeof priority === 'string' ? priority.toLowerCase() : '';
+    switch (normalized) {
+      case AssetPriority.CRITICAL:
+        return AssetPriority.CRITICAL;
+      case AssetPriority.DISTRICT:
+        return AssetPriority.DISTRICT;
+      case AssetPriority.OPTIONAL:
+        return AssetPriority.OPTIONAL;
+      default:
+        return AssetPriority.OPTIONAL;
+    }
+  }
+
+  /**
+   * Creates a deferred promise wrapper for queue entries.
+   * @private
+   * @returns {{promise: Promise<any>, resolve: Function, reject: Function}}
+   */
+  _createDeferred() {
+    let resolve;
+    let reject;
+    const promise = new Promise((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+
+    return { promise, resolve, reject };
+  }
+
+  /**
+   * Processes queued loads according to priority ordering and concurrency caps.
+   * @private
+   */
+  _processQueues() {
+    const priorities = [AssetPriority.CRITICAL, AssetPriority.DISTRICT, AssetPriority.OPTIONAL];
+
+    for (let i = 0; i < priorities.length; i++) {
+      const priority = priorities[i];
+
+      if (this._hasBlockingHigherPriority(priority)) {
+        continue;
+      }
+
+      const queue = this.priorityQueues[priority];
+      while (
+        queue.length > 0 &&
+        this.activeLoads[priority] < this.concurrency[priority] &&
+        !this._hasBlockingHigherPriority(priority)
+      ) {
+        const entry = queue.shift();
+        this._startQueuedLoad(entry);
+      }
+    }
+  }
+
+  /**
+   * Determines whether a higher priority tier is still active or queued.
+   * @private
+   * @param {AssetPriority} priority
+   * @returns {boolean}
+   */
+  _hasBlockingHigherPriority(priority) {
+    const priorities = [AssetPriority.CRITICAL, AssetPriority.DISTRICT, AssetPriority.OPTIONAL];
+    const index = priorities.indexOf(priority);
+
+    for (let i = 0; i < index; i++) {
+      const tier = priorities[i];
+      if (this.priorityQueues[tier].length > 0 || this.activeLoads[tier] > 0) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Starts a queued asset load respecting telemetry and progress tracking.
+   * @private
+   * @param {{assetId: string, assetInfo: object, priority: AssetPriority, deferred: {resolve: Function, reject: Function}, trackProgress: boolean}} entry
+   */
+  _startQueuedLoad(entry) {
+    const { assetId, assetInfo, priority, deferred, trackProgress } = entry;
+    this.activeLoads[priority]++;
+
+    this._loadAssetData(assetId, assetInfo)
+      .then((data) => {
+        this.loading.delete(assetId);
+        this.assets.set(assetId, {
+          data,
+          refCount: 1,
+          type: assetInfo.type,
+          group: assetInfo.group,
+          priority
+        });
+        eventBus.emit('asset:loaded', { assetId, type: assetInfo.type });
+        deferred.resolve(data);
+      })
+      .catch((error) => {
+        this.loading.delete(assetId);
+        const telemetry = AssetLoadError.buildTelemetryContext(error, {
+          assetId,
+          consumer: 'AssetManager.loadAsset'
+        });
+        telemetry.error = telemetry.message;
+        eventBus.emit('asset:failed', telemetry);
+        deferred.reject(error);
+      })
+      .finally(() => {
+        if (trackProgress) {
+          const stats = this.loadingStats[priority];
+          stats.loaded = Math.min(stats.loaded + 1, stats.total);
+          this._emitPriorityProgress(priority);
+        }
+
+        if (this.activeLoads[priority] > 0) {
+          this.activeLoads[priority]--;
+        }
+
+        this._processQueues();
+      });
   }
 
   /**
@@ -282,7 +443,8 @@ export class AssetManager {
 
     for (let i = 0; i < assets.length; i++) {
       const asset = assets[i];
-      switch (asset.priority) {
+      const normalized = this._normalizePriority(asset.priority);
+      switch (normalized) {
         case AssetPriority.CRITICAL:
           critical.push(asset);
           break;
@@ -305,7 +467,7 @@ export class AssetManager {
         priority: AssetPriority.CRITICAL,
         count: critical.length
       });
-      const criticalResults = await this._loadPriorityBatch(critical, AssetPriority.CRITICAL);
+      const criticalResults = await this._queuePriorityBatch(critical, AssetPriority.CRITICAL, true);
       for (const [id, data] of criticalResults) {
         results.set(id, data);
       }
@@ -317,7 +479,7 @@ export class AssetManager {
         priority: AssetPriority.DISTRICT,
         count: district.length
       });
-      const districtResults = await this._loadPriorityBatch(district, AssetPriority.DISTRICT);
+      const districtResults = await this._queuePriorityBatch(district, AssetPriority.DISTRICT, true);
       for (const [id, data] of districtResults) {
         results.set(id, data);
       }
@@ -330,47 +492,88 @@ export class AssetManager {
         count: optional.length
       });
       // Fire and forget for optional assets
-      this._loadPriorityBatch(optional, AssetPriority.OPTIONAL).catch(error => {
-        console.warn('Optional asset loading failed:', error);
-      });
+      this._queuePriorityBatch(optional, AssetPriority.OPTIONAL, false);
     }
 
     return results;
   }
 
   /**
-   * Loads a batch of assets with progress tracking.
+   * Queues a batch of assets for loading and optionally waits for completion.
    * @private
-   * @param {Array<{id, url, type}>} assets - Assets to load
-   * @param {AssetPriority} priority - Priority tier
-   * @returns {Promise<Map<string, any>>} Loaded assets
+   * @param {Array<{id: string, priority: AssetPriority|string}>} assets
+   * @param {AssetPriority} priority
+   * @param {boolean} awaitResults
+   * @returns {Promise<Map<string, any>>}
    */
-  async _loadPriorityBatch(assets, priority) {
+  async _queuePriorityBatch(assets, priority, awaitResults) {
     this.loadingStats[priority].loaded = 0;
     this.loadingStats[priority].total = assets.length;
 
-    const results = new Map();
-    const promises = [];
+    const tasks = assets.map(asset => {
+      const normalizedPriority = this._normalizePriority(asset.priority || priority);
 
-    for (let i = 0; i < assets.length; i++) {
-      const asset = assets[i];
-      const promise = this.loadAsset(asset.id)
-        .then(data => {
-          results.set(asset.id, data);
-          this.loadingStats[priority].loaded++;
-          this._emitPriorityProgress(priority);
-        })
-        .catch(error => {
-          console.error(`Failed to load ${priority} asset ${asset.id}:`, error);
-          this.loadingStats[priority].loaded++;
-          this._emitPriorityProgress(priority);
-        });
+      return this.loadAsset(asset.id, {
+        priority: normalizedPriority,
+        trackProgress: true
+      }).then(data => ({
+        status: 'fulfilled',
+        id: asset.id,
+        data
+      })).catch(error => ({
+        status: 'rejected',
+        id: asset.id,
+        error,
+        priority: normalizedPriority
+      }));
+    });
 
-      promises.push(promise);
+    if (awaitResults) {
+      const settled = await Promise.all(tasks);
+      const results = new Map();
+
+      for (let i = 0; i < settled.length; i++) {
+        const result = settled[i];
+        if (result.status === 'fulfilled') {
+          results.set(result.id, result.data);
+        } else if (result.status === 'rejected') {
+          this._reportPriorityFailure(result.id, result.priority || priority, result.error);
+        }
+      }
+
+      return results;
     }
 
-    await Promise.all(promises);
-    return results;
+    Promise.all(tasks).then((settled) => {
+      for (let i = 0; i < settled.length; i++) {
+        const result = settled[i];
+        if (result.status === 'rejected') {
+          this._reportPriorityFailure(result.id, result.priority || priority, result.error);
+        }
+      }
+    }).catch(error => {
+      console.error('Unexpected optional preload failure:', error);
+    });
+
+    // Optional loads run in background; return empty map but ensure progress events fire.
+    return new Map();
+  }
+
+  /**
+   * Logs priority load failures with structured telemetry.
+   * @private
+   * @param {string} assetId
+   * @param {AssetPriority} priority
+   * @param {Error} error
+   */
+  _reportPriorityFailure(assetId, priority, error) {
+    const telemetry = AssetLoadError.buildTelemetryContext(error, {
+      assetId,
+      priority,
+      consumer: 'AssetManager._queuePriorityBatch'
+    });
+    telemetry.error = telemetry.message;
+    console.error(`Failed to load ${priority} asset ${assetId}:`, error, telemetry);
   }
 
   /**

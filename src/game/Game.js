@@ -12,8 +12,10 @@ import { PlayerMovementSystem } from './systems/PlayerMovementSystem.js';
 import { PlayerAnimationSystem } from './systems/PlayerAnimationSystem.js';
 import { InvestigationSystem } from './systems/InvestigationSystem.js';
 import { FactionReputationSystem } from './systems/FactionReputationSystem.js';
+import { FactionSystem } from './systems/FactionSystem.js';
 import { KnowledgeProgressionSystem } from './systems/KnowledgeProgressionSystem.js';
 import { DialogueSystem } from './systems/DialogueSystem.js';
+import { InterviewSystem } from './systems/InterviewSystem.js';
 import { CameraFollowSystem } from './systems/CameraFollowSystem.js';
 import { TutorialSystem } from './systems/TutorialSystem.js';
 import { NPCMemorySystem } from './systems/NPCMemorySystem.js';
@@ -24,6 +26,8 @@ import { ForensicSystem } from './systems/ForensicSystem.js';
 import { DeductionSystem } from './systems/DeductionSystem.js';
 import { NavigationConstraintSystem } from './systems/NavigationConstraintSystem.js';
 import { TutorialTranscriptRecorder } from './tutorial/TutorialTranscriptRecorder.js';
+import { SocialStealthSystem } from './systems/SocialStealthSystem.js';
+import { RestrictedAreaSystem } from './systems/RestrictedAreaSystem.js';
 
 // State
 import { WorldStateStore } from './state/WorldStateStore.js';
@@ -65,6 +69,7 @@ import { SFXCatalogLoader } from './audio/SFXCatalogLoader.js';
 import { AdaptiveMoodEmitter } from './audio/AdaptiveMoodEmitter.js';
 import { SuspicionMoodMapper } from './audio/SuspicionMoodMapper.js';
 import { GameplayAdaptiveAudioBridge } from './audio/GameplayAdaptiveAudioBridge.js';
+import { registerAr009EnvironmentalLoops } from './audio/generated/ar009EnvironmentalLoops.js';
 import { SaveInspectorOverlay } from './ui/SaveInspectorOverlay.js';
 import { SaveLoadOverlay } from './ui/SaveLoadOverlay.js';
 import { FinaleCinematicOverlay } from './ui/FinaleCinematicOverlay.js';
@@ -188,6 +193,7 @@ export class Game {
     registerGlobalAssetManager(this.assetManager);
     this.sfxCatalogLoader = null;
     this._sfxCatalogSummary = null;
+    this._environmentalLoopSummary = null;
     this.audioTelemetry = { currentState: null, history: [] };
     this._audioTelemetryUnbind = null;
     this.adaptiveMusic = null;
@@ -482,6 +488,13 @@ export class Game {
       }
     );
 
+    // Create faction system to bridge reputation state into ECS
+    this.gameSystems.faction = new FactionSystem(
+      this.componentRegistry,
+      this.eventBus,
+      this.factionManager
+    );
+
     // Create faction reputation system (now receives FactionManager)
     this.gameSystems.factionReputation = new FactionReputationSystem(
       this.componentRegistry,
@@ -525,6 +538,16 @@ export class Game {
     registerAct3ZenithInfiltrationDialogues(this.gameSystems.dialogue);
     console.log('[Game] Act 3 Zenith Infiltration dialogues registered');
 
+    this.gameSystems.interview = new InterviewSystem(
+      this.componentRegistry,
+      this.eventBus,
+      {
+        caseManager: this.caseManager,
+        dialogueSystem: this.gameSystems.dialogue,
+        worldStateStore: this.worldStateStore,
+      }
+    );
+
     // Create camera follow system
     this.gameSystems.cameraFollow = new CameraFollowSystem(
       this.componentRegistry,
@@ -559,6 +582,23 @@ export class Game {
 
     // Create disguise system (requires FactionManager)
     this.gameSystems.disguise = new DisguiseSystem(
+      this.componentRegistry,
+      this.eventBus,
+      this.factionManager
+    );
+
+    this.gameSystems.restrictedArea = new RestrictedAreaSystem(
+      this.componentRegistry,
+      this.eventBus,
+      {
+        storyFlagManager: this.storyFlagManager,
+        worldStateStore: this.worldStateStore,
+        factionManager: this.factionManager,
+      }
+    );
+
+    // Create social stealth system (sits on top of disguise/navigation events)
+    this.gameSystems.socialStealth = new SocialStealthSystem(
       this.componentRegistry,
       this.eventBus,
       this.factionManager
@@ -710,14 +750,18 @@ export class Game {
       ['npcMemory', this.gameSystems.npcMemory],
       ['firewallScrambler', this.gameSystems.firewallScrambler],
       ['disguise', this.gameSystems.disguise],
+      ['restrictedArea', this.gameSystems.restrictedArea],
+      ['socialStealth', this.gameSystems.socialStealth],
       ['collision', this.gameSystems.collision],
       ['trigger', this.gameSystems.trigger],
+      ['faction', this.gameSystems.faction],
       ['factionReputation', this.gameSystems.factionReputation],
       ['quest', this.gameSystems.quest],
       ['deduction', this.gameSystems.deduction],
       ['investigation', this.gameSystems.investigation],
       ['forensic', this.gameSystems.forensic],
       ['knowledgeProgression', this.gameSystems.knowledgeProgression],
+      ['interview', this.gameSystems.interview],
       ['dialogue', this.gameSystems.dialogue],
       ['cameraFollow', this.gameSystems.cameraFollow],
       ['spriteAnimation', this.gameSystems.spriteAnimation],
@@ -1267,6 +1311,21 @@ export class Game {
       console.warn('[Game] Failed to load SFX catalog:', error);
     }
 
+    if (!this._environmentalLoopSummary) {
+      try {
+        this._environmentalLoopSummary = await registerAr009EnvironmentalLoops(this.audioManager);
+        if (this._environmentalLoopSummary.failed > 0) {
+          console.warn(
+            '[Game] Environmental loop registration had failures:',
+            this._environmentalLoopSummary
+          );
+        }
+      } catch (error) {
+        console.warn('[Game] Failed to register environmental loops:', error);
+        this._environmentalLoopSummary = { registered: 0, skipped: 0, failed: 1 };
+      }
+    }
+
     this.audioFeedback = new AudioFeedbackController(this.eventBus, this.audioManager, {
       movementCooldown: 0.28,
       promptCooldown: 0.45
@@ -1359,6 +1418,8 @@ export class Game {
     };
     this._memoryParlorSceneLoaded = false;
 
+    this._applyCameraBounds(this.activeScene.metadata);
+
     const spawnPoint = options.spawnPoint
       || sceneData.spawnPoint
       || { x: 150, y: 300 };
@@ -1444,6 +1505,34 @@ export class Game {
   }
 
   /**
+   * Applies or clears camera bounds based on scene metadata.
+   * @param {Object|null} metadata
+   * @private
+   */
+  _applyCameraBounds(metadata) {
+    if (!this.camera || typeof this.camera.setBounds !== 'function') {
+      return;
+    }
+
+    const bounds = metadata?.cameraBounds ?? null;
+    const hasValidDimensions =
+      bounds &&
+      typeof bounds.width === 'number' &&
+      typeof bounds.height === 'number';
+
+    if (hasValidDimensions) {
+      const x = typeof bounds.x === 'number' ? bounds.x : 0;
+      const y = typeof bounds.y === 'number' ? bounds.y : 0;
+      this.camera.setBounds(x, y, bounds.width, bounds.height);
+      return;
+    }
+
+    if (typeof this.camera.clearBounds === 'function') {
+      this.camera.clearBounds();
+    }
+  }
+
+  /**
    * Transition into the Memory Parlor infiltration scene.
    * Reuses the existing player entity and repositions them at the returned spawn point.
    *
@@ -1490,6 +1579,8 @@ export class Game {
         metadata: sceneData.metadata || {}
       };
 
+      this._applyCameraBounds(this.activeScene.metadata);
+
       this._activeAmbientController = this.activeScene.metadata?.ambientAudioController || null;
       if (this._activeAmbientController &&
         typeof this._activeAmbientController.getAdaptiveMusic === 'function') {
@@ -1520,7 +1611,8 @@ export class Game {
       this.eventBus.emit('scene:loaded', {
         sceneId: this.activeScene.id,
         spawnPoint,
-        reason: options.reason || 'manual'
+        reason: options.reason || 'manual',
+        navigationMesh: this.activeScene.metadata?.navigationMesh || null,
       });
 
       return this.activeScene.id;
@@ -1686,6 +1778,8 @@ export class Game {
         },
       };
 
+      this._applyCameraBounds(this.activeScene.metadata);
+
       this._activeAmbientController = this.activeScene.metadata?.ambientAudioController || null;
       if (this._activeAmbientController &&
         typeof this._activeAmbientController.getAdaptiveMusic === 'function') {
@@ -1790,6 +1884,8 @@ export class Game {
       transitionSource: 'act2_thread',
       placeholder: true,
     };
+
+    this._applyCameraBounds(this.activeScene.metadata);
 
     this._pendingAct2ThreadTransition = null;
     this._activeAmbientController = null;
@@ -1952,7 +2048,9 @@ export class Game {
       'case:objective_completed',
       'case:objectives_complete',
       'case:solved',
-      'case:hydrated'
+      'case:hydrated',
+      'case:testimony_recorded',
+      'case:testimony_contradiction'
     ];
     for (const eventName of caseEventsForRefresh) {
       this._offGameEventHandlers.push(this.eventBus.on(eventName, () => {
