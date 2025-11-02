@@ -9,7 +9,7 @@ describe('Act1Scene boundary colliders', () => {
     const componentRegistry = new ComponentRegistry(entityManager);
     const eventBus = new EventBus();
 
-    await loadAct1Scene(entityManager, componentRegistry, eventBus);
+    const sceneData = await loadAct1Scene(entityManager, componentRegistry, eventBus);
 
     const colliderEntries = Array.from(
       componentRegistry.getComponentsOfType('Collider').entries()
@@ -31,6 +31,17 @@ describe('Act1Scene boundary colliders', () => {
       expect(bounds.maxX).toBeLessThanOrEqual(800);
       expect(bounds.minY).toBeGreaterThanOrEqual(0);
       expect(bounds.maxY).toBeLessThanOrEqual(600);
+    }
+
+    expect(sceneData.metadata?.cameraBounds).toEqual({
+      x: 0,
+      y: 0,
+      width: 800,
+      height: 600,
+    });
+
+    if (typeof sceneData.cleanup === 'function') {
+      sceneData.cleanup();
     }
   });
 });

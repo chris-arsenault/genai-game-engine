@@ -1359,6 +1359,8 @@ export class Game {
     };
     this._memoryParlorSceneLoaded = false;
 
+    this._applyCameraBounds(this.activeScene.metadata);
+
     const spawnPoint = options.spawnPoint
       || sceneData.spawnPoint
       || { x: 150, y: 300 };
@@ -1444,6 +1446,34 @@ export class Game {
   }
 
   /**
+   * Applies or clears camera bounds based on scene metadata.
+   * @param {Object|null} metadata
+   * @private
+   */
+  _applyCameraBounds(metadata) {
+    if (!this.camera || typeof this.camera.setBounds !== 'function') {
+      return;
+    }
+
+    const bounds = metadata?.cameraBounds ?? null;
+    const hasValidDimensions =
+      bounds &&
+      typeof bounds.width === 'number' &&
+      typeof bounds.height === 'number';
+
+    if (hasValidDimensions) {
+      const x = typeof bounds.x === 'number' ? bounds.x : 0;
+      const y = typeof bounds.y === 'number' ? bounds.y : 0;
+      this.camera.setBounds(x, y, bounds.width, bounds.height);
+      return;
+    }
+
+    if (typeof this.camera.clearBounds === 'function') {
+      this.camera.clearBounds();
+    }
+  }
+
+  /**
    * Transition into the Memory Parlor infiltration scene.
    * Reuses the existing player entity and repositions them at the returned spawn point.
    *
@@ -1489,6 +1519,8 @@ export class Game {
         cleanup: typeof sceneData.cleanup === 'function' ? sceneData.cleanup : null,
         metadata: sceneData.metadata || {}
       };
+
+      this._applyCameraBounds(this.activeScene.metadata);
 
       this._activeAmbientController = this.activeScene.metadata?.ambientAudioController || null;
       if (this._activeAmbientController &&
@@ -1686,6 +1718,8 @@ export class Game {
         },
       };
 
+      this._applyCameraBounds(this.activeScene.metadata);
+
       this._activeAmbientController = this.activeScene.metadata?.ambientAudioController || null;
       if (this._activeAmbientController &&
         typeof this._activeAmbientController.getAdaptiveMusic === 'function') {
@@ -1790,6 +1824,8 @@ export class Game {
       transitionSource: 'act2_thread',
       placeholder: true,
     };
+
+    this._applyCameraBounds(this.activeScene.metadata);
 
     this._pendingAct2ThreadTransition = null;
     this._activeAmbientController = null;

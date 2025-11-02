@@ -34,7 +34,12 @@
 - Rely on the nightly Playwright pipeline (`tests/e2e/tutorial-investigative-loop.spec.js`, `tests/e2e/tutorial-overlay.spec.js`) for investigative loop regression coverage—investigate only if automation signals regressions.
 - Prepare to extend telemetry performance automation with deduction board latency sampling once the refreshed art bundle merges, keeping manual profiling out of scope.
 - Hold **M3-003** in staged state until the automated data contract feed unblocks the ECS work; watch the telemetry notifier rather than manual check-ins.
-- Capture the camera bounds integration plan inside the automated level/scene loader suite so `setBounds` adopts authoritative world dimensions without manual validation.
+- Camera bounds automation sealed: scene loaders emit `metadata.cameraBounds` and Game applies the bounds automatically; rely on Jest coverage (`tests/game/Game.cameraBounds.test.js`, `tests/game/scenes/Act1Scene.boundaries.test.js`) for regression guardrails.
+
+### Session #249 Backlog Maintenance
+
+- Authored **CORE-304: Scene Loader Camera Bounds Automation** to decouple camera bounds from manual tuning—Act 1 scene metadata now exposes `cameraBounds`, Game scene transitions call a shared `_applyCameraBounds` helper, and Jest coverage (`tests/game/Game.cameraBounds.test.js`, `tests/game/scenes/Act1Scene.boundaries.test.js`) locks the contract.
+- `npm test` executed to validate the updated suites alongside existing coverage; no follow-up remediation required.
 
 ### Session #248 Backlog Maintenance
 

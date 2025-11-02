@@ -22,8 +22,11 @@ import { QUEST_001_HOLLOW_CASE } from '../data/quests/act1Quests.js';
 import { TriggerMigrationToolkit } from '../quests/TriggerMigrationToolkit.js';
 import { QuestTriggerRegistry } from '../quests/QuestTriggerRegistry.js';
 
-const SCENE_CENTER_X = 400;
-const SCENE_CENTER_Y = 300;
+const SCENE_WORLD_WIDTH = 800;
+const SCENE_WORLD_HEIGHT = 600;
+const BOUNDARY_THICKNESS = 20;
+const SCENE_CENTER_X = SCENE_WORLD_WIDTH / 2;
+const SCENE_CENTER_Y = SCENE_WORLD_HEIGHT / 2;
 const CRIME_SCENE_WIDTH = 560;
 const CRIME_SCENE_HEIGHT = 360;
 const CRIME_SCENE_TRIGGER_ID = 'crime_scene_entry';
@@ -247,10 +250,20 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus, 
 
   // 8. Create boundary walls
   const boundaries = [
-    { x: 0, y: 0, width: 800, height: 20 }, // Top
-    { x: 0, y: 580, width: 800, height: 20 }, // Bottom
-    { x: 0, y: 0, width: 20, height: 600 }, // Left
-    { x: 780, y: 0, width: 20, height: 600 } // Right
+    { x: 0, y: 0, width: SCENE_WORLD_WIDTH, height: BOUNDARY_THICKNESS }, // Top
+    {
+      x: 0,
+      y: SCENE_WORLD_HEIGHT - BOUNDARY_THICKNESS,
+      width: SCENE_WORLD_WIDTH,
+      height: BOUNDARY_THICKNESS
+    }, // Bottom
+    { x: 0, y: 0, width: BOUNDARY_THICKNESS, height: SCENE_WORLD_HEIGHT }, // Left
+    {
+      x: SCENE_WORLD_WIDTH - BOUNDARY_THICKNESS,
+      y: 0,
+      width: BOUNDARY_THICKNESS,
+      height: SCENE_WORLD_HEIGHT
+    } // Right
   ];
 
   for (const boundary of boundaries) {
@@ -302,6 +315,12 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus, 
       crimeSceneDimensions: {
         width: CRIME_SCENE_WIDTH,
         height: CRIME_SCENE_HEIGHT,
+      },
+      cameraBounds: {
+        x: 0,
+        y: 0,
+        width: SCENE_WORLD_WIDTH,
+        height: SCENE_WORLD_HEIGHT,
       },
     },
     cleanup: () => {
