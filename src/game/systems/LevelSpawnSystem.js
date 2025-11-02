@@ -6,6 +6,7 @@
 
 import { System } from '../../engine/ecs/System.js';
 import { createNPCEntity } from '../entities/NPCEntity.js';
+import { NPCFactory } from '../entities/NPCFactory.js';
 import { createEvidenceEntity } from '../entities/EvidenceEntity.js';
 import { Transform } from '../components/Transform.js';
 import { Sprite } from '../components/Sprite.js';
@@ -24,6 +25,8 @@ function shouldLog() {
 
   return true;
 }
+
+const FACTORY_ARCHETYPES = new Set(['guard', 'civilian', 'informant']);
 
 /**
  * ECS System that spawns entities from generation result data.
@@ -48,6 +51,10 @@ export class LevelSpawnSystem extends System {
 
     this.entityManager = entityManager;
     this.spatialHash = spatialHash;
+    this.npcFactory = new NPCFactory({
+      entityManager,
+      componentRegistry,
+    });
 
     // Track spawned level entities for cleanup
     this.levelEntities = new Set();
@@ -154,33 +161,126 @@ export class LevelSpawnSystem extends System {
    * @returns {number|null} Entity ID or null if failed
    */
   spawnNPC(npcData) {
-    try {
-      // Use existing NPC entity factory
-      const entityId = createNPCEntity(this.entityManager, this.componentRegistry, {
-        x: npcData.position.x,
-        y: npcData.position.y,
-        id: npcData.npcId,
-        name: npcData.name,
-        faction: npcData.faction,
-        hasDialogue: npcData.hasDialogue,
-        dialogueId: npcData.dialogueId,
-      });
-
-      // Update spatial hash if available
-      if (this.spatialHash && entityId !== null) {
-        const transform = this.componentRegistry.getComponent(entityId, 'Transform');
-        if (transform) {
-          this.spatialHash.insert(entityId, transform.x, transform.y);
-        }
-      }
-
-      return entityId;
-    } catch (error) {
+    if (!npcData) {
       if (shouldLog()) {
-        console.error(`[LevelSpawnSystem] Failed to spawn NPC:`, npcData, error);
+        console.warn('[LevelSpawnSystem] Received invalid NPC spawn data.');
       }
       return null;
     }
+
+    try {
+      const archetype = this._resolveArchetype(npcData);
+      const options = this._buildFactoryOptions(npcData);
+      const { entityId } = this.npcFactory.create(archetype, options);
+      this._indexEntity(entityId);
+      return entityId;
+    } catch (error) {
+      if (shouldLog()) {
+        console.warn('[LevelSpawnSystem] NPCFactory spawn failed; falling back to legacy path.', error);
+      }
+      return this._spawnNpcLegacy(npcData);
+    }
+  }
+
+  _spawnNpcLegacy(npcData) {
+    try {
+      const rawPosition =
+        npcData?.position && typeof npcData.position === 'object'
+          ? npcData.position
+          : { x: npcData?.x ?? 0, y: npcData?.y ?? 0 };
+
+      const entityId = createNPCEntity(this.entityManager, this.componentRegistry, {
+        x: rawPosition.x ?? 0,
+        y: rawPosition.y ?? 0,
+        id: npcData?.npcId,
+        name: npcData?.name,
+        faction: npcData?.faction,
+        hasDialogue: npcData?.hasDialogue,
+        dialogueId: npcData?.dialogueId,
+      });
+
+      this._indexEntity(entityId);
+      return entityId;
+    } catch (legacyError) {
+      if (shouldLog()) {
+        console.error('[LevelSpawnSystem] Legacy NPC spawn failed:', npcData, legacyError);
+      }
+      return null;
+    }
+  }
+
+  _indexEntity(entityId) {
+    if (!this.spatialHash || entityId == null) {
+      return;
+    }
+    const transform = this.componentRegistry.getComponent(entityId, 'Transform');
+    if (transform) {
+      this.spatialHash.insert(entityId, transform.x, transform.y);
+    }
+  }
+
+  _resolveArchetype(npcData) {
+    const explicit =
+      typeof npcData?.archetype === 'string' ? npcData.archetype.trim().toLowerCase() : '';
+    if (FACTORY_ARCHETYPES.has(explicit)) {
+      return explicit;
+    }
+
+    const behaviour =
+      typeof npcData?.behaviorProfile === 'string'
+        ? npcData.behaviorProfile.trim().toLowerCase()
+        : '';
+    if (FACTORY_ARCHETYPES.has(behaviour)) {
+      return behaviour;
+    }
+
+    const faction = typeof npcData?.faction === 'string' ? npcData.faction.trim().toLowerCase() : '';
+    if (faction === 'vanguard_prime' || faction === 'police' || faction === 'security') {
+      return 'guard';
+    }
+    if (faction === 'wraith_network') {
+      return 'informant';
+    }
+    return 'civilian';
+  }
+
+  _buildFactoryOptions(npcData) {
+    const rawPosition =
+      npcData?.position && typeof npcData.position === 'object'
+        ? npcData.position
+        : { x: npcData?.x ?? 0, y: npcData?.y ?? 0 };
+
+    const options = {
+      position: {
+        x: rawPosition.x ?? 0,
+        y: rawPosition.y ?? 0,
+      },
+      id: npcData?.npcId,
+      name: npcData?.name,
+      faction: npcData?.faction,
+      hasDialogue: npcData?.hasDialogue,
+      dialogueId: npcData?.dialogueId,
+      dialogueVariants: npcData?.dialogueVariants,
+      attitudeOverride: npcData?.attitudeOverride,
+      navigationAgent: npcData?.navigationAgent,
+      interactionPrompt: npcData?.interactionPrompt,
+      interactionAction: npcData?.interactionAction,
+      spriteVariant: npcData?.spriteVariant,
+    };
+
+    if (Array.isArray(npcData?.tags)) {
+      options.tags = npcData.tags;
+    }
+
+    if (Array.isArray(npcData?.factionTags)) {
+      options.factionTags = npcData.factionTags;
+    }
+
+    if (typeof npcData?.attitude === 'string') {
+      options.attitude = npcData.attitude;
+    }
+
+    return options;
   }
 
   /**

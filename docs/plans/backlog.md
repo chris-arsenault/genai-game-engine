@@ -2758,6 +2758,8 @@ _Progress 2025-11-03 (Session #256 guardrail verification): Re-ran the pointer c
   - Visual variety
   - Faction affiliations correct
   - Unit tests pass
+- **Status**: Done (Session 282 – factory archetypes, LevelSpawnSystem integration, and Jest coverage)  
+- **Verification**: `npm test -- --runTestsByPath tests/game/entities/NPCFactory.test.js tests/game/entities/NPCEntity.test.js tests/game/systems/LevelSpawnSystem.test.js`
 
 #### M3-007: Dialogue Variations by Reputation
 - **Priority**: P2

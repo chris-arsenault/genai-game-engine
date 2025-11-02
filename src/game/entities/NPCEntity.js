@@ -28,6 +28,44 @@ function shouldLog() {
   return true;
 }
 
+const DIALOGUE_VARIANT_KEYS = ['default', 'neutral', 'friendly', 'unfriendly', 'hostile', 'allied'];
+
+const DEFAULT_DIALOGUE_IDS = {
+  default: 'default_npc_dialogue',
+  neutral: 'default_neutral',
+  friendly: 'default_friendly',
+  unfriendly: 'default_hostile',
+  hostile: 'default_hostile',
+  allied: 'default_friendly'
+};
+
+function resolveDialogueConfig(baseId, dialogueVariants) {
+  const normalizedId = typeof baseId === 'string' && baseId.trim().length > 0 ? baseId.trim() : null;
+  const hasExplicit = dialogueVariants && typeof dialogueVariants === 'object';
+  const config = {};
+
+  for (const key of DIALOGUE_VARIANT_KEYS) {
+    const explicitValue =
+      hasExplicit && typeof dialogueVariants[key] === 'string'
+        ? dialogueVariants[key].trim()
+        : '';
+
+    if (explicitValue) {
+      config[key] = explicitValue;
+      continue;
+    }
+
+    if (normalizedId) {
+      config[key] = key === 'default' ? normalizedId : `${normalizedId}_${key}`;
+      continue;
+    }
+
+    config[key] = DEFAULT_DIALOGUE_IDS[key];
+  }
+
+  return config;
+}
+
 /**
  * Create NPC entity
  * @param {Object} entityManager - Entity manager instance
@@ -43,7 +81,12 @@ export function createNPCEntity(entityManager, componentRegistry, npcData) {
     name = 'NPC',
     faction = 'civilian',
     hasDialogue = false,
-    dialogueId = null
+    dialogueId = null,
+    dialogueVariants = null,
+    behaviorProfile = null,
+    archetype = null,
+    role = null,
+    tags = []
   } = npcData;
 
   // Create entity with 'npc' tag
@@ -76,10 +119,14 @@ export function createNPCEntity(entityManager, componentRegistry, npcData) {
   componentRegistry.addComponent(entityId, sprite);
 
   // Add Faction component (used by FactionSystem)
+  const factionTags = Array.isArray(npcData?.factionTags)
+    ? Array.from(new Set(npcData.factionTags))
+    : [];
   const factionComponent = new Faction({
     factionId: faction,
     attitudeOverride: npcData?.attitudeOverride ?? null,
-    tags: Array.isArray(npcData?.factionTags) ? npcData.factionTags : [],
+    behaviorProfile: behaviorProfile ?? null,
+    tags: factionTags,
   });
   componentRegistry.addComponent(entityId, factionComponent);
 
@@ -94,19 +141,22 @@ export function createNPCEntity(entityManager, componentRegistry, npcData) {
   componentRegistry.addComponent(entityId, factionMember);
 
   // Add NPC component (memory and recognition)
+  const npcTags = Array.isArray(tags) ? Array.from(new Set(tags)) : [];
+  const dialogueConfig = resolveDialogueConfig(dialogueId, dialogueVariants);
+  const dialogueProfile = npcData?.dialogueProfile ?? behaviorProfile ?? null;
   const npcComponent = new NPC({
     npcId: id,
     name,
     faction,
     knownPlayer: false,
-    attitude: 'neutral',
-    dialogue: {
-      default: dialogueId || 'default_npc_dialogue',
-      friendly: dialogueId ? `${dialogueId}_friendly` : 'default_friendly',
-      neutral: dialogueId ? `${dialogueId}_neutral` : 'default_neutral',
-      hostile: dialogueId ? `${dialogueId}_hostile` : 'default_hostile'
-    },
-    appearanceId: spriteVariant?.id ?? null
+    attitude: npcData?.attitude ?? 'neutral',
+    dialogue: dialogueConfig,
+    appearanceId: spriteVariant?.id ?? null,
+    archetype: archetype ?? null,
+    role: role ?? behaviorProfile ?? null,
+    tags: npcTags,
+    behaviorProfile: behaviorProfile ?? null,
+    dialogueProfile
   });
   npcComponent.type = 'NPC';
   componentRegistry.addComponent(entityId, npcComponent);
@@ -123,22 +173,40 @@ export function createNPCEntity(entityManager, componentRegistry, npcData) {
   componentRegistry.addComponent(entityId, collider);
 
   // Add InteractionZone for dialogue (if applicable)
-  if (hasDialogue && dialogueId) {
-    const promptText = formatActionPrompt('interact', `talk to ${name}`);
+  const resolvedDialogueId = dialogueConfig.default;
+  if (hasDialogue && resolvedDialogueId) {
+    const promptAction =
+      typeof npcData?.interactionAction === 'string' && npcData.interactionAction.trim().length > 0
+        ? npcData.interactionAction.trim()
+        : 'interact';
+    const promptLabel =
+      typeof npcData?.interactionPrompt === 'string' && npcData.interactionPrompt.trim().length > 0
+        ? npcData.interactionPrompt.trim()
+        : `talk to ${name}`;
+    const promptText = formatActionPrompt(promptAction, promptLabel);
     const interactionZone = new InteractionZone({
       id: `dialogue_${id}`,
       type: 'dialogue',
       radius: 64,
       requiresInput: true,
       prompt: promptText,
-      promptAction: 'interact',
+      promptAction,
       active: true,
       oneShot: false,
       data: {
         npcId: id,
-        dialogueId
+        dialogueId: resolvedDialogueId,
+        behaviorProfile: behaviorProfile ?? null,
+        archetype: archetype ?? null
       }
     });
+    if (interactionZone && typeof interactionZone === 'object') {
+      interactionZone.metadata = {
+        ...(interactionZone.metadata || {}),
+        behaviorProfile: behaviorProfile ?? null,
+        archetype: archetype ?? null
+      };
+    }
     componentRegistry.addComponent(entityId, 'InteractionZone', interactionZone);
   }
 
@@ -147,16 +215,25 @@ export function createNPCEntity(entityManager, componentRegistry, npcData) {
       ...npcData.navigationAgent,
       metadata: {
         ...(npcData.navigationAgent.metadata || {}),
-        role: 'npc',
         npcId: id,
       },
       initialPosition: { x, y },
     });
+    if (!navigationAgent.metadata.role) {
+      navigationAgent.metadata.role = 'npc';
+    }
+    if (behaviorProfile) {
+      navigationAgent.metadata.behaviorProfile = behaviorProfile;
+    }
+    if (archetype) {
+      navigationAgent.metadata.archetype = archetype;
+    }
     componentRegistry.addComponent(entityId, 'NavigationAgent', navigationAgent);
   }
 
   if (shouldLog()) {
-    console.log(`[NPCEntity] Created NPC: ${name} (${faction}) at (${x}, ${y})`);
+    const archetypeLabel = archetype ? ` archetype=${archetype}` : '';
+    console.log(`[NPCEntity] Created NPC: ${name} (${faction}) at (${x}, ${y})${archetypeLabel}`);
   }
 
   return entityId;

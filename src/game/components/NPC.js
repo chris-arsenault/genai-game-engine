@@ -25,7 +25,12 @@ export class NPC {
     attitude = 'neutral',
     dialogue = {},
     memory = {},
-    appearanceId = null
+    appearanceId = null,
+    archetype = null,
+    role = null,
+    tags = [],
+    behaviorProfile = null,
+    dialogueProfile = null
   } = {}) {
     this.npcId = npcId;
     this.name = name;
@@ -37,6 +42,11 @@ export class NPC {
     this.dialogue = dialogue;
     this.memory = { ...memory };
     this.appearanceId = appearanceId;
+    this.archetype = archetype;
+    this.role = role;
+    this.tags = Array.isArray(tags) ? Array.from(new Set(tags)) : [];
+    this.behaviorProfile = behaviorProfile;
+    this.dialogueProfile = dialogueProfile;
   }
 
   /**
@@ -203,7 +213,12 @@ export class NPC {
       attitude: this.attitude,
       dialogue: this.dialogue,
       memory: this.memory,
-      appearanceId: this.appearanceId
+      appearanceId: this.appearanceId,
+      archetype: this.archetype,
+      role: this.role,
+      tags: Array.isArray(this.tags) ? [...this.tags] : [],
+      behaviorProfile: this.behaviorProfile,
+      dialogueProfile: this.dialogueProfile
     };
   }
 

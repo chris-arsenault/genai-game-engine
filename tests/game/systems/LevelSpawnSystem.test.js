@@ -257,6 +257,28 @@ describe('LevelSpawnSystem', () => {
 
       expect(entityId).toBeNull();
     });
+
+    it('should derive guard archetype for security factions', () => {
+      const npcData = {
+        npcId: 'npc_guard',
+        name: 'Security Operative',
+        position: { x: 320, y: 220 },
+        faction: 'vanguard_prime',
+        hasDialogue: false,
+      };
+
+      const entityId = system.spawnNPC(npcData);
+
+      const factionComponent = componentRegistry.getComponent(entityId, 'Faction');
+      const npcComponent = componentRegistry.getComponent(entityId, 'NPC');
+      const navigationAgent = componentRegistry.getComponent(entityId, 'NavigationAgent');
+
+      expect(factionComponent.behaviorProfile).toBe('guard');
+      expect(npcComponent.behaviorProfile).toBe('guard');
+      expect(npcComponent.archetype).toBe('guard');
+      expect(navigationAgent.metadata.behaviorProfile).toBe('guard');
+      expect(Array.from(factionComponent.tags)).toEqual(expect.arrayContaining(['security', 'enforcer']));
+    });
   });
 
   describe('spawnEvidence', () => {
