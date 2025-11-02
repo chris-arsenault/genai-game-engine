@@ -5,8 +5,8 @@
 
 ## Document Overview
 
-**Version**: 1.7
-**Last Updated**: 2025-11-01 (Session 248 backlog cleanup)
+**Version**: 1.8
+**Last Updated**: 2025-11-02 (Session 257 backlog audit)
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
@@ -19,22 +19,26 @@
 - Tangential initiatives—such as net-new systems, auxiliary tooling, narrative review suites, or analytics dashboards—remain out of scope until roadmap deliverables ship.
 - Telemetry and performance management/testing initiatives are cancelled; do not schedule or create new work in these areas per the 2025-11-04 directive.
 
-### Current High-Priority Focus (Session 228)
+### Current High-Priority Focus (Session 257)
 
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
-| Act 3 Narrative | P0 | Done | Finale cinematic overlay now carries scripted VO beats with voiceover metadata surfaced in-game and documentation captured. | Completed in Session 233 — finale VO script integrated, review packet regenerated, and finale Playwright suite rerun for verification. |
-| AR-050 | P1 | In Progress | Act 2 visual pipeline automation delivers RenderOps packets, inventories, and ai-generated overlays (Memory Parlor neon set) with luminance/tolerance snapshots tracked across reports. | RenderOps approval watcher automation stages packets once acknowledgements land, and the weekly cron re-runs `art:track-bespoke`, `art:package-renderops`, and `art:export-crossroads-luminance` without manual intervention. |
-| CORE-303 | P1 | Done | InvestigationSystem loops now validated end-to-end via automation; tutorial evidence, deduction board, and Captain Reese beats execute through the scripted investigative loop. | Nightly automation runs `npx playwright test tests/e2e/tutorial-investigative-loop.spec.js tests/e2e/tutorial-overlay.spec.js` to guard upcoming quest log UI changes. |
-| M3-003 | P1 | Pending | ECS faction system components, systems, and Jest scaffolding are outlined but paused, awaiting upstream faction data contracts. | Resume after M3-002 readiness and keep validation inside scripted faction behaviour suites—no manual QA loops. |
-| M2-005 | P1 | Done | Deduction board pointer routing now ships with telemetry guardrails so drag/drop responsiveness stays under the input-lag target alongside existing automation coverage; Session 256 re-verified the responsiveness budget via telemetry and targeted Jest. | Automation guardrails (`npm run telemetry:performance`, `npx playwright test tests/e2e/tutorial-investigative-loop.spec.js`) continue monitoring regressions—no manual follow-up required. |
+| AR-004 | P1 | In Progress | Civilian and guard NPC atlases regenerated via GPT-Image-1 in Session 257; manifests under `assets/generated/images/ar-004/` are flagged `ai-generated` and ready for animation slicing. | Queue the refreshed atlases through `node scripts/art/queueGenerationRequests.js --filter=AR-004` so the automation pipeline slices/exports loops, then rely on targeted Jest runs when the manifests update. |
+| AR-050 | P1 | In Progress | RenderOps packets, luminance snapshots, and bespoke tracking continue running through the asset automation suite without manual staging. | Allow the weekly `art:track-bespoke`, `art:package-renderops`, and `art:export-crossroads-luminance` sweeps to execute; investigate only if telemetry raises anomalies. |
+| M3-016 | P2 | In Progress | Save/Load dashboards, acknowledgement sweeps, and distribution tooling regenerate automatically each export window with parity scripts keeping coverage at 100%. | Depend on the telemetry cron to launch `npm run telemetry:ack` and `npm run telemetry:distribute-save-load`; review dashboards solely when automation surfaces alerts. |
+| M3-003 | P1 | Pending | Faction system scaffolding remains staged awaiting the automated data contract feed; regression suites sit ready for activation once dependencies unlock. | Hold until M3-002 signals readiness and keep all validation inside scripted faction behaviour suites—no manual check-ins. |
 
 **Next Session Focus**:
-- Monitor the weekly automation sweeps (`npm run art:track-bespoke`, `npm run art:package-renderops`, `npm run art:export-crossroads-luminance`) through telemetry; no manual staging required.
-- Rely on the nightly Playwright pipeline (`tests/e2e/tutorial-investigative-loop.spec.js`, `tests/e2e/tutorial-overlay.spec.js`) for investigative loop regression coverage—investigate only if automation signals regressions.
-- Monitor the telemetry performance snapshot pointer metrics; rerun `npm run telemetry:performance` only if automation flags pointer regressions.
-- Hold **M3-003** in staged state until the automated data contract feed unblocks the ECS work; watch the telemetry notifier rather than manual check-ins.
-- Camera bounds automation sealed: scene loaders emit `metadata.cameraBounds` and Game applies the bounds automatically; rely on Jest coverage (`tests/game/Game.cameraBounds.test.js`, `tests/game/scenes/Act1Scene.boundaries.test.js`) for regression guardrails.
+- Push the refreshed AR-004 NPC atlases through the automation queue (`node scripts/art/queueGenerationRequests.js --filter=AR-004`) and wait for the slicing job to publish updated manifests before rerunning targeted Jest coverage.
+- Continue monitoring AR-050 via the weekly automation sweeps (`art:track-bespoke`, `art:package-renderops`, `art:export-crossroads-luminance`); intervene only on telemetry alerts.
+- Let the telemetry cron handle save/load acknowledgements and distribution (`npm run telemetry:ack`, `npm run telemetry:distribute-save-load`); review dashboards when automation raises exceptions.
+- Keep **M3-003** staged until the automated data contract notifier unlocks the faction work; maintain WIP within the ten-item ceiling.
+
+### Session #257 Backlog Maintenance
+
+- Promoted **M1-020: AssetLoader Implementation** to `review-approved`, documenting that existing Jest suites and the full `npm test` run guard retry/timeout behaviour without manual QA.
+- Rewrote next steps for **AR-004**, **AR-001**, and **M3-016** so follow-ups depend on scripted queues, telemetry crons, and Jest automation rather than manual staging.
+- Confirmed high-priority WIP (AR-004, AR-050, M3-016) stays within the automation-first mandate and below the WIP ceiling; no additional backlog pulls required.
 
 ### Session #256 Backlog Maintenance
 
