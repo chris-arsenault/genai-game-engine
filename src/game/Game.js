@@ -27,6 +27,7 @@ import { DeductionSystem } from './systems/DeductionSystem.js';
 import { NavigationConstraintSystem } from './systems/NavigationConstraintSystem.js';
 import { TutorialTranscriptRecorder } from './tutorial/TutorialTranscriptRecorder.js';
 import { SocialStealthSystem } from './systems/SocialStealthSystem.js';
+import { RestrictedAreaSystem } from './systems/RestrictedAreaSystem.js';
 
 // State
 import { WorldStateStore } from './state/WorldStateStore.js';
@@ -586,6 +587,16 @@ export class Game {
       this.factionManager
     );
 
+    this.gameSystems.restrictedArea = new RestrictedAreaSystem(
+      this.componentRegistry,
+      this.eventBus,
+      {
+        storyFlagManager: this.storyFlagManager,
+        worldStateStore: this.worldStateStore,
+        factionManager: this.factionManager,
+      }
+    );
+
     // Create social stealth system (sits on top of disguise/navigation events)
     this.gameSystems.socialStealth = new SocialStealthSystem(
       this.componentRegistry,
@@ -739,6 +750,7 @@ export class Game {
       ['npcMemory', this.gameSystems.npcMemory],
       ['firewallScrambler', this.gameSystems.firewallScrambler],
       ['disguise', this.gameSystems.disguise],
+      ['restrictedArea', this.gameSystems.restrictedArea],
       ['socialStealth', this.gameSystems.socialStealth],
       ['collision', this.gameSystems.collision],
       ['trigger', this.gameSystems.trigger],

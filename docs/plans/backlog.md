@@ -5,8 +5,8 @@
 
 ## Document Overview
 
-**Version**: 1.16
-**Last Updated**: 2025-11-09 (Session 278 backlog cleanup & automation alignment)
+**Version**: 1.17
+**Last Updated**: 2025-11-02 (Session 279 restricted area mechanics delivery)
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
@@ -27,14 +27,18 @@
 | AR-001 | P0 | Pending | Deduction board UI asset pack remains queued through the art automation pipeline with prompts/manifests packaged. | Let nightly `node scripts/art/queueGenerationRequests.js --filter=AR-001` feed the queue and consume manifest diffs once automation delivers. |
 | M3-016 | P2 | In Progress | Save/Load system automation is finalising autosave polish through telemetry and distribution scripts. | Telemetry cron runs `npm run telemetry:ack` and `npm run telemetry:distribute-save-load`; monitor dashboards for anomalies only. |
 | M2-016 | P1 | Pending | Baseline DialogueSystem delivery with branching choices, consequence tracking, and UI polish. | Keep DialogueSystem Jest and Playwright coverage primed to gate activation without manual dry runs. |
-| M3-015 | P1 | Pending | Restricted Area mechanics stand ready to extend infiltration gating once scheduled. | Stage stealth Playwright coverage to validate restricted access flows when implementation starts; no manual QA loops. |
+| M3-015 | P1 | Done | Restricted Area System landed; infiltration zones now honor disguises and scrambler credentials with automated coverage. | Monitor stealth telemetry only; no manual interventions required. |
 
 **Next Session Focus**:
 - Continue monitoring **AR-050** automation sweeps; intervene only if telemetry flags anomalies.
 - Keep **M2-016** poised for activation by leaning on DialogueSystem regression automation instead of manual rehearsal.
 - Let **M3-016** telemetry scripts (`npm run telemetry:ack`, `npm run telemetry:distribute-save-load`) settle the save/load queue and surface issues automatically.
 - Allow **AR-001** generation runs to deliver deduction board UI assets via the nightly queue before wiring updates.
-- Maintain WIP ceiling adherence while grooming infiltration backlog items like **M3-015** for automation-ready pickup.
+- Maintain WIP ceiling adherence while grooming DialogueSystem and save/load follow-ups; restricted area mechanics no longer need manual attention.
+
+### Session #279 Backlog Maintenance
+
+- Implemented **M3-015 Restricted Area Mechanics**, introducing `RestrictedAreaSystem`, data-driven access policies, and Jest coverage to keep infiltration gating automated.
 
 ### Session #278 Backlog Maintenance
 
@@ -2921,6 +2925,7 @@ _Progress 2025-11-03 (Session #256 guardrail verification): Re-ran the pointer c
   - Access restrictions enforced
 
 #### M3-015: Restricted Area Mechanics
+- **Status**: Done (Session 279)
 - **Priority**: P1
 - **Tags**: `gameplay`, `faction`
 - **Effort**: 4 hours
@@ -2938,6 +2943,12 @@ _Progress 2025-11-03 (Session #256 guardrail verification): Re-ran the pointer c
   - Credentials checked correctly
   - Disguises grant access appropriately
   - Unauthorized entry triggers detection
+- **Completed Work**:
+  - Added `RestrictedAreaSystem` with policy-based credential checks, navigation unlock management, and trespass penalties.
+  - Authored restricted area definitions covering Memory Parlor infiltration and faction defaults.
+  - Added `tests/game/systems/RestrictedAreaSystem.test.js` to exercise disguise, denial, and scrambler-powered entry paths.
+- **Verification**:
+  - `npm test -- --runTestsByPath tests/game/systems/RestrictedAreaSystem.test.js`
 
 #### M3-016: Save/Load System Implementation
 - **Priority**: P0
