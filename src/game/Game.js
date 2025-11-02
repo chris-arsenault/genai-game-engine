@@ -12,6 +12,7 @@ import { PlayerMovementSystem } from './systems/PlayerMovementSystem.js';
 import { PlayerAnimationSystem } from './systems/PlayerAnimationSystem.js';
 import { InvestigationSystem } from './systems/InvestigationSystem.js';
 import { FactionReputationSystem } from './systems/FactionReputationSystem.js';
+import { FactionSystem } from './systems/FactionSystem.js';
 import { KnowledgeProgressionSystem } from './systems/KnowledgeProgressionSystem.js';
 import { DialogueSystem } from './systems/DialogueSystem.js';
 import { CameraFollowSystem } from './systems/CameraFollowSystem.js';
@@ -485,6 +486,13 @@ export class Game {
       }
     );
 
+    // Create faction system to bridge reputation state into ECS
+    this.gameSystems.faction = new FactionSystem(
+      this.componentRegistry,
+      this.eventBus,
+      this.factionManager
+    );
+
     // Create faction reputation system (now receives FactionManager)
     this.gameSystems.factionReputation = new FactionReputationSystem(
       this.componentRegistry,
@@ -723,6 +731,7 @@ export class Game {
       ['socialStealth', this.gameSystems.socialStealth],
       ['collision', this.gameSystems.collision],
       ['trigger', this.gameSystems.trigger],
+      ['faction', this.gameSystems.faction],
       ['factionReputation', this.gameSystems.factionReputation],
       ['quest', this.gameSystems.quest],
       ['deduction', this.gameSystems.deduction],

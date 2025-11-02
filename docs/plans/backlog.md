@@ -2635,6 +2635,7 @@ _Progress 2025-11-03 (Session #256 guardrail verification): Re-ran the pointer c
 - **Tags**: `gameplay`, `faction`, `ecs`
 - **Effort**: 4 hours
 - **Dependencies**: M3-002, M1-004
+- **Status**: Completed — Session 270 introduced the ECS FactionSystem, added the shared Faction component, routed dialogue variants, and landed Jest coverage (`npm test`).
 - **Description**: ECS system for faction logic
 - **Files**:
   - `src/game/systems/FactionSystem.js`

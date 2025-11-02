@@ -106,6 +106,7 @@ describe('Game.initializeGameSystems', () => {
       'npcMemory',
       'firewallScrambler',
       'disguise',
+      'faction',
       'factionReputation',
       'quest',
       'deduction',

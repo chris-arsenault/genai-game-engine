@@ -8,6 +8,7 @@
 import { Transform } from '../components/Transform.js';
 import { Sprite } from '../components/Sprite.js';
 import { FactionMember } from '../components/FactionMember.js';
+import { Faction } from '../components/Faction.js';
 import { Collider } from '../components/Collider.js';
 import { InteractionZone } from '../components/InteractionZone.js';
 import { NPC } from '../components/NPC.js';
@@ -73,6 +74,14 @@ export function createNPCEntity(entityManager, componentRegistry, npcData) {
     sprite.appearanceId = spriteVariant.id;
   }
   componentRegistry.addComponent(entityId, sprite);
+
+  // Add Faction component (used by FactionSystem)
+  const factionComponent = new Faction({
+    factionId: faction,
+    attitudeOverride: npcData?.attitudeOverride ?? null,
+    tags: Array.isArray(npcData?.factionTags) ? npcData.factionTags : [],
+  });
+  componentRegistry.addComponent(entityId, factionComponent);
 
   // Add FactionMember component
   const factionMember = new FactionMember({
