@@ -5,8 +5,8 @@
 
 ## Document Overview
 
-**Version**: 1.6
-**Last Updated**: 2025-11-23 (Session 238 backlog cleanup)
+**Version**: 1.7
+**Last Updated**: 2025-11-01 (Session 248 backlog cleanup)
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
@@ -24,15 +24,23 @@
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
 | Act 3 Narrative | P0 | Done | Finale cinematic overlay now carries scripted VO beats with voiceover metadata surfaced in-game and documentation captured. | Completed in Session 233 — finale VO script integrated, review packet regenerated, and finale Playwright suite rerun for verification. |
-| AR-050 | P1 | In Progress | Act 2 visual pipeline automation delivers RenderOps packets, inventories, and ai-generated overlays (Memory Parlor neon set) with luminance/tolerance snapshots tracked across reports. | Maintain weekly automation sweeps to keep RenderOps packets current (job `9cc27c03-3b58-4c29-8c71-36dfe28507ae` acknowledged 2025-11-01T19:32:07Z). |
-| CORE-303 | P1 | In Progress | InvestigationSystem loops now validated end-to-end via automation; tutorial evidence, deduction board, and Captain Reese beats execute through the scripted investigative loop. | Run the expanded investigative loop Playwright spec alongside tutorial overlay smoke in the next nightly cycle to guard upcoming quest log UI changes. |
+| AR-050 | P1 | In Progress | Act 2 visual pipeline automation delivers RenderOps packets, inventories, and ai-generated overlays (Memory Parlor neon set) with luminance/tolerance snapshots tracked across reports. | RenderOps approval watcher automation stages packets once acknowledgements land, and the weekly cron re-runs `art:track-bespoke`, `art:package-renderops`, and `art:export-crossroads-luminance` without manual intervention. |
+| CORE-303 | P1 | Done | InvestigationSystem loops now validated end-to-end via automation; tutorial evidence, deduction board, and Captain Reese beats execute through the scripted investigative loop. | Nightly automation runs `npx playwright test tests/e2e/tutorial-investigative-loop.spec.js tests/e2e/tutorial-overlay.spec.js` to guard upcoming quest log UI changes. |
 | M3-003 | P1 | Pending | ECS faction system components, systems, and Jest scaffolding are outlined but paused, awaiting upstream faction data contracts. | Resume after M3-002 readiness and keep validation inside scripted faction behaviour suites—no manual QA loops. |
-| M2-005 | P1 | In Progress | Canvas deduction board now receives runtime pointer routing so drag/drop, hover, and right-click removal operate against live CaseManager validation. | Exercise the tutorial automation path to confirm the board interactions hold under scripted toggles, then profile overlay responsiveness once art lands. |
+| M2-005 | P1 | In Progress | Canvas deduction board now receives runtime pointer routing so drag/drop, hover, and right-click removal operate against live CaseManager validation. | Fold deduction board latency checks into the telemetry performance automation (`npm run telemetry:performance`) after the refreshed art bundle lands and monitor nightly Playwright results instead of manual profiling. |
 
 **Next Session Focus**:
-- Maintain weekly automation sweeps (`npm run art:track-bespoke`, `npm run art:package-renderops`, `npm run art:export-crossroads-luminance`) to keep RenderOps packets current; telemetry acknowledgement recorded for job `9cc27c03-3b58-4c29-8c71-36dfe28507ae`.
-- Schedule the expanded CORE-303 investigative loop Playwright automation with the tutorial overlay smoke suite in the next nightly run to monitor quest log UI updates.
-- Keep M3-003 faction systems staged while upstream faction data finalizes, and move M2-005 deduction board UI into active implementation now that CaseManager objective tracking shipped; ensure Jest and Playwright scaffolds stay primed so work can spin up without manual QA.
+- Monitor the weekly automation sweeps (`npm run art:track-bespoke`, `npm run art:package-renderops`, `npm run art:export-crossroads-luminance`) through telemetry; no manual staging required.
+- Rely on the nightly Playwright pipeline (`tests/e2e/tutorial-investigative-loop.spec.js`, `tests/e2e/tutorial-overlay.spec.js`) for investigative loop regression coverage—investigate only if automation signals regressions.
+- Prepare to extend telemetry performance automation with deduction board latency sampling once the refreshed art bundle merges, keeping manual profiling out of scope.
+- Hold **M3-003** in staged state until the automated data contract feed unblocks the ECS work; watch the telemetry notifier rather than manual check-ins.
+- Capture the camera bounds integration plan inside the automated level/scene loader suite so `setBounds` adopts authoritative world dimensions without manual validation.
+
+### Session #248 Backlog Maintenance
+
+- Marked **CORE-303** as `done` in MCP after confirming nightly Playwright automation covers the investigative loop and tutorial overlays.
+- Updated **AR-050** and **M2-005** backlog entries to depend solely on existing automation pipelines (RenderOps staging, telemetry performance, and Playwright suites), stripping manual scheduling language.
+- Documentation-only session: no new assets generated, code authored, or backlog items created.
 
 ### Session #238 Backlog Updates
 
