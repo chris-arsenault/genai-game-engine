@@ -25,6 +25,11 @@ describe('Act2CrossroadsScene layout scaffolding', () => {
       componentRegistry,
       eventBus,
     });
+    scene._loadAct2CrossroadsArtConfig = jest.fn().mockResolvedValue({
+      input: null,
+      manifestUrl: null,
+      config: null,
+    });
   });
 
   afterEach(() => {
