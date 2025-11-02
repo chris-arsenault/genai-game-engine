@@ -2952,21 +2952,22 @@ _Progress 2025-11-03 (Session #256 guardrail verification): Re-ran the pointer c
 
 #### M3-018: Faction and World Integration Test
 - **Priority**: P1
+- **Status**: Done (Session 272)
+- **Sprint**: Sprint 8 – Final Polish & Production
 - **Tags**: `test`, `faction`
 - **Effort**: 4 hours
 - **Dependencies**: M3-017 (all M3 systems)
-- **Description**: End-to-end faction system test
-- **Test Scenarios**:
-  - Modify reputation, verify cascades
-  - Equip disguise, infiltrate hostile area
-  - NPCs react to reputation changes
-  - District control changes from actions
-  - Save/load preserves all faction state
+- **Owner**: codex
+- **Summary**:
+  - Authored end-to-end Jest coverage (`tests/game/integration/faction-world-integration.test.js`) that drives reputation cascades, disguise access unlocks, NPC dialogue reactions, and world state persistence for the M3 faction pillar.
+  - Validated ally/enemy cascades through `FactionManager` reputation deltas and confirmed `WorldStateStore.snapshot()` hydration retains updated faction/district state.
+- **Verification**:
+  - `npm test -- --runTestsByPath tests/game/integration/faction-world-integration.test.js`
 - **Acceptance Criteria**:
-  - All systems integrate correctly
-  - Reputation cascades work
-  - Disguises enable infiltration
-  - World state persists
+  - All systems integrate correctly. ✅
+  - Reputation cascades work. ✅
+  - Disguises enable infiltration. ✅
+  - World state persists. ✅
 
 #### M3-019: Social Stealth Faction Reactions
 - **Priority**: P1
