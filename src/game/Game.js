@@ -24,6 +24,7 @@ import { ForensicSystem } from './systems/ForensicSystem.js';
 import { DeductionSystem } from './systems/DeductionSystem.js';
 import { NavigationConstraintSystem } from './systems/NavigationConstraintSystem.js';
 import { TutorialTranscriptRecorder } from './tutorial/TutorialTranscriptRecorder.js';
+import { SocialStealthSystem } from './systems/SocialStealthSystem.js';
 
 // State
 import { WorldStateStore } from './state/WorldStateStore.js';
@@ -564,6 +565,13 @@ export class Game {
       this.factionManager
     );
 
+    // Create social stealth system (sits on top of disguise/navigation events)
+    this.gameSystems.socialStealth = new SocialStealthSystem(
+      this.componentRegistry,
+      this.eventBus,
+      this.factionManager
+    );
+
     // Broad-phase collision instrumentation (metrics only for stealth tuning)
     this.gameSystems.collision = new CollisionSystem(
       this.componentRegistry,
@@ -710,6 +718,7 @@ export class Game {
       ['npcMemory', this.gameSystems.npcMemory],
       ['firewallScrambler', this.gameSystems.firewallScrambler],
       ['disguise', this.gameSystems.disguise],
+      ['socialStealth', this.gameSystems.socialStealth],
       ['collision', this.gameSystems.collision],
       ['trigger', this.gameSystems.trigger],
       ['factionReputation', this.gameSystems.factionReputation],

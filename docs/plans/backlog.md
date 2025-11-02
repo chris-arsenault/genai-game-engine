@@ -2780,6 +2780,7 @@ _Progress 2025-11-03 (Session #256 guardrail verification): Re-ran the pointer c
 - **Priority**: P1
 - **Tags**: `gameplay`, `faction`
 - **Effort**: 5 hours
+- **Status**: ✅ Completed — Session 266 delivered the SocialStealthSystem with detection state orchestration, suspicion pressure tuning, and automated coverage (Codex)
 - **Dependencies**: M3-008
 - **Description**: Social stealth system
 - **Files**:
