@@ -98,6 +98,16 @@ export class EventBus {
    * @param {Function} callback - Callback to remove
    */
   off(eventType, callback) {
+    if (eventType.includes('*')) {
+      for (let i = this.wildcardListeners.length - 1; i >= 0; i--) {
+        const listener = this.wildcardListeners[i];
+        if (listener.pattern === eventType && listener.callback === callback) {
+          this.wildcardListeners.splice(i, 1);
+        }
+      }
+      return;
+    }
+
     const listeners = this.listeners.get(eventType);
     if (!listeners) {
       return;
@@ -106,6 +116,9 @@ export class EventBus {
     const index = listeners.findIndex((l) => l.callback === callback);
     if (index !== -1) {
       listeners.splice(index, 1);
+      if (listeners.length === 0) {
+        this.listeners.delete(eventType);
+      }
     }
   }
 
@@ -271,12 +284,18 @@ export class EventBus {
    */
   clear(eventType = null) {
     if (eventType) {
+      if (eventType.includes('*')) {
+        this.wildcardListeners = this.wildcardListeners.filter((listener) => listener.pattern !== eventType);
+        return;
+      }
+
       this.listeners.delete(eventType);
-    } else {
-      this.listeners.clear();
-      this.wildcardListeners = [];
-      this.eventQueue.clear();
+      return;
     }
+
+    this.listeners.clear();
+    this.wildcardListeners = [];
+    this.eventQueue.clear();
   }
 
   /**

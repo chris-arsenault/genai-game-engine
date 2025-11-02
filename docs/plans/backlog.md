@@ -1846,6 +1846,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 ### Week 3: Event Bus, Assets, and Integration
 
 #### M1-017: EventBus Core Implementation
+- **Status**: Done (Session 261 – wildcard unsubscribe parity)
 - **Priority**: P0
 - **Tags**: `engine`
 - **Effort**: 4 hours
