@@ -98,6 +98,14 @@ export function createAct2CrossroadsBriefingDialogue(options = {}) {
       text: 'Okay, detective - three leads, three headaches. Want the quick download or feeling decisive tonight?',
       metadata: {
         useFactionGreeting: true,
+        attitudeVariants: {
+          hostile: 'Network nodes are closing on you, detective. Say your piece fast or the Wraith Network cuts the channel.',
+          unfriendly: 'Signals jitter around your ID. I will brief you, but do not expect favors tonight.',
+          neutral: 'Okay, detective - three leads, three headaches. Want the quick download or feeling decisive tonight?',
+          friendly: 'Your last pulls kept the network alive. I stacked the intel, ready for whichever thread you want to burn down.',
+          allied: 'Shadowspace is yours tonight, partner. Three leads and every node is primed the moment you call it.',
+          default: 'Okay, detective - three leads, three headaches. Want the quick download or feeling decisive tonight?'
+        },
       },
       choices: [
         {

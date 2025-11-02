@@ -23,7 +23,15 @@ export const DIALOGUE_REESE_BRIEFING = new DialogueTree({
       speaker: 'Captain Reese',
       text: 'Detective Voss. I know this is difficult, but we need you on this case. Alex was your partner... and your friend. But what happened to them... it\'s not natural.',
       metadata: {
-        useFactionGreeting: true
+        useFactionGreeting: true,
+        attitudeVariants: {
+          hostile: 'Command wants eyes on you, Voss. You are only on this hollow case because no one else will touch it.',
+          unfriendly: 'Your last operation rattled command, but we still need you focused on this hollow case.',
+          neutral: 'Detective Voss. I know this is difficult, but we need you on this case. Alex was your partner... and your friend. But what happened to them... it\'s not natural.',
+          friendly: 'You have the task force on your side, Voss. Take the resources you need; this hollow case is yours.',
+          allied: 'You are the operator I trust above all others. Lead this hollow case and Vanguard Prime will clear the way.',
+          default: 'Detective Voss. I know this is difficult, but we need you on this case. Alex was your partner... and your friend. But what happened to them... it\'s not natural.'
+        }
       },
       choices: [
         {
@@ -358,7 +366,15 @@ export const DIALOGUE_CIPHER_QUARTERMASTER = new DialogueTree({
       speaker: 'Cipher Quartermaster',
       text: 'The Collective does not open the locker for badge-carrying detectives. State your need or move along.',
       metadata: {
-        useFactionGreeting: true
+        useFactionGreeting: true,
+        attitudeVariants: {
+          hostile: 'Collective security flagged you as a breach vector; the locker stays sealed and your presence logged.',
+          unfriendly: 'Your logic is under audit, detective. Speak quickly if you want us to consider any request.',
+          neutral: 'The Collective does not open the locker for badge-carrying detectives. State your need or move along.',
+          friendly: 'Your recent data drops still circulate. Say the word and I will surface a scrambler from reserves.',
+          allied: 'Vault access is unlocked for you. Take the scrambler and I will queue spare charges.',
+          default: 'The Collective does not open the locker for badge-carrying detectives. State your need or move along.'
+        }
       },
       choices: [
         {

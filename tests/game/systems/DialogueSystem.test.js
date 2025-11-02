@@ -6,6 +6,11 @@
 
 import { DialogueSystem } from '../../../src/game/systems/DialogueSystem.js';
 import { DialogueTree } from '../../../src/game/data/DialogueTree.js';
+import {
+  DIALOGUE_REESE_BRIEFING,
+  DIALOGUE_CIPHER_QUARTERMASTER,
+} from '../../../src/game/data/dialogues/Act1Dialogues.js';
+import { createAct2CrossroadsBriefingDialogue } from '../../../src/game/data/dialogues/Act2CrossroadsDialogue.js';
 
 describe('DialogueSystem', () => {
   let system;
@@ -290,6 +295,66 @@ describe('DialogueSystem', () => {
       expect(startEvent).toBeDefined();
       expect(startEvent.data.text).toBe('Vanguard Prime marks you as a security risk. State your intent.');
       expect(startEvent.data.textVariant).toBe('hostile');
+    });
+
+    it('prefers bespoke Vanguard Prime variants over greeting defaults', () => {
+      const reeseTree = new DialogueTree(DIALOGUE_REESE_BRIEFING.toJSON());
+      system.registerDialogueTree(reeseTree);
+
+      mockFactionSystem.getFactionAttitude.mockReturnValue('allied');
+      mockFactionSystem.getAllStandings.mockReturnValue({
+        vanguard_prime: { fame: 90, infamy: 0, attitude: 'allied' },
+      });
+
+      system.startDialogue('captain_reese', reeseTree.id);
+
+      const startEvent = emittedEvents.find((e) => e.eventType === 'dialogue:started');
+      expect(startEvent).toBeDefined();
+      expect(startEvent.data.text).toBe(
+        'You are the operator I trust above all others. Lead this hollow case and Vanguard Prime will clear the way.'
+      );
+      expect(startEvent.data.textVariant).toBe('allied');
+    });
+
+    it('uses bespoke Cipher quartermaster variants when standings are unfriendly', () => {
+      const cipherTree = new DialogueTree(DIALOGUE_CIPHER_QUARTERMASTER.toJSON());
+      system.registerDialogueTree(cipherTree);
+
+      mockFactionSystem.getFactionAttitude.mockReturnValue('unfriendly');
+      mockFactionSystem.getAllStandings.mockReturnValue({
+        cipher_collective: { fame: 20, infamy: 40, attitude: 'unfriendly' },
+      });
+
+      system.startDialogue('cipher_quartermaster', cipherTree.id);
+
+      const startEvent = emittedEvents.find((e) => e.eventType === 'dialogue:started');
+      expect(startEvent).toBeDefined();
+      expect(startEvent.data.text).toBe(
+        'Your logic is under audit, detective. Speak quickly if you want us to consider any request.'
+      );
+      expect(startEvent.data.textVariant).toBe('unfriendly');
+    });
+
+    it('delivers allied Wraith Network bespoke briefing lines', () => {
+      const wraithTree = createAct2CrossroadsBriefingDialogue({
+        npcId: 'zara_variant_test',
+        dialogueId: 'test_act2_crossroads_bespoke',
+      });
+      system.registerDialogueTree(wraithTree);
+
+      mockFactionSystem.getFactionAttitude.mockReturnValue('allied');
+      mockFactionSystem.getAllStandings.mockReturnValue({
+        wraith_network: { fame: 85, infamy: 0, attitude: 'allied' },
+      });
+
+      system.startDialogue('zara_variant_test', wraithTree.id);
+
+      const startEvent = emittedEvents.find((e) => e.eventType === 'dialogue:started');
+      expect(startEvent).toBeDefined();
+      expect(startEvent.data.text).toBe(
+        'Shadowspace is yours tonight, partner. Three leads and every node is primed the moment you call it.'
+      );
+      expect(startEvent.data.textVariant).toBe('allied');
     });
 
     it('resolves dialogue aliases before starting dialogue', () => {

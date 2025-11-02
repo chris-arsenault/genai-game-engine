@@ -5,8 +5,8 @@
 
 ## Document Overview
 
-**Version**: 1.12
-**Last Updated**: 2025-11-06 (Session 271 social stealth faction reactions)
+**Version**: 1.13
+**Last Updated**: 2025-11-07 (Session 274 bespoke faction dialogue scenes)
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
@@ -19,21 +19,24 @@
 - Tangential initiatives—such as net-new systems, auxiliary tooling, narrative review suites, or analytics dashboards—remain out of scope until roadmap deliverables ship.
 - Telemetry and performance management/testing initiatives are cancelled; do not schedule or create new work in these areas per the 2025-11-04 directive.
 
-### Current High-Priority Focus (Session 259)
+### Current High-Priority Focus (Session 274)
 
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
+| M3-023 | P1 | In Progress | Bespoke faction dialogue variants seeded across key story beats so reputation shifts carry unique tone beyond shared greetings. | Extend bespoke coverage to additional mission-critical scenes once narrative sign-off lands and keep automated tests green. |
 | AR-050 | P1 | In Progress | RenderOps packets, luminance snapshots, and bespoke tracking continue running through the asset automation suite without manual staging. | Allow the weekly `art:track-bespoke`, `art:package-renderops`, and `art:export-crossroads-luminance` sweeps to execute; investigate only if telemetry raises anomalies. |
-| AR-009 | P2 | Review Approved | Procedural AR-009 ambience suite generated via `scripts/audio/generateAr009EnvironmentalSfx.js` with deterministic WAV assets staged in `assets/generated/audio/ar-009/`. | Trigger the automated audio playbook export now that mixer routing auto-registers the loops—documentation remains script-generated. |
-| M3-016 | P2 | In Progress | Save/Load dashboards, acknowledgement sweeps, and distribution tooling regenerate automatically each export window with parity scripts keeping coverage at 100%. | Depend on the telemetry cron to launch `npm run telemetry:ack` and `npm run telemetry:distribute-save-load`; review dashboards solely when automation surfaces alerts. |
-| M3-003 | P1 | Pending | Faction system scaffolding remains staged awaiting the automated data contract feed; regression suites sit ready for activation once dependencies unlock. | Hold until M3-002 signals readiness and keep all validation inside scripted faction behaviour suites—no manual check-ins. |
+| M2-017 | P1 | Pending | Interview witnesses and suspects with approach-driven reactions and contradiction detection. | Unlock after M2-016 completes; plan ECS hooks and testimony storage once dialogue foundation stabilizes. |
+| M2-016 | P1 | Pending | Baseline DialogueSystem delivery with branching choices, consequence tracking, and UI polish. | Audit remaining acceptance criteria and line up UI validation before moving downstream dependencies. |
 
 **Next Session Focus**:
-- Verify the automated AR-009 loop registration during audio integration smoke passes; ensure the generated module stays in sync with subsequent routing tweaks.
-- Trigger the audio playbook automation once AR-009 wiring lands so infiltration mix guidance publishes without manual drafting.
-- Continue monitoring AR-050 via the weekly automation sweeps (`art:track-bespoke`, `art:package-renderops`, `art:export-crossroads-luminance`); intervene only on telemetry alerts.
-- Let the telemetry cron handle save/load acknowledgements and distribution (`npm run telemetry:ack`, `npm run telemetry:distribute-save-load`); review dashboards when automation raises exceptions.
-- Keep **M3-003** staged until the automated data contract notifier unlocks the faction work; maintain WIP within the ten-item ceiling.
+- Wrap narrative documentation for **M3-023** bespoke variants and identify the next mission scenes that need faction-specific copy.
+- Continue monitoring **AR-050** automation runs and respond only if telemetry flags anomalies.
+- Prepare planning notes so **M2-016** can close without blocking the interview mechanics sequence.
+- Maintain WIP ceiling adherence while staging the next faction narrative beats.
+
+### Session #274 Backlog Maintenance
+
+- Opened **M3-023: Bespoke Faction Dialogue Scenes**, seeded new attitude variants for the Reese briefing, Cipher quartermaster exchange, and Wraith Crossroads briefing, and verified coverage via `npm test -- --runTestsByPath tests/game/systems/DialogueSystem.test.js`.
 
 ### Session #268 Backlog Maintenance
 
