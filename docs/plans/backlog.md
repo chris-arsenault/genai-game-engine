@@ -6,7 +6,7 @@
 ## Document Overview
 
 **Version**: 1.10
-**Last Updated**: 2025-11-02 (Session 260 EventQueue integration)
+**Last Updated**: 2025-11-03 (Session 263 AssetManager priority queue)
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
@@ -33,6 +33,10 @@
 - Continue monitoring AR-050 via the weekly automation sweeps (`art:track-bespoke`, `art:package-renderops`, `art:export-crossroads-luminance`); intervene only on telemetry alerts.
 - Let the telemetry cron handle save/load acknowledgements and distribution (`npm run telemetry:ack`, `npm run telemetry:distribute-save-load`); review dashboards when automation raises exceptions.
 - Keep **M3-003** staged until the automated data contract notifier unlocks the faction work; maintain WIP within the ten-item ceiling.
+
+### Session #263 Backlog Maintenance
+
+- Closed **M1-021: AssetManager Implementation** after introducing a priority-governed load queue with per-tier concurrency caps, refactoring preloads to reuse the queue, and expanding Jest coverage (`npm test -- AssetManager`) to lock critical/district/optional sequencing.
 
 ### Session #260 Backlog Maintenance
 
@@ -1953,9 +1957,19 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
 - **Effort**: 5 hours
 - **Dependencies**: M1-020
 - **Description**: Asset loading and caching system
+- **Status**: Done — Session 263 (priority queue integration)
 - **Files**:
   - `src/engine/assets/AssetManager.js`
   - `tests/engine/assets/AssetManager.test.js`
+- **Completed Work**:
+  - Introduced a manifest-driven priority queue with per-tier concurrency caps so critical assets drain before district and optional tiers execute.
+  - Refactored preload flows onto the shared queue via `_queuePriorityBatch`, preserving progress telemetry while allowing optional loads to run in the background.
+  - Hardened error reporting for batch loads using `AssetLoadError.buildTelemetryContext` and structured logging for tiered failures.
+  - Expanded Jest coverage to validate queue ordering, refcount persistence, and progress events across critical/district/optional loads.
+- **Verification**:
+  - `npm test -- AssetManager`
+- **Next Steps**:
+  - Continue monitoring optional background queues for telemetry regressions; rerun targeted Jest suites if asset manifests change materially.
 - **Implementation Requirements**:
   - Asset registry (by key)
   - Reference counting
