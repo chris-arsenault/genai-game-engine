@@ -5,8 +5,8 @@
 
 ## Document Overview
 
-**Version**: 1.9
-**Last Updated**: 2025-11-02 (Session 259 automation queue)
+**Version**: 1.10
+**Last Updated**: 2025-11-02 (Session 260 EventQueue integration)
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
@@ -33,6 +33,10 @@
 - Continue monitoring AR-050 via the weekly automation sweeps (`art:track-bespoke`, `art:package-renderops`, `art:export-crossroads-luminance`); intervene only on telemetry alerts.
 - Let the telemetry cron handle save/load acknowledgements and distribution (`npm run telemetry:ack`, `npm run telemetry:distribute-save-load`); review dashboards when automation raises exceptions.
 - Keep **M3-003** staged until the automated data contract notifier unlocks the faction work; maintain WIP within the ten-item ceiling.
+
+### Session #260 Backlog Maintenance
+
+- Closed **M1-018: EventQueue Implementation** after landing the priority-aware queue (`src/engine/events/EventQueue.js`), wiring it through `EventBus`, and validating via full `npm test` coverage including new `tests/engine/events/EventQueue.test.js`.
 
 ### Session #259 Backlog Maintenance
 
@@ -1864,6 +1868,7 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Unit tests pass with >80% coverage
 
 #### M1-018: EventQueue Implementation
+- **Status**: Done (Session 260)
 - **Priority**: P1
 - **Tags**: `engine`
 - **Effort**: 3 hours
@@ -1883,6 +1888,10 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Priority queue ordering correct
   - Batch processing efficient
   - No dropped events under load
+- **Completion Notes**:
+  - Added `EventQueue` with priority-aware batching, overflow strategies, metrics, and interval ticking (`src/engine/events/EventQueue.js`).
+  - Updated `EventBus` deferred dispatch to delegate to the new queue, enabling priority ordering and capacity controls for queued emissions.
+  - Verification: `npm test` (includes `tests/engine/events/EventQueue.test.js`).
 
 #### M1-019: Event Naming Convention Documentation
 - **Priority**: P2

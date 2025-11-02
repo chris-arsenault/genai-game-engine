@@ -15,10 +15,17 @@
  * // Emit event
  * eventBus.emit('entity:damaged', { entityId: 5, damage: 10 });
  */
+import { EventQueue } from './EventQueue.js';
+
 export class EventBus {
   constructor() {
     this.listeners = new Map(); // eventType -> Array<{callback, context, priority}>
-    this.eventQueue = []; // Deferred events processed at end of frame
+    this.eventQueue = new EventQueue({
+      maxSize: 4096,
+      maxBatchSize: 128,
+      defaultPriority: 50,
+      overflowStrategy: 'drop-lowest-priority',
+    });
     this.isProcessing = false;
     this.wildcardListeners = []; // Wildcard subscriptions (e.g., 'entity:*')
     this.unhandledEvents = new Map(); // eventType -> { count, lastPayload, lastTimestamp }
@@ -170,8 +177,8 @@ export class EventBus {
    * @param {string} eventType - Event type
    * @param {object} data - Event data
    */
-  enqueue(eventType, data = {}) {
-    this.eventQueue.push({ eventType, data });
+  enqueue(eventType, data = {}, options = {}) {
+    this.eventQueue.enqueue(eventType, data, options);
   }
 
   /**
@@ -185,15 +192,9 @@ export class EventBus {
 
     this.isProcessing = true;
 
-    // Make a copy of the queue and clear it
-    const queue = [...this.eventQueue];
-    this.eventQueue = [];
-
-    // Process all queued events
-    for (let i = 0; i < queue.length; i++) {
-      const event = queue[i];
+    this.eventQueue.drain((event) => {
       this.emit(event.eventType, event.data);
-    }
+    });
 
     this.isProcessing = false;
   }
@@ -274,7 +275,7 @@ export class EventBus {
     } else {
       this.listeners.clear();
       this.wildcardListeners = [];
-      this.eventQueue = [];
+      this.eventQueue.clear();
     }
   }
 
