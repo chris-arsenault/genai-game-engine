@@ -467,14 +467,21 @@
     "license": "Internal generation (OpenAI gpt-image-1)",
     "status": "ai-generated",
     "usage": "Five 32x32 civilian NPC variants for social hubs and investigation scenes.",
-    "notes": "Session 200 automated generation delivered faction-signature civilian variants with diverse silhouettes, replacing placeholder art.",
-    "generatedAt": "2025-11-01T00:16:41Z",
+    "notes": "Session 200 automated generation delivered faction-signature civilian variants with diverse silhouettes, replacing placeholder art. Session 257 refresh regenerated the civilian pack with updated faction color grading and silhouette polish.",
+    "generatedAt": "2025-11-02T03:17:03Z",
+    "updatedAt": "2025-11-02T03:17:03Z",
     "route": "ai",
     "statusHistory": [
       {
         "status": "ai-generated",
         "recordedAt": "2025-11-01T00:16:41Z",
         "context": "Automated GPT-Image sweep produced the civilian NPC sprite pack.",
+        "route": "ai"
+      },
+      {
+        "status": "ai-regenerated",
+        "recordedAt": "2025-11-02T03:17:03Z",
+        "context": "Session 257 refreshed the civilian NPC sprites via mcp__generate-image__generate_image to improve faction readability and lighting balance.",
         "route": "ai"
       }
     ]
@@ -488,14 +495,21 @@
     "license": "Internal generation (OpenAI gpt-image-1)",
     "status": "ai-generated",
     "usage": "Three 32x32 guard NPC variants for stealth patrols.",
-    "notes": "Session 200 GPT-Image run produced security guards with visor glow and faction insignia, ready for patrol animation integration.",
-    "generatedAt": "2025-11-01T00:16:41Z",
+    "notes": "Session 200 GPT-Image run produced security guards with visor glow and faction insignia, ready for patrol animation integration. Session 257 refresh regenerated the guard pack to standardize visor luminosity and detection matrix accents.",
+    "generatedAt": "2025-11-02T03:17:03Z",
+    "updatedAt": "2025-11-02T03:17:03Z",
     "route": "ai",
     "statusHistory": [
       {
         "status": "ai-generated",
         "recordedAt": "2025-11-01T00:16:41Z",
         "context": "Automated GPT-Image sweep produced the guard NPC sprite pack.",
+        "route": "ai"
+      },
+      {
+        "status": "ai-regenerated",
+        "recordedAt": "2025-11-02T03:17:03Z",
+        "context": "Session 257 refreshed the guard NPC sprites via mcp__generate-image__generate_image to sync visor readouts with stealth encounter cues.",
         "route": "ai"
       }
     ]

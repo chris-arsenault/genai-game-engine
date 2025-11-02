@@ -132,7 +132,9 @@
       "title": "Civilian NPC Sprite Pack",
       "usage": "Five 32x32 civilian NPC variants for social hubs and investigation scenes.",
       "notes": "Represent faction-aligned outfits; include gender-diverse silhouettes. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md",
-      "status": "pending-sourcing",
+      "status": "ai-generated",
+      "generatedAt": "2025-11-02T03:17:03Z",
+      "deliveredPath": "assets/generated/images/ar-004/image-ar-004-npc-civilian-pack.png",
       "prompt": "set of five pixel art civilians for neon city hub, 32x32 sprites, diverse body types and genders, faction color accents (teal, amber, violet), layered streetwear with tech accessories, neutral walking posture, transparent background, consistent lighting",
       "negativePrompt": "blurry, low detail, muted colors, anachronistic fashion, steampunk, fantasy armor, logo watermark, text overlay, hands, humanoid distortion, artifacting, low resolution, grainy",
       "label": "Civilian NPC Pack"
@@ -143,7 +145,9 @@
       "title": "Security Guard NPC Sprite Pack",
       "usage": "Three 32x32 guard NPC variants for stealth patrols.",
       "notes": "Include visor glow for detection cues; integrate faction insignia. | Prompt drafted; see docs/assets/generation-prompts-ar-001-005.md",
-      "status": "pending-sourcing",
+      "status": "ai-generated",
+      "generatedAt": "2025-11-02T03:17:03Z",
+      "deliveredPath": "assets/generated/images/ar-004/image-ar-004-npc-guard-pack.png",
       "prompt": "pack of three pixel art security guards, 32x32 sprites, armored jackets with glowing visors, faction insignia on shoulder, patrolling stance, color-coded detection matrix lights, transparent background, stealth-action tone",
       "negativePrompt": "blurry, low detail, muted colors, anachronistic fashion, steampunk, fantasy armor, logo watermark, text overlay, hands, humanoid distortion, artifacting, low resolution, grainy",
       "label": "Security Guard Pack"

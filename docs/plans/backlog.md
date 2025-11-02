@@ -3111,7 +3111,10 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Guard NPCs (3 variations, 32x32)
 - Faction-specific clothing/colors
 - **File**: `assets/images/requests.json`
-- **Status**: Civilian and guard NPC packs AI-generated in Session 200; sprites staged under `assets/generated/images/ar-004/` awaiting animation hookup.
+- **Status**: Session 257 refreshed civilian and guard NPC sprite packs via GPT-Image-1; updated atlases live under `assets/generated/images/ar-004/` with manifest + payload metadata marked `ai-generated`.
+- **Next Steps**:
+  - Animation leads to slice walk/idle loops from refreshed atlases and confirm silhouette readability.
+  - Hook approved sprites into ECS NPC prefabs once motion passes QA.
 
 #### AR-005: District Tilesets (M4)
 - **Type**: Images
