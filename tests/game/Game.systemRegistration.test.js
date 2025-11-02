@@ -115,6 +115,7 @@ describe('Game.initializeGameSystems', () => {
       'dialogue',
       'cameraFollow',
       'collision',
+      'socialStealth',
       'spriteAnimation',
       'trigger',
       'render',

@@ -24,12 +24,12 @@
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
 | AR-050 | P1 | In Progress | RenderOps packets, luminance snapshots, and bespoke tracking continue running through the asset automation suite without manual staging. | Allow the weekly `art:track-bespoke`, `art:package-renderops`, and `art:export-crossroads-luminance` sweeps to execute; investigate only if telemetry raises anomalies. |
-| AR-009 | P2 | Review Approved | Procedural AR-009 ambience suite generated via `scripts/audio/generateAr009EnvironmentalSfx.js` with deterministic WAV assets staged in `assets/generated/audio/ar-009/`. | Extend the automation to publish mixer routing and infiltration guidance—no manual mixing or documentation passes. |
+| AR-009 | P2 | Review Approved | Procedural AR-009 ambience suite generated via `scripts/audio/generateAr009EnvironmentalSfx.js` with deterministic WAV assets staged in `assets/generated/audio/ar-009/`. | Trigger the automated audio playbook export now that mixer routing auto-registers the loops—documentation remains script-generated. |
 | M3-016 | P2 | In Progress | Save/Load dashboards, acknowledgement sweeps, and distribution tooling regenerate automatically each export window with parity scripts keeping coverage at 100%. | Depend on the telemetry cron to launch `npm run telemetry:ack` and `npm run telemetry:distribute-save-load`; review dashboards solely when automation surfaces alerts. |
 | M3-003 | P1 | Pending | Faction system scaffolding remains staged awaiting the automated data contract feed; regression suites sit ready for activation once dependencies unlock. | Hold until M3-002 signals readiness and keep all validation inside scripted faction behaviour suites—no manual check-ins. |
 
 **Next Session Focus**:
-- Automate AR-009 loop integration by extending `scripts/audio/generateAr009EnvironmentalSfx.js` to register mixer routing and verify coverage through the existing Jest suite.
+- Verify the automated AR-009 loop registration during audio integration smoke passes; ensure the generated module stays in sync with subsequent routing tweaks.
 - Trigger the audio playbook automation once AR-009 wiring lands so infiltration mix guidance publishes without manual drafting.
 - Continue monitoring AR-050 via the weekly automation sweeps (`art:track-bespoke`, `art:package-renderops`, `art:export-crossroads-luminance`); intervene only on telemetry alerts.
 - Let the telemetry cron handle save/load acknowledgements and distribution (`npm run telemetry:ack`, `npm run telemetry:distribute-save-load`); review dashboards when automation raises exceptions.
@@ -3233,9 +3233,8 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Distant city sounds
   - Terminal hum
 - **File**: `assets/music/requests.json`
-- **Status**: Review Approved — Procedurally generated AR-009 loop suite (footsteps concrete/metal, rain ambience, neon buzz, distant city, terminal hum) via `scripts/audio/generateAr009EnvironmentalSfx.js`; assets landed in `assets/generated/audio/ar-009/` with metadata snapshots and Jest coverage guarding the generator.
+- **Status**: Review Approved — Procedurally generated AR-009 loop suite (footsteps concrete/metal, rain ambience, neon buzz, distant city, terminal hum) via `scripts/audio/generateAr009EnvironmentalSfx.js`; assets landed in `assets/generated/audio/ar-009/` with metadata snapshots and Jest coverage guarding the generator; mixer routing metadata now publishes automatically and loops auto-register with `AudioManager`.
 - **Next Steps**:
-  - Extend `scripts/audio/generateAr009EnvironmentalSfx.js` so the automation publishes mixer routing metadata and registers loops with `AudioManager` without manual wiring.
   - Trigger the audio playbook automation to emit infiltration mix guidance once the loops integrate; documentation remains script-generated.
 
 ---

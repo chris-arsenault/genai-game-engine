@@ -3,7 +3,7 @@
 /**
  * Generates the AR-009 environmental SFX suite via procedural synthesis.
  * Outputs loopable WAV files under assets/generated/audio/ar-009/ and updates
- * the audio requests manifest with metadata for downstream integration.
+ * downstream manifests with mixer routing plus AudioManager registration stubs.
  */
 
 import fs from 'node:fs/promises';
@@ -15,8 +15,99 @@ import { generateEnvironmentalSfx } from '../../src/game/tools/EnvironmentalSfxG
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const DEFAULT_OUTPUT_DIR = path.resolve(__dirname, '../../assets/generated/audio/ar-009');
-const REQUESTS_PATH = path.resolve(__dirname, '../../assets/music/requests.json');
+const PROJECT_ROOT = path.resolve(__dirname, '../../');
+const DEFAULT_OUTPUT_DIR = path.resolve(PROJECT_ROOT, 'assets/generated/audio/ar-009');
+const REQUESTS_PATH = path.resolve(PROJECT_ROOT, 'assets/music/requests.json');
+const SFX_CATALOG_PATH = path.resolve(PROJECT_ROOT, 'assets/sfx/catalog.json');
+const GENERATED_AUDIO_SRC_DIR = path.resolve(PROJECT_ROOT, 'src/game/audio/generated');
+const GENERATED_MODULE_PATH = path.resolve(GENERATED_AUDIO_SRC_DIR, 'ar009EnvironmentalLoops.js');
+
+const ROUTING_CONFIG = {
+  'sfx-ar-009-footsteps-concrete': {
+    bus: 'ambient',
+    type: 'ambient-loop',
+    mixGroup: 'infiltration_surface',
+    defaultVolume: 0.38,
+    tags: ['ar-009', 'environment', 'loop', 'footsteps', 'concrete'],
+    stateGains: {
+      ambient: 0.28,
+      stealth: 0.42,
+      alert: 0.33,
+      combat: 0.18,
+    },
+    recommendedScenes: ['act2_corporate_infiltration', 'memory_parlor'],
+  },
+  'sfx-ar-009-footsteps-metal': {
+    bus: 'ambient',
+    type: 'ambient-loop',
+    mixGroup: 'infiltration_surface',
+    defaultVolume: 0.4,
+    tags: ['ar-009', 'environment', 'loop', 'footsteps', 'metal'],
+    stateGains: {
+      ambient: 0.26,
+      stealth: 0.44,
+      alert: 0.35,
+      combat: 0.2,
+    },
+    recommendedScenes: ['act2_corporate_infiltration', 'act3_zenith_infiltration'],
+  },
+  'sfx-ar-009-rain-ambience': {
+    bus: 'ambient',
+    type: 'ambient-loop',
+    mixGroup: 'weather_beds',
+    defaultVolume: 0.58,
+    tags: ['ar-009', 'environment', 'loop', 'weather', 'rain'],
+    stateGains: {
+      ambient: 0.54,
+      stealth: 0.6,
+      alert: 0.68,
+      combat: 0.72,
+    },
+    recommendedScenes: ['act2_crossroads', 'neon_district'],
+  },
+  'sfx-ar-009-neon-buzz': {
+    bus: 'ambient',
+    type: 'ambient-loop',
+    mixGroup: 'diegetic_layers',
+    defaultVolume: 0.34,
+    tags: ['ar-009', 'environment', 'loop', 'neon', 'electrical'],
+    stateGains: {
+      ambient: 0.3,
+      stealth: 0.36,
+      alert: 0.44,
+      combat: 0.5,
+    },
+    recommendedScenes: ['act2_crossroads', 'neon_district', 'memory_parlor'],
+  },
+  'sfx-ar-009-distant-city': {
+    bus: 'ambient',
+    type: 'ambient-loop',
+    mixGroup: 'district_beds',
+    defaultVolume: 0.47,
+    tags: ['ar-009', 'environment', 'loop', 'city', 'ambience'],
+    stateGains: {
+      ambient: 0.5,
+      stealth: 0.48,
+      alert: 0.56,
+      combat: 0.64,
+    },
+    recommendedScenes: ['act2_crossroads', 'act3_zenith_infiltration'],
+  },
+  'sfx-ar-009-terminal-hum': {
+    bus: 'ambient',
+    type: 'ambient-loop',
+    mixGroup: 'diegetic_layers',
+    defaultVolume: 0.31,
+    tags: ['ar-009', 'environment', 'loop', 'terminal', 'electronics'],
+    stateGains: {
+      ambient: 0.28,
+      stealth: 0.32,
+      alert: 0.4,
+      combat: 0.46,
+    },
+    recommendedScenes: ['act2_corporate_infiltration', 'memory_parlor', 'act3_zenith_infiltration'],
+  },
+};
 
 function parseArgs(argv) {
   const options = {
@@ -65,20 +156,24 @@ async function ensureDir(dir) {
   await fs.mkdir(dir, { recursive: true });
 }
 
-async function loadRequestsManifest() {
+async function loadJsonFile(filePath, fallback) {
   try {
-    const raw = await fs.readFile(REQUESTS_PATH, 'utf8');
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) {
-      return parsed;
-    }
-    return [];
+    const raw = await fs.readFile(filePath, 'utf8');
+    return JSON.parse(raw);
   } catch (error) {
     if (error.code === 'ENOENT') {
-      return [];
+      return typeof fallback === 'function' ? fallback() : fallback;
     }
     throw error;
   }
+}
+
+async function writeJsonFile(filePath, data) {
+  await fs.writeFile(filePath, `${JSON.stringify(data, null, 2)}\n`, 'utf8');
+}
+
+async function loadRequestsManifest() {
+  return loadJsonFile(REQUESTS_PATH, []);
 }
 
 function upsertRequest(entries, record) {
@@ -98,7 +193,6 @@ function upsertRequest(entries, record) {
     },
   };
 
-  // Preserve downstream status escalations (e.g., integrated) if already set.
   if (
     existing.status &&
     existing.status !== 'generated' &&
@@ -112,12 +206,20 @@ function upsertRequest(entries, record) {
 }
 
 async function writeManifest(entries) {
-  const payload = `${JSON.stringify(entries, null, 2)}\n`;
-  await fs.writeFile(REQUESTS_PATH, payload, 'utf8');
+  await writeJsonFile(REQUESTS_PATH, entries);
+}
+
+function cloneRouting(id) {
+  const routing = ROUTING_CONFIG[id];
+  if (!routing) {
+    return undefined;
+  }
+  return JSON.parse(JSON.stringify(routing));
 }
 
 function buildRequestRecord({ id, title, usage, relativeFilePath, metadata }) {
   const durationLabel = metadata.loopEndSeconds.toFixed(1);
+  const routing = cloneRouting(id);
   return {
     id,
     title,
@@ -138,6 +240,8 @@ function buildRequestRecord({ id, title, usage, relativeFilePath, metadata }) {
       seed: metadata.seed,
       statistics: metadata.statistics,
       checksumSha256: metadata.checksumSha256,
+      runtimeUrl: metadata.runtimeUrl,
+      routing,
     },
   };
 }
@@ -148,7 +252,120 @@ async function writeMetadataFile(outputDir, records) {
     generatedAt: new Date().toISOString(),
     assets: records,
   };
-  await fs.writeFile(metadataPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+  await writeJsonFile(metadataPath, payload);
+}
+
+async function writeRoutingFile(outputDir, records) {
+  const routingPath = path.join(outputDir, 'mixer-routing.json');
+  const payload = {
+    generatedAt: new Date().toISOString(),
+    loops: records.map((record) => ({
+      id: record.id,
+      runtimeUrl: record.runtimeUrl,
+      loopStartSeconds: record.loopStartSeconds,
+      loopEndSeconds: record.loopEndSeconds,
+      routing: record.routing ?? null,
+      usage: record.usage,
+    })),
+  };
+  await writeJsonFile(routingPath, payload);
+}
+
+async function ensureGeneratedModule(records) {
+  await fs.mkdir(GENERATED_AUDIO_SRC_DIR, { recursive: true });
+
+  const descriptor = records.map((record) => ({
+    id: record.id,
+    runtimeUrl: record.runtimeUrl,
+    loopStartSeconds: record.loopStartSeconds,
+    loopEndSeconds: record.loopEndSeconds,
+    durationSeconds: record.durationSeconds,
+    defaultVolume: record.defaultVolume,
+    routing: record.routing ?? null,
+    usage: record.usage,
+    statistics: record.statistics,
+  }));
+
+  const header = [
+    '/**',
+    ' * Auto-generated by scripts/audio/generateAr009EnvironmentalSfx.js',
+    ' * Do not edit manually.',
+    ' */',
+    '',
+  ].join('\n');
+
+  const moduleSource = `${header}export const AR009_ENVIRONMENTAL_LOOPS = ${JSON.stringify(descriptor, null, 2)};\n\nexport async function registerAr009EnvironmentalLoops(audioManager) {\n  const summary = { registered: 0, skipped: 0, failed: 0 };\n  if (!audioManager || typeof audioManager.loadSound !== 'function') {\n    return summary;\n  }\n\n  if (typeof audioManager.init === 'function') {\n    try {\n      await audioManager.init();\n    } catch (error) {\n      if (typeof console !== 'undefined' && console.warn) {\n        console.warn('[registerAr009EnvironmentalLoops] AudioManager init failed', error);\n      }\n    }\n  }\n\n  const hasBuffer = typeof audioManager.hasBuffer === 'function'\n    ? (id) => {\n        try {\n          return audioManager.hasBuffer(id);\n        } catch (_) {\n          return false;\n        }\n      }\n    : () => false;\n\n  for (const entry of AR009_ENVIRONMENTAL_LOOPS) {\n    if (hasBuffer(entry.id)) {\n      summary.skipped += 1;\n      continue;\n    }\n    const routing = entry.routing ?? {};\n    const options = {\n      volume: entry.defaultVolume,\n      type: routing.type || 'ambient-loop',\n      bus: routing.bus || 'ambient',\n      loop: true,\n      loopStart: entry.loopStartSeconds,\n      loopEnd: entry.loopEndSeconds,\n    };\n    if (routing.mixGroup) {\n      options.mixGroup = routing.mixGroup;\n    }\n    if (routing.stateGains) {\n      options.stateGains = routing.stateGains;\n    }\n    if (Array.isArray(routing.tags)) {\n      options.tags = routing.tags;\n    }\n    if (Array.isArray(routing.recommendedScenes)) {\n      options.recommendedScenes = routing.recommendedScenes;\n    }\n    try {\n      await audioManager.loadSound(entry.id, entry.runtimeUrl, options);\n      summary.registered += 1;\n    } catch (error) {\n      summary.failed += 1;\n      if (typeof console !== 'undefined' && console.warn) {\n        console.warn('[registerAr009EnvironmentalLoops] Failed to load loop', entry.id, error);\n      }\n    }\n  }\n\n  return summary;\n}\n`;
+
+  await fs.writeFile(GENERATED_MODULE_PATH, `${moduleSource}\n`, 'utf8');
+}
+
+async function updateSfxCatalog(records) {
+  const catalog = await loadJsonFile(SFX_CATALOG_PATH, () => ({
+    version: '0.1.0',
+    updated: new Date().toISOString().slice(0, 10),
+    items: [],
+  }));
+
+  const items = Array.isArray(catalog.items) ? catalog.items.slice() : [];
+  const indexById = new Map(items.map((item, index) => [item?.id, index]));
+  let changed = false;
+
+  for (const record of records) {
+    const routing = record.routing ?? {};
+    const entry = {
+      id: record.id,
+      file: record.runtimeUrl,
+      tags:
+        Array.isArray(routing.tags) && routing.tags.length > 0
+          ? routing.tags
+          : ['ar-009', 'environment', 'loop'],
+      baseVolume: routing.defaultVolume ?? record.defaultVolume ?? 0.5,
+      loop: true,
+      loopStart: record.loopStartSeconds,
+      loopEnd: record.loopEndSeconds,
+      description: record.usage,
+      routing: Object.keys(routing).length > 0 ? routing : undefined,
+      source: {
+        name: 'Procedural synthesis',
+        author: 'Codex Audio Lab',
+        license: 'CC0 (original)',
+        notes: `Generated via scripts/audio/generateAr009EnvironmentalSfx.js (seed=${record.seed})`,
+      },
+    };
+
+    const existingIndex = indexById.get(entry.id);
+    if (existingIndex == null) {
+      items.push(entry);
+      changed = true;
+      continue;
+    }
+
+    const existing = items[existingIndex] ?? {};
+    const merged = {
+      ...existing,
+      ...entry,
+      tags: entry.tags,
+      routing: entry.routing,
+      source: entry.source,
+    };
+
+    if (JSON.stringify(existing) !== JSON.stringify(merged)) {
+      items[existingIndex] = merged;
+      changed = true;
+    }
+  }
+
+  if (!changed) {
+    return;
+  }
+
+  const updatedCatalog = {
+    ...catalog,
+    updated: new Date().toISOString().slice(0, 10),
+    items,
+  };
+
+  await writeJsonFile(SFX_CATALOG_PATH, updatedCatalog);
 }
 
 async function main() {
@@ -226,24 +443,41 @@ async function main() {
     const outputPath = path.join(options.outputDir, asset.filename);
     await fs.writeFile(outputPath, buffer);
 
-    const relativePath = path
-      .relative(path.resolve(__dirname, '../../'), outputPath)
-      .replace(/\\/g, '/');
+    const relativePath = path.relative(PROJECT_ROOT, outputPath).replace(/\\/g, '/');
+    const runtimeUrl = `/${relativePath.replace(/^assets\//, '')}`;
+    const routing = cloneRouting(asset.requestId);
+    const defaultVolume = routing?.defaultVolume ?? 0.5;
 
     const requestRecord = buildRequestRecord({
       id: asset.requestId,
       title: asset.title,
       usage: asset.usage,
       relativeFilePath: relativePath,
-      metadata,
+      metadata: {
+        ...metadata,
+        runtimeUrl,
+      },
     });
 
     upsertRequest(manifestEntries, requestRecord);
+
     metadataRecords.push({
       id: asset.requestId,
       title: asset.title,
       usage: asset.usage,
-      ...requestRecord.metadata,
+      file: relativePath,
+      runtimeUrl,
+      loopStartSeconds: metadata.loopStartSeconds,
+      loopEndSeconds: metadata.loopEndSeconds,
+      sampleRate: metadata.sampleRate,
+      channels: metadata.channels,
+      seed: metadata.seed,
+      type: metadata.type,
+      durationSeconds: metadata.durationSeconds,
+      statistics: metadata.statistics,
+      checksumSha256: metadata.checksumSha256,
+      routing,
+      defaultVolume,
     });
 
     process.stdout.write(
@@ -253,9 +487,12 @@ async function main() {
 
   await writeManifest(manifestEntries);
   await writeMetadataFile(options.outputDir, metadataRecords);
+  await writeRoutingFile(options.outputDir, metadataRecords);
+  await ensureGeneratedModule(metadataRecords);
+  await updateSfxCatalog(metadataRecords);
 
   process.stdout.write(
-    `[generateAr009EnvironmentalSfx] Updated ${REQUESTS_PATH} with environmental SFX metadata\n`
+    `[generateAr009EnvironmentalSfx] Updated manifests, routing metadata, and AudioManager registration module\n`
   );
 }
 

@@ -75,4 +75,61 @@ describe('SFXCatalogLoader', () => {
 
     await expect(loader.load()).rejects.toThrow('[SFXCatalogLoader] Failed to fetch catalog');
   });
+
+  it('passes routing metadata to audio manager when available', async () => {
+    const catalog = {
+      items: [
+        {
+          id: 'sfx-ar-009-rain-ambience',
+          file: '/generated/audio/ar-009/ar-009-rain-ambience.wav',
+          baseVolume: 0.58,
+          tags: ['environment', 'loop'],
+          loop: true,
+          loopStart: 0,
+          loopEnd: 24,
+          routing: {
+            bus: 'ambient',
+            type: 'ambient-loop',
+            mixGroup: 'weather_beds',
+            stateGains: { ambient: 0.5, stealth: 0.6 },
+            tags: ['environment', 'loop'],
+            recommendedScenes: ['act2_crossroads'],
+          },
+        },
+      ],
+    };
+
+    const fetchMock = jest.fn(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: () => Promise.resolve(catalog),
+      })
+    );
+    const audioManager = {
+      init: jest.fn(() => Promise.resolve(true)),
+      loadSound: jest.fn(() => Promise.resolve()),
+    };
+
+    const loader = new SFXCatalogLoader(audioManager, { fetch: fetchMock });
+    await loader.load();
+
+    expect(audioManager.loadSound).toHaveBeenCalledWith(
+      'sfx-ar-009-rain-ambience',
+      '/generated/audio/ar-009/ar-009-rain-ambience.wav',
+      expect.objectContaining({
+        bus: 'ambient',
+        type: 'ambient-loop',
+        volume: 0.58,
+        loop: true,
+        loopStart: 0,
+        loopEnd: 24,
+        mixGroup: 'weather_beds',
+        stateGains: expect.objectContaining({ ambient: 0.5 }),
+        tags: expect.arrayContaining(['environment', 'loop']),
+        recommendedScenes: expect.arrayContaining(['act2_crossroads']),
+      })
+    );
+  });
 });

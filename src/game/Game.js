@@ -66,6 +66,7 @@ import { SFXCatalogLoader } from './audio/SFXCatalogLoader.js';
 import { AdaptiveMoodEmitter } from './audio/AdaptiveMoodEmitter.js';
 import { SuspicionMoodMapper } from './audio/SuspicionMoodMapper.js';
 import { GameplayAdaptiveAudioBridge } from './audio/GameplayAdaptiveAudioBridge.js';
+import { registerAr009EnvironmentalLoops } from './audio/generated/ar009EnvironmentalLoops.js';
 import { SaveInspectorOverlay } from './ui/SaveInspectorOverlay.js';
 import { SaveLoadOverlay } from './ui/SaveLoadOverlay.js';
 import { FinaleCinematicOverlay } from './ui/FinaleCinematicOverlay.js';
@@ -189,6 +190,7 @@ export class Game {
     registerGlobalAssetManager(this.assetManager);
     this.sfxCatalogLoader = null;
     this._sfxCatalogSummary = null;
+    this._environmentalLoopSummary = null;
     this.audioTelemetry = { currentState: null, history: [] };
     this._audioTelemetryUnbind = null;
     this.adaptiveMusic = null;
@@ -1274,6 +1276,21 @@ export class Game {
       }
     } catch (error) {
       console.warn('[Game] Failed to load SFX catalog:', error);
+    }
+
+    if (!this._environmentalLoopSummary) {
+      try {
+        this._environmentalLoopSummary = await registerAr009EnvironmentalLoops(this.audioManager);
+        if (this._environmentalLoopSummary.failed > 0) {
+          console.warn(
+            '[Game] Environmental loop registration had failures:',
+            this._environmentalLoopSummary
+          );
+        }
+      } catch (error) {
+        console.warn('[Game] Failed to register environmental loops:', error);
+        this._environmentalLoopSummary = { registered: 0, skipped: 0, failed: 1 };
+      }
     }
 
     this.audioFeedback = new AudioFeedbackController(this.eventBus, this.audioManager, {

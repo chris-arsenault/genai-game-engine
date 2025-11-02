@@ -104,10 +104,40 @@ export class SFXCatalogLoader {
 
       this._entriesById.set(entry.id, entry);
 
+      const loadOptions = {
+        volume: entry.baseVolume ?? entry.volume ?? 1,
+      };
+
+      if (entry.routing?.bus) {
+        loadOptions.bus = entry.routing.bus;
+      }
+      if (entry.routing?.type) {
+        loadOptions.type = entry.routing.type;
+      }
+      if (entry.loop === true || typeof entry.loopStart === 'number' || typeof entry.loopEnd === 'number') {
+        loadOptions.loop = entry.loop !== false;
+        if (typeof entry.loopStart === 'number') {
+          loadOptions.loopStart = entry.loopStart;
+        }
+        if (typeof entry.loopEnd === 'number') {
+          loadOptions.loopEnd = entry.loopEnd;
+        }
+      }
+      if (entry.routing?.mixGroup) {
+        loadOptions.mixGroup = entry.routing.mixGroup;
+      }
+      if (entry.routing?.stateGains) {
+        loadOptions.stateGains = entry.routing.stateGains;
+      }
+      if (Array.isArray(entry.tags) && entry.tags.length > 0) {
+        loadOptions.tags = entry.tags;
+      }
+      if (Array.isArray(entry.routing?.recommendedScenes)) {
+        loadOptions.recommendedScenes = entry.routing.recommendedScenes;
+      }
+
       try {
-        await this.audioManager.loadSound(entry.id, entry.file, {
-          volume: entry.baseVolume ?? entry.volume ?? 1,
-        });
+        await this.audioManager.loadSound(entry.id, entry.file, loadOptions);
         loaded++;
         results.push({ id: entry.id, status: 'loaded' });
       } catch (error) {

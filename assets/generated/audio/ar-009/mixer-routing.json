@@ -1,27 +1,11 @@
 {
-  "generatedAt": "2025-11-02T05:39:30.566Z",
-  "assets": [
+  "generatedAt": "2025-11-02T05:39:30.567Z",
+  "loops": [
     {
       "id": "sfx-ar-009-footsteps-concrete",
-      "title": "Footsteps — Concrete Loop",
-      "usage": "Looped concrete footstep bed for infiltration walk cycles.",
-      "file": "assets/generated/audio/ar-009/ar-009-footsteps-concrete.wav",
       "runtimeUrl": "/generated/audio/ar-009/ar-009-footsteps-concrete.wav",
       "loopStartSeconds": 0,
       "loopEndSeconds": 12,
-      "sampleRate": 44100,
-      "channels": 2,
-      "seed": "ar009-footsteps-concrete",
-      "type": "footsteps-concrete",
-      "durationSeconds": 12,
-      "statistics": {
-        "peak": 0.949999988079071,
-        "rms": {
-          "left": 0.1074484338313659,
-          "right": 0.11346130802717218
-        }
-      },
-      "checksumSha256": "003a5f9c1bc98932e3eb18b57235a984f4fde14494b3ccb247a709754b53d584",
       "routing": {
         "bus": "ambient",
         "type": "ambient-loop",
@@ -45,29 +29,13 @@
           "memory_parlor"
         ]
       },
-      "defaultVolume": 0.38
+      "usage": "Looped concrete footstep bed for infiltration walk cycles."
     },
     {
       "id": "sfx-ar-009-footsteps-metal",
-      "title": "Footsteps — Metal Loop",
-      "usage": "Looped metallic walkway footstep bed with subtle resonance.",
-      "file": "assets/generated/audio/ar-009/ar-009-footsteps-metal.wav",
       "runtimeUrl": "/generated/audio/ar-009/ar-009-footsteps-metal.wav",
       "loopStartSeconds": 0,
       "loopEndSeconds": 12,
-      "sampleRate": 44100,
-      "channels": 2,
-      "seed": "ar009-footsteps-metal",
-      "type": "footsteps-metal",
-      "durationSeconds": 12,
-      "statistics": {
-        "peak": 0.949999988079071,
-        "rms": {
-          "left": 0.10496757924328257,
-          "right": 0.11067167627041953
-        }
-      },
-      "checksumSha256": "30608ff4f9777947bb73f772b52be45b8ee38e74140f52170123d9a858e4c30f",
       "routing": {
         "bus": "ambient",
         "type": "ambient-loop",
@@ -91,29 +59,13 @@
           "act3_zenith_infiltration"
         ]
       },
-      "defaultVolume": 0.4
+      "usage": "Looped metallic walkway footstep bed with subtle resonance."
     },
     {
       "id": "sfx-ar-009-rain-ambience",
-      "title": "Rain Ambience Loop",
-      "usage": "Exterior rain ambience with occasional droplets for noir scenes.",
-      "file": "assets/generated/audio/ar-009/ar-009-rain-ambience.wav",
       "runtimeUrl": "/generated/audio/ar-009/ar-009-rain-ambience.wav",
       "loopStartSeconds": 0,
       "loopEndSeconds": 24,
-      "sampleRate": 44100,
-      "channels": 2,
-      "seed": "ar009-rain-ambience",
-      "type": "rain-ambience",
-      "durationSeconds": 24,
-      "statistics": {
-        "peak": 0.949999988079071,
-        "rms": {
-          "left": 0.14359538342141198,
-          "right": 0.14089555548241972
-        }
-      },
-      "checksumSha256": "67adf90a896b87d7b2f2ea13dc8822a4fa2cd434d7886ce954b97e7a08e3adad",
       "routing": {
         "bus": "ambient",
         "type": "ambient-loop",
@@ -137,29 +89,13 @@
           "neon_district"
         ]
       },
-      "defaultVolume": 0.58
+      "usage": "Exterior rain ambience with occasional droplets for noir scenes."
     },
     {
       "id": "sfx-ar-009-neon-buzz",
-      "title": "Neon Buzz Loop",
-      "usage": "Electrical signage hum with crackle accents for city alleys.",
-      "file": "assets/generated/audio/ar-009/ar-009-neon-buzz.wav",
       "runtimeUrl": "/generated/audio/ar-009/ar-009-neon-buzz.wav",
       "loopStartSeconds": 0,
       "loopEndSeconds": 18,
-      "sampleRate": 44100,
-      "channels": 2,
-      "seed": "ar009-neon-buzz",
-      "type": "neon-buzz",
-      "durationSeconds": 18,
-      "statistics": {
-        "peak": 0.949999988079071,
-        "rms": {
-          "left": 0.1614045121723407,
-          "right": 0.1559104978918539
-        }
-      },
-      "checksumSha256": "236cf1158458b700f9594068c93787c58664ee9ec3d2ed6925fe3d1dc66b3d0a",
       "routing": {
         "bus": "ambient",
         "type": "ambient-loop",
@@ -184,29 +120,13 @@
           "memory_parlor"
         ]
       },
-      "defaultVolume": 0.34
+      "usage": "Electrical signage hum with crackle accents for city alleys."
     },
     {
       "id": "sfx-ar-009-distant-city",
-      "title": "Distant City Loop",
-      "usage": "Far skyline traffic and horn beds for open district exteriors.",
-      "file": "assets/generated/audio/ar-009/ar-009-distant-city.wav",
       "runtimeUrl": "/generated/audio/ar-009/ar-009-distant-city.wav",
       "loopStartSeconds": 0,
       "loopEndSeconds": 24,
-      "sampleRate": 44100,
-      "channels": 2,
-      "seed": "ar009-distant-city",
-      "type": "distant-city",
-      "durationSeconds": 24,
-      "statistics": {
-        "peak": 0.949999988079071,
-        "rms": {
-          "left": 0.1219257649449756,
-          "right": 0.12119672326855857
-        }
-      },
-      "checksumSha256": "f2ec31c30a59cd80c6334336fd0eb69954a028eae4c542c4cd95368a26e9d7b2",
       "routing": {
         "bus": "ambient",
         "type": "ambient-loop",
@@ -230,29 +150,13 @@
           "act3_zenith_infiltration"
         ]
       },
-      "defaultVolume": 0.47
+      "usage": "Far skyline traffic and horn beds for open district exteriors."
     },
     {
       "id": "sfx-ar-009-terminal-hum",
-      "title": "Terminal Hum Loop",
-      "usage": "Data terminal hum with intermittent glitch pulses.",
-      "file": "assets/generated/audio/ar-009/ar-009-terminal-hum.wav",
       "runtimeUrl": "/generated/audio/ar-009/ar-009-terminal-hum.wav",
       "loopStartSeconds": 0,
       "loopEndSeconds": 18,
-      "sampleRate": 44100,
-      "channels": 2,
-      "seed": "ar009-terminal-hum",
-      "type": "terminal-hum",
-      "durationSeconds": 18,
-      "statistics": {
-        "peak": 0.949999988079071,
-        "rms": {
-          "left": 0.22681102825659757,
-          "right": 0.2204125807678047
-        }
-      },
-      "checksumSha256": "f94c8afa189e9eb3af746e2bdbd2f4272fd36bc46e3cdd2f73e06077a0a99020",
       "routing": {
         "bus": "ambient",
         "type": "ambient-loop",
@@ -277,7 +181,7 @@
           "act3_zenith_infiltration"
         ]
       },
-      "defaultVolume": 0.31
+      "usage": "Data terminal hum with intermittent glitch pulses."
     }
   ]
 }
