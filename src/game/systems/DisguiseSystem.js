@@ -23,6 +23,29 @@ function clamp01(value) {
   return value;
 }
 
+const DISGUISE_ACCESS_RULES = {
+  luminari_syndicate: {
+    unlockSurfaceTags: ['restricted', 'restricted:luminari_syndicate'],
+    unlockSurfaceIds: ['security_walkway', 'encryption_lab_floor'],
+  },
+  cipher_collective: {
+    unlockSurfaceTags: ['restricted', 'restricted:cipher_collective'],
+    unlockSurfaceIds: [],
+  },
+  vanguard_prime: {
+    unlockSurfaceTags: ['restricted', 'restricted:vanguard_prime'],
+    unlockSurfaceIds: [],
+  },
+  wraith_network: {
+    unlockSurfaceTags: ['restricted', 'restricted:wraith_network'],
+    unlockSurfaceIds: [],
+  },
+  memory_keepers: {
+    unlockSurfaceTags: ['restricted', 'restricted:memory_keepers'],
+    unlockSurfaceIds: [],
+  },
+};
+
 export class DisguiseSystem extends System {
   constructor(componentRegistry, eventBus, factionManager) {
     super(componentRegistry, eventBus);
@@ -58,6 +81,84 @@ export class DisguiseSystem extends System {
     this._playerEntityId = null;
     this._lastSuspicionLevel = 0;
     this._combatResolveAt = 0;
+    this._activeDisguiseFaction = null;
+    this._activeAccessDescriptor = null;
+    this._pendingAccessUpdates = [];
+  }
+
+  _resolvePlayerEntityId() {
+    if (this._playerEntityId !== null) {
+      return this._playerEntityId;
+    }
+    if (!this.componentRegistry || typeof this.componentRegistry.queryEntities !== 'function') {
+      return null;
+    }
+    const candidates = this.componentRegistry.queryEntities('PlayerController', 'NavigationAgent');
+    if (Array.isArray(candidates) && candidates.length > 0) {
+      this._playerEntityId = candidates[0];
+    }
+    return this._playerEntityId;
+  }
+
+  _applyDisguiseAccessRules(factionId, enabled, options = {}) {
+    if (!factionId || !this.eventBus) {
+      return;
+    }
+    const rules = DISGUISE_ACCESS_RULES[factionId];
+    if (!rules) {
+      return;
+    }
+    const entityId = this._resolvePlayerEntityId();
+    if (entityId == null) {
+      if (!options.skipQueue) {
+        this._pendingAccessUpdates.push({ factionId, enabled: Boolean(enabled) });
+      }
+      return;
+    }
+
+    const unlockTags = Array.isArray(rules.unlockSurfaceTags) ? rules.unlockSurfaceTags : [];
+    const unlockIds = Array.isArray(rules.unlockSurfaceIds) ? rules.unlockSurfaceIds : [];
+    const tagEvent = enabled ? 'navigation:unlockSurfaceTag' : 'navigation:lockSurfaceTag';
+    const idEvent = enabled ? 'navigation:unlockSurfaceId' : 'navigation:lockSurfaceId';
+
+    for (const tag of unlockTags) {
+      if (!tag) continue;
+      this.eventBus.emit(tagEvent, { tag, entityId });
+    }
+
+    for (const surfaceId of unlockIds) {
+      if (!surfaceId) continue;
+      this.eventBus.emit(idEvent, { surfaceId, entityId });
+    }
+
+    if (enabled) {
+      this._activeAccessDescriptor = {
+        factionId,
+        unlockSurfaceTags: unlockTags.slice(),
+        unlockSurfaceIds: unlockIds.slice(),
+      };
+    } else if (this._activeAccessDescriptor?.factionId === factionId) {
+      this._activeAccessDescriptor = null;
+    }
+  }
+
+  _flushPendingAccessUpdates() {
+    if (!Array.isArray(this._pendingAccessUpdates) || this._pendingAccessUpdates.length === 0) {
+      return;
+    }
+    const pending = this._pendingAccessUpdates.splice(0);
+    for (const entry of pending) {
+      if (!entry) continue;
+      this._applyDisguiseAccessRules(entry.factionId, entry.enabled, { skipQueue: true });
+    }
+  }
+
+  _clearAccessRules() {
+    if (!this._activeDisguiseFaction) {
+      return;
+    }
+    this._applyDisguiseAccessRules(this._activeDisguiseFaction, false);
+    this._activeDisguiseFaction = null;
   }
 
   /**
@@ -115,6 +216,7 @@ export class DisguiseSystem extends System {
     const playerFaction = this.componentRegistry.getComponent(playerEntity, 'FactionMember');
     const playerTransform = this.componentRegistry.getComponent(playerEntity, 'Transform');
     this._playerEntityId = playerEntity;
+    this._flushPendingAccessUpdates();
 
     // Check if player has a disguise equipped
     if (!playerFaction.currentDisguise) {
@@ -278,6 +380,7 @@ export class DisguiseSystem extends System {
    */
   blowDisguise(playerEntity, playerFaction, disguise) {
     console.log(`[DisguiseSystem] Disguise blown! (${disguise.factionId})`);
+    this._clearAccessRules();
 
     // Remove disguise
     playerFaction.removeDisguise();
@@ -392,6 +495,14 @@ export class DisguiseSystem extends System {
     this._alertActive = false;
     this._combatEngaged = false;
     this._lastSuspicionLevel = 0;
+    const factionId = data?.factionId ?? null;
+    if (this._activeDisguiseFaction && this._activeDisguiseFaction !== factionId) {
+      this._applyDisguiseAccessRules(this._activeDisguiseFaction, false);
+    }
+    if (factionId) {
+      this._applyDisguiseAccessRules(factionId, true);
+    }
+    this._activeDisguiseFaction = factionId;
   }
 
   /**
@@ -400,6 +511,7 @@ export class DisguiseSystem extends System {
    */
   onDisguiseUnequipped(data) {
     console.log(`[DisguiseSystem] Disguise unequipped: ${data.factionId}`);
+    this._clearAccessRules();
     this._updateSuspicionState(null, { reason: 'disguise_removed', factionId: data?.factionId });
   }
 
@@ -414,6 +526,8 @@ export class DisguiseSystem extends System {
     this._playerEntityId = null;
     this._lastSuspicionLevel = 0;
     this._combatResolveAt = 0;
+    this._clearAccessRules();
+    this._pendingAccessUpdates = [];
   }
 
   /**

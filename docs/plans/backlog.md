@@ -2731,7 +2731,7 @@ _Progress 2025-11-03 (Session #256 guardrail verification): Re-ran the pointer c
 - **Tags**: `gameplay`, `faction`, `ecs`
 - **Effort**: 6 hours
 - **Dependencies**: M3-005
-- **Status**: Todo — waiting on scheduling after investigation/faction resourcing reshuffle
+- **Status**: Done — faction disguises now unlock hostile navigation surfaces (Session #264)
 - **Description**: Disguise mechanics
 - **Files**:
   - `src/game/systems/DisguiseSystem.js`
@@ -2749,6 +2749,7 @@ _Progress 2025-11-03 (Session #256 guardrail verification): Re-ran the pointer c
   - Known NPCs see through disguises
   - Suspicious actions increase detection
   - Unit tests cover edge cases
+- **Progress (Session #264)**: Extended `DisguiseSystem` with faction-aware navigation access rules, tagged Act 2 corporate infiltration surfaces with luminari restrictions, updated the player navigation agent with restricted tags per faction, and added Jest coverage (`tests/game/systems/DisguiseSystem.access.test.js`) validating unlock/lock events; validated with `npm test -- DisguiseSystem.access`.
 
 #### M3-009: Disguise UI
 - **Priority**: P1

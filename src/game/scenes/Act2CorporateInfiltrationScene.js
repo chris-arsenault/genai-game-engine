@@ -254,7 +254,7 @@ const NAVIGATION_TEMPLATE = Object.freeze({
       id: 'encryption_lab',
       position: Object.freeze({ x: 700, y: 200 }),
       radius: 50,
-      tags: Object.freeze(['data_extraction', 'restricted']),
+      tags: Object.freeze(['data_extraction', 'restricted', 'restricted:luminari_syndicate']),
     }),
     Object.freeze({
       id: 'exfil_route',
@@ -289,7 +289,7 @@ const NAVIGATION_TEMPLATE = Object.freeze({
         Object.freeze({ x: 720, y: 420 }),
         Object.freeze({ x: 380, y: 420 }),
       ]),
-      tags: Object.freeze(['restricted', 'transition']),
+      tags: Object.freeze(['restricted', 'restricted:luminari_syndicate', 'transition']),
     }),
     Object.freeze({
       id: 'server_access',
@@ -309,7 +309,7 @@ const NAVIGATION_TEMPLATE = Object.freeze({
         Object.freeze({ x: 820, y: 300 }),
         Object.freeze({ x: 580, y: 300 }),
       ]),
-      tags: Object.freeze(['data_extraction', 'restricted']),
+      tags: Object.freeze(['data_extraction', 'restricted', 'restricted:luminari_syndicate']),
     }),
     Object.freeze({
       id: 'exfil_route_floor',
