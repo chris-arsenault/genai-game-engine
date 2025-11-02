@@ -27,12 +27,12 @@
 | AR-050 | P1 | In Progress | Act 2 visual pipeline automation delivers RenderOps packets, inventories, and ai-generated overlays (Memory Parlor neon set) with luminance/tolerance snapshots tracked across reports. | RenderOps approval watcher automation stages packets once acknowledgements land, and the weekly cron re-runs `art:track-bespoke`, `art:package-renderops`, and `art:export-crossroads-luminance` without manual intervention. |
 | CORE-303 | P1 | Done | InvestigationSystem loops now validated end-to-end via automation; tutorial evidence, deduction board, and Captain Reese beats execute through the scripted investigative loop. | Nightly automation runs `npx playwright test tests/e2e/tutorial-investigative-loop.spec.js tests/e2e/tutorial-overlay.spec.js` to guard upcoming quest log UI changes. |
 | M3-003 | P1 | Pending | ECS faction system components, systems, and Jest scaffolding are outlined but paused, awaiting upstream faction data contracts. | Resume after M3-002 readiness and keep validation inside scripted faction behaviour suites—no manual QA loops. |
-| M2-005 | P1 | In Progress | Canvas deduction board now receives runtime pointer routing so drag/drop, hover, and right-click removal operate against live CaseManager validation. | Fold deduction board latency checks into the telemetry performance automation (`npm run telemetry:performance`) after the refreshed art bundle lands and monitor nightly Playwright results instead of manual profiling. |
+| M2-005 | P1 | In Progress | Deduction board pointer routing now ships with telemetry guardrails so drag/drop responsiveness stays under the input-lag target alongside existing automation coverage. | Nightly Playwright suite (`tests/e2e/tutorial-investigative-loop.spec.js`) exercises drag/drop and clear flows; rely on automation signal for regressions. |
 
 **Next Session Focus**:
 - Monitor the weekly automation sweeps (`npm run art:track-bespoke`, `npm run art:package-renderops`, `npm run art:export-crossroads-luminance`) through telemetry; no manual staging required.
 - Rely on the nightly Playwright pipeline (`tests/e2e/tutorial-investigative-loop.spec.js`, `tests/e2e/tutorial-overlay.spec.js`) for investigative loop regression coverage—investigate only if automation signals regressions.
-- Prepare to extend telemetry performance automation with deduction board latency sampling once the refreshed art bundle merges, keeping manual profiling out of scope.
+- Monitor the telemetry performance snapshot pointer metrics; rerun `npm run telemetry:performance` only if automation flags pointer regressions.
 - Hold **M3-003** in staged state until the automated data contract feed unblocks the ECS work; watch the telemetry notifier rather than manual check-ins.
 - Camera bounds automation sealed: scene loaders emit `metadata.cameraBounds` and Game applies the bounds automatically; rely on Jest coverage (`tests/game/Game.cameraBounds.test.js`, `tests/game/scenes/Act1Scene.boundaries.test.js`) for regression guardrails.
 
@@ -2199,11 +2199,13 @@ _Progress 2025-11-26 (Session #242 objective tracking pass): Implemented CaseMan
   - Drag-and-drop works smoothly
   - Connections visualized
   - UI responsive (<16ms input lag)
-- **Status**: 🚧 In Progress — Session #243 routed canvas pointer events into the DeductionBoard, unlocking drag/drop, hover, and right-click removal with Jest coverage (`npm test -- DeductionBoardPointerController`).
+- **Status**: 🚧 In Progress — Session #255 folded pointer latency guardrails into telemetry automation while keeping the pointer routing and Playwright coverage from Sessions #243–244 intact.
 
 _Progress 2025-11-26 (Session #243 pointer routing): Introduced a canvas pointer controller that normalises coordinates and forwards pointer events to the board so the live overlay supports dragging, hovering, and right-click removal without manual wiring. Added targeted Jest coverage for the controller to keep regression checks automated._
 
 _Progress 2025-11-27 (Session #244 automation validation): Extended the tutorial investigative loop Playwright spec and helper utilities to drive deduction board drag/drop and board clearing via the pointer controller. End-to-end automation now confirms live interactions stay stable; profiling work remains queued for asset integration._
+
+_Progress 2025-11-02 (Session #255 pointer telemetry): Integrated DeductionBoard pointer latency measurements into `scripts/telemetry/performanceSnapshot.js`, established guardrail thresholds, and captured a fresh `npm run telemetry:performance` artifact to lock responsiveness well below the 16 ms budget._
 
 #### M2-006: Deduction System and Theory Validation
 - **Priority**: P0
