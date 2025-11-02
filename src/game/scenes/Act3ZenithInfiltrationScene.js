@@ -3,6 +3,7 @@ import { Sprite } from '../components/Sprite.js';
 import { TriggerMigrationToolkit } from '../quests/TriggerMigrationToolkit.js';
 import { QuestTriggerRegistry } from '../quests/QuestTriggerRegistry.js';
 import { getZenithInfiltrationStageDefinitions } from '../data/quests/act3ZenithInfiltrationQuest.js';
+import { NarrativeActs } from '../data/narrative/NarrativeBeatCatalog.js';
 
 const SCENE_ID = 'act3_zenith_infiltration';
 const DEFAULT_SPAWN_POINT = Object.freeze({ x: 192, y: 536 });
@@ -284,6 +285,7 @@ export async function loadAct3ZenithInfiltrationScene(
   eventBus,
   options = {}
 ) {
+  const stageDefinitions = getZenithInfiltrationStageDefinitions();
   const definitions = ensureZenithTriggerDefinitions();
   const questTriggerToolkit = new TriggerMigrationToolkit(componentRegistry, eventBus);
 
@@ -298,6 +300,15 @@ export async function loadAct3ZenithInfiltrationScene(
     x: options.spawnPoint?.x ?? DEFAULT_SPAWN_POINT.x,
     y: options.spawnPoint?.y ?? DEFAULT_SPAWN_POINT.y,
   };
+
+  const narrativeBeats = {};
+  for (const definition of definitions) {
+    const stageId = definition.metadata?.stageId;
+    const beatId = definition.metadata?.narrativeBeat;
+    if (stageId && beatId) {
+      narrativeBeats[stageId] = beatId;
+    }
+  }
 
   const cleanup = () => {
     for (const entityId of sceneEntities) {
@@ -314,7 +325,14 @@ export async function loadAct3ZenithInfiltrationScene(
     cleanup,
     metadata: {
       triggerCount: definitions.length,
-      stageEvent: getZenithInfiltrationStageDefinitions().stageEvent,
+      stageEvent: stageDefinitions.stageEvent,
+      questId: stageDefinitions.questId,
+      narrative: {
+        act: NarrativeActs.ACT3,
+        questId: stageDefinitions.questId,
+        beats: narrativeBeats,
+      },
+      narrativeBeats,
     },
   };
 }

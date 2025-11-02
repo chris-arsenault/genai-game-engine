@@ -21,6 +21,10 @@ import { tutorialCase, tutorialEvidence } from '../data/cases/tutorialCase.js';
 import { QUEST_001_HOLLOW_CASE } from '../data/quests/act1Quests.js';
 import { TriggerMigrationToolkit } from '../quests/TriggerMigrationToolkit.js';
 import { QuestTriggerRegistry } from '../quests/QuestTriggerRegistry.js';
+import {
+  NarrativeActs,
+  NarrativeBeats,
+} from '../data/narrative/NarrativeBeatCatalog.js';
 
 const SCENE_WORLD_WIDTH = 800;
 const SCENE_WORLD_HEIGHT = 600;
@@ -36,22 +40,27 @@ const VENDOR_TRIGGER_IDS = Object.freeze({
   QUARTERMASTER: 'act1_cipher_quartermaster_trigger',
 });
 
+const crimeSceneDefinition = {
+  id: CRIME_SCENE_TRIGGER_ID,
+  questId: QUEST_001_HOLLOW_CASE.id,
+  objectiveId: 'obj_arrive_scene',
+  areaId: 'crime_scene_alley',
+  radius: 150,
+  once: true,
+  prompt: 'Crime Scene Perimeter',
+  triggerType: 'crime_scene',
+  metadata: {
+    moodHint: 'investigation_peak',
+    narrativeBeat: NarrativeBeats.act1.ARRIVAL,
+  },
+};
+
 const existingCrimeSceneDefinition = QuestTriggerRegistry.getTriggerDefinition(CRIME_SCENE_TRIGGER_ID);
-if (!existingCrimeSceneDefinition) {
-  QuestTriggerRegistry.registerDefinition({
-    id: CRIME_SCENE_TRIGGER_ID,
-    questId: QUEST_001_HOLLOW_CASE.id,
-    objectiveId: 'obj_arrive_scene',
-    areaId: 'crime_scene_alley',
-    radius: 150,
-    once: true,
-    prompt: 'Crime Scene Perimeter',
-    triggerType: 'crime_scene',
-    metadata: {
-      moodHint: 'investigation_peak',
-      narrativeBeat: 'act1_arrival_scene',
-    },
-  });
+if (
+  !existingCrimeSceneDefinition ||
+  existingCrimeSceneDefinition.metadata?.narrativeBeat !== NarrativeBeats.act1.ARRIVAL
+) {
+  QuestTriggerRegistry.registerDefinition(crimeSceneDefinition);
 }
 
 const vendorTriggerDefinitions = [
@@ -66,7 +75,7 @@ const vendorTriggerDefinitions = [
     triggerType: 'npc_vendor_dialogue',
     metadata: {
       moodHint: 'market_intrigue',
-      narrativeBeat: 'act1_vendor_briefing',
+      narrativeBeat: NarrativeBeats.act1.VENDOR_BRIEFING,
       npcId: 'witness_street_vendor',
     },
   },
@@ -81,7 +90,7 @@ const vendorTriggerDefinitions = [
     triggerType: 'npc_vendor_dialogue',
     metadata: {
       moodHint: 'underground_pressure',
-      narrativeBeat: 'act1_broker_lead',
+      narrativeBeat: NarrativeBeats.act1.BROKER_LEAD,
       npcId: 'black_market_broker',
     },
   },
@@ -96,14 +105,18 @@ const vendorTriggerDefinitions = [
     triggerType: 'npc_vendor_dialogue',
     metadata: {
       moodHint: 'cipher_preparation',
-      narrativeBeat: 'act1_cipher_supply',
+      narrativeBeat: NarrativeBeats.act1.CIPHER_SUPPLY,
       npcId: 'cipher_quartermaster',
     },
   },
 ];
 
 for (const definition of vendorTriggerDefinitions) {
-  if (!QuestTriggerRegistry.getTriggerDefinition(definition.id)) {
+  const existingDefinition = QuestTriggerRegistry.getTriggerDefinition(definition.id);
+  if (
+    !existingDefinition ||
+    existingDefinition.metadata?.narrativeBeat !== definition.metadata.narrativeBeat
+  ) {
     QuestTriggerRegistry.registerDefinition(definition);
   }
 }
@@ -118,6 +131,11 @@ for (const definition of vendorTriggerDefinitions) {
 export async function loadAct1Scene(entityManager, componentRegistry, eventBus, options = {}) {
   console.log('[Act1Scene] Loading Act 1 scene...');
 
+  const {
+    reusePlayerId = null,
+    narrativeContext = NarrativeActs.ACT1,
+  } = options;
+
   const sceneEntities = [];
   const cleanupHandlers = [];
   const paletteSummary = {
@@ -129,9 +147,28 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus, 
     boundaries: [],
   };
   const questTriggerToolkit = new TriggerMigrationToolkit(componentRegistry, eventBus);
+  const sceneNarrative =
+    narrativeContext === NarrativeActs.TUTORIAL
+      ? {
+          act: NarrativeActs.TUTORIAL,
+          beats: {
+            arrival: NarrativeBeats.tutorial.ARRIVAL,
+            detectiveVision: NarrativeBeats.tutorial.DETECTIVE_VISION,
+            deduction: NarrativeBeats.tutorial.DEDUCTION,
+            report: NarrativeBeats.tutorial.REPORT,
+          },
+        }
+      : {
+          act: NarrativeActs.ACT1,
+          beats: {
+            arrival: NarrativeBeats.act1.ARRIVAL,
+            witness: NarrativeBeats.act1.VENDOR_BRIEFING,
+            broker: NarrativeBeats.act1.BROKER_LEAD,
+            quartermaster: NarrativeBeats.act1.CIPHER_SUPPLY,
+          },
+        };
 
   // 1. Create player at spawn point
-  const reusePlayerId = options.reusePlayerId ?? null;
   const canReusePlayer = reusePlayerId != null
     && typeof entityManager.hasEntity === 'function'
     && entityManager.hasEntity(reusePlayerId);
@@ -321,6 +358,10 @@ export async function loadAct1Scene(entityManager, componentRegistry, eventBus, 
         y: 0,
         width: SCENE_WORLD_WIDTH,
         height: SCENE_WORLD_HEIGHT,
+      },
+      narrative: sceneNarrative,
+      narrativeBeats: {
+        ...sceneNarrative.beats,
       },
     },
     cleanup: () => {

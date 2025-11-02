@@ -2,6 +2,7 @@ import {
   Act2CrossroadsArtConfig,
   ACT2_CROSSROADS_ART_MANIFEST_URL,
 } from '../data/sceneArt/Act2CrossroadsArtConfig.js';
+import { NarrativeBeats } from '../data/narrative/NarrativeBeatCatalog.js';
 
 /**
  * GameConfig
@@ -355,6 +356,7 @@ export const GameConfig = {
                 description: 'Persuade Dr. Chen to surrender NeuroSync backdoor credentials for a surgical shutdown.',
                 npcId: 'dr_chen',
                 telemetryTag: 'act3_opposition_dr_chen',
+                narrativeBeat: NarrativeBeats.act3.gatheringSupport.OPPOSITION_DR_CHEN,
                 successFlag: 'act3_opposition_dr_chen_committed',
               },
               {
@@ -365,6 +367,7 @@ export const GameConfig = {
                 description: 'Win Soren’s begrudging support so the resistance stands down during the op.',
                 npcId: 'soren',
                 telemetryTag: 'act3_opposition_soren',
+                narrativeBeat: NarrativeBeats.act3.gatheringSupport.OPPOSITION_SOREN,
                 successFlag: 'act3_opposition_soren_committed',
               },
               {
@@ -375,6 +378,7 @@ export const GameConfig = {
                 description: 'Acquire Municipal Defense override credentials to bypass Archive security corridors.',
                 npcId: 'captain_reese',
                 telemetryTag: 'act3_opposition_mcd_override',
+                narrativeBeat: NarrativeBeats.act3.gatheringSupport.OPPOSITION_MCD_OVERRIDE,
                 successFlag: 'act3_opposition_mcd_override_secured',
               },
             ],
@@ -396,6 +400,7 @@ export const GameConfig = {
                 description: 'Work with Zara to amplify Archive signal relays before the citywide reveal.',
                 npcId: 'zara',
                 telemetryTag: 'act3_support_broadcast_grid',
+                narrativeBeat: NarrativeBeats.act3.gatheringSupport.SUPPORT_BROADCAST_GRID,
                 successFlag: 'act3_support_broadcast_grid_upgraded',
               },
               {
@@ -406,6 +411,7 @@ export const GameConfig = {
                 description: 'Mobilize Soren’s cells to manage trauma relief once memories flood the streets.',
                 npcId: 'soren',
                 telemetryTag: 'act3_support_resistance_response',
+                narrativeBeat: NarrativeBeats.act3.gatheringSupport.SUPPORT_RESISTANCE_RESPONSE,
                 successFlag: 'act3_support_resistance_response_ready',
               },
               {
@@ -416,6 +422,7 @@ export const GameConfig = {
                 description: 'Address Dr. Chen’s ethical objections so she calibrates the neural dampeners.',
                 npcId: 'dr_chen',
                 telemetryTag: 'act3_support_dr_chen_ethics',
+                narrativeBeat: NarrativeBeats.act3.gatheringSupport.SUPPORT_DR_CHEN_ETHICS,
                 successFlag: 'act3_support_dr_chen_resolved',
               },
             ],
@@ -437,6 +444,7 @@ export const GameConfig = {
                 description: 'Coordinate with Zara to extract sanitized evidence slices for the dossier.',
                 npcId: 'zara',
                 telemetryTag: 'act3_alternative_dossier',
+                narrativeBeat: NarrativeBeats.act3.gatheringSupport.ALTERNATIVE_DOSSIER,
                 successFlag: 'act3_alternative_dossier_compiled',
               },
               {
@@ -447,6 +455,7 @@ export const GameConfig = {
                 description: 'Win the support of journalists and community advocates to steward the release.',
                 npcId: 'elena_coalition',
                 telemetryTag: 'act3_alternative_coalition',
+                narrativeBeat: NarrativeBeats.act3.gatheringSupport.ALTERNATIVE_COALITION,
                 successFlag: 'act3_alternative_coalition_committed',
               },
               {
@@ -457,6 +466,7 @@ export const GameConfig = {
                 description: 'Partner with Iris to deploy the staged release pipeline across city intranets.',
                 npcId: 'iris',
                 telemetryTag: 'act3_alternative_distribution',
+                narrativeBeat: NarrativeBeats.act3.gatheringSupport.ALTERNATIVE_DISTRIBUTION,
                 successFlag: 'act3_alternative_distribution_staged',
               },
             ],
@@ -468,6 +478,7 @@ export const GameConfig = {
             areaId: 'archive_care_facility_dmitri',
             description: 'Visit Dmitri’s comatose body in the Archive hospice to anchor the mission stakes.',
             telemetryTag: 'act3_shared_dmitri_visit',
+            narrativeBeat: NarrativeBeats.act3.gatheringSupport.SHARED_DMITRI_VISIT,
             storyFlag: 'act3_shared_dmitri_visited',
           },
           prepareLoadout: {
@@ -476,6 +487,7 @@ export const GameConfig = {
             branchId: 'shared',
             description: 'Finalize gear with Zara for the Archive infiltration and sync telemetry failsafes.',
             telemetryTag: 'act3_shared_loadout',
+            narrativeBeat: NarrativeBeats.act3.gatheringSupport.SHARED_PREPARE_LOADOUT,
             successFlag: 'act3_shared_loadout_prepared',
             npcId: 'zara',
           },
@@ -495,6 +507,7 @@ export const GameConfig = {
             areaId: 'zenith_sector_checkpoint',
             description: 'Breach the Zenith Sector perimeter using your chosen stance assets.',
             telemetryTag: 'act3_zenith_sector_entry',
+            narrativeBeat: NarrativeBeats.act3.zenithInfiltration.SECTOR_ENTRY,
             successFlag: 'act3_zenith_sector_perimeter_breached',
             branchId: 'shared',
             requirements: {
@@ -507,6 +520,7 @@ export const GameConfig = {
             areaId: 'zenith_government_towers',
             description: 'Ascend the government towers while evading elite Zenith security.',
             telemetryTag: 'act3_zenith_tower_ascent',
+            narrativeBeat: NarrativeBeats.act3.zenithInfiltration.TOWER_ASCENT,
             successFlag: 'act3_zenith_government_towers_secured',
             branchId: 'shared',
             requirements: {
@@ -519,6 +533,7 @@ export const GameConfig = {
             areaId: 'zenith_archive_elevator',
             description: 'Reach the concealed Archive elevator beneath Zenith Plaza.',
             telemetryTag: 'act3_zenith_archive_elevator',
+            narrativeBeat: NarrativeBeats.act3.zenithInfiltration.ARCHIVE_ELEVATOR,
             successFlag: 'act3_zenith_archive_elevator_secured',
             branchId: 'shared',
             requirements: null,
@@ -538,6 +553,7 @@ export const GameConfig = {
                 areaId: 'zenith_security_control',
                 description: 'Disable Zenith security grid nodes using municipal override codes.',
                 telemetryTag: 'act3_zenith_opposition_grid',
+                narrativeBeat: NarrativeBeats.act3.zenithInfiltration.OPPOSITION_DISABLE_GRID,
                 successFlag: 'act3_zenith_opposition_grid_disabled',
                 requirements: {
                   storyFlags: ['act3_opposition_mcd_override_secured'],
@@ -549,6 +565,7 @@ export const GameConfig = {
                 areaId: 'zenith_dampener_labs',
                 description: 'Apply Dr. Chen\'s dampener calibrations to mask the infiltration.',
                 telemetryTag: 'act3_zenith_opposition_dampeners',
+                narrativeBeat: NarrativeBeats.act3.zenithInfiltration.OPPOSITION_CALIBRATE_DAMPENERS,
                 successFlag: 'act3_zenith_opposition_dampeners_calibrated',
                 requirements: {
                   storyFlags: ['act3_opposition_dr_chen_committed'],
@@ -560,6 +577,7 @@ export const GameConfig = {
                 areaId: 'zenith_resistance_overwatch',
                 description: 'Coordinate Soren\'s resistance teams to create a silent diversion.',
                 telemetryTag: 'act3_zenith_opposition_diversion',
+                narrativeBeat: NarrativeBeats.act3.zenithInfiltration.OPPOSITION_RESISTANCE_DIVERSION,
                 successFlag: 'act3_zenith_opposition_resistance_diverted',
                 requirements: {
                   storyFlags: ['act3_opposition_soren_committed'],
@@ -580,6 +598,7 @@ export const GameConfig = {
                 areaId: 'zenith_broadcast_spire',
                 description: 'Overclock the broadcast relays to amplify the Archive signal.',
                 telemetryTag: 'act3_zenith_support_relays',
+                narrativeBeat: NarrativeBeats.act3.zenithInfiltration.SUPPORT_OVERCLOCK_RELAYS,
                 successFlag: 'act3_zenith_support_relays_overclocked',
                 requirements: {
                   storyFlags: ['act3_support_broadcast_grid_upgraded'],
@@ -591,6 +610,7 @@ export const GameConfig = {
                 areaId: 'zenith_response_staging',
                 description: 'Stage resistance trauma-response teams throughout Zenith Plaza.',
                 telemetryTag: 'act3_zenith_support_response',
+                narrativeBeat: NarrativeBeats.act3.zenithInfiltration.SUPPORT_STAGE_RESPONSE,
                 successFlag: 'act3_zenith_support_response_staged',
                 requirements: {
                   storyFlags: ['act3_support_resistance_response_ready'],
@@ -602,6 +622,7 @@ export const GameConfig = {
                 areaId: 'zenith_neural_dampeners',
                 description: 'Calibrate citywide neural dampeners with Dr. Chen\'s assistance.',
                 telemetryTag: 'act3_zenith_support_dampeners',
+                narrativeBeat: NarrativeBeats.act3.zenithInfiltration.SUPPORT_CALIBRATE_DAMPENERS,
                 successFlag: 'act3_zenith_support_dampeners_calibrated',
                 requirements: {
                   storyFlags: ['act3_support_dr_chen_resolved'],
@@ -622,6 +643,7 @@ export const GameConfig = {
                 areaId: 'zenith_dossier_upload',
                 description: 'Seed the curated Archive dossier across Zenith\'s secure servers.',
                 telemetryTag: 'act3_zenith_alternative_dossier',
+                narrativeBeat: NarrativeBeats.act3.zenithInfiltration.ALTERNATIVE_DOSSIER_UPLOAD,
                 successFlag: 'act3_zenith_alternative_dossier_uploaded',
                 requirements: {
                   storyFlags: ['act3_alternative_dossier_compiled'],
@@ -633,6 +655,7 @@ export const GameConfig = {
                 areaId: 'zenith_coalition_forum',
                 description: 'Secure coalition oversight on the Zenith executive forum.',
                 telemetryTag: 'act3_zenith_alternative_forum',
+                narrativeBeat: NarrativeBeats.act3.zenithInfiltration.ALTERNATIVE_FORUM_SECURITY,
                 successFlag: 'act3_zenith_alternative_forum_secured',
                 requirements: {
                   storyFlags: ['act3_alternative_coalition_committed'],
@@ -644,6 +667,7 @@ export const GameConfig = {
                 areaId: 'zenith_distribution_beacons',
                 description: 'Synchronise distribution beacons for the controlled disclosure plan.',
                 telemetryTag: 'act3_zenith_alternative_beacons',
+                narrativeBeat: NarrativeBeats.act3.zenithInfiltration.ALTERNATIVE_BEACONS_SYNC,
                 successFlag: 'act3_zenith_alternative_beacons_synchronized',
                 requirements: {
                   storyFlags: ['act3_alternative_distribution_staged'],

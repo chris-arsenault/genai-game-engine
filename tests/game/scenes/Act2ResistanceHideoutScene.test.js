@@ -8,6 +8,7 @@ import {
 import { QuestTriggerRegistry } from '../../../src/game/quests/QuestTriggerRegistry.js';
 import { QUEST_ACT2_RESISTANCE } from '../../../src/game/data/quests/act2ResistanceQuest.js';
 import { seedAct2CrossroadsTriggers } from '../../../src/game/data/quests/act2TriggerDefinitions.js';
+import { NarrativeBeats } from '../../../src/game/data/narrative/NarrativeBeatCatalog.js';
 
 describe('Act2ResistanceHideoutScene', () => {
   let entityManager;
@@ -190,11 +191,11 @@ describe('Act2ResistanceHideoutScene', () => {
     );
     expect(sceneData.metadata.narrativeBeats).toEqual(
       expect.objectContaining({
-        entry: 'act2_resistance_hideout_entry',
-        progression: 'act2_resistance_strategy_session',
-        objective: 'act2_resistance_escape_network',
-        coordination: 'act2_resistance_coordination_council',
-        signal: 'act2_resistance_signal_array_primed',
+        entry: NarrativeBeats.act2.resistance.ENTRY,
+        progression: NarrativeBeats.act2.resistance.STRATEGY_SESSION,
+        objective: NarrativeBeats.act2.resistance.ESCAPE_NETWORK,
+        coordination: NarrativeBeats.act2.resistance.COORDINATION_COUNCIL,
+        signal: NarrativeBeats.act2.resistance.SIGNAL_ARRAY_PRIMED,
       })
     );
   });

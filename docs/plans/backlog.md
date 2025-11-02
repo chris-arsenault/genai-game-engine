@@ -41,6 +41,10 @@
 - Authored **CORE-304: Scene Loader Camera Bounds Automation** to decouple camera bounds from manual tuning—Act 1 scene metadata now exposes `cameraBounds`, Game scene transitions call a shared `_applyCameraBounds` helper, and Jest coverage (`tests/game/Game.cameraBounds.test.js`, `tests/game/scenes/Act1Scene.boundaries.test.js`) locks the contract.
 - `npm test` executed to validate the updated suites alongside existing coverage; no follow-up remediation required.
 
+### Session #250 Backlog Maintenance
+
+- Advanced **Narrative consitentcy** to `in-progress` after unifying tutorial through Act 3 beat identifiers via `src/game/data/narrative/NarrativeBeatCatalog.js`, updating scene metadata/quest seeds, and adding Jest coverage. Narrative exporters and Playwright suites still need catalog hooks before closure.
+
 ### Session #248 Backlog Maintenance
 
 - Marked **CORE-303** as `done` in MCP after confirming nightly Playwright automation covers the investigative loop and tutorial overlays.

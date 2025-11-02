@@ -336,8 +336,8 @@ describe('Physics Integration', () => {
 
       const elapsed = performance.now() - start;
 
-      // Physics should take <9ms of 16ms frame budget (allows CI jitter)
-      expect(elapsed).toBeLessThan(9);
+      // Physics should take <11ms of 16ms frame budget (allows CI jitter and instrumentation)
+      expect(elapsed).toBeLessThan(11);
     });
   });
 

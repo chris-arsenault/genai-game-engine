@@ -21,6 +21,10 @@ import { Trigger } from '../../engine/physics/Trigger.js';
 import { TriggerMigrationToolkit } from '../quests/TriggerMigrationToolkit.js';
 import { QuestTriggerRegistry } from '../quests/QuestTriggerRegistry.js';
 import { QUEST_003_MEMORY_PARLOR } from '../data/quests/act1Quests.js';
+import {
+  NarrativeActs,
+  NarrativeBeats,
+} from '../data/narrative/NarrativeBeatCatalog.js';
 
 const ROOM_WIDTH = 960;
 const ROOM_HEIGHT = 600;
@@ -76,7 +80,7 @@ const MEMORY_PARLOR_TRIGGER_DEFINITIONS = [
     triggerType: 'scene_transition',
     metadata: {
       moodHint: 'pre_infiltration',
-      narrativeBeat: 'act1_memory_parlor_entry',
+      narrativeBeat: NarrativeBeats.act1.MEMORY_PARLOR_ENTRY,
       sceneId: 'memory_parlor_infiltration',
     },
   },
@@ -91,7 +95,7 @@ const MEMORY_PARLOR_TRIGGER_DEFINITIONS = [
     triggerType: 'objective_area',
     metadata: {
       moodHint: 'infiltration_tension',
-      narrativeBeat: 'act1_memory_parlor_interior',
+      narrativeBeat: NarrativeBeats.act1.MEMORY_PARLOR_INTERIOR,
       requiresScrambler: true,
     },
   },
@@ -106,14 +110,27 @@ const MEMORY_PARLOR_TRIGGER_DEFINITIONS = [
     triggerType: 'scene_exit',
     metadata: {
       moodHint: 'escape_release',
-      narrativeBeat: 'act1_memory_parlor_exit',
+      narrativeBeat: NarrativeBeats.act1.MEMORY_PARLOR_EXIT,
     },
   },
 ];
 
+const MEMORY_PARLOR_NARRATIVE = Object.freeze({
+  act: NarrativeActs.ACT1,
+  beats: {
+    entry: NarrativeBeats.act1.MEMORY_PARLOR_ENTRY,
+    interior: NarrativeBeats.act1.MEMORY_PARLOR_INTERIOR,
+    exit: NarrativeBeats.act1.MEMORY_PARLOR_EXIT,
+  },
+});
+
 function ensureMemoryParlorTriggerDefinitions() {
   for (const definition of MEMORY_PARLOR_TRIGGER_DEFINITIONS) {
-    if (!QuestTriggerRegistry.getTriggerDefinition(definition.id)) {
+    const existingDefinition = QuestTriggerRegistry.getTriggerDefinition(definition.id);
+    if (
+      !existingDefinition ||
+      existingDefinition.metadata?.narrativeBeat !== definition.metadata.narrativeBeat
+    ) {
       QuestTriggerRegistry.registerDefinition(definition);
     }
   }
@@ -946,6 +963,10 @@ export async function loadMemoryParlorScene(entityManager, componentRegistry, ev
       exitZoneId,
       overlay: overlayMetadata,
       ambientAudioController,
+      narrative: MEMORY_PARLOR_NARRATIVE,
+      narrativeBeats: {
+        ...MEMORY_PARLOR_NARRATIVE.beats,
+      },
     },
   };
 }

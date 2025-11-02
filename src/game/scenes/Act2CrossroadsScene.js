@@ -14,6 +14,10 @@ import { TriggerMigrationToolkit } from '../quests/TriggerMigrationToolkit.js';
 import { QuestTriggerRegistry } from '../quests/QuestTriggerRegistry.js';
 import { seedAct2CrossroadsTriggers } from '../data/quests/act2TriggerDefinitions.js';
 import { AssetLoader } from '../../engine/assets/AssetLoader.js';
+import {
+  NarrativeActs,
+  NarrativeBeats,
+} from '../data/narrative/NarrativeBeatCatalog.js';
 
 export const ACT2_CROSSROADS_TRIGGER_IDS = Object.freeze({
   CHECKPOINT: 'act2_crossroads_checkpoint',
@@ -49,6 +53,18 @@ const TRIGGER_LAYOUT = Object.freeze({
     layer: 'ground_fx',
     zIndex: 2,
   },
+});
+
+const CROSSROADS_NARRATIVE_BEATS = Object.freeze({
+  checkpoint: NarrativeBeats.act2.crossroads.ARRIVAL_CHECKPOINT,
+  briefing: NarrativeBeats.act2.crossroads.BRIEFING_SELECTION,
+  threadSelection: NarrativeBeats.act2.crossroads.THREAD_COMMIT,
+});
+
+const CROSSROADS_NARRATIVE = Object.freeze({
+  act: NarrativeActs.ACT2,
+  hub: 'crossroads',
+  beats: CROSSROADS_NARRATIVE_BEATS,
 });
 
 const FLOOR_SEGMENTS = Object.freeze([
@@ -651,6 +667,8 @@ export class Act2CrossroadsScene {
         ...layout,
       })),
       artSource: null,
+      narrative: CROSSROADS_NARRATIVE,
+      narrativeBeats: { ...CROSSROADS_NARRATIVE_BEATS },
     };
   }
 
@@ -754,6 +772,8 @@ export class Act2CrossroadsScene {
         triggerId,
         ...layout,
       })),
+      narrative: CROSSROADS_NARRATIVE,
+      narrativeBeats: { ...CROSSROADS_NARRATIVE_BEATS },
       artSource: null,
     };
     this._triggerDefinitions.clear();

@@ -13,6 +13,10 @@ import { Collider } from '../components/Collider.js';
 import { TriggerMigrationToolkit } from '../quests/TriggerMigrationToolkit.js';
 import { QuestTriggerRegistry } from '../quests/QuestTriggerRegistry.js';
 import { ACT2_BRANCH_DIALOGUE_IDS } from '../data/dialogues/Act2BranchObjectiveDialogues.js';
+import {
+  NarrativeActs,
+  NarrativeBeats,
+} from '../data/narrative/NarrativeBeatCatalog.js';
 
 const SCENE_ID = 'act2_personal_archive';
 const DEFAULT_QUEST_ID = 'main-act2-personal-investigation';
@@ -37,7 +41,7 @@ const TRIGGER_DEFINITIONS = Object.freeze([
     prompt: 'Unlock the sealed precinct archive.',
     triggerType: 'quest_area',
     metadata: {
-      narrativeBeat: 'act2_personal_archive_entry',
+      narrativeBeat: NarrativeBeats.act2.personal.ARCHIVE_ENTRY,
       moodHint: 'haunted',
       telemetryTag: 'act2_personal_archive_entry',
     },
@@ -52,7 +56,7 @@ const TRIGGER_DEFINITIONS = Object.freeze([
     prompt: 'Review the disputed case files.',
     triggerType: 'quest_area',
     metadata: {
-      narrativeBeat: 'act2_personal_casefile_reckoning',
+      narrativeBeat: NarrativeBeats.act2.personal.CASEFILE_RECKONING,
       unlocksMechanic: 'memory_threads',
       telemetryTag: 'act2_personal_casefile_review',
     },
@@ -67,7 +71,7 @@ const TRIGGER_DEFINITIONS = Object.freeze([
     prompt: 'Access the sealed memory vault for hidden testimony.',
     triggerType: 'quest_area',
     metadata: {
-      narrativeBeat: 'act2_personal_memory_vault_unlocked',
+      narrativeBeat: NarrativeBeats.act2.personal.MEMORY_VAULT_UNLOCKED,
       unlocksMechanic: 'testimony_projection',
       telemetryTag: 'act2_personal_memory_vault',
     },
@@ -82,7 +86,7 @@ const TRIGGER_DEFINITIONS = Object.freeze([
     prompt: 'Decode the vault projections to expose the conspiracy timeline.',
     triggerType: 'quest_area',
     metadata: {
-      narrativeBeat: 'act2_personal_projection_analysis',
+      narrativeBeat: NarrativeBeats.act2.personal.PROJECTION_ANALYSIS,
       unlocksMechanic: 'knowledge_ledger',
       telemetryTag: 'act2_personal_projection_lab',
       dialogueId: ACT2_BRANCH_DIALOGUE_IDS.personal.projectionAnalysis,
@@ -99,7 +103,7 @@ const TRIGGER_DEFINITIONS = Object.freeze([
     prompt: 'Schedule the shadow broadcast to leak testimony.',
     triggerType: 'quest_area',
     metadata: {
-      narrativeBeat: 'act2_personal_broadcast_commitment',
+      narrativeBeat: NarrativeBeats.act2.personal.BROADCAST_COMMITMENT,
       unlocksMechanic: 'network_signal',
       telemetryTag: 'act2_personal_broadcast_terminal',
       dialogueId: ACT2_BRANCH_DIALOGUE_IDS.personal.broadcastCommit,
@@ -322,7 +326,11 @@ const NAVIGATION_TEMPLATE = Object.freeze({
 
 function ensureTriggerDefinitions() {
   for (const definition of TRIGGER_DEFINITIONS) {
-    if (!QuestTriggerRegistry.getTriggerDefinition(definition.id)) {
+    const existingDefinition = QuestTriggerRegistry.getTriggerDefinition(definition.id);
+    if (
+      !existingDefinition ||
+      existingDefinition.metadata?.narrativeBeat !== definition.metadata?.narrativeBeat
+    ) {
       QuestTriggerRegistry.registerDefinition({ ...definition });
     }
   }
@@ -565,6 +573,13 @@ export async function loadAct2PersonalInvestigationScene(
   };
 
   const navigationMesh = cloneNavigationMesh();
+  const narrativeBeats = {
+    entry: NarrativeBeats.act2.personal.ARCHIVE_ENTRY,
+    progression: NarrativeBeats.act2.personal.CASEFILE_RECKONING,
+    objective: NarrativeBeats.act2.personal.MEMORY_VAULT_UNLOCKED,
+    projection: NarrativeBeats.act2.personal.PROJECTION_ANALYSIS,
+    broadcast: NarrativeBeats.act2.personal.BROADCAST_COMMITMENT,
+  };
 
   return {
     sceneName: SCENE_ID,
@@ -592,13 +607,12 @@ export async function loadAct2PersonalInvestigationScene(
         y: layout.y,
         color: layout.color,
       })),
-      narrativeBeats: {
-        entry: 'act2_personal_archive_entry',
-        progression: 'act2_personal_casefile_reckoning',
-        projection: 'act2_personal_projection_analysis',
-        broadcast: 'act2_personal_broadcast_commitment',
-        objective: 'act2_personal_memory_vault_unlocked',
+      narrative: {
+        act: NarrativeActs.ACT2,
+        branch: 'personal',
+        beats: narrativeBeats,
       },
+      narrativeBeats,
     },
   };
 }

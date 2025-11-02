@@ -6,6 +6,8 @@
  * migration report highlights remaining work until Act 2 scenes adopt the
  * toolkit.
  */
+import { NarrativeBeats } from '../narrative/NarrativeBeatCatalog.js';
+
 export const ACT2_CROSSROADS_TRIGGER_DEFINITIONS = Object.freeze([
   {
     id: 'act2_crossroads_checkpoint',
@@ -17,7 +19,7 @@ export const ACT2_CROSSROADS_TRIGGER_DEFINITIONS = Object.freeze([
     prompt: 'Present forged credentials at the checkpoint',
     triggerType: 'quest_area',
     metadata: {
-      narrativeBeat: 'act2_arrival_checkpoint',
+      narrativeBeat: NarrativeBeats.act2.crossroads.ARRIVAL_CHECKPOINT,
       unlocksMechanic: 'social_stealth',
       worldFlag: 'act2_corporate_access',
     },
@@ -32,7 +34,7 @@ export const ACT2_CROSSROADS_TRIGGER_DEFINITIONS = Object.freeze([
     prompt: "Review Zara's thread dossier",
     triggerType: 'quest_area',
     metadata: {
-      narrativeBeat: 'act2_briefing_selection',
+      narrativeBeat: NarrativeBeats.act2.crossroads.BRIEFING_SELECTION,
       unlocksMechanic: 'thread_preview',
       branchingChoice: true,
     },
@@ -47,7 +49,7 @@ export const ACT2_CROSSROADS_TRIGGER_DEFINITIONS = Object.freeze([
     prompt: 'Select the next investigation thread',
     triggerType: 'quest_area',
     metadata: {
-      narrativeBeat: 'act2_thread_commit',
+      narrativeBeat: NarrativeBeats.act2.crossroads.THREAD_COMMIT,
       branchingChoice: true,
       telemetryTag: 'act2_thread_selection',
     },
@@ -71,7 +73,11 @@ export function seedAct2CrossroadsTriggers(registry) {
   const registered = [];
 
   for (const definition of ACT2_CROSSROADS_TRIGGER_DEFINITIONS) {
-    if (!registry.getTriggerDefinition(definition.id)) {
+    const existing = registry.getTriggerDefinition(definition.id);
+    if (
+      !existing ||
+      existing.metadata?.narrativeBeat !== definition.metadata?.narrativeBeat
+    ) {
       registry.registerDefinition({ ...definition });
       registered.push(definition.id);
     }

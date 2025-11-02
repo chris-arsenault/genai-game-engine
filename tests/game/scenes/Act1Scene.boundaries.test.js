@@ -2,6 +2,10 @@ import { EntityManager } from '../../../src/engine/ecs/EntityManager.js';
 import { ComponentRegistry } from '../../../src/engine/ecs/ComponentRegistry.js';
 import { EventBus } from '../../../src/engine/events/EventBus.js';
 import { loadAct1Scene } from '../../../src/game/scenes/Act1Scene.js';
+import {
+  NarrativeActs,
+  NarrativeBeats,
+} from '../../../src/game/data/narrative/NarrativeBeatCatalog.js';
 
 describe('Act1Scene boundary colliders', () => {
   it('aligns boundary collider bounds with transform centers', async () => {
@@ -38,6 +42,16 @@ describe('Act1Scene boundary colliders', () => {
       y: 0,
       width: 800,
       height: 600,
+    });
+
+    expect(sceneData.metadata?.narrative).toEqual({
+      act: NarrativeActs.ACT1,
+      beats: {
+        arrival: NarrativeBeats.act1.ARRIVAL,
+        witness: NarrativeBeats.act1.VENDOR_BRIEFING,
+        broker: NarrativeBeats.act1.BROKER_LEAD,
+        quartermaster: NarrativeBeats.act1.CIPHER_SUPPLY,
+      },
     });
 
     if (typeof sceneData.cleanup === 'function') {
