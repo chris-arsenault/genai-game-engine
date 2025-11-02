@@ -607,7 +607,15 @@ export const DIALOGUE_ERASER_CIPHER = new DialogueTree({
       speaker: 'Cipher',
       text: 'Detective. You\'ve wandered into the wrong district. This parlor is under Curator protection. I\'m afraid I can\'t let you leave with that data.',
       metadata: {
-        useFactionGreeting: true
+        useFactionGreeting: true,
+        attitudeVariants: {
+          hostile: 'Your reputation poisons every ledger, detective. The Curators would rather erase you than bargain.',
+          unfriendly: 'You test the patience of the Archive. Speak fast before the Curators decide you leave hollow.',
+          neutral: 'Detective. You\'ve wandered into the wrong district. This parlor is under Curator protection. I\'m afraid I can\'t let you leave with that data.',
+          friendly: 'Your discretion has bought curiosity. State your price and perhaps we both walk out richer.',
+          allied: 'Archive whispers vouch for you. Take what you came for and I will smooth the ledger trail.',
+          default: 'Detective. You\'ve wandered into the wrong district. This parlor is under Curator protection. I\'m afraid I can\'t let you leave with that data.'
+        }
       },
       choices: [
         {

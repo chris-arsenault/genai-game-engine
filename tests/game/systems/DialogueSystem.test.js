@@ -9,8 +9,13 @@ import { DialogueTree } from '../../../src/game/data/DialogueTree.js';
 import {
   DIALOGUE_REESE_BRIEFING,
   DIALOGUE_CIPHER_QUARTERMASTER,
+  DIALOGUE_ERASER_CIPHER,
 } from '../../../src/game/data/dialogues/Act1Dialogues.js';
 import { createAct2CrossroadsBriefingDialogue } from '../../../src/game/data/dialogues/Act2CrossroadsDialogue.js';
+import {
+  ACT2_BRANCH_DIALOGUE_IDS,
+  registerAct2BranchObjectiveDialogues,
+} from '../../../src/game/data/dialogues/Act2BranchObjectiveDialogues.js';
 
 describe('DialogueSystem', () => {
   let system;
@@ -355,6 +360,46 @@ describe('DialogueSystem', () => {
         'Shadowspace is yours tonight, partner. Three leads and every node is primed the moment you call it.'
       );
       expect(startEvent.data.textVariant).toBe('allied');
+    });
+
+    it('delivers allied Luminari resistance council bespoke lines', () => {
+      registerAct2BranchObjectiveDialogues(system);
+      const treeId = ACT2_BRANCH_DIALOGUE_IDS.resistance.coordinationCouncil;
+      const tree = system.dialogueTrees.get(treeId);
+      expect(tree).toBeDefined();
+
+      mockFactionSystem.getFactionAttitude.mockReturnValue('allied');
+      mockFactionSystem.getAllStandings.mockReturnValue({
+        luminari_syndicate: { fame: 80, infamy: 5, attitude: 'allied' },
+      });
+
+      system.startDialogue('act2_resistance_ops', treeId);
+
+      const startEvent = emittedEvents.find((e) => e.eventType === 'dialogue:started');
+      expect(startEvent).toBeDefined();
+      expect(startEvent.data.text).toBe(
+        'The council stands on your command. Name the vault and every archivist synchronises.'
+      );
+      expect(startEvent.data.textVariant).toBe('allied');
+    });
+
+    it('surfaces hostile Memory Keeper curator confrontation variants', () => {
+      const curatorTree = new DialogueTree(DIALOGUE_ERASER_CIPHER.toJSON());
+      system.registerDialogueTree(curatorTree);
+
+      mockFactionSystem.getFactionAttitude.mockReturnValue('hostile');
+      mockFactionSystem.getAllStandings.mockReturnValue({
+        memory_keepers: { fame: 5, infamy: 85, attitude: 'hostile' },
+      });
+
+      system.startDialogue('eraser_agent_cipher', curatorTree.id);
+
+      const startEvent = emittedEvents.find((e) => e.eventType === 'dialogue:started');
+      expect(startEvent).toBeDefined();
+      expect(startEvent.data.text).toBe(
+        'Your reputation poisons every ledger, detective. The Curators would rather erase you than bargain.'
+      );
+      expect(startEvent.data.textVariant).toBe('hostile');
     });
 
     it('resolves dialogue aliases before starting dialogue', () => {

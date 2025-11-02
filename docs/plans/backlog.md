@@ -5,8 +5,8 @@
 
 ## Document Overview
 
-**Version**: 1.13
-**Last Updated**: 2025-11-07 (Session 274 bespoke faction dialogue scenes)
+**Version**: 1.14
+**Last Updated**: 2025-11-07 (Session 275 Luminari & Memory Keeper bespoke dialogue scenes)
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
@@ -19,20 +19,27 @@
 - Tangential initiatives—such as net-new systems, auxiliary tooling, narrative review suites, or analytics dashboards—remain out of scope until roadmap deliverables ship.
 - Telemetry and performance management/testing initiatives are cancelled; do not schedule or create new work in these areas per the 2025-11-04 directive.
 
-### Current High-Priority Focus (Session 274)
+### Current High-Priority Focus (Session 275)
 
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
-| M3-023 | P1 | In Progress | Bespoke faction dialogue variants seeded across key story beats so reputation shifts carry unique tone beyond shared greetings. | Extend bespoke coverage to additional mission-critical scenes once narrative sign-off lands and keep automated tests green. |
+| M3-031 | P1 | In Progress | Extending bespoke faction dialogue to the Luminari resistance council briefing and Memory Keeper curator encounter so Act 2 beats react to live reputation tiers. | Iterate on tone review feedback, capture narrative sign-off, and ensure downstream quest scripting references the new variants. |
+| M3-023 | P1 | Ready for Review | Initial bespoke faction dialogue variants seeded across key story beats so reputation shifts carry unique tone beyond shared greetings. | Collate narrative review notes and decide whether remaining bespoke scenes warrant a follow-up story. |
 | AR-050 | P1 | In Progress | RenderOps packets, luminance snapshots, and bespoke tracking continue running through the asset automation suite without manual staging. | Allow the weekly `art:track-bespoke`, `art:package-renderops`, and `art:export-crossroads-luminance` sweeps to execute; investigate only if telemetry raises anomalies. |
 | M2-017 | P1 | Pending | Interview witnesses and suspects with approach-driven reactions and contradiction detection. | Unlock after M2-016 completes; plan ECS hooks and testimony storage once dialogue foundation stabilizes. |
 | M2-016 | P1 | Pending | Baseline DialogueSystem delivery with branching choices, consequence tracking, and UI polish. | Audit remaining acceptance criteria and line up UI validation before moving downstream dependencies. |
 
 **Next Session Focus**:
+- Finalise narrative documentation for **M3-031**, gathering tone approvals for the new Luminari and Memory Keeper lines.
 - Wrap narrative documentation for **M3-023** bespoke variants and identify the next mission scenes that need faction-specific copy.
 - Continue monitoring **AR-050** automation runs and respond only if telemetry flags anomalies.
 - Prepare planning notes so **M2-016** can close without blocking the interview mechanics sequence.
 - Maintain WIP ceiling adherence while staging the next faction narrative beats.
+
+### Session #275 Backlog Maintenance
+
+- Opened **M3-031: Luminari & Memory Keeper Bespoke Dialogue Scenes**, scripted attitude-specific variants for the resistance coordination council and Memory Parlor curator encounters, and queued narrative review follow-ups.
+- Verified DialogueSystem coverage for the new bespoke lines via `npm test -- --runTestsByPath tests/game/systems/DialogueSystem.test.js`, ensuring systemic fallbacks remain intact across all factions.
 
 ### Session #274 Backlog Maintenance
 

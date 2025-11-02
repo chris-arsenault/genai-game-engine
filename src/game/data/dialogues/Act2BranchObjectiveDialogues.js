@@ -149,6 +149,14 @@ function createResistanceCoordinationDialogue() {
         text: 'Our strike teams are ready, detective. We need your intel to prioritise which vaults go first.',
         metadata: {
           useFactionGreeting: true,
+          attitudeVariants: {
+            hostile: 'Your missteps nearly cost archivist lives. Offer something precise or we seal you out.',
+            unfriendly: 'We remember the intel you withheld. Make this briefing worth the risk or step aside.',
+            neutral: 'Our strike teams are ready, detective. We need your intel to prioritise which vaults go first.',
+            friendly: 'Your briefings kept crews ahead of the corps. Point us to the vaults and we move.',
+            allied: 'The council stands on your command. Name the vault and every archivist synchronises.',
+            default: 'Our strike teams are ready, detective. We need your intel to prioritise which vaults go first.',
+          },
         },
         nextNode: 'kira_plan',
       },
@@ -185,6 +193,14 @@ function createResistanceSignalDialogue() {
         text: 'Array capacitors are primed. One misstep and the Corps triangulate our uplinks.',
         metadata: {
           useFactionGreeting: true,
+          attitudeVariants: {
+            hostile: 'You compromised our arrays once already. One wrong cadence and we cut the uplinks ourselves.',
+            unfriendly: 'Static from your last pass still lingers. Give the timing and do not falter.',
+            neutral: 'Array capacitors are primed. One misstep and the Corps triangulate our uplinks.',
+            friendly: 'Your rescue ops kept these arrays hidden. Call the cadence and we hold the line.',
+            allied: 'The array bends to your cadence. Signal us and we flood the Corps with phantom echoes.',
+            default: 'Array capacitors are primed. One misstep and the Corps triangulate our uplinks.',
+          },
         },
         nextNode: 'kira_assurance',
       },
