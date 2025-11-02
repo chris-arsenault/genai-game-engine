@@ -12,9 +12,12 @@ import { System } from '../../engine/ecs/System.js';
 import { GameConfig } from '../config/GameConfig.js';
 
 export class ForensicSystem extends System {
-  constructor(componentRegistry, eventBus) {
+  constructor(componentRegistry, eventBus, options = {}) {
     super(componentRegistry, eventBus, ['Transform']);
     this.priority = 31;
+
+    const opts = typeof options === 'object' && options !== null ? options : {};
+    this.config = opts.config && typeof opts.config === 'object' ? opts.config : GameConfig;
 
     // Player forensic tools
     this.playerTools = new Set();
@@ -30,6 +33,7 @@ export class ForensicSystem extends System {
       analysesCompleted: 0,
       averageAnalysisTime: 0
     };
+    this._totalAnalysisSeconds = 0;
   }
 
   /**
@@ -74,17 +78,22 @@ export class ForensicSystem extends System {
 
     this.analysisTimer += deltaTime;
 
-    const progress = this.analysisTimer / this.activeAnalysis.duration;
+    const targetDuration = Math.max(this.activeAnalysis.duration, Number.EPSILON);
+    const progress = this.analysisTimer / targetDuration;
 
     // Emit progress event
     this.eventBus.emit('forensic:progress', {
       evidenceId: this.activeAnalysis.evidenceId,
       progress: Math.min(progress, 1.0),
-      forensicType: this.activeAnalysis.forensicType
+      forensicType: this.activeAnalysis.forensicType,
+      difficulty: this.activeAnalysis.difficulty,
+      skillLevel: this.activeAnalysis.skillLevel,
+      duration: targetDuration,
+      timeRemaining: Math.max(0, targetDuration - this.analysisTimer)
     });
 
     // Check if analysis complete
-    if (this.analysisTimer >= this.activeAnalysis.duration) {
+    if (this.analysisTimer >= targetDuration) {
       this.completeAnalysis();
     }
 
@@ -108,10 +117,14 @@ export class ForensicSystem extends System {
     }
 
     // Notify player that forensic analysis is available
+    const requirements = forensic.getRequirements();
     this.eventBus.emit('forensic:available', {
       evidenceId,
       forensicType: forensic.forensicType,
-      requirements: forensic.getRequirements()
+      requirements: {
+        ...requirements,
+        minimumDifficulty: this._normalizeDifficulty(forensic.difficulty)
+      }
     });
 
     const transform = this.getComponent(entityId, 'Transform');
@@ -126,6 +139,7 @@ export class ForensicSystem extends System {
       evidenceId,
       forensicType: forensic.forensicType,
       caseId,
+      difficulty: this._normalizeDifficulty(forensic.difficulty),
       worldPosition
     });
 
@@ -175,20 +189,29 @@ export class ForensicSystem extends System {
       return false;
     }
 
+    const durationSeconds = this._calculateAnalysisDurationSeconds(forensic);
+    const difficulty = this._normalizeDifficulty(forensic.difficulty);
+    const skillLevel = this._getMaxDifficulty();
+
     // Add to analysis queue
     this.analysisQueue.push({
       entityId,
       evidenceId,
       caseId: evidence.caseId,
       forensicType: forensic.forensicType,
-      duration: forensic.analysisTime / 1000, // Convert to seconds
-      hiddenClues: forensic.hiddenClues
+      duration: durationSeconds,
+      hiddenClues: forensic.hiddenClues,
+      difficulty,
+      skillLevel
     });
 
     this.eventBus.emit('forensic:queued', {
       evidenceId,
       forensicType: forensic.forensicType,
-      position: this.analysisQueue.length
+      position: this.analysisQueue.length,
+      estimatedDuration: durationSeconds,
+      difficulty,
+      skillLevel
     });
 
     console.log(`[ForensicSystem] Analysis queued: ${evidenceId} (${forensic.forensicType})`);
@@ -207,7 +230,9 @@ export class ForensicSystem extends System {
     this.eventBus.emit('forensic:started', {
       evidenceId: this.activeAnalysis.evidenceId,
       forensicType: this.activeAnalysis.forensicType,
-      duration: this.activeAnalysis.duration
+      duration: this.activeAnalysis.duration,
+      difficulty: this.activeAnalysis.difficulty,
+      skillLevel: this.activeAnalysis.skillLevel
     });
 
     const transform = this.getComponent(this.activeAnalysis.entityId, 'Transform');
@@ -223,6 +248,7 @@ export class ForensicSystem extends System {
       forensicType: this.activeAnalysis.forensicType,
       caseId: this.activeAnalysis.caseId,
       duration: this.activeAnalysis.duration,
+      difficulty: this.activeAnalysis.difficulty,
       worldPosition
     });
 
@@ -235,7 +261,8 @@ export class ForensicSystem extends System {
   completeAnalysis() {
     if (!this.activeAnalysis) return;
 
-    const { entityId, evidenceId, caseId, hiddenClues, forensicType } = this.activeAnalysis;
+    const { entityId, evidenceId, caseId, forensicType, difficulty, skillLevel } =
+      this.activeAnalysis;
 
     // Mark forensic evidence as analyzed
     const forensic = this.getComponent(entityId, 'ForensicEvidence');
@@ -256,7 +283,10 @@ export class ForensicSystem extends System {
         evidenceId,
         forensicType,
         cluesRevealed: revealedClues.length,
-        clues: revealedClues
+        clues: revealedClues,
+        difficulty,
+        skillLevel,
+        duration: this.analysisTimer
       });
 
       const transform = this.getComponent(entityId, 'Transform');
@@ -272,13 +302,14 @@ export class ForensicSystem extends System {
         forensicType,
         caseId,
         cluesRevealed: revealedClues.length,
+        difficulty,
         worldPosition
       });
 
       console.log(`[ForensicSystem] Analysis complete: ${evidenceId} (${revealedClues.length} clues revealed)`);
 
       // Update performance metrics
-      this.performanceMetrics.analysesCompleted++;
+      this._recordAnalysisDuration(this.analysisTimer);
     }
 
     this.activeAnalysis = null;
@@ -345,14 +376,18 @@ export class ForensicSystem extends System {
   getAnalysisStatus() {
     if (!this.activeAnalysis) return null;
 
-    const progress = Math.min(this.analysisTimer / this.activeAnalysis.duration, 1.0);
+    const targetDuration = Math.max(this.activeAnalysis.duration, Number.EPSILON);
+    const progress = Math.min(this.analysisTimer / targetDuration, 1.0);
 
     return {
       evidenceId: this.activeAnalysis.evidenceId,
       forensicType: this.activeAnalysis.forensicType,
       progress,
-      timeRemaining: Math.max(0, this.activeAnalysis.duration - this.analysisTimer),
-      queueLength: this.analysisQueue.length
+      timeRemaining: Math.max(0, targetDuration - this.analysisTimer),
+      queueLength: this.analysisQueue.length,
+      duration: targetDuration,
+      difficulty: this.activeAnalysis.difficulty,
+      skillLevel: this.activeAnalysis.skillLevel
     };
   }
 
@@ -374,13 +409,88 @@ export class ForensicSystem extends System {
    * @returns {number}
    */
   _getMaxDifficulty() {
+    const maxSkill = this.config?.knowledge?.forensicSkillMax ?? 3;
     let maxDifficulty = 0;
-    for (let i = 1; i <= 3; i++) {
+    for (let i = 1; i <= maxSkill; i++) {
       if (this.playerKnowledge.has(`forensic_skill_${i}`)) {
         maxDifficulty = i;
       }
     }
     return maxDifficulty;
+  }
+
+  /**
+    * Clamp and normalize difficulty values using configuration.
+    * @param {number} value
+    * @returns {number}
+    * @private
+    */
+  _normalizeDifficulty(value) {
+    const maxSkill = this.config?.knowledge?.forensicSkillMax ?? 3;
+    if (!Number.isFinite(value)) {
+      return 1;
+    }
+    const rounded = Math.round(value);
+    if (rounded < 1) {
+      return 1;
+    }
+    if (rounded > maxSkill) {
+      return maxSkill;
+    }
+    return rounded;
+  }
+
+  /**
+   * Calculate effective analysis duration in seconds based on difficulty and skill.
+   * @param {import('../components/ForensicEvidence.js').ForensicEvidence} forensic
+   * @returns {number}
+   * @private
+   */
+  _calculateAnalysisDurationSeconds(forensic) {
+    const baseMs =
+      typeof forensic.analysisTime === 'number' && forensic.analysisTime >= 0
+        ? forensic.analysisTime
+        : this.config?.investigation?.forensicAnalysisTime ?? 2000;
+
+    const tuning = this.config?.investigation?.forensicTuning ?? {};
+    const difficulty = this._normalizeDifficulty(forensic.difficulty);
+    const baseMultiplier =
+      typeof tuning?.difficultyMultipliers === 'object' && tuning.difficultyMultipliers !== null
+        ? tuning.difficultyMultipliers[difficulty] ?? 1 + 0.25 * (difficulty - 1)
+        : 1 + 0.25 * (difficulty - 1);
+
+    const playerSkill = this._getMaxDifficulty();
+    const advantage = Math.max(0, playerSkill - difficulty);
+    const advantageBonus = Number.isFinite(tuning.skillAdvantageTimeBonus)
+      ? tuning.skillAdvantageTimeBonus
+      : 0.15;
+    const minMultiplier = Number.isFinite(tuning.minAdvantageMultiplier)
+      ? tuning.minAdvantageMultiplier
+      : 0.55;
+
+    let skillMultiplier = 1;
+    if (advantage > 0) {
+      skillMultiplier = Math.max(minMultiplier, 1 - advantageBonus * advantage);
+    }
+
+    const totalMs = baseMs * baseMultiplier * skillMultiplier;
+    const seconds = totalMs / 1000;
+    return seconds > 0 ? seconds : 0.001;
+  }
+
+  /**
+   * Record analysis duration for average tracking.
+   * @param {number} durationSeconds
+   * @private
+   */
+  _recordAnalysisDuration(durationSeconds) {
+    if (!Number.isFinite(durationSeconds) || durationSeconds < 0) {
+      return;
+    }
+    this._totalAnalysisSeconds += durationSeconds;
+    this.performanceMetrics.analysesCompleted += 1;
+    this.performanceMetrics.averageAnalysisTime =
+      this._totalAnalysisSeconds / this.performanceMetrics.analysesCompleted;
   }
 
   /**
@@ -402,5 +512,8 @@ export class ForensicSystem extends System {
     this.activeAnalysis = null;
     this.analysisQueue = [];
     this.analysisTimer = 0;
+    this.performanceMetrics.analysesCompleted = 0;
+    this.performanceMetrics.averageAnalysisTime = 0;
+    this._totalAnalysisSeconds = 0;
   }
 }

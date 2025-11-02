@@ -5,8 +5,8 @@
 
 ## Document Overview
 
-**Version**: 1.18
-**Last Updated**: 2025-11-04 (Session 283 evidence factory integration)
+**Version**: 1.19
+**Last Updated**: 2025-11-05 (Session 284 forensic tuning pass)
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
@@ -36,12 +36,18 @@
 - Watch **M2-016** automation dashboards to confirm conditional choice gating stays healthy; no manual runs needed.
 - Maintain WIP ceiling adherence while monitoring DialogueSystem and save/load follow-ups; restricted area mechanics no longer need manual attention.
 
+### Session #284 Backlog Maintenance
+
+- Completed **M2-008 Forensic System Core**, introducing skill-aware forensic analysis timing and difficulty metadata payloads so UI prompts and FX reflect player capability tiers.
+- Added `GameConfig.investigation.forensicTuning` multipliers plus runtime metrics tracking (average analysis duration) to keep tuning adjustments data-backed.
+- Expanded Jest coverage (`tests/game/systems/ForensicSystem.test.js`) for duration scaling, metrics, and event payloads; verified via `npm test -- --runTestsByPath tests/game/systems/ForensicSystem.test.js`.
+
 ### Session #283 Backlog Maintenance
 
 - Closed **M2-003: Evidence Entity Factory** by adding `src/game/entities/EvidenceFactory.js`, delivering template-driven variants for physical, digital, testimony, and forensic evidence with randomized prompts, tags, and ability gates.
-- Routed **LevelSpawnSystem** through the new factory (with a legacy fallback) so procedural districts and authored scenes share metadata normalization while preserving existing spawn payloads.
-- Added Jest coverage for EvidenceFactory, EvidenceEntity, and LevelSpawnSystem factory integration via `npm test -- --runTestsByPath tests/game/entities/EvidenceFactory.test.js tests/game/entities/EvidenceEntity.test.js tests/game/systems/LevelSpawnSystem.test.js`.
-- Recorded architecture decision `40b04e8f-1815-45df-8c77-01c8fe04e697` to capture the template adoption and fallback rationale.
+  - Routed **LevelSpawnSystem** through the new factory (with a legacy fallback) so procedural districts and authored scenes share metadata normalization while preserving existing spawn payloads.
+  - Added Jest coverage for EvidenceFactory, EvidenceEntity, and LevelSpawnSystem factory integration via `npm test -- --runTestsByPath tests/game/entities/EvidenceFactory.test.js tests/game/entities/EvidenceEntity.test.js tests/game/systems/LevelSpawnSystem.test.js`.
+  - Recorded architecture decision `40b04e8f-1815-45df-8c77-01c8fe04e697` to capture the template adoption and fallback rationale.
 
 ### Session #280 Backlog Maintenance
 - Closed **M3-017 Save/Load Stress Testing** after landing SaveManager migration upgrades and 100-cycle/large-payload stress coverage, verified via `npm test -- --runTestsByPath tests/game/managers/SaveManager.test.js`.
@@ -2345,6 +2351,7 @@ _Progress 2025-11-03 (Session #256 guardrail verification): Re-ran the pointer c
 - **Effort**: 4 hours
 - **Dependencies**: M2-001
 - **Description**: Forensic examination mechanics
+- **Status**: Done (Session 284 forensic timing & metrics)
 - **Files**:
   - `src/game/systems/ForensicSystem.js`
   - `tests/game/systems/ForensicSystem.test.js`
@@ -2358,6 +2365,8 @@ _Progress 2025-11-03 (Session #256 guardrail verification): Re-ran the pointer c
   - Forensic tools work correctly
   - Analysis reveals hidden clues
   - Difficulty scales appropriately
+- **Completion Notes**:
+  - Skill-aware timing multipliers sourced from `GameConfig.investigation.forensicTuning`; ForensicSystem emits difficulty/skill metadata and tracks average analysis time via Jest-validated coverage.
 
 #### M2-009: Fingerprint Matching Minigame
 - **Priority**: P1

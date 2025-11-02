@@ -365,12 +365,15 @@ describe('ForensicSystem', () => {
       }));
 
       // Should emit forensic:complete
-      expect(mockEventBus.emit).toHaveBeenCalledWith('forensic:complete', {
-        evidenceId,
-        forensicType: 'memory_trace',
-        cluesRevealed: 3,
-        clues: ['clue-1', 'clue-2', 'clue-3']
-      });
+      expect(mockEventBus.emit).toHaveBeenCalledWith(
+        'forensic:complete',
+        expect.objectContaining({
+          evidenceId,
+          forensicType: 'memory_trace',
+          cluesRevealed: 3,
+          clues: ['clue-1', 'clue-2', 'clue-3'],
+        })
+      );
 
       expect(mockEventBus.emit).toHaveBeenCalledWith('fx:overlay_cue', expect.objectContaining({
         effectId: 'forensicRevealFlash',
@@ -523,12 +526,15 @@ describe('ForensicSystem', () => {
 
       const status = forensicSystem.getAnalysisStatus();
 
-      expect(status).toEqual({
+      expect(status).toMatchObject({
         evidenceId,
         forensicType: 'fingerprint',
         progress: expect.any(Number),
         timeRemaining: expect.any(Number),
-        queueLength: 0
+        queueLength: 0,
+        duration: expect.any(Number),
+        difficulty: 1,
+        skillLevel: 1
       });
     });
 
@@ -559,6 +565,55 @@ describe('ForensicSystem', () => {
         activeAnalysis: false,
         queueLength: 0
       });
+    });
+  });
+
+  describe('Difficulty tuning', () => {
+    test('should scale duration with difficulty level', () => {
+      const entityId = 1;
+      const evidenceId = 'evidence-1';
+
+      forensicSystem.learnKnowledge('forensic_skill_2');
+      forensicSystem.learnKnowledge('forensic_skill_3');
+
+      const evidence = new Evidence({ id: evidenceId, collected: true, caseId: 'case-1' });
+      const forensic = new ForensicEvidence({
+        requiredTool: 'basic_magnifier',
+        difficulty: 3,
+        analysisTime: 2000
+      });
+
+      mockComponentRegistry.setComponent(entityId, 'Evidence', evidence);
+      mockComponentRegistry.setComponent(entityId, 'ForensicEvidence', forensic);
+
+      const queued = forensicSystem.initiateAnalysis(entityId, evidenceId);
+      expect(queued).toBe(true);
+
+      const queuedItem = forensicSystem.analysisQueue[0];
+      expect(queuedItem.duration).toBeCloseTo(3.5, 2); // 2000ms * 1.75 => 3.5s
+    });
+
+    test('should shorten duration when skill exceeds difficulty', () => {
+      const entityId = 2;
+      const evidenceId = 'evidence-2';
+
+      forensicSystem.learnKnowledge('forensic_skill_2');
+
+      const evidence = new Evidence({ id: evidenceId, collected: true, caseId: 'case-1' });
+      const forensic = new ForensicEvidence({
+        requiredTool: 'basic_magnifier',
+        difficulty: 1,
+        analysisTime: 2000
+      });
+
+      mockComponentRegistry.setComponent(entityId, 'Evidence', evidence);
+      mockComponentRegistry.setComponent(entityId, 'ForensicEvidence', forensic);
+
+      const queued = forensicSystem.initiateAnalysis(entityId, evidenceId);
+      expect(queued).toBe(true);
+
+      const queuedItem = forensicSystem.analysisQueue[0];
+      expect(queuedItem.duration).toBeCloseTo(1.7, 2); // 2000ms * 0.85 => 1.7s
     });
   });
 

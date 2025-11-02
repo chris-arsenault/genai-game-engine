@@ -38,6 +38,15 @@ export const GameConfig = {
     evidenceCollectionTime: 500, // milliseconds to collect
     forensicAnalysisTime: 2000, // milliseconds to analyze
     clueRevealDelay: 300, // milliseconds between clue reveals
+    forensicTuning: {
+      difficultyMultipliers: {
+        1: 1.0,
+        2: 1.35,
+        3: 1.75,
+      },
+      skillAdvantageTimeBonus: 0.15, // each skill tier above difficulty trims 15% of analysis time
+      minAdvantageMultiplier: 0.55, // floor when stacking bonuses (prevents instant completion)
+    },
 
     // Deduction board
     theoryValidationTime: 1000, // milliseconds to validate theory
