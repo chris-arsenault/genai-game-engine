@@ -3224,6 +3224,7 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Distant city sounds
   - Terminal hum
 - **File**: `assets/music/requests.json`
+- **Status**: Review Approved — Procedurally generated AR-009 loop suite (footsteps concrete/metal, rain ambience, neon buzz, distant city, terminal hum) via `scripts/audio/generateAr009EnvironmentalSfx.js`; assets landed in `assets/generated/audio/ar-009/` with metadata snapshots and Jest coverage guarding the generator.
 
 ---
 
