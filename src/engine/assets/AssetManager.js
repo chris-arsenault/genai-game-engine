@@ -1,4 +1,4 @@
-import { AssetLoader } from './AssetLoader.js';
+import { AssetLoader, AssetLoadError } from './AssetLoader.js';
 import { eventBus } from '../events/EventBus.js';
 
 /**
@@ -73,7 +73,13 @@ export class AssetManager {
       this._buildGroups();
       eventBus.emit('asset:manifest-loaded', { manifest: this.manifest });
     } catch (error) {
-      console.error('Failed to load manifest:', error);
+      const telemetry = AssetLoadError.buildTelemetryContext(error, {
+        consumer: 'AssetManager.loadManifest',
+        manifestUrl: url
+      });
+      telemetry.error = telemetry.message;
+      console.error('Failed to load manifest:', error, telemetry);
+      eventBus.emit('asset:manifest-failed', telemetry);
       throw error;
     }
   }
@@ -145,7 +151,12 @@ export class AssetManager {
 
     } catch (error) {
       this.loading.delete(assetId);
-      eventBus.emit('asset:failed', { assetId, error: error.message });
+      const telemetry = AssetLoadError.buildTelemetryContext(error, {
+        assetId,
+        consumer: 'AssetManager.loadAsset'
+      });
+      telemetry.error = telemetry.message;
+      eventBus.emit('asset:failed', telemetry);
       throw error;
     }
   }
@@ -331,7 +342,12 @@ export class AssetManager {
       });
       // Fire and forget for optional assets
       this._loadPriorityBatch(optional, AssetPriority.OPTIONAL).catch(error => {
-        console.warn('Optional asset loading failed:', error);
+        const telemetry = AssetLoadError.buildTelemetryContext(error, {
+          priority: AssetPriority.OPTIONAL,
+          consumer: 'AssetManager.preloadGroup'
+        });
+        telemetry.error = telemetry.message;
+        console.warn('Optional asset loading failed:', error, telemetry);
       });
     }
 
@@ -361,7 +377,13 @@ export class AssetManager {
           this._emitPriorityProgress(priority);
         })
         .catch(error => {
-          console.error(`Failed to load ${priority} asset ${asset.id}:`, error);
+          const telemetry = AssetLoadError.buildTelemetryContext(error, {
+            assetId: asset.id,
+            priority,
+            consumer: 'AssetManager._loadPriorityBatch'
+          });
+          telemetry.error = telemetry.message;
+          console.error(`Failed to load ${priority} asset ${asset.id}:`, error, telemetry);
           this.loadingStats[priority].loaded++;
           this._emitPriorityProgress(priority);
         });

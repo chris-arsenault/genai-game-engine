@@ -13,7 +13,7 @@ import { GameConfig } from '../config/GameConfig.js';
 import { TriggerMigrationToolkit } from '../quests/TriggerMigrationToolkit.js';
 import { QuestTriggerRegistry } from '../quests/QuestTriggerRegistry.js';
 import { seedAct2CrossroadsTriggers } from '../data/quests/act2TriggerDefinitions.js';
-import { AssetLoader } from '../../engine/assets/AssetLoader.js';
+import { AssetLoader, AssetLoadError } from '../../engine/assets/AssetLoader.js';
 import {
   NarrativeActs,
   NarrativeBeats,
@@ -847,9 +847,15 @@ export class Act2CrossroadsScene {
             segment.image = image;
           }
         } catch (error) {
+          const telemetry = AssetLoadError.buildTelemetryContext(error, {
+            consumer: 'Act2CrossroadsScene.loadArtSegments',
+            segmentId: segment.id,
+            imageUrl: segment.imageUrl
+          });
           console.warn(
             `[Act2CrossroadsScene] Failed to load art asset for "${segment.id}" (${segment.imageUrl})`,
-            error
+            error,
+            telemetry
           );
           segment.image = null;
         }
@@ -919,7 +925,11 @@ export class Act2CrossroadsScene {
         return cloneArtConfig(data);
       }
     } catch (error) {
-      console.warn(`[Act2CrossroadsScene] Failed to load art manifest (${url})`, error);
+      const telemetry = AssetLoadError.buildTelemetryContext(error, {
+        consumer: 'Act2CrossroadsScene._loadArtManifest',
+        manifestUrl: url
+      });
+      console.warn(`[Act2CrossroadsScene] Failed to load art manifest (${url})`, error, telemetry);
     }
 
     return null;

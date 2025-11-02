@@ -65,6 +65,89 @@ export class AssetLoadError extends Error {
     const suffix = context.length > 0 ? ` (${context.join(', ')})` : '';
     return `Failed to load ${assetType} asset "${url}"${suffix}`;
   }
+
+  /**
+   * Build structured telemetry context for an asset load failure.
+   * Accepts either an AssetLoadError instance or any error-like object.
+   *
+   * @param {unknown} error - Error or value to describe.
+   * @param {object} [context={}] - Additional context to merge into the payload.
+   * @returns {object} Structured telemetry details.
+   */
+  static buildTelemetryContext(error, context = {}) {
+    const telemetry = { ...context };
+
+    const assign = (key, value) => {
+      if (value !== undefined && value !== null) {
+        telemetry[key] = value;
+      }
+    };
+
+    if (error instanceof AssetLoadError) {
+      assign('assetType', error.assetType);
+      assign('url', error.url);
+      if (Number.isFinite(error.attempt)) {
+        assign('attempt', error.attempt);
+      }
+      if (Number.isFinite(error.maxAttempts)) {
+        assign('maxAttempts', error.maxAttempts);
+      }
+      assign('reason', error.reason);
+      assign('retryable', typeof error.retryable === 'boolean' ? error.retryable : undefined);
+      if (error.details !== undefined && error.details !== null) {
+        assign('details', error.details);
+      }
+    } else if (error && typeof error === 'object') {
+      assign('assetType', typeof error.assetType === 'string' ? error.assetType : undefined);
+      assign('url', typeof error.url === 'string' ? error.url : undefined);
+      if (Number.isFinite(error.attempt)) {
+        assign('attempt', error.attempt);
+      }
+      if (Number.isFinite(error.maxAttempts)) {
+        assign('maxAttempts', error.maxAttempts);
+      }
+      assign('reason', typeof error.reason === 'string' ? error.reason : undefined);
+      if (typeof error.retryable === 'boolean') {
+        assign('retryable', error.retryable);
+      }
+      if (error.details !== undefined && error.details !== null) {
+        assign('details', error.details);
+      }
+    }
+
+    const message = typeof error?.message === 'string'
+      ? error.message
+      : (typeof error === 'string' ? error : null);
+    if (message && telemetry.message == null) {
+      telemetry.message = message;
+    }
+
+    const errorName = typeof error?.name === 'string' ? error.name : null;
+    if (errorName && telemetry.errorName == null) {
+      telemetry.errorName = errorName;
+    }
+
+    if (error?.cause && typeof error.cause === 'object') {
+      const causeMessage = typeof error.cause.message === 'string' ? error.cause.message : null;
+      const causeName = typeof error.cause.name === 'string' ? error.cause.name : null;
+      if (causeMessage) {
+        telemetry.causeMessage = causeMessage;
+      }
+      if (causeName) {
+        telemetry.causeName = causeName;
+      }
+    }
+
+    if (telemetry.retryable === undefined && error instanceof AssetLoadError) {
+      telemetry.retryable = error.retryable;
+    }
+
+    if (telemetry.message == null) {
+      telemetry.message = 'Unknown asset load failure';
+    }
+
+    return telemetry;
+  }
 }
 
 export class AssetLoader {

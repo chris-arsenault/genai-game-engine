@@ -1903,10 +1903,11 @@ _Progress 2025-10-28 (Session #26 implementation): Added storage-unavailable reg
   - Introduced `AssetLoadError` to standardise metadata-rich failure handling across image, JSON, and audio loaders.
   - Reworked batch loading to surface partial failures via aggregated `AssetLoadError` payloads while preserving successful results.
   - Expanded Jest coverage for retry, timeout, and error classification scenarios.
+  - Propagated `AssetLoadError` telemetry metadata through manifest consumers (`AssetManager`, `SpriteAssetResolver`, `Act2CrossroadsScene`) and added Jest coverage for the diagnostics helper.
 - **Verification**:
   - `npm test`
 - **Next Steps**:
-  - Mirror the new error metadata in asset manifest telemetry/warning logs.
+  - Monitor automated runs for new `fetch-missing` warnings surfaced by consumer tests; follow up if additional mocks are required.
 - **Implementation Requirements**:
   - Load images (PNG, JPEG)
   - Load JSON data

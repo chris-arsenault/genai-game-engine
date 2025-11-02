@@ -497,6 +497,44 @@ describe('AssetLoader', () => {
     });
   });
 
+  describe('AssetLoadError.buildTelemetryContext', () => {
+    it('returns structured metadata for AssetLoadError instances', () => {
+      const failure = new AssetLoadError({
+        assetType: 'image',
+        url: '/assets/sprite.png',
+        attempt: 2,
+        maxAttempts: 3,
+        reason: 'network-error',
+        retryable: true,
+        details: { status: 503 }
+      });
+
+      const telemetry = AssetLoadError.buildTelemetryContext(failure, { consumer: 'test-suite' });
+      expect(telemetry).toEqual(expect.objectContaining({
+        consumer: 'test-suite',
+        assetType: 'image',
+        url: '/assets/sprite.png',
+        attempt: 2,
+        maxAttempts: 3,
+        reason: 'network-error',
+        retryable: true,
+        message: expect.stringContaining('Failed to load'),
+        details: { status: 503 }
+      }));
+    });
+
+    it('falls back gracefully for generic errors', () => {
+      const generic = new Error('generic failure');
+      const telemetry = AssetLoadError.buildTelemetryContext(generic, { consumer: 'fallback-test' });
+
+      expect(telemetry).toEqual(expect.objectContaining({
+        consumer: 'fallback-test',
+        message: 'generic failure',
+        errorName: 'Error'
+      }));
+    });
+  });
+
   describe('_delay', () => {
     it('delays execution for approximately the requested time', async () => {
       const start = Date.now();

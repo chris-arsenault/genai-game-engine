@@ -1,5 +1,5 @@
 import { AssetManager, AssetPriority } from '../../../src/engine/assets/AssetManager.js';
-import { AssetLoader } from '../../../src/engine/assets/AssetLoader.js';
+import { AssetLoader, AssetLoadError } from '../../../src/engine/assets/AssetLoader.js';
 import { eventBus } from '../../../src/engine/events/EventBus.js';
 
 describe('AssetManager', () => {
@@ -90,12 +90,46 @@ describe('AssetManager', () => {
     });
 
     it('should handle manifest load error', async () => {
-      mockLoader.loadJSON.mockRejectedValue(new Error('Network error'));
+      const failure = new AssetLoadError({
+        assetType: 'json',
+        url: 'manifest.json',
+        attempt: 1,
+        maxAttempts: 3,
+        reason: 'network-error',
+        retryable: true
+      });
+      mockLoader.loadJSON.mockRejectedValue(failure);
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const emitSpy = jest.spyOn(eventBus, 'emit');
 
-      await expect(manager.loadManifest('manifest.json')).rejects.toThrow('Network error');
-      expect(consoleSpy).toHaveBeenCalled();
+      await expect(manager.loadManifest('manifest.json')).rejects.toBe(failure);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Failed to load manifest:',
+        failure,
+        expect.objectContaining({
+          consumer: 'AssetManager.loadManifest',
+          manifestUrl: 'manifest.json',
+          assetType: 'json',
+          url: 'manifest.json',
+          reason: 'network-error',
+          retryable: true,
+          error: expect.any(String)
+        })
+      );
+      expect(emitSpy).toHaveBeenCalledWith(
+        'asset:manifest-failed',
+        expect.objectContaining({
+          consumer: 'AssetManager.loadManifest',
+          manifestUrl: 'manifest.json',
+          assetType: 'json',
+          url: 'manifest.json',
+          reason: 'network-error',
+          retryable: true,
+          error: expect.stringContaining('Failed to load json asset')
+        })
+      );
 
+      emitSpy.mockRestore();
       consoleSpy.mockRestore();
     });
   });
@@ -163,10 +197,16 @@ describe('AssetManager', () => {
       const emitSpy = jest.spyOn(eventBus, 'emit');
 
       await expect(manager.loadAsset('sprite1')).rejects.toThrow('Load failed');
-      expect(emitSpy).toHaveBeenCalledWith('asset:failed', {
-        assetId: 'sprite1',
-        error: 'Load failed'
-      });
+      expect(emitSpy).toHaveBeenCalledWith(
+        'asset:failed',
+        expect.objectContaining({
+          assetId: 'sprite1',
+          consumer: 'AssetManager.loadAsset',
+          message: 'Load failed',
+          error: 'Load failed'
+        })
+      );
+      emitSpy.mockRestore();
     });
 
     it('should throw if asset not in manifest', async () => {
