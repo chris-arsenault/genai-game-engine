@@ -24,7 +24,8 @@ export class NPC {
     witnessedCrimes = [],
     attitude = 'neutral',
     dialogue = {},
-    memory = {}
+    memory = {},
+    appearanceId = null
   } = {}) {
     this.npcId = npcId;
     this.name = name;
@@ -35,6 +36,7 @@ export class NPC {
     this.attitude = attitude;
     this.dialogue = dialogue;
     this.memory = { ...memory };
+    this.appearanceId = appearanceId;
   }
 
   /**
@@ -200,7 +202,8 @@ export class NPC {
       witnessedCrimes: this.witnessedCrimes,
       attitude: this.attitude,
       dialogue: this.dialogue,
-      memory: this.memory
+      memory: this.memory,
+      appearanceId: this.appearanceId
     };
   }
 

@@ -23,13 +23,13 @@
 
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
-| AR-004 | P1 | In Progress | Civilian and guard NPC atlases regenerated via GPT-Image-1 in Session 257; Session 259 queued the refreshed packs (`assets/images/generation-queue/2025-11-02T03-28-32-933Z-ar-004.jsonl`) for automated slicing. | Allow the automation job to publish normalized manifests, then wire the civilian/guard variants into NPC prefabs and rerun scripted coverage (`npm test -- NPC`). |
+| AR-004 | P1 | Done | Civilian and guard NPC variants sliced into 32x48 sprites via `scripts/art/deriveNpcSpriteVariants.py` and wired into NPC prefabs with deterministic faction-aware selection. | — |
 | AR-050 | P1 | In Progress | RenderOps packets, luminance snapshots, and bespoke tracking continue running through the asset automation suite without manual staging. | Allow the weekly `art:track-bespoke`, `art:package-renderops`, and `art:export-crossroads-luminance` sweeps to execute; investigate only if telemetry raises anomalies. |
 | M3-016 | P2 | In Progress | Save/Load dashboards, acknowledgement sweeps, and distribution tooling regenerate automatically each export window with parity scripts keeping coverage at 100%. | Depend on the telemetry cron to launch `npm run telemetry:ack` and `npm run telemetry:distribute-save-load`; review dashboards solely when automation surfaces alerts. |
 | M3-003 | P1 | Pending | Faction system scaffolding remains staged awaiting the automated data contract feed; regression suites sit ready for activation once dependencies unlock. | Hold until M3-002 signals readiness and keep all validation inside scripted faction behaviour suites—no manual check-ins. |
 
 **Next Session Focus**:
-- Let the queued AR-004 NPC job (`generation-queue/2025-11-02T03-28-32-933Z-ar-004.jsonl`) finish slicing, then integrate the produced manifests into NPC prefabs and rerun `npm test -- NPC`.
+- AR-004 NPC sprites integrated into ECS prefabs; monitor automation reruns for regressions via the derivation script and targeted Jest coverage.
 - Continue monitoring AR-050 via the weekly automation sweeps (`art:track-bespoke`, `art:package-renderops`, `art:export-crossroads-luminance`); intervene only on telemetry alerts.
 - Let the telemetry cron handle save/load acknowledgements and distribution (`npm run telemetry:ack`, `npm run telemetry:distribute-save-load`); review dashboards when automation raises exceptions.
 - Keep **M3-003** staged until the automated data contract notifier unlocks the faction work; maintain WIP within the ten-item ceiling.
@@ -3130,10 +3130,9 @@ All asset requests logged in `assets/*/requests.json`. Human asset creation or e
   - Guard NPCs (3 variations, 32x32)
 - Faction-specific clothing/colors
 - **File**: `assets/images/requests.json`
-- **Status**: Session 257 refreshed civilian and guard NPC sprite packs via GPT-Image-1; updated atlases live under `assets/generated/images/ar-004/` with manifest + payload metadata marked `ai-generated`.
+- **Status**: Session 262 derived 32x48 civilian and guard variants (`assets/generated/images/ar-004/variants/*`, `variant-manifest.json`) and integrated them into NPC prefabs with deterministic faction-aware selection guarded by Jest suites.
 - **Next Steps**:
-  - Animation leads to slice walk/idle loops from refreshed atlases and confirm silhouette readability.
-  - Hook approved sprites into ECS NPC prefabs once motion passes QA.
+  - Monitor automation reruns of `scripts/art/deriveNpcSpriteVariants.py` when AR-004 assets refresh to keep manifest parity.
 
 #### AR-005: District Tilesets (M4)
 - **Type**: Images

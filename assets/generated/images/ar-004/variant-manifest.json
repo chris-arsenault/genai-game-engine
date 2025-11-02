@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "source": "deriveNpcSpriteVariants.py",
+  "generated": [
+    {
+      "id": "ar-004::civilian::01",
+      "faction": "civilian",
+      "variant": 1,
+      "path": "assets/generated/images/ar-004/variants/civilian-01.png",
+      "width": 32,
+      "height": 48
+    },
+    {
+      "id": "ar-004::civilian::02",
+      "faction": "civilian",
+      "variant": 2,
+      "path": "assets/generated/images/ar-004/variants/civilian-02.png",
+      "width": 32,
+      "height": 48
+    },
+    {
+      "id": "ar-004::civilian::03",
+      "faction": "civilian",
+      "variant": 3,
+      "path": "assets/generated/images/ar-004/variants/civilian-03.png",
+      "width": 32,
+      "height": 48
+    },
+    {
+      "id": "ar-004::civilian::04",
+      "faction": "civilian",
+      "variant": 4,
+      "path": "assets/generated/images/ar-004/variants/civilian-04.png",
+      "width": 32,
+      "height": 48
+    },
+    {
+      "id": "ar-004::civilian::05",
+      "faction": "civilian",
+      "variant": 5,
+      "path": "assets/generated/images/ar-004/variants/civilian-05.png",
+      "width": 32,
+      "height": 48
+    },
+    {
+      "id": "ar-004::guard::01",
+      "faction": "guard",
+      "variant": 1,
+      "path": "assets/generated/images/ar-004/variants/guard-01.png",
+      "width": 32,
+      "height": 48
+    },
+    {
+      "id": "ar-004::guard::02",
+      "faction": "guard",
+      "variant": 2,
+      "path": "assets/generated/images/ar-004/variants/guard-02.png",
+      "width": 32,
+      "height": 48
+    },
+    {
+      "id": "ar-004::guard::03",
+      "faction": "guard",
+      "variant": 3,
+      "path": "assets/generated/images/ar-004/variants/guard-03.png",
+      "width": 32,
+      "height": 48
+    }
+  ]
+}
