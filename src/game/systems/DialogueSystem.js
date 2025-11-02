@@ -14,6 +14,73 @@ import { inventorySlice } from '../state/slices/inventorySlice.js';
 import { getFactionIds } from '../data/factions/index.js';
 import { getFactionDialogueVariants } from '../data/dialogues/factionDialogueVariants.js';
 
+function cloneMetadataValue(value) {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (value === null) {
+    return null;
+  }
+  if (typeof value === 'function') {
+    return undefined;
+  }
+  if (Array.isArray(value)) {
+    const result = [];
+    for (const item of value) {
+      const cloned = cloneMetadataValue(item);
+      if (cloned !== undefined) {
+        result.push(cloned);
+      }
+    }
+    return result;
+  }
+  if (value instanceof Set) {
+    const result = [];
+    for (const item of value.values()) {
+      const cloned = cloneMetadataValue(item);
+      if (cloned !== undefined) {
+        result.push(cloned);
+      }
+    }
+    return result;
+  }
+  if (value instanceof Map) {
+    const result = {};
+    for (const [key, entry] of value.entries()) {
+      const cloned = cloneMetadataValue(entry);
+      if (cloned !== undefined) {
+        result[key] = cloned;
+      }
+    }
+    return result;
+  }
+  if (typeof value === 'object') {
+    const result = {};
+    for (const [key, entry] of Object.entries(value)) {
+      const cloned = cloneMetadataValue(entry);
+      if (cloned !== undefined) {
+        result[key] = cloned;
+      }
+    }
+    return result;
+  }
+  return value;
+}
+
+function sanitizeMetadata(metadata) {
+  if (!metadata || typeof metadata !== 'object') {
+    return null;
+  }
+  const cloned = cloneMetadataValue(metadata);
+  if (cloned && typeof cloned === 'object' && Object.keys(cloned).length === 0 && !Array.isArray(cloned)) {
+    return null;
+  }
+  if (Array.isArray(cloned) && cloned.length === 0) {
+    return null;
+  }
+  return cloned ?? null;
+}
+
 export class DialogueSystem extends System {
   constructor(
     componentRegistry,
@@ -226,6 +293,8 @@ export class DialogueSystem extends System {
         factionId: nodePresentation.factionId ?? null,
         textVariant: nodePresentation.variantKey ?? null,
       },
+      dialogueMetadata: sanitizeMetadata(tree.metadata),
+      nodeMetadata: sanitizeMetadata(startNode.metadata),
     });
 
     this.eventBus.emit('fx:overlay_cue', {
@@ -307,6 +376,7 @@ export class DialogueSystem extends System {
       choiceId: choice.id ?? null,
       choiceText: choice.text,
       timestamp,
+      metadata: sanitizeMetadata(choice.metadata),
     };
 
     // Emit choice event
@@ -320,6 +390,7 @@ export class DialogueSystem extends System {
       choiceText: choice.text,
       nextNode: choice.nextNode,
       timestamp,
+      metadata: sanitizeMetadata(choice.metadata),
     });
 
     this.eventBus.emit('fx:overlay_cue', {
@@ -427,6 +498,8 @@ export class DialogueSystem extends System {
         ),
         textVariant: nodePresentation.variantKey ?? null,
       },
+      nodeMetadata: sanitizeMetadata(nextNode.metadata),
+      dialogueMetadata: sanitizeMetadata(tree.metadata),
     });
 
     this.eventBus.emit('fx:overlay_cue', {

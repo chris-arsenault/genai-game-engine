@@ -249,6 +249,12 @@ describe('DialogueSystem', () => {
       expect(startEvent.data.npcId).toBe('npc_1');
       expect(startEvent.data.speaker).toBe('NPC');
       expect(startEvent.data.text).toBe('Hello, Detective.');
+      expect(startEvent.data.dialogueMetadata).toEqual({
+        factionId: 'luminari_syndicate'
+      });
+      expect(startEvent.data.nodeMetadata).toEqual({
+        useFactionGreeting: true
+      });
     });
 
     it('selects faction attitude variant text when friendly', () => {
@@ -509,6 +515,7 @@ describe('DialogueSystem', () => {
       expect(choiceEvent).toBeDefined();
       expect(choiceEvent.data.choiceIndex).toBe(0);
       expect(choiceEvent.data.nextNode).toBe('response_1');
+      expect(choiceEvent.data.metadata).toBeNull();
     });
 
     it('should emit fx cue on choice selection', () => {
@@ -529,6 +536,10 @@ describe('DialogueSystem', () => {
       expect(nodeEvent).toBeDefined();
       expect(nodeEvent.data.nodeId).toBe('response_1');
       expect(nodeEvent.data.text).toBe('Nice to meet you.');
+      expect(nodeEvent.data.nodeMetadata).toBeNull();
+      expect(nodeEvent.data.dialogueMetadata).toEqual({
+        factionId: 'luminari_syndicate'
+      });
     });
 
     it('should emit fx cue on dialogue beat', () => {

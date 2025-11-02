@@ -26,7 +26,7 @@
 | M3-031 | P1 | In Progress | Extending bespoke faction dialogue to the Luminari resistance council briefing and Memory Keeper curator encounter so Act 2 beats react to live reputation tiers. | Iterate on tone review feedback, capture narrative sign-off, and ensure downstream quest scripting references the new variants. |
 | M3-023 | P1 | Ready for Review | Initial bespoke faction dialogue variants seeded across key story beats so reputation shifts carry unique tone beyond shared greetings. | Collate narrative review notes and decide whether remaining bespoke scenes warrant a follow-up story. |
 | AR-050 | P1 | In Progress | RenderOps packets, luminance snapshots, and bespoke tracking continue running through the asset automation suite without manual staging. | Allow the weekly `art:track-bespoke`, `art:package-renderops`, and `art:export-crossroads-luminance` sweeps to execute; investigate only if telemetry raises anomalies. |
-| M2-017 | P1 | Pending | Interview witnesses and suspects with approach-driven reactions and contradiction detection. | Unlock after M2-016 completes; plan ECS hooks and testimony storage once dialogue foundation stabilizes. |
+| M2-017 | P1 | Ready for Review | Interview witnesses and suspects with approach-driven reactions and contradiction detection. | Baseline InterviewSystem, case logging, and UI surfacing landed; expand metadata coverage for additional scenes. |
 | M2-016 | P1 | Pending | Baseline DialogueSystem delivery with branching choices, consequence tracking, and UI polish. | Audit remaining acceptance criteria and line up UI validation before moving downstream dependencies. |
 
 **Next Session Focus**:
@@ -2504,8 +2504,16 @@ _Progress 2025-11-03 (Session #256 guardrail verification): Re-ran the pointer c
 - **Effort**: 4 hours
 - **Dependencies**: M2-016
 - **Description**: Interview witnesses and suspects
+- **Status**: 🟡 Ready for Review — InterviewSystem now tracks approaches, stores testimonies, and flags contradictions with UI surfacing outcomes.
+- **Latest Progress**: 2025-11-08 session implemented InterviewSystem + CaseManager testimony logging, refreshed CaseFile UI testimony panel, annotated Martinez dialogue metadata, and added Jest coverage (`tests/game/systems/InterviewSystem.test.js`, `tests/game/systems/DialogueSystem.test.js`).
 - **Files**:
   - `src/game/systems/InterviewSystem.js`
+  - `src/game/managers/CaseManager.js`
+  - `src/game/ui/CaseFileUI.js`
+  - `src/game/systems/DialogueSystem.js`
+  - `src/game/data/dialogues/MartinezWitnessDialogue.js`
+  - `tests/game/systems/InterviewSystem.test.js`
+  - `tests/game/systems/DialogueSystem.test.js`
 - **Implementation Requirements**:
   - Interview approach selection (Aggressive/Diplomatic/Analytical)
   - NPC reactions to approaches

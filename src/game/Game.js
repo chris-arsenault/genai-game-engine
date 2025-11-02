@@ -15,6 +15,7 @@ import { FactionReputationSystem } from './systems/FactionReputationSystem.js';
 import { FactionSystem } from './systems/FactionSystem.js';
 import { KnowledgeProgressionSystem } from './systems/KnowledgeProgressionSystem.js';
 import { DialogueSystem } from './systems/DialogueSystem.js';
+import { InterviewSystem } from './systems/InterviewSystem.js';
 import { CameraFollowSystem } from './systems/CameraFollowSystem.js';
 import { TutorialSystem } from './systems/TutorialSystem.js';
 import { NPCMemorySystem } from './systems/NPCMemorySystem.js';
@@ -536,6 +537,16 @@ export class Game {
     registerAct3ZenithInfiltrationDialogues(this.gameSystems.dialogue);
     console.log('[Game] Act 3 Zenith Infiltration dialogues registered');
 
+    this.gameSystems.interview = new InterviewSystem(
+      this.componentRegistry,
+      this.eventBus,
+      {
+        caseManager: this.caseManager,
+        dialogueSystem: this.gameSystems.dialogue,
+        worldStateStore: this.worldStateStore,
+      }
+    );
+
     // Create camera follow system
     this.gameSystems.cameraFollow = new CameraFollowSystem(
       this.componentRegistry,
@@ -738,6 +749,7 @@ export class Game {
       ['investigation', this.gameSystems.investigation],
       ['forensic', this.gameSystems.forensic],
       ['knowledgeProgression', this.gameSystems.knowledgeProgression],
+      ['interview', this.gameSystems.interview],
       ['dialogue', this.gameSystems.dialogue],
       ['cameraFollow', this.gameSystems.cameraFollow],
       ['spriteAnimation', this.gameSystems.spriteAnimation],
@@ -2024,7 +2036,9 @@ export class Game {
       'case:objective_completed',
       'case:objectives_complete',
       'case:solved',
-      'case:hydrated'
+      'case:hydrated',
+      'case:testimony_recorded',
+      'case:testimony_contradiction'
     ];
     for (const eventName of caseEventsForRefresh) {
       this._offGameEventHandlers.push(this.eventBus.on(eventName, () => {

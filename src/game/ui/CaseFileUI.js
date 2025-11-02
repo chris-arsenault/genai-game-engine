@@ -33,6 +33,11 @@ export class CaseFileUI {
     // UI state
     this.visible = false;
     this.caseData = null;
+    this._sectionBounds = {
+      testimonies: null,
+      evidence: null,
+      clues: null,
+    };
 
     // EventBus for emitting events (optional)
     this.eventBus = options.eventBus || null;
@@ -53,6 +58,7 @@ export class CaseFileUI {
     );
 
     // Scroll state for evidence/clues
+    this.testimonyScrollOffset = 0;
     this.evidenceScrollOffset = 0;
     this.clueScrollOffset = 0;
 
@@ -170,15 +176,79 @@ export class CaseFileUI {
       discoveredClues: Array.from(caseData.discoveredClues || []),
       totalEvidence: caseData.evidenceIds ? caseData.evidenceIds.size : 0,
       totalClues: caseData.requiredClues ? caseData.requiredClues.size : 0,
-      accuracy: caseData.accuracy || 0
+      accuracy: caseData.accuracy || 0,
+      testimonies: this._normalizeTestimonies(caseData.testimonies)
     };
 
     // Load objectives into ObjectiveList
     this.objectiveList.loadObjectives(this.caseData.objectives);
 
     // Reset scroll
+    this.testimonyScrollOffset = 0;
     this.evidenceScrollOffset = 0;
     this.clueScrollOffset = 0;
+  }
+
+  _normalizeTestimonies(entries) {
+    if (!Array.isArray(entries)) {
+      return [];
+    }
+
+    return entries
+      .filter((testimony) => testimony && typeof testimony === 'object')
+      .map((testimony) => {
+        const contradictions = Array.isArray(testimony.contradictions)
+          ? testimony.contradictions
+              .filter((contradiction) => contradiction && typeof contradiction === 'object')
+              .map((contradiction) => ({
+                factId: contradiction.factId ?? null,
+                withNpcName: contradiction.withNpcName ?? null,
+                withNpcId: contradiction.withNpcId ?? null,
+                withTestimonyId: contradiction.withTestimonyId ?? null,
+              }))
+          : [];
+
+        const contradictionByFactId = new Map();
+        for (const contradiction of contradictions) {
+          if (contradiction.factId) {
+            contradictionByFactId.set(contradiction.factId, contradiction);
+          }
+        }
+
+        const statements = Array.isArray(testimony.statements)
+          ? testimony.statements
+              .filter((statement) => statement && typeof statement === 'object')
+              .map((statement) => {
+                const factId = statement.factId ?? null;
+                const record = {
+                  factId,
+                  text: statement.text ?? statement.value ?? '',
+                  value: statement.value ?? null,
+                  confidence: statement.confidence ?? null,
+                  contradiction: null,
+                };
+                if (factId && contradictionByFactId.has(factId)) {
+                  record.contradiction = contradictionByFactId.get(factId);
+                }
+                return record;
+              })
+          : [];
+
+        const rawApproach = testimony.approachLabel ?? testimony.approachId ?? null;
+        const approachLabel = rawApproach
+          ? rawApproach.charAt(0).toUpperCase() + rawApproach.slice(1)
+          : null;
+
+        return {
+          id: testimony.id ?? null,
+          npcId: testimony.npcId ?? null,
+          npcName: testimony.npcName ?? testimony.npcId ?? 'Unknown Witness',
+          approachLabel,
+          recordedAt: testimony.recordedAt ?? null,
+          statements,
+          contradictions,
+        };
+      });
   }
 
   /**
@@ -193,6 +263,9 @@ export class CaseFileUI {
       : 0;
     const prevClueCount = Array.isArray(this.caseData.discoveredClues)
       ? this.caseData.discoveredClues.length
+      : 0;
+    const prevTestimonyCount = Array.isArray(this.caseData.testimonies)
+      ? this.caseData.testimonies.length
       : 0;
     const prevObjectives = Array.isArray(this.caseData.objectives)
       ? this.caseData.objectives
@@ -210,6 +283,10 @@ export class CaseFileUI {
       normalizedUpdates.discoveredClues = Array.from(normalizedUpdates.discoveredClues);
     } else if (Array.isArray(normalizedUpdates.discoveredClues)) {
       normalizedUpdates.discoveredClues = [...normalizedUpdates.discoveredClues];
+    }
+
+    if (Array.isArray(normalizedUpdates.testimonies)) {
+      normalizedUpdates.testimonies = this._normalizeTestimonies(normalizedUpdates.testimonies);
     }
 
     Object.assign(this.caseData, normalizedUpdates);
@@ -236,6 +313,16 @@ export class CaseFileUI {
       this._emitFxCue('caseCluePulse', {
         delta: nextClueCount - prevClueCount,
         totalClues: nextClueCount,
+      });
+    }
+
+    const nextTestimonyCount = Array.isArray(this.caseData.testimonies)
+      ? this.caseData.testimonies.length
+      : 0;
+    if (nextTestimonyCount > prevTestimonyCount) {
+      this._emitFxCue('caseTestimonyPulse', {
+        delta: nextTestimonyCount - prevTestimonyCount,
+        totalTestimonies: nextTestimonyCount,
       });
     }
 
@@ -308,25 +395,21 @@ export class CaseFileUI {
   onScroll(delta, x, y) {
     if (!this.visible) return;
 
-    // Determine which section to scroll based on mouse position
-    const evidenceSection = {
-      x: this.x + 20,
-      y: this.y + 280,
-      width: this.width - 40,
-      height: 120
-    };
+    const bounds = this._sectionBounds || {};
+    const scrollAmount = delta * 20;
 
-    const clueSection = {
-      x: this.x + 20,
-      y: this.y + 420,
-      width: this.width - 40,
-      height: 120
-    };
+    if (bounds.testimonies && this._isPointInRect(x, y, bounds.testimonies)) {
+      this.testimonyScrollOffset = Math.max(0, this.testimonyScrollOffset + scrollAmount);
+      return;
+    }
 
-    if (this._isPointInRect(x, y, evidenceSection)) {
-      this.evidenceScrollOffset = Math.max(0, this.evidenceScrollOffset + delta * 20);
-    } else if (this._isPointInRect(x, y, clueSection)) {
-      this.clueScrollOffset = Math.max(0, this.clueScrollOffset + delta * 20);
+    if (bounds.evidence && this._isPointInRect(x, y, bounds.evidence)) {
+      this.evidenceScrollOffset = Math.max(0, this.evidenceScrollOffset + scrollAmount);
+      return;
+    }
+
+    if (bounds.clues && this._isPointInRect(x, y, bounds.clues)) {
+      this.clueScrollOffset = Math.max(0, this.clueScrollOffset + scrollAmount);
     }
   }
 
@@ -366,11 +449,58 @@ export class CaseFileUI {
     // Draw objectives section
     this._renderObjectivesSection(ctx);
 
+    const panelX = this.x + this.style.padding;
+    const panelWidth = this.width - this.style.padding * 2;
+    const sectionListHeight = 60;
+    const sectionSpacing = 30;
+
+    const testimonySection = {
+      x: panelX,
+      width: panelWidth,
+      sectionY: this.y + 250,
+      listHeight: sectionListHeight,
+    };
+    const evidenceSection = {
+      x: panelX,
+      width: panelWidth,
+      sectionY: testimonySection.sectionY + sectionListHeight + sectionSpacing,
+      listHeight: sectionListHeight,
+    };
+    const clueSection = {
+      x: panelX,
+      width: panelWidth,
+      sectionY: evidenceSection.sectionY + sectionListHeight + sectionSpacing,
+      listHeight: sectionListHeight,
+    };
+
+    this._sectionBounds = {
+      testimonies: {
+        x: testimonySection.x,
+        y: testimonySection.sectionY + 30,
+        width: testimonySection.width,
+        height: testimonySection.listHeight,
+      },
+      evidence: {
+        x: evidenceSection.x,
+        y: evidenceSection.sectionY + 30,
+        width: evidenceSection.width,
+        height: evidenceSection.listHeight,
+      },
+      clues: {
+        x: clueSection.x,
+        y: clueSection.sectionY + 30,
+        width: clueSection.width,
+        height: clueSection.listHeight,
+      },
+    };
+
+    this._renderTestimonySection(ctx, testimonySection);
+
     // Draw evidence section
-    this._renderEvidenceSection(ctx);
+    this._renderEvidenceSection(ctx, evidenceSection);
 
     // Draw clues section
-    this._renderCluesSection(ctx);
+    this._renderCluesSection(ctx, clueSection);
 
     // Draw progress bar
     this._renderProgressBar(ctx);
@@ -476,21 +606,56 @@ export class CaseFileUI {
     this.objectiveList.render(ctx);
   }
 
+  _renderTestimonySection(ctx, config = {}) {
+    const sectionY = Number.isFinite(config.sectionY) ? config.sectionY : this.y + 250;
+    const listHeight = Number.isFinite(config.listHeight) ? config.listHeight : 90;
+    const listY = sectionY + 30;
+    const panelX = Number.isFinite(config.x) ? config.x : this.x + this.style.padding;
+    const panelWidth = Number.isFinite(config.width)
+      ? config.width
+      : this.width - this.style.padding * 2;
+
+    ctx.fillStyle = this.style.headerColor;
+    ctx.font = `bold ${this.style.headerFontSize}px ${this.style.fontFamily}`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('Testimonies', panelX, sectionY);
+
+    const items = this._buildTestimonyItems();
+    if (items.length === 0) {
+      items.push('No testimonies recorded.');
+    }
+
+    this._renderList(
+      ctx,
+      items,
+      panelX,
+      listY,
+      panelWidth,
+      listHeight,
+      this.testimonyScrollOffset
+    );
+  }
+
   /**
    * Render evidence section
    * @private
    */
-  _renderEvidenceSection(ctx) {
-    const sectionY = this.y + 270;
+  _renderEvidenceSection(ctx, config = {}) {
+    const sectionY = Number.isFinite(config.sectionY) ? config.sectionY : this.y + 270;
+    const listHeight = Number.isFinite(config.listHeight) ? config.listHeight : 120;
     const listY = sectionY + 30;
-    const listHeight = 120;
+    const panelX = Number.isFinite(config.x) ? config.x : this.x + this.style.padding;
+    const panelWidth = Number.isFinite(config.width)
+      ? config.width
+      : this.width - this.style.padding * 2;
 
     // Section header
     ctx.fillStyle = this.style.headerColor;
     ctx.font = `bold ${this.style.headerFontSize}px ${this.style.fontFamily}`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillText('Evidence', this.x + this.style.padding, sectionY);
+    ctx.fillText('Evidence', panelX, sectionY);
 
     // Evidence count
     ctx.fillStyle = this.style.dimmedTextColor;
@@ -498,7 +663,7 @@ export class CaseFileUI {
     ctx.textAlign = 'right';
     ctx.fillText(
       `${this.caseData.collectedEvidence.length}/${this.caseData.totalEvidence}`,
-      this.x + this.width - this.style.padding,
+      panelX + panelWidth,
       sectionY + 2
     );
 
@@ -506,9 +671,9 @@ export class CaseFileUI {
     this._renderList(
       ctx,
       this.caseData.collectedEvidence,
-      this.x + this.style.padding,
+      panelX,
       listY,
-      this.width - this.style.padding * 2,
+      panelWidth,
       listHeight,
       this.evidenceScrollOffset
     );
@@ -518,17 +683,21 @@ export class CaseFileUI {
    * Render clues section
    * @private
    */
-  _renderCluesSection(ctx) {
-    const sectionY = this.y + 410;
+  _renderCluesSection(ctx, config = {}) {
+    const sectionY = Number.isFinite(config.sectionY) ? config.sectionY : this.y + 410;
+    const listHeight = Number.isFinite(config.listHeight) ? config.listHeight : 120;
     const listY = sectionY + 30;
-    const listHeight = 120;
+    const panelX = Number.isFinite(config.x) ? config.x : this.x + this.style.padding;
+    const panelWidth = Number.isFinite(config.width)
+      ? config.width
+      : this.width - this.style.padding * 2;
 
     // Section header
     ctx.fillStyle = this.style.headerColor;
     ctx.font = `bold ${this.style.headerFontSize}px ${this.style.fontFamily}`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillText('Clues', this.x + this.style.padding, sectionY);
+    ctx.fillText('Clues', panelX, sectionY);
 
     // Clue count
     ctx.fillStyle = this.style.dimmedTextColor;
@@ -536,7 +705,7 @@ export class CaseFileUI {
     ctx.textAlign = 'right';
     ctx.fillText(
       `${this.caseData.discoveredClues.length}/${this.caseData.totalClues}`,
-      this.x + this.width - this.style.padding,
+      panelX + panelWidth,
       sectionY + 2
     );
 
@@ -544,12 +713,49 @@ export class CaseFileUI {
     this._renderList(
       ctx,
       this.caseData.discoveredClues,
-      this.x + this.style.padding,
+      panelX,
       listY,
-      this.width - this.style.padding * 2,
+      panelWidth,
       listHeight,
       this.clueScrollOffset
     );
+  }
+
+  _buildTestimonyItems() {
+    if (!Array.isArray(this.caseData?.testimonies)) {
+      return [];
+    }
+
+    const items = [];
+    for (const testimony of this.caseData.testimonies) {
+      if (!testimony) {
+        continue;
+      }
+      const baseLabel = testimony.approachLabel
+        ? `${testimony.npcName} [${testimony.approachLabel}]`
+        : testimony.npcName;
+
+      if (Array.isArray(testimony.statements) && testimony.statements.length > 0) {
+        for (const statement of testimony.statements) {
+          if (!statement) {
+            continue;
+          }
+          let line = `${baseLabel}: ${statement.text}`;
+          if (statement.confidence) {
+            line += ` (${statement.confidence})`;
+          }
+          if (statement.contradiction) {
+            const conflictName = statement.contradiction.withNpcName ?? 'another source';
+            line += ` ! Contradiction with ${conflictName}`;
+          }
+          items.push(line);
+        }
+      } else {
+        items.push(`${baseLabel}: Testimony logged.`);
+      }
+    }
+
+    return items;
   }
 
   /**

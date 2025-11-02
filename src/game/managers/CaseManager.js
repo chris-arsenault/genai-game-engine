@@ -8,6 +8,46 @@
  */
 import { TheoryValidator } from '../data/TheoryValidator.js';
 
+function normalizeString(value) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function cloneStatements(statements = []) {
+  const result = [];
+  if (!Array.isArray(statements)) {
+    return result;
+  }
+  for (const statement of statements) {
+    if (!statement || typeof statement !== 'object') {
+      continue;
+    }
+    result.push({
+      factId: normalizeString(statement.factId) ?? null,
+      value: normalizeString(statement.value) ?? null,
+      text: normalizeString(statement.text) ?? null,
+      confidence: normalizeString(statement.confidence) ?? null,
+      category: normalizeString(statement.category) ?? null,
+      tags: Array.isArray(statement.tags)
+        ? statement.tags
+            .map((tag) => normalizeString(tag))
+            .filter((tag) => tag !== null)
+        : [],
+      importance: Number.isFinite(statement.importance)
+        ? statement.importance
+        : normalizeString(statement.importance),
+      nodeId: normalizeString(statement.nodeId) ?? null,
+      recordedAt: Number.isFinite(statement.recordedAt)
+        ? statement.recordedAt
+        : Date.now(),
+    });
+  }
+  return result;
+}
+
 export class CaseManager {
   /**
    * Create a CaseManager
@@ -30,6 +70,58 @@ export class CaseManager {
 
     // Listen for investigation events
     this.setupEventListeners();
+  }
+
+  ensureTestimonyIndexes(caseFile) {
+    if (!caseFile) {
+      return;
+    }
+    if (!(caseFile.testimonyIndex instanceof Map)) {
+      const index = new Map();
+      if (caseFile.testimonyIndex && typeof caseFile.testimonyIndex === 'object') {
+        for (const [factId, entries] of Object.entries(caseFile.testimonyIndex)) {
+          if (!Array.isArray(entries)) {
+            continue;
+          }
+          index.set(
+            factId,
+            entries
+              .filter((entry) => entry && typeof entry === 'object')
+              .map((entry) => ({ ...entry }))
+          );
+        }
+      }
+      caseFile.testimonyIndex = index;
+    }
+    if (!(caseFile.testimonyContradictionIndex instanceof Set)) {
+      const set = new Set();
+      if (Array.isArray(caseFile.testimonyContradictionIndex)) {
+        for (const key of caseFile.testimonyContradictionIndex) {
+          const normalized = normalizeString(key);
+          if (normalized) {
+            set.add(normalized);
+          }
+        }
+      }
+      caseFile.testimonyContradictionIndex = set;
+    }
+    if (!Array.isArray(caseFile.testimonies)) {
+      caseFile.testimonies = [];
+    }
+    if (!Array.isArray(caseFile.testimonyContradictions)) {
+      caseFile.testimonyContradictions = [];
+    }
+    for (const testimony of caseFile.testimonies) {
+      if (!testimony || typeof testimony !== 'object') {
+        continue;
+      }
+      if (!Array.isArray(testimony.statements)) {
+        testimony.statements = [];
+      }
+      if (!Array.isArray(testimony.contradictions)) {
+        testimony.contradictions = [];
+      }
+    }
   }
 
   /**
@@ -203,7 +295,13 @@ export class CaseManager {
       // Tutorial metadata snapshot
       tutorial: tutorialMetadata ? { ...tutorialMetadata } : null,
       narrative: narrative ? { ...narrative } : null,
-      hintOverrides: hintOverrides ? { ...hintOverrides } : null
+      hintOverrides: hintOverrides ? { ...hintOverrides } : null,
+
+      // Testimony tracking
+      testimonies: [],
+      testimonyIndex: new Map(), // runtime index factId -> entries
+      testimonyContradictions: [],
+      testimonyContradictionIndex: new Set(),
     };
 
     this.cases.set(id, caseFile);
@@ -314,6 +412,197 @@ export class CaseManager {
     this.checkObjectiveCompletion(caseId);
 
     console.log(`[CaseManager] Clue added to case ${caseFile.title}: ${clueId}`);
+  }
+
+  /**
+   * Record testimony data collected during an interview.
+   * @param {Object} testimonyData
+   * @returns {Object|null} Recorded testimony entry
+   */
+  recordTestimony(testimonyData = {}) {
+    const caseId = normalizeString(testimonyData.caseId);
+    if (!caseId || !this.cases.has(caseId)) {
+      console.warn('[CaseManager] Attempted to record testimony for unknown case', caseId);
+      return null;
+    }
+
+    const npcId = normalizeString(testimonyData.npcId);
+    if (!npcId) {
+      console.warn('[CaseManager] recordTestimony requires npcId');
+      return null;
+    }
+
+    const caseFile = this.cases.get(caseId);
+    this.ensureTestimonyIndexes(caseFile);
+
+    const approachId = normalizeString(testimonyData.approachId);
+    const approachLabel =
+      normalizeString(testimonyData.approachLabel) ??
+      (approachId ? approachId.charAt(0).toUpperCase() + approachId.slice(1) : null);
+
+    const approachHistory = Array.isArray(testimonyData.approachHistory)
+      ? testimonyData.approachHistory
+          .map((entry) => normalizeString(entry))
+          .filter((entry) => entry !== null)
+      : [];
+
+    const statements = cloneStatements(testimonyData.statements);
+    for (let index = 0; index < statements.length; index += 1) {
+      const statement = statements[index];
+      if (!statement.factId) {
+        statement.factId = `fact_${npcId}_${Date.now()}_${index}`;
+      }
+      if (!statement.value) {
+        statement.value = statement.text ?? null;
+      }
+      if (!statement.text) {
+        statement.text = statement.value ?? '';
+      }
+    }
+
+    const testimonyId =
+      normalizeString(testimonyData.id) ?? `testimony_${npcId}_${Date.now()}`;
+
+    const entry = {
+      id: testimonyId,
+      caseId,
+      npcId,
+      npcName: normalizeString(testimonyData.npcName) ?? null,
+      dialogueId: normalizeString(testimonyData.dialogueId) ?? null,
+      requestedDialogueId: normalizeString(testimonyData.requestedDialogueId) ?? null,
+      approachId,
+      approachLabel,
+      approachHistory: approachHistory,
+      statements,
+      recordedAt: Number.isFinite(testimonyData.recordedAt)
+        ? testimonyData.recordedAt
+        : Date.now(),
+      contradictions: [],
+      metadata:
+        testimonyData.metadata && typeof testimonyData.metadata === 'object'
+          ? { ...testimonyData.metadata }
+          : {},
+    };
+
+    if (entry.approachId && !entry.approachHistory.includes(entry.approachId)) {
+      entry.approachHistory.unshift(entry.approachId);
+    }
+
+    const contradictionTimestamp = Date.now();
+
+    for (const statement of entry.statements) {
+      if (!statement.factId) {
+        continue;
+      }
+      const indexEntries =
+        caseFile.testimonyIndex.get(statement.factId) ??
+        [];
+
+      for (const existing of indexEntries) {
+        if (!existing || existing.testimonyId === entry.id) {
+          continue;
+        }
+        if (existing.value === statement.value) {
+          continue;
+        }
+
+        const conflictKeyParts = [statement.factId, existing.testimonyId, entry.id].sort();
+        const conflictKey = conflictKeyParts.join('::');
+
+        const contradictionPayload = {
+          factId: statement.factId,
+          withTestimonyId: existing.testimonyId,
+          withNpcId: existing.npcId ?? null,
+          withNpcName: existing.npcName ?? null,
+          existingValue: existing.value,
+          value: statement.value,
+        };
+
+        entry.contradictions.push({ ...contradictionPayload });
+
+        const existingTestimony = caseFile.testimonies.find(
+          (testimony) => testimony.id === existing.testimonyId
+        );
+        if (existingTestimony) {
+          if (!Array.isArray(existingTestimony.contradictions)) {
+            existingTestimony.contradictions = [];
+          }
+          existingTestimony.contradictions.push({
+            factId: statement.factId,
+            withTestimonyId: entry.id,
+            withNpcId: entry.npcId,
+            withNpcName: entry.npcName ?? null,
+            existingValue: statement.value,
+            value: existing.value,
+          });
+        }
+
+        if (!caseFile.testimonyContradictionIndex.has(conflictKey)) {
+          caseFile.testimonyContradictionIndex.add(conflictKey);
+          caseFile.testimonyContradictions.push({
+            caseId,
+            factId: statement.factId,
+            testimonies: [
+              {
+                testimonyId: existing.testimonyId,
+                npcId: existing.npcId ?? null,
+                npcName: existing.npcName ?? null,
+                value: existing.value,
+              },
+              {
+                testimonyId: entry.id,
+                npcId: entry.npcId,
+                npcName: entry.npcName ?? null,
+                value: statement.value,
+              },
+            ],
+            detectedAt: contradictionTimestamp,
+          });
+
+          this.eventBus.emit('case:testimony_contradiction', {
+            caseId,
+            factId: statement.factId,
+            testimonies: [
+              {
+                testimonyId: existing.testimonyId,
+                npcId: existing.npcId ?? null,
+                npcName: existing.npcName ?? null,
+                value: existing.value,
+              },
+              {
+                testimonyId: entry.id,
+                npcId: entry.npcId,
+                npcName: entry.npcName ?? null,
+                value: statement.value,
+              },
+            ],
+            detectedAt: contradictionTimestamp,
+          });
+        }
+      }
+
+      indexEntries.push({
+        testimonyId: entry.id,
+        npcId: entry.npcId,
+        npcName: entry.npcName ?? null,
+        value: statement.value,
+      });
+      caseFile.testimonyIndex.set(statement.factId, indexEntries);
+    }
+
+    caseFile.testimonies.push(entry);
+    caseFile.lastUpdatedAt = Date.now();
+
+    this.eventBus.emit('case:testimony_recorded', {
+      caseId,
+      testimony: {
+        ...entry,
+        statements: entry.statements.map((statement) => ({ ...statement })),
+        contradictions: entry.contradictions.map((contradiction) => ({ ...contradiction })),
+      },
+    });
+
+    return entry;
   }
 
   /**
@@ -591,6 +880,41 @@ export class CaseManager {
   serialize() {
     const cases = {};
     for (const [caseId, caseFile] of this.cases.entries()) {
+      const serializeStatements = (entries) =>
+        Array.isArray(entries)
+          ? entries
+              .filter((entry) => entry && typeof entry === 'object')
+              .map((entry) => ({
+                factId: entry.factId ?? null,
+                value: entry.value ?? null,
+                text: entry.text ?? null,
+                confidence: entry.confidence ?? null,
+                category: entry.category ?? null,
+                tags: Array.isArray(entry.tags) ? [...entry.tags] : [],
+                importance: Number.isFinite(entry.importance)
+                  ? entry.importance
+                  : entry.importance ?? null,
+                nodeId: entry.nodeId ?? null,
+                recordedAt: Number.isFinite(entry.recordedAt)
+                  ? entry.recordedAt
+                  : null,
+              }))
+          : [];
+
+      const serializeContradictions = (entries) =>
+        Array.isArray(entries)
+          ? entries
+              .filter((entry) => entry && typeof entry === 'object')
+              .map((entry) => ({
+                factId: entry.factId ?? null,
+                withTestimonyId: entry.withTestimonyId ?? null,
+                withNpcId: entry.withNpcId ?? null,
+                withNpcName: entry.withNpcName ?? null,
+                existingValue: entry.existingValue ?? null,
+                value: entry.value ?? null,
+              }))
+          : [];
+
       cases[caseId] = {
         status: caseFile.status,
         collectedEvidence: Array.from(caseFile.collectedEvidence),
@@ -617,6 +941,54 @@ export class CaseManager {
                   : [],
               }
             : { nodes: [], connections: [] },
+        testimonies: Array.isArray(caseFile.testimonies)
+          ? caseFile.testimonies
+              .filter((testimony) => testimony && typeof testimony === 'object')
+              .map((testimony) => ({
+                id: testimony.id ?? null,
+                npcId: testimony.npcId ?? null,
+                npcName: testimony.npcName ?? null,
+                dialogueId: testimony.dialogueId ?? null,
+                requestedDialogueId: testimony.requestedDialogueId ?? null,
+                approachId: testimony.approachId ?? null,
+                approachLabel: testimony.approachLabel ?? null,
+                approachHistory: Array.isArray(testimony.approachHistory)
+                  ? testimony.approachHistory
+                      .map((entry) => normalizeString(entry))
+                      .filter((entry) => entry !== null)
+                  : [],
+                statements: serializeStatements(testimony.statements),
+                contradictions: serializeContradictions(testimony.contradictions),
+                recordedAt: Number.isFinite(testimony.recordedAt)
+                  ? testimony.recordedAt
+                  : null,
+                metadata:
+                  testimony.metadata && typeof testimony.metadata === 'object'
+                    ? { ...testimony.metadata }
+                    : {},
+              }))
+          : [],
+        testimonyContradictions: Array.isArray(caseFile.testimonyContradictions)
+          ? caseFile.testimonyContradictions
+              .filter((entry) => entry && typeof entry === 'object')
+              .map((entry) => ({
+                factId: entry.factId ?? null,
+                caseId: entry.caseId ?? caseId,
+                testimonies: Array.isArray(entry.testimonies)
+                  ? entry.testimonies
+                      .filter((testimony) => testimony && typeof testimony === 'object')
+                      .map((testimony) => ({
+                        testimonyId: testimony.testimonyId ?? null,
+                        npcId: testimony.npcId ?? null,
+                        npcName: testimony.npcName ?? null,
+                        value: testimony.value ?? null,
+                      }))
+                  : [],
+                detectedAt: Number.isFinite(entry.detectedAt)
+                  ? entry.detectedAt
+                  : null,
+              }))
+          : [],
       };
     }
 
@@ -701,6 +1073,124 @@ export class CaseManager {
               .map((conn) => ({ ...conn }))
           : [];
         caseFile.playerTheory = { nodes, connections };
+      }
+
+      const testimonies = Array.isArray(caseData.testimonies)
+        ? caseData.testimonies
+            .filter((entry) => entry && typeof entry === 'object')
+            .map((entry) => ({
+              id: entry.id ?? null,
+              caseId,
+              npcId: entry.npcId ?? null,
+              npcName: entry.npcName ?? null,
+              dialogueId: entry.dialogueId ?? null,
+              requestedDialogueId: entry.requestedDialogueId ?? null,
+              approachId: entry.approachId ?? null,
+              approachLabel: entry.approachLabel ?? null,
+              approachHistory: Array.isArray(entry.approachHistory)
+                ? entry.approachHistory
+                    .map((historyEntry) => normalizeString(historyEntry))
+                    .filter((historyEntry) => historyEntry !== null)
+                : [],
+              statements: Array.isArray(entry.statements)
+                ? entry.statements
+                    .filter((statement) => statement && typeof statement === 'object')
+                    .map((statement) => ({
+                      factId: statement.factId ?? null,
+                      value: statement.value ?? null,
+                      text: statement.text ?? null,
+                      confidence: statement.confidence ?? null,
+                      category: statement.category ?? null,
+                      tags: Array.isArray(statement.tags) ? [...statement.tags] : [],
+                      importance: Number.isFinite(statement.importance)
+                        ? statement.importance
+                        : statement.importance ?? null,
+                      nodeId: statement.nodeId ?? null,
+                      recordedAt: Number.isFinite(statement.recordedAt)
+                        ? statement.recordedAt
+                        : null,
+                    }))
+                : [],
+              contradictions: Array.isArray(entry.contradictions)
+                ? entry.contradictions
+                    .filter((contradiction) => contradiction && typeof contradiction === 'object')
+                    .map((contradiction) => ({
+                      factId: contradiction.factId ?? null,
+                      withTestimonyId: contradiction.withTestimonyId ?? null,
+                      withNpcId: contradiction.withNpcId ?? null,
+                      withNpcName: contradiction.withNpcName ?? null,
+                      existingValue: contradiction.existingValue ?? null,
+                      value: contradiction.value ?? null,
+                    }))
+                : [],
+              recordedAt: Number.isFinite(entry.recordedAt) ? entry.recordedAt : null,
+              metadata:
+                entry.metadata && typeof entry.metadata === 'object' ? { ...entry.metadata } : {},
+            }))
+        : [];
+
+      const testimonyContradictions = Array.isArray(caseData.testimonyContradictions)
+        ? caseData.testimonyContradictions
+            .filter((entry) => entry && typeof entry === 'object')
+            .map((entry) => ({
+              factId: entry.factId ?? null,
+              caseId: entry.caseId ?? caseId,
+              testimonies: Array.isArray(entry.testimonies)
+                ? entry.testimonies
+                    .filter((testimony) => testimony && typeof testimony === 'object')
+                    .map((testimony) => ({
+                      testimonyId: testimony.testimonyId ?? null,
+                      npcId: testimony.npcId ?? null,
+                      npcName: testimony.npcName ?? null,
+                      value: testimony.value ?? null,
+                    }))
+                : [],
+              detectedAt: Number.isFinite(entry.detectedAt) ? entry.detectedAt : null,
+            }))
+        : [];
+
+      caseFile.testimonies = testimonies;
+      caseFile.testimonyContradictions = testimonyContradictions;
+
+      this.ensureTestimonyIndexes(caseFile);
+
+      caseFile.testimonyIndex.clear();
+      for (const testimony of caseFile.testimonies) {
+        if (!Array.isArray(testimony.statements)) {
+          testimony.statements = [];
+        }
+        if (!Array.isArray(testimony.contradictions)) {
+          testimony.contradictions = [];
+        }
+        for (const statement of testimony.statements) {
+          if (!statement.factId) {
+            continue;
+          }
+          const entries =
+            caseFile.testimonyIndex.get(statement.factId) ??
+            [];
+          entries.push({
+            testimonyId: testimony.id ?? null,
+            npcId: testimony.npcId ?? null,
+            npcName: testimony.npcName ?? null,
+            value: statement.value ?? null,
+          });
+          caseFile.testimonyIndex.set(statement.factId, entries);
+        }
+      }
+
+      caseFile.testimonyContradictionIndex.clear();
+      for (const contradiction of caseFile.testimonyContradictions) {
+        const testimoniesForKey = Array.isArray(contradiction.testimonies)
+          ? contradiction.testimonies
+              .map((entry) => entry?.testimonyId ?? null)
+              .filter((testimonyId) => typeof testimonyId === 'string' && testimonyId.length > 0)
+          : [];
+        if (typeof contradiction.factId !== 'string' || testimoniesForKey.length < 2) {
+          continue;
+        }
+        const key = [contradiction.factId, ...testimoniesForKey.sort()].join('::');
+        caseFile.testimonyContradictionIndex.add(key);
       }
     }
 
