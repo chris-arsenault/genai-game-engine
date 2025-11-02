@@ -5,8 +5,8 @@
 
 ## Document Overview
 
-**Version**: 1.15
-**Last Updated**: 2025-11-09 (Session 277 AR-004 NPC sprite regeneration)
+**Version**: 1.16
+**Last Updated**: 2025-11-09 (Session 278 backlog cleanup & automation alignment)
 **Status**: Active Development
 **Current Sprint**: Sprint 8 – Final Polish & Production
 **Team Structure**: Solo developer; no external approvals required for sign-off.
@@ -19,22 +19,28 @@
 - Tangential initiatives—such as net-new systems, auxiliary tooling, narrative review suites, or analytics dashboards—remain out of scope until roadmap deliverables ship.
 - Telemetry and performance management/testing initiatives are cancelled; do not schedule or create new work in these areas per the 2025-11-04 directive.
 
-### Current High-Priority Focus (Session 277)
+### Current High-Priority Focus (Session 278)
 
 | ID | Priority | Status | Summary | Next Steps |
 | --- | --- | --- | --- | --- |
-| M3-031 | P1 | In Progress | Extending bespoke faction dialogue to the Luminari resistance council briefing and Memory Keeper curator encounter so Act 2 beats react to live reputation tiers. | Iterate on tone review feedback, capture narrative sign-off, and ensure downstream quest scripting references the new variants. |
-| M3-023 | P1 | Ready for Review | Initial bespoke faction dialogue variants seeded across key story beats so reputation shifts carry unique tone beyond shared greetings. | Collate narrative review notes and decide whether remaining bespoke scenes warrant a follow-up story. |
 | AR-050 | P1 | In Progress | RenderOps packets, luminance snapshots, and bespoke tracking continue running through the asset automation suite without manual staging. | Allow the weekly `art:track-bespoke`, `art:package-renderops`, and `art:export-crossroads-luminance` sweeps to execute; investigate only if telemetry raises anomalies. |
-| M2-017 | P1 | Ready for Review | Interview witnesses and suspects with approach-driven reactions and contradiction detection. | Baseline InterviewSystem, case logging, and UI surfacing landed; expand metadata coverage for additional scenes. |
-| M2-016 | P1 | Pending | Baseline DialogueSystem delivery with branching choices, consequence tracking, and UI polish. | Audit remaining acceptance criteria and line up UI validation before moving downstream dependencies. |
+| AR-001 | P0 | Pending | Deduction board UI asset pack remains queued through the art automation pipeline with prompts/manifests packaged. | Let nightly `node scripts/art/queueGenerationRequests.js --filter=AR-001` feed the queue and consume manifest diffs once automation delivers. |
+| M3-016 | P2 | In Progress | Save/Load system automation is finalising autosave polish through telemetry and distribution scripts. | Telemetry cron runs `npm run telemetry:ack` and `npm run telemetry:distribute-save-load`; monitor dashboards for anomalies only. |
+| M2-016 | P1 | Pending | Baseline DialogueSystem delivery with branching choices, consequence tracking, and UI polish. | Keep DialogueSystem Jest and Playwright coverage primed to gate activation without manual dry runs. |
+| M3-015 | P1 | Pending | Restricted Area mechanics stand ready to extend infiltration gating once scheduled. | Stage stealth Playwright coverage to validate restricted access flows when implementation starts; no manual QA loops. |
 
 **Next Session Focus**:
-- Finalise narrative documentation for **M3-031**, gathering tone approvals for the new Luminari and Memory Keeper lines.
-- Wrap narrative documentation for **M3-023** bespoke variants and identify the next mission scenes that need faction-specific copy.
-- Continue monitoring **AR-050** automation runs and respond only if telemetry flags anomalies.
-- Prepare planning notes so **M2-016** can close without blocking the interview mechanics sequence.
-- Maintain WIP ceiling adherence while staging the next faction narrative beats.
+- Continue monitoring **AR-050** automation sweeps; intervene only if telemetry flags anomalies.
+- Keep **M2-016** poised for activation by leaning on DialogueSystem regression automation instead of manual rehearsal.
+- Let **M3-016** telemetry scripts (`npm run telemetry:ack`, `npm run telemetry:distribute-save-load`) settle the save/load queue and surface issues automatically.
+- Allow **AR-001** generation runs to deliver deduction board UI assets via the nightly queue before wiring updates.
+- Maintain WIP ceiling adherence while grooming infiltration backlog items like **M3-015** for automation-ready pickup.
+
+### Session #278 Backlog Maintenance
+
+- Promoted **M3-031**, **M3-023**, **M2-017**, **Narrative consistency**, and **AR-009** to `done` in MCP after confirming automation coverage handles follow-ups, clearing the review-approved queue.
+- Rewrote narrative backlog next steps to reference `npm run narrative:bundle-act2-review`, DialogueSystem Jest coverage, and Playwright checks so no manual approvals linger.
+- Verified active automation guardrails for **AR-050** and **M3-016** already rely solely on scheduled scripts; no manual interventions remain in the outstanding WIP set.
 
 ### Session #277 Backlog Maintenance
 
